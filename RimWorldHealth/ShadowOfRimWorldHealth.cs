@@ -3,15 +3,17 @@ using BepInEx.Logging;
 using System;
 using UnityEngine;
 
-namespace RimWorldHealth;
+namespace ShadowOfRimWorldHealth;
 
 [BepInPlugin("notsmartcat.shadowofrimworldhealth", "RimWorld styled health", "1.0.0")]
 
 public class RimWorldHealth : BaseUnityPlugin
 {
+    public static string all = "ShadowOfRWHealth: ";
     internal static new ManualLogSource Logger;
 
-    public ShadowOfRimWorldHealth.HealthTab healthTab;
+    public HealthTab healthTab;
+    public bool buttonHeld = false;
 
     public void OnEnable()
     {
@@ -20,37 +22,62 @@ public class RimWorldHealth : BaseUnityPlugin
             Logger = base.Logger;
 
             On.HUD.HUD.InitSinglePlayerHud += HUDInitSinglePlayerHud;
+            On.HUD.PlayerSpecificMultiplayerHud.ctor += NewPlayerSpecificMultiplayerHud;
 
             On.Player.Update += PlayerUpdate;
+
+            ILHooks.Apply();
         }
         catch (Exception e) { Logger.LogError(e); }
     }
 
-    private void HUDInitSinglePlayerHud(On.HUD.HUD.orig_InitSinglePlayerHud orig, HUD.HUD self, RoomCamera cam)
+    void NewPlayerSpecificMultiplayerHud(On.HUD.PlayerSpecificMultiplayerHud.orig_ctor orig, HUD.PlayerSpecificMultiplayerHud self, HUD.HUD hud, ArenaGameSession session, AbstractCreature abstractPlayer)
+    {
+        orig(self, hud, session, abstractPlayer);
+
+        healthTab = new HealthTab(hud, abstractPlayer);
+
+        self.hud.AddPart(healthTab);
+
+        Debug.Log("HealthTab for arena Created");
+    }
+
+    void HUDInitSinglePlayerHud(On.HUD.HUD.orig_InitSinglePlayerHud orig, HUD.HUD self, RoomCamera cam)
     {
         orig(self, cam);
 
-        healthTab = new ShadowOfRimWorldHealth.HealthTab(self, (self.owner as Creature).abstractCreature);
+        healthTab = new HealthTab(self, (self.owner as Creature).abstractCreature);
 
         self.AddPart(healthTab);
+
+        Debug.Log("HealthTab Created");
     }
 
     void PlayerUpdate(On.Player.orig_Update orig, Player self, bool eu)
     {
         orig(self, eu);
 
-        if (Input.GetKeyDown("h"))
+        if (!self.Consious)
         {
-            if (healthTab == null)
+            return;
+        }
+
+        if (self.State is RWPlayerHealthState)
+        {
+            Debug.Log("PLAYER HAS RW HEALTH STATE");
+        }
+
+        if (Input.GetKey("h") && healthTab != null)
+        {
+            if (buttonHeld == false)
             {
-                healthTab = new ShadowOfRimWorldHealth.HealthTab(self.room.game.cameras[0].hud, self.abstractCreature);
-
-                self.room.game.cameras[0].hud.AddPart(healthTab);
+                buttonHeld = true;
+                healthTab.ToggleVisibility(self.State as RWPlayerHealthState);
             }
-
-            healthTab.visible = !healthTab.visible;
-
-            Debug.Log("HealthTab visibility is = " + healthTab.visible);
+        }
+        else
+        {
+            buttonHeld = false;
         }
     }
 }

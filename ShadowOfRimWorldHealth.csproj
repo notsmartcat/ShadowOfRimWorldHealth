@@ -37,6 +37,7 @@
     <Reference Remove="LizardSpriteStorage\**" />
   </ItemGroup>
   <ItemGroup>
+    <None Remove=".gitattributes" />
     <None Remove=".gitignore" />
     <None Remove="README.md" />
   </ItemGroup>
