@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace ShadowOfRimWorldHealth;
 
@@ -45,7 +46,10 @@ public class RWPlayerHealthState : PlayerState
         List<RWBodyPart> bodyParts = new(3) {
                 new UpperTorso(this),
                 new LowerTorso(this),
-                new Head(this)
+                new Head(this),
+                new Skull(this),
+                new Brain(this),
+                new Eye(this)
             };
 
         for (int i = 0; i < bodyParts.Count; i++)
@@ -60,9 +64,11 @@ public class RWPlayerHealthState : PlayerState
 
                 if (bodyPart != null)
                 {
+                    bodyPart.name = "Left " + bodyPart.name;
                     this.bodyParts.Add(bodyPart);
                 }
 
+                bodyParts[i].name = "Right " + bodyParts[i].name;
                 this.bodyParts.Add(bodyParts[i]);
                 continue;
             }
@@ -74,6 +80,55 @@ public class RWPlayerHealthState : PlayerState
     public void Update()
     {
 
+    }
+
+    public void Damage(string damageType, float damage, RWBodyPart bodyPart)
+    {
+        bool trye = true;
+
+        RWBodyPart focusedBodyPart = bodyPart;
+
+        focusedBodyPart.health -= damage;
+
+        float extraDamage = 0f;
+
+        Debug.Log(focusedBodyPart.name + " was hit for " + damage + " now it's health is " + focusedBodyPart.health);
+
+        if (focusedBodyPart.health < 0f)
+        {
+            extraDamage = focusedBodyPart.health * -1;
+        }
+
+        while (trye)
+        {
+            if (focusedBodyPart.isInternal && focusedBodyPart.subPartOf != "")
+            {
+                for (int i = 0; i < bodyParts.Count; i++)
+                {
+                    if (bodyParts[i].name == focusedBodyPart.subPartOf)
+                    {
+                        focusedBodyPart = bodyParts[i];
+
+                        focusedBodyPart.health -= (damage + extraDamage);
+
+                        Debug.Log(focusedBodyPart.name + " was hit for " + damage + " damage and " + extraDamage + " extraDamage now it's health is " + focusedBodyPart.health);
+
+                        extraDamage = 0f;
+
+                        if (focusedBodyPart.health < 0f)
+                        {
+                            extraDamage = focusedBodyPart.health * -1;
+                        }
+
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                trye = false;
+            }
+        }
     }
 
     public List<RWBodyPart> bodyParts = new();

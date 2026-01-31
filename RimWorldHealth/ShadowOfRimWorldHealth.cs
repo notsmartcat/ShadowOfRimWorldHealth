@@ -27,6 +27,7 @@ public class RimWorldHealth : BaseUnityPlugin
             On.Player.Update += PlayerUpdate;
 
             ILHooks.Apply();
+            CreatureHooks.Apply();
         }
         catch (Exception e) { Logger.LogError(e); }
     }
@@ -60,11 +61,6 @@ public class RimWorldHealth : BaseUnityPlugin
         if (!self.Consious)
         {
             return;
-        }
-
-        if (self.State is RWPlayerHealthState)
-        {
-            Debug.Log("PLAYER HAS RW HEALTH STATE");
         }
 
         if (Input.GetKey("h") && healthTab != null)
