@@ -136,9 +136,8 @@ internal class CreatureHooks
             {
                 Debug.Log("Bodypart hit is " + list[0]);
 
-                state.Damage(type.ToString(), damage, list[0]);
+                state.Damage(type.ToString(), damage * 10, list[0]);
             }
-
         }
     }
 }

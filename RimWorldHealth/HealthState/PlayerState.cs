@@ -43,6 +43,8 @@ public class RWPlayerHealthState : PlayerState
 {
     public RWPlayerHealthState(AbstractCreature crit, int playerNumber, SlugcatStats.Name slugcatCharacter, bool isGhost) : base(crit, playerNumber, slugcatCharacter, isGhost)
     {
+        bodySizeFactor = 1;
+
         List<RWBodyPart> bodyParts = new(3) {
                 new UpperTorso(this),
                 new LowerTorso(this),
@@ -75,11 +77,24 @@ public class RWPlayerHealthState : PlayerState
 
             this.bodyParts.Add(bodyParts[i]);
         }
+
+        for (int i = 0; i < bodyParts.Count; i++)
+        {
+            maxHealth += bodyParts[i].maxHealth;
+        }
     }
 
     public void Update()
     {
+        for (int i = 0; i < bodyParts.Count; i++)
+        {
+            float health = bodyParts[i].health;
 
+            for (int j = 0; j < bodyParts[i].injuries.Count; j++)
+            {
+
+            }
+        }
     }
 
     public void Damage(string damageType, float damage, RWBodyPart bodyPart)
@@ -88,15 +103,21 @@ public class RWPlayerHealthState : PlayerState
 
         RWBodyPart focusedBodyPart = bodyPart;
 
-        focusedBodyPart.health -= damage;
+        float health = focusedBodyPart.health;
+        health -= damage;
 
         float extraDamage = 0f;
 
-        Debug.Log(focusedBodyPart.name + " was hit for " + damage + " now it's health is " + focusedBodyPart.health);
+        Debug.Log(focusedBodyPart.name + " was hit for " + damage);
 
         if (focusedBodyPart.health < 0f)
         {
+            DestroyBodyPart();
             extraDamage = focusedBodyPart.health * -1;
+        }
+        else
+        {
+            focusedBodyPart.injuries.Add(new RWInjury(this, focusedBodyPart, 99f, damageType, ""));
         }
 
         while (trye)
@@ -117,7 +138,12 @@ public class RWPlayerHealthState : PlayerState
 
                         if (focusedBodyPart.health < 0f)
                         {
+                            DestroyBodyPart();
                             extraDamage = focusedBodyPart.health * -1;
+                        }
+                        else
+                        {
+                            focusedBodyPart.injuries.Add(new RWInjury(this, focusedBodyPart, 99f, damageType, ""));
                         }
 
                         break;
@@ -129,11 +155,61 @@ public class RWPlayerHealthState : PlayerState
                 trye = false;
             }
         }
+
+        void DestroyBodyPart()
+        {
+            switch (focusedBodyPart.deathEffect)
+            {
+                case "Destroy":
+                    List<RWBodyPart> subParts = new();
+
+                    RWBodyPart focusedSubBodyPart = focusedBodyPart;
+
+                    while (true)
+                    {
+                        for (int i = 0; i < bodyParts.Count; i++)
+                        {
+                            if (bodyParts[i].name == focusedSubBodyPart.subPartOf)
+                            {
+                                subParts.Add(bodyParts[i]);
+                                focusedSubBodyPart = bodyParts[i];
+                                break;
+                            }
+                            else
+                            {
+                                focusedSubBodyPart = null;
+                            }
+                        }
+
+                        if (focusedSubBodyPart == null)
+                        {
+                            break;
+                        }
+                    }
+
+                    for (int i = 0; i < subParts.Count; i++)
+                    {
+                        bodyParts.Remove(subParts[i]);
+                    }
+
+                    focusedBodyPart.coverage = 0f;
+
+                    focusedSubBodyPart.injuries.Clear();
+
+                    focusedSubBodyPart.injuries.Add(new RWInjury(this, focusedSubBodyPart, 99f, damageType, ""));
+
+                    break;
+            }
+        }
     }
 
     public List<RWBodyPart> bodyParts = new();
 
-    public float blood = 100;
+    public float maxHealth;
+
+    public float bodySizeFactor;
+
+    public float bloodLoss = 0;
 
     public float pain = 0;
 

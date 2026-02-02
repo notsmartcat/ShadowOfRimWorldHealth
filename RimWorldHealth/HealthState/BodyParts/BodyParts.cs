@@ -14,7 +14,10 @@ public class RWBodyPart
     //name is used for showing up in the Health Tab and for localization
     public string name = "Generic Body Part";
 
-    //how much damage the bodyPart can take before being destroyed
+    //Max Health, 
+    public float maxHealth = 10f;
+
+    //how much damage the bodyPart can take before being destroyed, actual health is calculated in the HealthState
     public float health = 10f;
 
     //if there is more then 1 quantity a second version of this is automatically created. The first bodypart will be given a "Right " to it's name and the second one will be given a "Left " 
@@ -35,6 +38,8 @@ public class RWBodyPart
     //if the bodypart is internal the Subpart will also be hit whenever this bodypart is hit
     public bool isInternal = false;
 
+    public bool isSolid = false;
+
     //What armour group covers this body part.
     public List<string> group = new();
 
@@ -43,6 +48,8 @@ public class RWBodyPart
 
     //if a bodypart has a special function whenever destroyed, such as cutting in half or decapitation
     public string deathEffect = "Destroy";
+
+    public List<RWInjury> injuries = new();
 }
 
 internal class UpperTorso : RWBodyPart
@@ -127,6 +134,8 @@ internal class Skull : RWBodyPart
         subPartOf = "Head";
 
         isInternal = true;
+
+        isSolid = true;
 
         group.Add("UpperHead");
         group.Add("Eyes");
