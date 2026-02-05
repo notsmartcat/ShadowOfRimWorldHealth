@@ -26,10 +26,32 @@ public class RimWorldHealth : BaseUnityPlugin
 
             On.Player.Update += PlayerUpdate;
 
+            On.Player.checkInput += PlayercheckInput;
+
             ILHooks.Apply();
             CreatureHooks.Apply();
         }
         catch (Exception e) { Logger.LogError(e); }
+    }
+
+    private void PlayercheckInput(On.Player.orig_checkInput orig, Player self)
+    {
+        orig(self);
+
+        if (healthTab != null && healthTab.owner == self.abstractCreature && healthTab.visible)
+        {
+            healthTab.input = self.input[0];
+
+            self.input[0].x = 0;
+            self.input[0].y = 0;
+            Player.InputPackage[] input = self.input;
+            int num2 = 0;
+            input[num2].analogueDir = input[num2].analogueDir * 0f;
+            self.input[0].jmp = false;
+            self.input[0].thrw = false;
+            self.input[0].pckp = false;
+            self.input[0].spec = false;
+        }
     }
 
     void NewPlayerSpecificMultiplayerHud(On.HUD.PlayerSpecificMultiplayerHud.orig_ctor orig, HUD.PlayerSpecificMultiplayerHud self, HUD.HUD hud, ArenaGameSession session, AbstractCreature abstractPlayer)
@@ -58,6 +80,13 @@ public class RimWorldHealth : BaseUnityPlugin
     {
         orig(self, eu);
 
+        if (self.State is not RWPlayerHealthState state)
+        {
+            return;
+        }
+
+        state.Update();
+
         if (!self.Consious)
         {
             return;
@@ -75,5 +104,10 @@ public class RimWorldHealth : BaseUnityPlugin
         {
             buttonHeld = false;
         }
+    }
+
+    public static bool IsDestroyed(RWBodyPart self)
+    {
+        return self.injuries.Count != 0 && self.injuries[0] is Destroyed;
     }
 }

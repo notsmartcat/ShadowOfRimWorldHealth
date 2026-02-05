@@ -49,6 +49,8 @@ public class RWBodyPart
     //if a bodypart has a special function whenever destroyed, such as cutting in half or decapitation
     public string deathEffect = "Destroy";
 
+    public float efficiency = 100;
+
     public List<RWInjury> injuries = new();
 }
 
@@ -58,6 +60,7 @@ internal class UpperTorso : RWBodyPart
     {
         name = "Upper Torso";
 
+        maxHealth = 20;
         health = 20;
 
         connectedBodyChunks.Add(1);
@@ -73,6 +76,7 @@ internal class LowerTorso : RWBodyPart
     {
         name = "Lower Torso";
 
+        maxHealth = 20;
         health = 20;
 
         connectedBodyChunks.Add(2);
@@ -88,11 +92,13 @@ internal class Neck : RWBodyPart
     {
         name = "Neck";
 
+        maxHealth = 25;
         health = 25;
 
         coverage = 7.5f;
 
         connectedBodyChunks.Add(0);
+        connectedBodyChunks.Add(1);
 
         group.Add("Neck");
 
@@ -109,16 +115,19 @@ internal class Head : RWBodyPart
     {
         name = "Head";
 
+        maxHealth = 25;
         health = 25;
 
         coverage = 80f;
+
+        subPartOf = "Neck";
 
         connectedBodyChunks.Add(0);
 
         group.Add("UpperHead");
         group.Add("FullHead");
 
-        deathEffect = "Decapitation";
+        deathEffect = "Death";
     }
 }
 internal class Skull : RWBodyPart
@@ -127,6 +136,7 @@ internal class Skull : RWBodyPart
     {
         name = "Skull";
 
+        maxHealth = 25;
         health = 25;
 
         coverage = 18f;
@@ -150,6 +160,7 @@ internal class Brain : RWBodyPart
     {
         name = "Brain";
 
+        maxHealth = 10;
         health = 10;
 
         coverage = 80f;
@@ -173,6 +184,7 @@ internal class Eye : RWBodyPart
     {
         name = "Eye";
 
+        maxHealth = 10;
         health = 10;
 
         quantity = 2;

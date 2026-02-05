@@ -22,7 +22,6 @@ public class RWInjury
 
         if (damage == 99f)
         {
-            healingDifficulty = new RWHealingDifficulty(true);
             return;
         }
 
@@ -50,4 +49,12 @@ public class RWInjury
     public float tendQuality;
 
     public float infectionTimer;
+}
+
+public class Destroyed : RWInjury
+{
+    public Destroyed(RWPlayerHealthState state, RWBodyPart part, float damage, string damageType, string attackerName) : base(state, part, damage, damageType, attackerName)
+    {
+
+    }
 }

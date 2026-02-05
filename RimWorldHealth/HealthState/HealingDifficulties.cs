@@ -8,12 +8,9 @@ namespace ShadowOfRimWorldHealth
 {
     public class RWHealingDifficulty
     {
-        public RWHealingDifficulty(bool destroyed = false) 
+        public RWHealingDifficulty() 
         {
-            if (destroyed)
-            {
-                return;
-            }
+
         }
 
         public string name = "Misc";

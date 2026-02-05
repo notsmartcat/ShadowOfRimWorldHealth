@@ -31,21 +31,21 @@ internal class CreatureHooks
 
         for (int i = 0; i < state.bodyParts.Count; i++)
         {
-            if (state.bodyParts[i].connectedBodyChunks.Contains(hitChunk.index))
+            if (state.bodyParts[i].connectedBodyChunks.Contains(hitChunk.index) && !IsDestroyed(state.bodyParts[i]))
             {
                 list.Add(state.bodyParts[i]);
 
-                Debug.Log("possible hit Bodyparts is = " + state.bodyParts[i].name);
+                Debug.Log("possible hit Bodypart is = " + state.bodyParts[i].name);
             }
         }
 
         if (list.Count > 1)
         {
-            Debug.Log("More then 1 possible Bodychunk!");
+            Debug.Log("More then 1 possible BodyPart!");
 
             float chance = 0;
 
-            for (int i = 0;i < list.Count;i++)
+            for (int i = 0; i < list.Count; i++)
             {
                 chance += list[i].coverage;
             }
@@ -78,13 +78,13 @@ internal class CreatureHooks
 
         if (list.Count > 0)
         {
-            while (true) 
+            while (true && list[0] is not Neck) 
             {
                 RWBodyPart focusedBodyPart = list[0];
 
                 for (int i = 0; i < state.bodyParts.Count; i++)
                 {
-                    if (state.bodyParts[i].subPartOf == list[0].name)
+                    if (!IsDestroyed(state.bodyParts[i]) && state.bodyParts[i].subPartOf == list[0].name)
                     {
                         Debug.Log("Adding Subpart of " + list[0].name + " with the name " + state.bodyParts[i].name);
                         list.Add(state.bodyParts[i]);
@@ -136,7 +136,14 @@ internal class CreatureHooks
             {
                 Debug.Log("Bodypart hit is " + list[0]);
 
-                state.Damage(type.ToString(), damage * 10, list[0]);
+                string attackerName = "";
+
+                if (source != null && source.owner != null)
+                {
+                    attackerName = source.owner.ToString();
+                }
+
+                state.Damage(type.ToString(), damage * 10, list[0], attackerName);
             }
         }
     }

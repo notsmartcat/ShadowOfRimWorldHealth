@@ -48,6 +48,7 @@ public class RWPlayerHealthState : PlayerState
         List<RWBodyPart> bodyParts = new(3) {
                 new UpperTorso(this),
                 new LowerTorso(this),
+                new Neck(this),
                 new Head(this),
                 new Skull(this),
                 new Brain(this),
@@ -88,19 +89,35 @@ public class RWPlayerHealthState : PlayerState
     {
         for (int i = 0; i < bodyParts.Count; i++)
         {
-            float health = bodyParts[i].health;
+            if (bodyParts[i].injuries.Count == 0)
+            {
+                continue;
+            }
+
+            bodyParts[i].health = bodyParts[i].maxHealth;
 
             for (int j = 0; j < bodyParts[i].injuries.Count; j++)
             {
+                if (bodyParts[i].injuries[j] is Destroyed)
+                {
+                    bodyParts[i].health = 0;
+                    break;
+                }
 
+                bodyParts[i].health -= bodyParts[i].injuries[j].damage;
+
+                if ((bodyParts[i].health > 0 && bodyParts[i].health < 1) || bodyParts[i].deathEffect == "" && bodyParts[i].health < 1)
+                {
+                    bodyParts[i].health = 1;
+                }
             }
+
+            bodyParts[i].efficiency = Mathf.Floor(bodyParts[i].health / bodyParts[i].maxHealth * 100);
         }
     }
 
-    public void Damage(string damageType, float damage, RWBodyPart bodyPart)
+    public void Damage(string damageType, float damage, RWBodyPart bodyPart, string attackerName = "")
     {
-        bool trye = true;
-
         RWBodyPart focusedBodyPart = bodyPart;
 
         float health = focusedBodyPart.health;
@@ -110,17 +127,18 @@ public class RWPlayerHealthState : PlayerState
 
         Debug.Log(focusedBodyPart.name + " was hit for " + damage);
 
-        if (focusedBodyPart.health < 0f)
+        if (health < 0f)
         {
-            DestroyBodyPart();
-            extraDamage = focusedBodyPart.health * -1;
+            if(focusedBodyPart.deathEffect != "")
+                DestroyBodyPart();
+            extraDamage = health * -1;
         }
         else
         {
-            focusedBodyPart.injuries.Add(new RWInjury(this, focusedBodyPart, 99f, damageType, ""));
+            focusedBodyPart.injuries.Add(new RWInjury(this, focusedBodyPart, damage, damageType, attackerName));
         }
 
-        while (trye)
+        while (true)
         {
             if (focusedBodyPart.isInternal && focusedBodyPart.subPartOf != "")
             {
@@ -130,20 +148,21 @@ public class RWPlayerHealthState : PlayerState
                     {
                         focusedBodyPart = bodyParts[i];
 
-                        focusedBodyPart.health -= (damage + extraDamage);
+                        health = focusedBodyPart.health;
+                        health -= damage + extraDamage;
 
-                        Debug.Log(focusedBodyPart.name + " was hit for " + damage + " damage and " + extraDamage + " extraDamage now it's health is " + focusedBodyPart.health);
+                        Debug.Log(focusedBodyPart.name + " was hit for " + damage + " damage and " + extraDamage + " extraDamage now it's health is " + health);
 
                         extraDamage = 0f;
 
-                        if (focusedBodyPart.health < 0f)
+                        if (health < 0f)
                         {
                             DestroyBodyPart();
-                            extraDamage = focusedBodyPart.health * -1;
+                            extraDamage = health * -1;
                         }
                         else
                         {
-                            focusedBodyPart.injuries.Add(new RWInjury(this, focusedBodyPart, 99f, damageType, ""));
+                            focusedBodyPart.injuries.Add(new RWInjury(this, focusedBodyPart, damage, damageType, attackerName));
                         }
 
                         break;
@@ -152,53 +171,64 @@ public class RWPlayerHealthState : PlayerState
             }
             else
             {
-                trye = false;
+                break;
             }
         }
 
         void DestroyBodyPart()
         {
-            switch (focusedBodyPart.deathEffect)
+            if (focusedBodyPart.deathEffect == "Destroy" || focusedBodyPart.deathEffect == "Death" || focusedBodyPart.deathEffect == "CutInHalf" || focusedBodyPart.deathEffect == "Decapitation" || focusedBodyPart.deathEffect == "")
             {
-                case "Destroy":
-                    List<RWBodyPart> subParts = new();
+                List<RWBodyPart> subParts = new()
+                {
+                    focusedBodyPart
+                };
 
-                    RWBodyPart focusedSubBodyPart = focusedBodyPart;
+                List<RWBodyPart> subPartsRestricted = new();
 
-                    while (true)
+                Debug.Log("Destroying body part = " + focusedBodyPart.name);
+
+                while (true)
+                {
+                    bool newBodyParts = false;
+
+                    for (int i = 0; i < bodyParts.Count; i++)
                     {
-                        for (int i = 0; i < bodyParts.Count; i++)
+                        for (int j = 0; j < subParts.Count; j++)
                         {
-                            if (bodyParts[i].name == focusedSubBodyPart.subPartOf)
+                            if (!subParts.Contains(bodyParts[i]) && !subPartsRestricted.Contains(bodyParts[i]) && bodyParts[i].subPartOf == subParts[j].name)
                             {
+                                if (subParts[j].injuries.Count == 1)
+                                {
+                                    if (subParts[j].injuries[0] is Destroyed)
+                                    {
+                                        Debug.Log("Tried to destroy subBody part = " + subParts[j].name + " but it was already destroyed");
+
+                                        subPartsRestricted.Add(bodyParts[i]);
+                                        continue;
+                                    }
+                                }
+
+                                Debug.Log("Destroying subBody part = " + bodyParts[i].name);
+
+                                newBodyParts = true;
                                 subParts.Add(bodyParts[i]);
-                                focusedSubBodyPart = bodyParts[i];
-                                break;
-                            }
-                            else
-                            {
-                                focusedSubBodyPart = null;
                             }
                         }
 
-                        if (focusedSubBodyPart == null)
-                        {
-                            break;
-                        }
                     }
 
-                    for (int i = 0; i < subParts.Count; i++)
+                    if (!newBodyParts)
                     {
-                        bodyParts.Remove(subParts[i]);
+                        break;
                     }
+                }
 
-                    focusedBodyPart.coverage = 0f;
-
-                    focusedSubBodyPart.injuries.Clear();
-
-                    focusedSubBodyPart.injuries.Add(new RWInjury(this, focusedSubBodyPart, 99f, damageType, ""));
-
-                    break;
+                for (int j = 0; j < subParts.Count; j++)
+                {
+                    subParts[j].injuries.Clear();
+                    subParts[j].injuries.Add(new Destroyed(this, subParts[j], 0f, damageType, attackerName));
+                }
             }
         }
     }
