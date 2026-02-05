@@ -106,11 +106,16 @@ public class HealthTab : HudPart
                     if (healthTabBodyParts[j].bodyPart == state.bodyParts[i])
                     {
                         alreadyExists = true;
+
+                        if (isSubPartDestroyed(healthTabBodyParts[j].bodyPart))
+                        {
+                            healthTabBodyParts[j].slatedForDeletion = true;
+                        }
                         break;
                     }
                 }
 
-                if (!alreadyExists)
+                if (!alreadyExists && !isSubPartDestroyed(state.bodyParts[i]))
                 {
                     HealthTabBodyPart part = new( this, state.bodyParts[i]);
 
@@ -212,6 +217,22 @@ public class HealthTab : HudPart
         else
         {
             verticalOnce = false;
+        }
+
+        bool isSubPartDestroyed(RWBodyPart self)
+        {
+            if (self.injuries.Count == 1 && self.injuries[0] is Destroyed && self.subPartOf != "")
+            {
+                for (int i = 0; i < state.bodyParts.Count; i++)
+                {
+                    if (state.bodyParts[i].name == self.subPartOf && state.bodyParts[i] is not UpperTorso && state.bodyParts[i] is not LowerTorso && state.bodyParts[i].injuries.Count == 1 && state.bodyParts[i].injuries[0] is Destroyed)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
     }
 
@@ -864,7 +885,7 @@ public class HealthTabBodyPart
                 {
                     usedAfflictions.Add(CombinedAfflictionName(bodyPart, j));
 
-                    afflictionNames[i].text = bodyPart.injuries[j].healingDifficulty.name + (bodyPart.injuries[j].attackerName != "" ? " (" + bodyPart.injuries[j].attackerName + ") " : "") + (dic.Count > 1 ? " x" + dic.Count : "");
+                    afflictionNames[i].text = (bodyPart.injuries[j] is Destroyed ? bodyPart.isInternal ? bodyPart.injuries[j].healingDifficulty.destroyedOut : bodyPart.injuries[j].healingDifficulty.destroyed : bodyPart.injuries[j].healingDifficulty.name) + (bodyPart.injuries[j].attackerName != "" ? " (" + bodyPart.injuries[j].attackerName + ") " : "") + (dic.Count > 1 ? " x" + dic.Count : "");
 
                     afflictionIcons[i].color = bodyPart.injuries[j].isTended ? Color.white : bodyPart.injuries[j].isBleeding ? Color.red : Color.blue;
 
