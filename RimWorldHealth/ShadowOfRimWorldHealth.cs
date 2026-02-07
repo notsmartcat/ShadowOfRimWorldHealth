@@ -61,8 +61,6 @@ public class RimWorldHealth : BaseUnityPlugin
         healthTab = new HealthTab(hud, abstractPlayer);
 
         self.hud.AddPart(healthTab);
-
-        Debug.Log("HealthTab for arena Created");
     }
 
     void HUDInitSinglePlayerHud(On.HUD.HUD.orig_InitSinglePlayerHud orig, HUD.HUD self, RoomCamera cam)
@@ -72,22 +70,18 @@ public class RimWorldHealth : BaseUnityPlugin
         healthTab = new HealthTab(self, (self.owner as Creature).abstractCreature);
 
         self.AddPart(healthTab);
-
-        Debug.Log("HealthTab Created");
     }
 
     void PlayerUpdate(On.Player.orig_Update orig, Player self, bool eu)
     {
         orig(self, eu);
 
-        if (self.State is not RWPlayerHealthState state)
+        if (self.State is RWPlayerHealthState state)
         {
-            return;
+            state.Update();
         }
 
-        state.Update();
-
-        if (!self.Consious)
+        if (self.Stunned && !self.dead)
         {
             return;
         }
@@ -108,6 +102,6 @@ public class RimWorldHealth : BaseUnityPlugin
 
     public static bool IsDestroyed(RWBodyPart self)
     {
-        return self.injuries.Count != 0 && self.injuries[0] is Destroyed;
+        return self.afflictions.Count != 0 && self.afflictions[0] is RWDestroyed;
     }
 }

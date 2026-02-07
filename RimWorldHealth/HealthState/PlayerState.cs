@@ -52,7 +52,9 @@ public class RWPlayerHealthState : PlayerState
                 new Head(this),
                 new Skull(this),
                 new Brain(this),
-                new Eye(this)
+                new Eye(this),
+                new Ribcage(this),
+                new Heart(this)
             };
 
         for (int i = 0; i < bodyParts.Count; i++)
@@ -87,36 +89,163 @@ public class RWPlayerHealthState : PlayerState
 
     public void Update()
     {
+        bloodLossPerCycle = 0;
+
+        pain = 0;
+        consciousness = 100;
+        moving = 100;
+        manipulation = 100;
+        talking = 100;
+        eating = 100;
+        sight = 100;
+        hearing = 100;
+        breathing = 100;
+        bloodFiltration = 100;
+        bloodPumping = 100;
+        digestion = 100;
+
+        if (healingRate > 0)
+        {
+            healingRate--;
+        }
+
+        bool heal = healingRate <= 0;
+
+        if (heal)
+        {
+            healingRate = healingRateTics;
+        }
+
+        List<RWInjury> healList = new();
+
+        float brainEfficiency = 100;
+
         for (int i = 0; i < bodyParts.Count; i++)
         {
-            if (bodyParts[i].injuries.Count == 0)
+            if (bodyParts[i].afflictions.Count == 0)
             {
                 continue;
             }
 
             bodyParts[i].health = bodyParts[i].maxHealth;
 
-            for (int j = 0; j < bodyParts[i].injuries.Count; j++)
+            for (int j = 0; j < bodyParts[i].afflictions.Count; j++)
             {
-                if (bodyParts[i].injuries[j] is Destroyed)
+                if (bodyParts[i].afflictions[j] is RWDestroyed destroyed)
                 {
                     bodyParts[i].health = 0;
+
+                    bloodLossPerCycle += destroyed.isBleeding ? destroyed.healingDifficulty.bleeding * bodySizeFactor * BloodLossMultiplier(bodyParts[i]) : 0;
                     break;
                 }
 
-                bodyParts[i].health -= bodyParts[i].injuries[j].damage;
-
-                if ((bodyParts[i].health > 0 && bodyParts[i].health < 1) || bodyParts[i].deathEffect == "" && bodyParts[i].health < 1)
+                if (bodyParts[i].afflictions[j] is not RWInjury injury)
                 {
-                    bodyParts[i].health = 1;
+                    return;
+                }
+
+                bodyParts[i].health -= injury.damage;
+
+                bodyParts[i].afflictions[j].pain = injury.damage * injury.healingDifficulty.pain / bodySizeFactor;
+
+                pain += bodyParts[i].afflictions[j].pain;
+
+                bloodLossPerCycle += injury.isBleeding ? injury.healingDifficulty.bleeding * injury.damage * bodySizeFactor * BloodLossMultiplier(bodyParts[i]) : 0;
+
+                if (heal)
+                {
+                    healList.Add(injury);
                 }
             }
 
-            bodyParts[i].efficiency = Mathf.Floor(bodyParts[i].health / bodyParts[i].maxHealth * 100);
+            bodyParts[i].efficiency = Mathf.Max(0, Mathf.Floor(bodyParts[i].health / bodyParts[i].maxHealth * 100));
+
+            if ((bodyParts[i].health > 0 && bodyParts[i].health < 1) || bodyParts[i].deathEffect == "" && bodyParts[i].health < 1)
+            {
+                bodyParts[i].health = 1;
+            }
+            else if (bodyParts[i] is UpperTorso && bodyParts[i].health <= 0)
+            {
+                bodyParts[i].health = 0;
+            }
+
+            if (bodyParts[i] is Brain)
+            {
+                brainEfficiency = bodyParts[i].efficiency;
+            }
+        }
+
+        if (healList.Count > 0)
+        {
+            RWInjury injury = healList[Random.Range(0, healList.Count)];
+
+            float healRate = 8;
+
+            if (injury.isTended)
+            {
+                healRate += 4;
+
+                healRate += Mathf.Floor(injury.tendQuality) * 0.08f;
+            }
+
+            injury.damage -= healRate * 0.1f;
+
+            if (injury.damage <= 0)
+            {
+                injury.healingDifficulty = null;
+                injury.part.afflictions.Remove(injury);
+            }
+        }
+
+        consciousness = brainEfficiency * (1 - Mathf.Clamp((pain/100 - 0.1f) * 4 / 9, 0, 0.4f)) * (1 - 0.2f * (1 - bloodPumping/100)) *(1 - 0.2f * (1 - breathing/100)) *(1 - 0.1f * (1 - bloodFiltration/100));
+
+        if (bloodLossPerCycle == 0 && bloodLoss > 0)
+        {
+            bloodLoss -= cycleLength / 33.3f;
+        } //Replenishes 33.3% of blood per cycle if not bleeding
+
+        if (bloodLoss >= 60)
+        {
+            consciousness -= 40;
+
+            consciousness = Mathf.Min(consciousness, 10);
+        }
+        else if(bloodLoss >= 45)
+        {
+            consciousness -= 40;
+        }
+        else if (bloodLoss >= 30)
+        {
+            consciousness -= 20;
+        }
+        else if (bloodLoss >= 15)
+        {
+            consciousness -= 10;
+        }
+
+        moving *= Mathf.Min(1, consciousness / 100);
+        manipulation *= consciousness / 100;
+        talking *= consciousness / 100;
+        eating *= consciousness / 100;
+
+        static int BloodLossMultiplier(RWBodyPart part)
+        {
+            int multiplier = 1;
+
+            if (part is Neck)
+            {
+                multiplier = 3;
+            }
+            else if (part is Heart)
+            {
+                multiplier = 5;
+            }
+
+            return multiplier;
         }
     }
 
-    public void Damage(string damageType, float damage, RWBodyPart bodyPart, string attackerName = "")
+    public void Damage(RWDamageType damageType, float damage, RWBodyPart bodyPart, string attackerName = "")
     {
         RWBodyPart focusedBodyPart = bodyPart;
 
@@ -125,17 +254,18 @@ public class RWPlayerHealthState : PlayerState
 
         float extraDamage = 0f;
 
-        Debug.Log(focusedBodyPart.name + " was hit for " + damage);
+        Debug.Log(focusedBodyPart.name + " was hit for " + damage + " damage, it's health is now " + health);
 
         if (health < 0f)
         {
-            if(focusedBodyPart.deathEffect != "")
+            if(focusedBodyPart.deathEffect != "" && focusedBodyPart is not UpperTorso)
                 DestroyBodyPart();
+
             extraDamage = health * -1;
         }
         else
         {
-            focusedBodyPart.injuries.Add(new RWInjury(this, focusedBodyPart, damage, damageType, attackerName));
+            focusedBodyPart.afflictions.Add(new RWInjury(this, focusedBodyPart, damage, damageType, attackerName));
         }
 
         while (true)
@@ -162,7 +292,7 @@ public class RWPlayerHealthState : PlayerState
                         }
                         else
                         {
-                            focusedBodyPart.injuries.Add(new RWInjury(this, focusedBodyPart, damage, damageType, attackerName));
+                            focusedBodyPart.afflictions.Add(new RWInjury(this, focusedBodyPart, damage, damageType, attackerName));
                         }
 
                         break;
@@ -186,7 +316,7 @@ public class RWPlayerHealthState : PlayerState
 
                 List<RWBodyPart> subPartsRestricted = new();
 
-                Debug.Log("Destroying body part = " + focusedBodyPart.name);
+                Debug.Log("Destroying body part " + focusedBodyPart.name);
 
                 while (true)
                 {
@@ -198,9 +328,9 @@ public class RWPlayerHealthState : PlayerState
                         {
                             if (!subParts.Contains(bodyParts[i]) && !subPartsRestricted.Contains(bodyParts[i]) && bodyParts[i].subPartOf == subParts[j].name)
                             {
-                                if (subParts[j].injuries.Count == 1)
+                                if (subParts[j].afflictions.Count == 1)
                                 {
-                                    if (subParts[j].injuries[0] is Destroyed)
+                                    if (subParts[j].afflictions[0] is RWDestroyed)
                                     {
                                         Debug.Log("Tried to destroy subBody part = " + subParts[j].name + " but it was already destroyed");
 
@@ -226,8 +356,8 @@ public class RWPlayerHealthState : PlayerState
 
                 for (int j = 0; j < subParts.Count; j++)
                 {
-                    subParts[j].injuries.Clear();
-                    subParts[j].injuries.Add(new Destroyed(this, subParts[j], 0f, damageType, attackerName));
+                    subParts[j].afflictions.Clear();
+                    subParts[j].afflictions.Add(new RWDestroyed(this, subParts[j], 0f, damageType, attackerName));
                 }
             }
         }
@@ -237,9 +367,10 @@ public class RWPlayerHealthState : PlayerState
 
     public float maxHealth;
 
-    public float bodySizeFactor;
+    public float bodySizeFactor = 1;
 
     public float bloodLoss = 0;
+    public float bloodLossPerCycle = 0;
 
     public float pain = 0;
 
@@ -264,4 +395,9 @@ public class RWPlayerHealthState : PlayerState
     public float bloodPumping = 100;
 
     public float digestion = 100;
+
+    public float cycleLength = 13;
+
+    const int healingRateTics = 600;
+    int healingRate = healingRateTics;
 }

@@ -1,27 +1,45 @@
 ﻿using System.Collections.Generic;
 
-namespace ShadowOfRimWorldHealth
+namespace ShadowOfRimWorldHealth;
+
+public class RWDamageType
 {
-    internal class DamageType
+    public RWDamageType() 
     {
-        public DamageType() 
-        {
 
-        }
+    }
 
-        string name;
+    public string name;
 
-        string label;
+    public string label;
 
-        string category;
+    public string category;
 
-        string armourCategory;
+    public string armourCategory;
 
-        int overkillMin;
-        int overkillMax;
+    public int overkillMin;
+    public int overkillMax;
 
-        List<string> headiffs = new();
+    public List<string> headiffs = new();
+}
 
-        bool outerLayers;
+public class RWBomb : RWDamageType
+{
+    public RWBomb() : base()
+    {
+        name = "Bomb";
+
+        label = "bomb";
+
+        category = "Misc";
+
+        armourCategory = "Sharp";
+
+        overkillMin = 0;
+        overkillMax = 70;
+
+        headiffs.Add("Shredded");
+        headiffs.Add("");
+        headiffs.Add("Crack");
     }
 }

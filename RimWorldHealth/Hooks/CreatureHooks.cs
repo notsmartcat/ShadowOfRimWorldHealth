@@ -35,7 +35,7 @@ internal class CreatureHooks
             {
                 list.Add(state.bodyParts[i]);
 
-                Debug.Log("possible hit Bodypart is = " + state.bodyParts[i].name);
+                Debug.Log("Bodychunk " + hitChunk.index + " possible hit Bodypart is = " + state.bodyParts[i].name);
             }
         }
 
@@ -134,7 +134,7 @@ internal class CreatureHooks
 
             if (list.Count > 0)
             {
-                Debug.Log("Bodypart hit is " + list[0]);
+                Debug.Log("Bodypart hit is " + list[0].name);
 
                 string attackerName = "";
 
@@ -143,7 +143,18 @@ internal class CreatureHooks
                     attackerName = source.owner.ToString();
                 }
 
-                state.Damage(type.ToString(), damage * 10, list[0], attackerName);
+                RWDamageType damageType;
+
+                if (type == Creature.DamageType.Explosion)
+                {
+                    damageType = new RWBomb();
+                }
+                else
+                {
+                    damageType = new RWDamageType();
+                }
+
+                state.Damage(damageType, damage * 10, list[0], attackerName);
             }
         }
     }

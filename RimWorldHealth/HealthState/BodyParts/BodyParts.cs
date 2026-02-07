@@ -51,7 +51,7 @@ public class RWBodyPart
 
     public float efficiency = 100;
 
-    public List<RWInjury> injuries = new();
+    public List<RWAffliction> afflictions = new();
 }
 
 internal class UpperTorso : RWBodyPart
@@ -60,8 +60,8 @@ internal class UpperTorso : RWBodyPart
     {
         name = "Upper Torso";
 
-        maxHealth = 20;
-        health = 20;
+        maxHealth = 40;
+        health = 40;
 
         connectedBodyChunks.Add(1);
 
@@ -76,8 +76,8 @@ internal class LowerTorso : RWBodyPart
     {
         name = "Lower Torso";
 
-        maxHealth = 20;
-        health = 20;
+        maxHealth = 40;
+        health = 40;
 
         connectedBodyChunks.Add(2);
 
@@ -195,5 +195,52 @@ internal class Eye : RWBodyPart
 
         group.Add("Eyes");
         group.Add("FullHead");
+    }
+}
+
+internal class Ribcage : RWBodyPart
+{
+    public Ribcage(RWPlayerHealthState state) : base(state)
+    {
+        name = "Ribcage";
+
+        maxHealth = 30;
+        health = 30;
+
+        coverage = 3.6f;
+
+        subPartOf = "Upper Torso";
+
+        isInternal = true;
+
+        isSolid = true;
+
+        group.Add("upperTorso");
+
+        capacity.Add("Breathing");
+
+        deathEffect = "";
+    }
+}
+internal class Heart : RWBodyPart
+{
+    public Heart(RWPlayerHealthState state) : base(state)
+    {
+        name = "Heart";
+
+        maxHealth = 15;
+        health = 15;
+
+        coverage = 2f;
+
+        subPartOf = "upperTorso"; //Might make this Ribcage
+
+        isInternal = true;
+
+        group.Add("upperTorso");
+
+        capacity.Add("Blood Pumping");
+
+        deathEffect = "Death";
     }
 }

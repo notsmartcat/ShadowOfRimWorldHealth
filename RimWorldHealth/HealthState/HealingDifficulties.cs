@@ -39,6 +39,40 @@ namespace ShadowOfRimWorldHealth
 
         public string innerTreated = "Sutured";
 
-        public string soldiTreated = "Set";
+        public string solidTreated = "Set";
+    }
+
+    public class RWShredded : RWHealingDifficulty
+    {
+        public RWShredded() : base()
+        {
+            name = "Shredded";
+
+            infectionChance = 20;
+
+            destroyed = "Torn off";
+            destroyedOut = "Torn out";
+        }
+    }
+    public class RWCrack : RWHealingDifficulty
+    {
+        public RWCrack() : base()
+        {
+            name = "Crack";
+
+            pain = 1;
+
+            bleeding = 0;
+
+            infectionChance = 0;
+
+            becomeOldChance = 0;
+
+            destroyed = "Shattered";
+            destroyedOut = "Shattered";
+
+            treated = "Set";
+            innerTreated = "Set";
+        }
     }
 }

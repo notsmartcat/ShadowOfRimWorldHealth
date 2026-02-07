@@ -106,16 +106,12 @@ internal class ILHooks
     {
         abstractCreature.state = new RWPlayerHealthState(abstractCreature, list[l].playerNumber, self.characterStats_Mplayer[0].name, false);
 
-        Debug.Log("Successfully created Player State!!!");
-
         return true;
     }
 
     public static bool ArenaGameSessionSpawnPlayers2(ArenaGameSession self, AbstractCreature abstractCreature, List<ArenaSitting.ArenaPlayer> list, int l)
     {
         abstractCreature.state = new RWPlayerHealthState(abstractCreature, list[l].playerNumber, new SlugcatStats.Name(ExtEnum<SlugcatStats.Name>.values.GetEntry(list[l].playerNumber), false), false);
-
-        Debug.Log("Successfully created Player State2!!!");
 
         return true;
     }
