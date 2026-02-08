@@ -58,6 +58,8 @@ public class HealthTab : HudPart
         }
 
         hud.fContainers[1].AddChild(selectedSprite);
+
+        healthTabWholeBody = new HealthTabWholeBody(this);
     }
 
     public Vector2 DrawPos(float timeStacker)
@@ -69,10 +71,12 @@ public class HealthTab : HudPart
     {
         base.Update();
 
-        if (owner == null || owner.realizedCreature == null || !owner.realizedCreature.Consious)
+        if (owner == null || owner.realizedCreature == null || !owner.realizedCreature.dead && owner.realizedCreature.Stunned)
         {
             visible = false;
         }
+
+        healthTabWholeBody.Update();
 
         for (int i = healthTabBodyParts.Count - 1; i >= 0; i--)
         {
@@ -134,6 +138,11 @@ public class HealthTab : HudPart
             }
         }
 
+        if (state.bloodLoss >= 15)
+        {
+
+        }
+
         if (input.x != 0)
         {
             if (!horizontalOnce && healthTabBodyParts.Count > 0)
@@ -159,7 +168,8 @@ public class HealthTab : HudPart
 
                     if (maxVertical == -1)
                     {
-                        maxVertical = 0;
+                        maxVertical = healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0;
+
                         for (int i = 0; i < healthTabBodyParts.Count; i++)
                         {
                             maxVertical += healthTabBodyParts[i].combinedAfflictions.Count;
@@ -203,7 +213,7 @@ public class HealthTab : HudPart
 
                 if (maxVertical == -1)
                 {
-                    maxVertical = 0;
+                    maxVertical = healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0;
                     for (int i = 0; i < healthTabBodyParts.Count; i++)
                     {
                         maxVertical += healthTabBodyParts[i].combinedAfflictions.Count;
@@ -280,6 +290,8 @@ public class HealthTab : HudPart
         bloodLossPerCycle.isVisible = visible && state.bloodLossPerCycle >= 1;
 
         selectedSprite.isVisible = visible && selected;
+
+        healthTabWholeBody.Draw(timeStacker);
 
         for (int i = healthTabBodyParts.Count - 1; i >= 0; i--)
         {
@@ -485,42 +497,63 @@ public class HealthTab : HudPart
 
             selectedSprite.y -= 11.6f;
 
-            int maxVertical = 0;
-            int lastMaxVertical = 0;
-
-            int selectedBodyPart = 0;
-
-            for (int i = 0; i < healthTabBodyParts.Count; i++)
+            if (healthTabWholeBody.active && selectedVertical < healthTabWholeBody.afflictionNumber)
             {
-                maxVertical += healthTabBodyParts[i].combinedAfflictions.Count;
+                selectedSprite.y += 10 * healthTabWholeBody.afflictionNumber / 2;
 
-                if (lastMaxVertical <= selectedVertical && maxVertical > selectedVertical)
+                selectedSprite.MoveInFrontOfOtherNode(healthTabWholeBody.background);
+
+                if (selectedTimer <= 0)
                 {
-                    selectedBodyPart = i;
-                    break;
-                }
-                else
-                {
-                    lastMaxVertical = maxVertical;
+                    WholeBodyAfflictionSelector();
                 }
             }
-
-            for (int i = 0; i < selectedBodyPart; i++)
+            else
             {
-                selectedSprite.y -= 10 + healthTabBodyParts[i].afflictionNumber * 10;
-            }
+                int maxVertical = 0;
+                int lastMaxVertical = 0;
 
-            selectedSprite.y += 10 * healthTabBodyParts[selectedBodyPart].combinedAfflictions.Count / 2;
+                int selectedBodyPart = 0;
+
+                for (int i = 0; i < healthTabBodyParts.Count; i++)
+                {
+                    maxVertical += healthTabBodyParts[i].combinedAfflictions.Count;
+
+                    Debug.Log(selectedVertical - (healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0));
+
+                    if (lastMaxVertical <= selectedVertical - (healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0) && maxVertical > selectedVertical - (healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0))
+                    {
+                        selectedBodyPart = i;
+                        break;
+                    }
+                    else
+                    {
+                        lastMaxVertical = maxVertical;
+                    }
+                }
+
+                if (healthTabWholeBody.active)
+                {
+                    selectedSprite.y -= 10 + healthTabWholeBody.afflictionNumber * 10;
+                }
+
+                for (int i = 0; i < selectedBodyPart; i++)
+                {
+                    selectedSprite.y -= 10 + healthTabBodyParts[i].afflictionNumber * 10;
+                }
+
+                selectedSprite.y += 10 * healthTabBodyParts[selectedBodyPart].combinedAfflictions.Count / 2;
+
+                selectedSprite.MoveInFrontOfOtherNode(healthTabBodyParts[selectedBodyPart].background);
+
+                if (selectedTimer <= 0)
+                {
+                    AfflictionSelector(selectedBodyPart);
+                }
+            }
 
             selectedSprite.scaleX = 200;
             selectedSprite.scaleY = 20;
-
-            selectedSprite.MoveInFrontOfOtherNode(healthTabBodyParts[selectedBodyPart].background);
-
-            if (selectedTimer <= 0)
-            {
-                AfflictionSelector(selectedBodyPart);
-            }
         }
 
         void StatSelector()
@@ -595,10 +628,7 @@ public class HealthTab : HudPart
                     healthTabInfos[0].name.text = "Pain: ";
                     healthTabInfos[0].nameStatus.text = " " + value + "%";
 
-                    for (int i = 0; i < healthTabInfos[0].stats.Count; i++)
-                    {
-                        healthTabInfos[0].stats[i].text = "";
-                    }
+                    healthTabInfos[0].description.text = "";
                 }
 
             }
@@ -626,15 +656,15 @@ public class HealthTab : HudPart
                 {
                     stringValue = "OK";
                 }
-                else if (value >= 80)
+                else if (value >= 40)
                 {
                     stringValue = "Weakened";
                 }
-                else if (value >= 40)
+                else if (value >= 15)
                 {
                     stringValue = "Poor";
                 }
-                else if (value >= 15)
+                else if (value >= 1)
                 {
                     stringValue = "Very Poor";
                 }
@@ -648,14 +678,87 @@ public class HealthTab : HudPart
                     healthTabInfos[0].name.text = statValueNamesNames[selectedVertical] + ": ";
                     healthTabInfos[0].nameStatus.text = stringValue;
 
-                    for (int i = 0; i < healthTabInfos[0].stats.Count; i++)
-                    {
-                        healthTabInfos[0].stats[i].text = "";
-                    }
+                    healthTabInfos[0].description.text = "";
                 }
             }
         }
 
+        void WholeBodyAfflictionSelector()
+        {
+            if (healthTabInfos.Count == 0)
+            {
+                healthTabInfos.Add(new(this));
+            }
+            else if (healthTabInfos.Count > 1)
+            {
+                for (int i = 1; i < healthTabInfos.Count; i--)
+                {
+                    healthTabInfos[i].slatedForDeletion = true;
+                }
+            }
+
+            if (healthTabWholeBody.bloodLossVisible && selectedVertical == 0)
+            {
+                healthTabInfos[0].name.text = healthTabWholeBody.bloodLossName.text + ": ";
+                healthTabInfos[0].nameStatus.text = Mathf.Floor(state.bloodLoss) + "%";
+
+                healthTabInfos[0].description.text = "A reduction in the normal blood volume.\n" +
+                    "Minor blood loss has relatively mild\n" +
+                    "effects, but when blood loss becomes\n" +
+                    "severe, oxygen transport becomes badly\n" +
+                    "impaired and the victim loses the ability\n" +
+                    "to move. Extreme blood loss leads to\n" +
+                    "death.\n" +
+                    "\n" +
+                    "Blood loss naturally recovers over time\n" +
+                    "as the body slowly regenerates its blood\n" +
+                    "supply.";
+
+                if (state.bloodLoss >= 100)
+                {
+
+                }
+                else if (state.bloodLoss >= 60)
+                {
+                    healthTabInfos[0].description.text += "\n" +
+                        "\n" +
+                        "  - Consciousness: -40%";
+
+                    healthTabInfos[0].description.text += "\n" +
+                        "  - Consciousness: Max 10%";
+                }
+                else if (state.bloodLoss >= 45)
+                {
+                    healthTabInfos[0].description.text += "\n" +
+                        "\n" +
+                        "  - Consciousness: -40%";
+                }
+                else if (state.bloodLoss >= 30)
+                {
+                    healthTabInfos[0].description.text += "\n" +
+                        "\n" +
+                        "  - Consciousness: -20%";
+                }
+                else if (state.bloodLoss >= 15)
+                {
+                    healthTabInfos[0].description.text += "\n" +
+                        "\n" +
+                        "  - Consciousness: -10%";
+                }
+            }
+            else
+            {
+                healthTabInfos[0].name.text = healthTabWholeBody.afflictionNames[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)].text + ": ";
+
+                if (state.wholeBodyAfflictions[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)] is RWDisease disease)
+                {
+                    healthTabInfos[0].nameStatus.text = Mathf.Floor(disease.severity) + "%";
+                }
+
+                healthTabInfos[0].description.text = "";
+            }
+
+        }
         void AfflictionSelector(int selectedBodyPart)
         {
             if (healthTabInfos.Count == 0)
@@ -665,15 +768,10 @@ public class HealthTab : HudPart
 
             if (healthTabInfos.Count > 0)
             {
-                healthTabInfos[0].name.text = healthTabBodyParts[selectedBodyPart].bodyPart.name + ":";
-                healthTabInfos[0].nameStatus.text = " " + Mathf.Floor(healthTabBodyParts[selectedBodyPart].bodyPart.health) + " / " + healthTabBodyParts[selectedBodyPart].bodyPart.maxHealth;
+                healthTabInfos[0].name.text = healthTabBodyParts[selectedBodyPart].bodyPart.name + ": ";
+                healthTabInfos[0].nameStatus.text = Mathf.Floor(healthTabBodyParts[selectedBodyPart].bodyPart.health) + " / " + healthTabBodyParts[selectedBodyPart].bodyPart.maxHealth;
 
-                for (int i = 1; i < healthTabInfos[0].stats.Count; i++)
-                {
-                    healthTabInfos[0].stats[i].text = "";
-                }
-
-                healthTabInfos[0].stats[0].text = "Efficiency: " + healthTabBodyParts[selectedBodyPart].bodyPart.efficiency + "%";
+                healthTabInfos[0].description.text = "Efficiency: " + healthTabBodyParts[selectedBodyPart].bodyPart.efficiency + "%";
             }
         }
     }
@@ -681,6 +779,8 @@ public class HealthTab : HudPart
     public override void ClearSprites()
     {
         base.ClearSprites();
+
+        healthTabWholeBody.ClearSprites();
 
         for (int i = 0; i < healthTabBodyParts.Count; i++)
         {
@@ -752,6 +852,8 @@ public class HealthTab : HudPart
 
     public bool visible = false;
 
+    public HealthTabWholeBody healthTabWholeBody;
+
     public List<HealthTabBodyPart> healthTabBodyParts = new();
 
     public List<HealthTabInfo> healthTabInfos = new();
@@ -814,6 +916,11 @@ public class HealthTabBodyPart
 
         pos.y += 120;
 
+        if (owner.healthTabWholeBody.active)
+        {
+            pos.y -= 10 + owner.healthTabWholeBody.afflictionNumber * 10;
+        }
+
         for (int i = 0; i < owner.healthTabBodyParts.IndexOf(this); i++)
         {
             pos.y -= 10 + owner.healthTabBodyParts[i].afflictionNumber * 10;
@@ -855,7 +962,7 @@ public class HealthTabBodyPart
     }
     public void Draw(float timeStacker)
     {
-        background.isVisible = owner.visible && owner.healthTabBodyParts.IndexOf(this) % 2 == 0;
+        background.isVisible = owner.visible && owner.healthTabWholeBody.active ? !(owner.healthTabBodyParts.IndexOf(this) % 2 == 0) : owner.healthTabBodyParts.IndexOf(this) % 2 == 0;
 
         bodyPartName.isVisible = owner.visible;
 
@@ -983,6 +1090,195 @@ public class HealthTabBodyPart
     public bool slatedForDeletion = false;
 }
 
+public class HealthTabWholeBody
+{
+    public HealthTabWholeBody(HealthTab owner)
+    {
+        this.owner = owner;
+
+        background = new("pixel", true);
+
+        name = new(Custom.GetFont(), "Whole Body")
+        {
+            alignment = FLabelAlignment.Left,
+            anchorX = 0f,
+            anchorY = 1f,
+            color = Color.grey
+        };
+
+        afflictionIcons = new FSprite[6];
+
+        bloodLossName = new(Custom.GetFont(), "Blood loss ()")
+        {
+            alignment = FLabelAlignment.Left,
+            anchorX = 0f,
+            anchorY = 1f,
+            color = Color.white
+        };
+
+        for (int i = 0; i < 6; i++)
+        {
+            afflictionNames.Add(new FLabel(Custom.GetFont(), "StatName"));
+            afflictionNames[i].alignment = FLabelAlignment.Left;
+            afflictionNames[i].anchorX = 0f;
+            afflictionNames[i].anchorY = 1f;
+
+            afflictionIcons[i] = new FSprite("pixel", true);
+        }
+
+        owner.hud.fContainers[1].AddChild(background);
+        owner.hud.fContainers[1].AddChild(name);
+
+        owner.hud.fContainers[1].AddChild(bloodLossName);
+
+        for (int i = 0; i < 6; i++)
+        {
+            owner.hud.fContainers[1].AddChild(afflictionNames[i]);
+            owner.hud.fContainers[1].AddChild(afflictionIcons[i]);
+        }
+    }
+
+    public Vector2 DrawPos(float timeStacker)
+    {
+        Vector2 pos = owner.DrawPos(timeStacker);
+
+        pos.y += 120;
+
+        return pos;
+    }
+
+    public void Update()
+    {
+        bloodLossVisible = owner.state != null && owner.state.bloodLoss >= 15;
+
+        afflictionNumber = bloodLossVisible ? 1 : 0 + (owner.state != null ? owner.state.wholeBodyAfflictions.Count : 0);
+
+        active = afflictionNumber > 0;
+    }
+    public void Draw(float timeStacker)
+    {
+        background.isVisible = owner.visible && active;
+
+        name.isVisible = owner.visible && active;
+
+        bloodLossName.isVisible = owner.visible && active && bloodLossVisible;
+
+        for (int i = 0; i < afflictionNames.Count; i++)
+        {
+            afflictionNames[i].isVisible = owner.visible && active && afflictionNumber - (bloodLossVisible ? 1 : 0) > i;
+        }
+
+        for (int i = 0; i < afflictionIcons.Length; i++)
+        {
+            afflictionIcons[i].isVisible = owner.visible && active && afflictionNumber - (bloodLossVisible ? 1 : 0) > i;
+        }
+
+        if (owner == null || owner.state == null || !owner.visible || !active)
+        {
+            return;
+        }
+
+        if (background.isVisible)
+        {
+            background.x = DrawPos(timeStacker).x;
+            background.y = DrawPos(timeStacker).y - 2 - (10 * afflictionNumber) / 2;
+            background.scaleX = 340;
+            background.scaleY = 10 + (10 * afflictionNumber);
+            background.color = Color.black;
+        }
+
+        name.x = DrawPos(timeStacker).x - 165;
+        name.y = DrawPos(timeStacker).y;
+
+        if (bloodLossVisible)
+        {
+            bloodLossName.x = DrawPos(timeStacker).x - 25;
+            bloodLossName.y = DrawPos(timeStacker).y;
+
+            if (owner.state.bloodLoss >= 60)
+            {
+                bloodLossName.text = "Blood loss (extreme)";
+            }
+            else if (owner.state.bloodLoss >= 45)
+            {
+                bloodLossName.text = "Blood loss (severe)";
+            }
+            else if (owner.state.bloodLoss >= 30)
+            {
+                bloodLossName.text = "Blood loss (moderate)";
+            }
+            else if (owner.state.bloodLoss >= 15)
+            {
+                bloodLossName.text = "Blood loss (minor)";
+            }
+            else
+            {
+                bloodLossName.text = "Blood loss ()";
+            }
+
+            bloodLossName.color = Color.white;
+        }
+
+        for (int i = 0; i < afflictionNumber - (bloodLossVisible ? 1 : 0); i++)
+        {
+            afflictionNames[i].x = DrawPos(timeStacker).x - 25;
+            afflictionNames[i].y = DrawPos(timeStacker).y - (bloodLossVisible ? 15 : 0 + (15 * i));
+            afflictionNames[i].color = Color.yellow;
+
+            afflictionIcons[i].x = DrawPos(timeStacker).x + 160;
+            afflictionIcons[i].y = DrawPos(timeStacker).y - 7 - (bloodLossVisible ? 10 : 0 + (10 * i)) / 2;
+            afflictionIcons[i].scale = 14;
+
+            if (owner.state.wholeBodyAfflictions[i] is RWDisease diesease)
+            {
+                string text;
+
+                text = diesease.name;
+
+                afflictionNames[i].text = text;
+
+                afflictionIcons[i].color = diesease.isTended ? Color.white : Color.grey;
+            }
+        }
+    }
+
+    public void ClearSprites()
+    {
+        background.RemoveFromContainer();
+
+        name.RemoveFromContainer();
+
+        bloodLossName.RemoveFromContainer();
+
+        for (int i = 0; i < afflictionNames.Count; i++)
+        {
+            afflictionNames[i].RemoveFromContainer();
+        }
+
+        for (int i = 0; i < afflictionIcons.Length; i++)
+        {
+            afflictionIcons[i].RemoveFromContainer();
+        }
+    }
+
+    public HealthTab owner;
+
+    public FSprite background;
+
+    public FLabel name;
+
+    public FLabel bloodLossName;
+
+    public List<FLabel> afflictionNames = new();
+    public FSprite[] afflictionIcons;
+
+    public int afflictionNumber = 0;
+
+    public bool bloodLossVisible = false;
+
+    public bool active = false;
+}
+
 public class HealthTabInfo
 {
     public HealthTabInfo(HealthTab owner)
@@ -1005,13 +1301,12 @@ public class HealthTabInfo
             anchorY = 1f
         };
 
-        for (int i = 0; i < 6; i++)
+        description = new(Custom.GetFont(), "")
         {
-            stats.Add(new FLabel(Custom.GetFont(), "StatName"));
-            stats[i].alignment = FLabelAlignment.Left;
-            stats[i].anchorX = 0f;
-            stats[i].anchorY = 1f;
-        }
+            alignment = FLabelAlignment.Left,
+            anchorX = 0f,
+            anchorY = 1f
+        };
 
         for (int k = 0; k < backgrounds.Length; k++)
         {
@@ -1022,10 +1317,7 @@ public class HealthTabInfo
         owner.hud.fContainers[1].AddChild(name);
         owner.hud.fContainers[1].AddChild(nameStatus);
 
-        for (int i = 0; i < stats.Count; i++)
-        {
-            owner.hud.fContainers[1].AddChild(stats[i]);
-        }
+        owner.hud.fContainers[1].AddChild(description);
     }
 
     public Vector2 DrawPos(float timeStacker)
@@ -1062,19 +1354,21 @@ public class HealthTabInfo
         name.isVisible = visible;
         nameStatus.isVisible = visible;
 
-        for (int i = 0; i < stats.Count; i++)
-        {
-            stats[i].isVisible = visible && stats[i].text != "";
-        }
+        description.isVisible = visible && description.text != "";
+
 
         if (!visible)
         {
             return;
         }
 
-        if (owner.healthTabInfos.IndexOf(this) != 0)
+        if (owner.healthTabInfos.IndexOf(this) != 0 || owner.healthTabInfos.IndexOf(this) == 0 && owner.healthTabWholeBody.active && owner.selectedVertical < owner.healthTabWholeBody.afflictionNumber)
         {
             name.color = Color.yellow;
+        }
+        else
+        {
+            name.color = Color.white;
         }
 
         name.x = DrawPos(timeStacker).x;
@@ -1098,34 +1392,44 @@ public class HealthTabInfo
             y = name.textRect.height
         };
 
-        if (owner.selectedHorizontal == 0)
+        if (owner.selectedHorizontal == 1)
         {
-
-        }
-        else if (owner.selectedHorizontal == 1)
-        {
-            if (owner.healthTabInfos.IndexOf(this) == 0)
+            if (owner.healthTabInfos.IndexOf(this) == 0 && owner.healthTabWholeBody.active && owner.selectedVertical < owner.healthTabWholeBody.afflictionNumber)
             {
-                stats[0].x = name.x;
-                stats[0].y = name.y - name.textRect.height;
-
-                if (backgroundPos.x < stats[0].textRect.width)
+                if (owner.healthTabWholeBody.bloodLossVisible && owner.selectedVertical == 0)
                 {
-                    backgroundPos.x = stats[0].textRect.width;
+                    description.x = name.x;
+                    description.y = name.y - (name.textRect.height * 2);
+
+                    backgroundPos.y -= name.textRect.height;
+                    backgroundSize.y += name.textRect.height;
                 }
-
-                backgroundPos.y -= stats[0].textRect.height;
-
-                if (backgroundSize.x < stats[0].textRect.width)
+                else
                 {
-                    backgroundSize.x = stats[0].textRect.width;
+                    description.x = name.x;
+                    description.y = name.y - name.textRect.height;
                 }
-
-                backgroundSize.y += stats[0].textRect.height;
             }
+            else if (owner.healthTabInfos.IndexOf(this) == 0)
+            {
+                description.x = name.x;
+                description.y = name.y - name.textRect.height;
+            }
+
+            if (backgroundPos.x < description.textRect.width)
+            {
+                backgroundPos.x = description.textRect.width;
+            }
+
+            backgroundPos.y -= description.textRect.height;
+
+            if (backgroundSize.x < description.textRect.width)
+            {
+                backgroundSize.x = description.textRect.width;
+            }
+
+            backgroundSize.y += description.textRect.height;
         }
-
-
 
         backgrounds[0].x = DrawPos(timeStacker).x + (backgroundPos.x / 2);
         backgrounds[0].y = DrawPos(timeStacker).y + (backgroundPos.y / 2) - 15;
@@ -1151,10 +1455,7 @@ public class HealthTabInfo
 
         name.RemoveFromContainer();
 
-        for (int i = 0; i < stats.Count; i++)
-        {
-            stats[i].RemoveFromContainer();
-        }
+        description.RemoveFromContainer();
     }
 
     public HealthTab owner;
@@ -1164,7 +1465,7 @@ public class HealthTabInfo
     public FLabel name;
     public FLabel nameStatus;
 
-    public List<FLabel> stats = new();
+    public FLabel description;
 
     public bool slatedForDeletion = false;
 }

@@ -135,7 +135,7 @@ public class RWPlayerHealthState : PlayerState
                 {
                     bodyParts[i].health = 0;
 
-                    bloodLossPerCycle += destroyed.isBleeding ? destroyed.healingDifficulty.bleeding * bodySizeFactor * BloodLossMultiplier(bodyParts[i]) : 0;
+                    bloodLossPerCycle += !bodyParts[i].isInternal && destroyed.isBleeding ? 12 * bodySizeFactor * BloodLossMultiplier(bodyParts[i]) : 0;
                     break;
                 }
 
@@ -203,6 +203,13 @@ public class RWPlayerHealthState : PlayerState
         {
             bloodLoss -= cycleLength / 33.3f;
         } //Replenishes 33.3% of blood per cycle if not bleeding
+        else if(bloodLossPerCycle > 0)
+        {
+            bloodLoss += cycleLength / bloodLossPerCycle;
+        }
+        //bloodLoss math definetly is not right, will need to fix
+
+        bloodLoss = Mathf.Clamp(bloodLoss, 0, 100);
 
         if (bloodLoss >= 60)
         {
@@ -222,6 +229,10 @@ public class RWPlayerHealthState : PlayerState
         {
             consciousness -= 10;
         }
+
+        //Debug.Log(bloodLoss);
+
+        consciousness = Mathf.Max(consciousness, 0);
 
         moving *= Mathf.Min(1, consciousness / 100);
         manipulation *= consciousness / 100;
@@ -364,6 +375,8 @@ public class RWPlayerHealthState : PlayerState
     }
 
     public List<RWBodyPart> bodyParts = new();
+
+    public List<RWAffliction> wholeBodyAfflictions = new();
 
     public float maxHealth;
 
