@@ -235,6 +235,133 @@ public class HealthTab : HudPart
             verticalOnce = false;
         }
 
+        if (treating)
+        {
+            treatTime--;
+
+            if (treatTime <= 0)
+            {
+                treatedAffliction.isTended = true;
+                treating = false;
+
+                if (treatedAffliction is RWInjury injury)
+                {
+                    injury.isBleeding = false;
+                }
+
+                treatedAffliction = null;
+            }
+
+            return;
+        }
+
+        if (input.pckp)
+        {
+            RWDestroyed destroyedAffliction = null;
+
+            RWInjury bleeding = null;
+            RWDisease diseaseAffliction = null;
+            RWInjury untendedAffliction = null;
+
+            for (int i = 0; i < state.bodyParts.Count; i++)
+            {
+                for (int j = 0; j < state.bodyParts[i].afflictions.Count; j++)
+                {
+                    if (!state.bodyParts[i].afflictions[j].isTended)
+                    {
+                        if (state.bodyParts[i].afflictions[j] is RWDestroyed destroyed && destroyed.isBleeding)
+                        {
+                            destroyedAffliction = destroyed;
+                            break;
+                        }
+                        else if (state.bodyParts[i].afflictions[j] is RWInjury injury)
+                        {
+                            if (injury.isBleeding)
+                            {
+                                if (bleeding != null)
+                                {
+                                    if (injury.healingDifficulty.bleeding * injury.damage > bleeding.healingDifficulty.bleeding * bleeding.damage)
+                                    {
+                                        bleeding = injury;
+                                    }
+                                }
+                                else bleeding ??= injury;
+                            }
+                            else
+                            {
+                                if (untendedAffliction != null)
+                                {
+                                    if (injury.damage > untendedAffliction.damage)
+                                    {
+                                        untendedAffliction = injury;
+                                    }
+                                }
+                                else untendedAffliction ??= injury;
+
+                            }
+                        }
+                        else if (state.bodyParts[i].afflictions[j] is RWDisease disease)
+                        {
+                            if (diseaseAffliction != null)
+                            {
+                                if (disease.severity > diseaseAffliction.severity)
+                                {
+                                    diseaseAffliction = disease;
+                                }
+                            }
+                            else diseaseAffliction ??= disease;
+                        }
+                        else
+                        {
+                            Debug.Log("Error affliction " + state.bodyParts[i].afflictions[j] + " does not belong to any tendable check");
+                        }
+                    }
+                }
+            }
+
+            if (destroyedAffliction == null && bleeding == null)
+            {
+                for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
+                {
+                    if (state.wholeBodyAfflictions[i] is RWDisease disease)
+                    {
+                        if (diseaseAffliction != null)
+                        {
+                            if (disease.severity > diseaseAffliction.severity)
+                            {
+                                diseaseAffliction = disease;
+                            }
+                        }
+                        else diseaseAffliction ??= disease;
+                    }
+                }
+            }
+
+            if (destroyedAffliction != null)
+            {
+                startTreating(destroyedAffliction);
+            }
+            else if (bleeding != null)
+            {
+                startTreating(bleeding);
+            }
+            else if (diseaseAffliction != null)
+            {
+                startTreating(diseaseAffliction);
+            }
+            else if (untendedAffliction != null)
+            {
+                startTreating(untendedAffliction);
+            }
+        }
+
+        void startTreating(RWAffliction affliction)
+        {
+            treatedAffliction = affliction;
+            treating = true;
+            treatTime = Mathf.FloorToInt(treatTimeBase / (Mathf.Max(state.manipulation / 100, 0.1f)));
+        }
+
         bool isSubPartDestroyed(RWBodyPart self)
         {
             if (self.afflictions.Count == 1 && self.afflictions[0] is RWDestroyed && self.subPartOf != "")
@@ -518,8 +645,6 @@ public class HealthTab : HudPart
                 for (int i = 0; i < healthTabBodyParts.Count; i++)
                 {
                     maxVertical += healthTabBodyParts[i].combinedAfflictions.Count;
-
-                    Debug.Log(selectedVertical - (healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0));
 
                     if (lastMaxVertical <= selectedVertical - (healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0) && maxVertical > selectedVertical - (healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0))
                     {
@@ -823,6 +948,9 @@ public class HealthTab : HudPart
         verticalOnce = true;
 
         selectedTimer = selectedTimerMax;
+
+        treating = false;
+        treatedAffliction = null;
     }
     void TriggeredOff()
     {
@@ -832,6 +960,9 @@ public class HealthTab : HudPart
         selectedVertical = 0;
 
         selectedTimer = selectedTimerMax;
+
+        treating = false;
+        treatedAffliction = null;
     }
 
     public RWPlayerHealthState state;
@@ -867,6 +998,13 @@ public class HealthTab : HudPart
 
     bool horizontalOnce = true;
     bool verticalOnce = true;
+
+    bool treating = false;
+
+    int treatTime = 10;
+    readonly float treatTimeBase = 100;
+
+    RWAffliction treatedAffliction = null;
 
     public Player.InputPackage input;
 }
@@ -918,12 +1056,13 @@ public class HealthTabBodyPart
 
         if (owner.healthTabWholeBody.active)
         {
-            pos.y -= 10 + owner.healthTabWholeBody.afflictionNumber * 10;
+            pos.y -= 10 + owner.healthTabWholeBody.afflictionNumber * 10 + (owner.healthTabWholeBody.afflictionNumber - 1) * 5;
+
         }
 
         for (int i = 0; i < owner.healthTabBodyParts.IndexOf(this); i++)
         {
-            pos.y -= 10 + owner.healthTabBodyParts[i].afflictionNumber * 10;
+            pos.y -= 10 + owner.healthTabBodyParts[i].afflictionNumber * 10 + (owner.healthTabBodyParts[i].afflictionNumber - 1) * 5;
         }
 
         return pos;
@@ -1003,7 +1142,7 @@ public class HealthTabBodyPart
             afflictionNames[i].color = Color.white;
 
             afflictionIcons[i].x = DrawPos(timeStacker).x + 160;
-            afflictionIcons[i].y = DrawPos(timeStacker).y - 7 - (10 * i) / 2;
+            afflictionIcons[i].y = DrawPos(timeStacker).y - 7 - 15 * i;
             afflictionIcons[i].scale = 14;
 
             for (int j = 0; j < bodyPart.afflictions.Count; j++)

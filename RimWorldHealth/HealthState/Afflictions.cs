@@ -99,7 +99,13 @@ public class RWDestroyed : RWInjury
     public RWDestroyed(RWPlayerHealthState state, RWBodyPart part, float damage, RWDamageType damageType, string attackerName) : base(state, part, damage, damageType, attackerName)
     {
         if (isBleeding)
+        {
             healingDifficulty.bleeding = 12;
+        }
+        else
+        {
+            isTended = true;
+        }
     }
 }
 public class RWDisease : RWAffliction

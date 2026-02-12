@@ -150,7 +150,7 @@ public class RWPlayerHealthState : PlayerState
 
                 pain += bodyParts[i].afflictions[j].pain;
 
-                bloodLossPerCycle += injury.isBleeding ? injury.healingDifficulty.bleeding * injury.damage * bodySizeFactor * BloodLossMultiplier(bodyParts[i]) : 0;
+                bloodLossPerCycle += injury.isBleeding && !injury.isTended ? injury.healingDifficulty.bleeding * injury.damage * bodySizeFactor * BloodLossMultiplier(bodyParts[i]) : 0;
 
                 if (heal)
                 {
@@ -203,7 +203,7 @@ public class RWPlayerHealthState : PlayerState
         {
             bloodLoss -= cycleLength / 33.3f;
         } //Replenishes 33.3% of blood per cycle if not bleeding
-        else if(bloodLossPerCycle > 0)
+        else if (bloodLossPerCycle > 0)
         {
             bloodLoss += cycleLength / bloodLossPerCycle;
         }
