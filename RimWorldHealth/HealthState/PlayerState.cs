@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
+using static ShadowOfRimWorldHealth.RimWorldHealth;
+
 namespace ShadowOfRimWorldHealth;
 
 public class RWHealthState : CreatureState
@@ -202,10 +204,7 @@ public class RWPlayerHealthState : PlayerState
                 {
                     for (int j = 0; j < bodyParts[i].quantity/2; j++)
                     {
-                        if (finger == null)
-                        {
-                            finger = new Finger(this);
-                        }
+                        finger ??= new Finger(this);
 
                         if (j == 0)
                         {
@@ -263,10 +262,7 @@ public class RWPlayerHealthState : PlayerState
                 {
                     for (int j = 0; j < bodyParts[i].quantity / 2; j++)
                     {
-                        if (toe == null)
-                        {
-                            toe = new Toe(this);
-                        }
+                        toe ??= new Toe(this);
 
                         if (j == 0)
                         {
@@ -363,12 +359,17 @@ public class RWPlayerHealthState : PlayerState
 
         for (int i = 0; i < bodyParts.Count; i++)
         {
-            if (bodyParts[i].afflictions.Count == 0)
+            bodyParts[i].health = bodyParts[i].maxHealth;
+
+            if (bodyParts[i].afflictions.Count == 0 || isSubPartDestroyed(this, bodyParts[i]))
             {
+                if (bodyParts[i] is Brain)
+                {
+                    brainEfficiency = bodyParts[i].efficiency;
+                }
+
                 continue;
             }
-
-            bodyParts[i].health = bodyParts[i].maxHealth;
 
             for (int j = 0; j < bodyParts[i].afflictions.Count; j++)
             {
@@ -376,7 +377,10 @@ public class RWPlayerHealthState : PlayerState
                 {
                     bodyParts[i].health = 0;
 
-                    bloodLossPerCycle += !bodyParts[i].isInternal && destroyed.isBleeding ? 12 * bodySizeFactor * BloodLossMultiplier(bodyParts[i]) : 0;
+                    bodyParts[i].efficiency = 0;
+
+                    bloodLossPerCycle += destroyed.isBleeding && !destroyed.isTended ? destroyed.healingDifficulty.bleeding * bodySizeFactor * BloodLossMultiplier(bodyParts[i]) : 0;
+
                     break;
                 }
 
@@ -404,10 +408,12 @@ public class RWPlayerHealthState : PlayerState
             if ((bodyParts[i].health > 0 && bodyParts[i].health < 1) || bodyParts[i].deathEffect == "" && bodyParts[i].health < 1)
             {
                 bodyParts[i].health = 1;
+                bodyParts[i].efficiency = 0;
             }
             else if (bodyParts[i] is UpperTorso && bodyParts[i].health <= 0)
             {
                 bodyParts[i].health = 0;
+                bodyParts[i].efficiency = 0;
             }
 
             if (bodyParts[i] is Brain)
@@ -471,8 +477,8 @@ public class RWPlayerHealthState : PlayerState
             consciousness -= 0.1f;
         }
 
-        Debug.Log("bloodlossPerCycle " + bloodLossPerCycle);
-        Debug.Log("bloodloss " + bloodLoss);
+        //Debug.Log("bloodlossPerCycle " + bloodLossPerCycle);
+        //Debug.Log("bloodloss " + bloodLoss);
 
         consciousness = Mathf.Max(consciousness, 0);
 

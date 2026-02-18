@@ -104,4 +104,20 @@ public class RimWorldHealth : BaseUnityPlugin
     {
         return self.afflictions.Count != 0 && self.afflictions[0] is RWDestroyed;
     }
+
+    public static bool isSubPartDestroyed(RWPlayerHealthState state, RWBodyPart self)
+    {
+        if (self.afflictions.Count == 1 && self.afflictions[0] is RWDestroyed && self.subPartOf != "")
+        {
+            for (int i = 0; i < state.bodyParts.Count; i++)
+            {
+                if (state.bodyParts[i].name == self.subPartOf && state.bodyParts[i] is not UpperTorso && state.bodyParts[i] is not LowerTorso && state.bodyParts[i].afflictions.Count == 1 && state.bodyParts[i].afflictions[0] is RWDestroyed)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 }

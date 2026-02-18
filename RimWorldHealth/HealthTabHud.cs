@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using RWCustom;
-using Unity.Mathematics;
+
+using static ShadowOfRimWorldHealth.RimWorldHealth;
 
 namespace ShadowOfRimWorldHealth;
 
@@ -42,6 +43,7 @@ public class HealthTab : HudPart
         }
 
         selectedSprite = new FSprite("pixel", true);
+        treatedSprite = new FSprite("pixel", true);
 
         for (int k = 0; k < sprites.Length; k++)
         {
@@ -59,6 +61,7 @@ public class HealthTab : HudPart
         }
 
         hud.fContainers[1].AddChild(selectedSprite);
+        hud.fContainers[1].AddChild(treatedSprite);
 
         healthTabWholeBody = new HealthTabWholeBody(this);
     }
@@ -120,7 +123,7 @@ public class HealthTab : HudPart
                     {
                         alreadyExists = true;
 
-                        if (isSubPartDestroyed(healthTabBodyParts[j].bodyPart))
+                        if (isSubPartDestroyed(state, healthTabBodyParts[j].bodyPart))
                         {
                             healthTabBodyParts[j].slatedForDeletion = true;
                         }
@@ -128,7 +131,7 @@ public class HealthTab : HudPart
                     }
                 }
 
-                if (!alreadyExists && !isSubPartDestroyed(state.bodyParts[i]))
+                if (!alreadyExists && !isSubPartDestroyed(state, state.bodyParts[i]))
                 {
                     HealthTabBodyPart part = new( this, state.bodyParts[i]);
 
@@ -137,11 +140,6 @@ public class HealthTab : HudPart
                     part.Update();
                 }
             }
-        }
-
-        if (state.bloodLoss >= 0.15f)
-        {
-
         }
 
         if (input.x != 0)
@@ -240,7 +238,11 @@ public class HealthTab : HudPart
         {
             treatTime--;
 
-            if (treatTime <= 0)
+            if (treatedAffliction == null)
+            {
+                treating = false;
+            }
+            else if (treatTime <= 0)
             {
                 treatedAffliction.isTended = true;
                 treating = false;
@@ -249,6 +251,8 @@ public class HealthTab : HudPart
                 {
                     injury.isBleeding = false;
                 }
+
+                Debug.Log("Treated Affliction " + treatedAffliction + " has been treated");
 
                 treatedAffliction = null;
             }
@@ -270,7 +274,7 @@ public class HealthTab : HudPart
                 {
                     if (!state.bodyParts[i].afflictions[j].isTended)
                     {
-                        if (state.bodyParts[i].afflictions[j] is RWDestroyed destroyed && destroyed.isBleeding)
+                        if (state.bodyParts[i].afflictions[j] is RWDestroyed destroyed && !isSubPartDestroyed(state, state.bodyParts[i]) && destroyed.isBleeding)
                         {
                             destroyedAffliction = destroyed;
                             break;
@@ -360,23 +364,8 @@ public class HealthTab : HudPart
         {
             treatedAffliction = affliction;
             treating = true;
-            treatTime = Mathf.FloorToInt(treatTimeBase / (Mathf.Max(state.manipulation / 100, 0.1f)));
-        }
-
-        bool isSubPartDestroyed(RWBodyPart self)
-        {
-            if (self.afflictions.Count == 1 && self.afflictions[0] is RWDestroyed && self.subPartOf != "")
-            {
-                for (int i = 0; i < state.bodyParts.Count; i++)
-                {
-                    if (state.bodyParts[i].name == self.subPartOf && state.bodyParts[i] is not UpperTorso && state.bodyParts[i] is not LowerTorso && state.bodyParts[i].afflictions.Count == 1 && state.bodyParts[i].afflictions[0] is RWDestroyed)
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+            treatTime = Mathf.Floor(treatTimeBase / Mathf.Max(state.manipulation, 0.1f));
+            treatTimeMax = treatTime;
         }
     }
 
@@ -419,6 +408,8 @@ public class HealthTab : HudPart
 
         selectedSprite.isVisible = visible && selected;
 
+        treatedSprite.isVisible = visible && treating;
+
         healthTabWholeBody.Draw(timeStacker);
 
         for (int i = healthTabBodyParts.Count - 1; i >= 0; i--)
@@ -456,7 +447,7 @@ public class HealthTab : HudPart
 
         if (bloodLossPerCycle.isVisible)
         {
-            float bloodLoss = state.cycleLength / ((state.bloodLossPerCycle / 100) + state.bloodLoss); //math is wrong, will fix when i figure out how
+            float bloodLoss = (state.cycleLength * (1 - state.bloodLoss)) / (state.bloodLossPerCycle / 100);
 
             string bloodLossTime = bloodLoss < 0 ? Mathf.Floor(bloodLoss * 10000) / 100 + (Mathf.Floor(bloodLoss * 10000) / 100 == 1 ? " second" : " seconds") : bloodLoss > 60 ? Mathf.Floor(bloodLoss / 60 * 10) / 10 + (Mathf.Floor(bloodLoss / 60 * 10) / 10 == 1 ? " hour" : " hours") : Mathf.Floor(bloodLoss * 10) / 10 + (Mathf.Floor(bloodLoss * 10) / 10 == 1 ? " minute" : " minutes");
 
@@ -589,6 +580,42 @@ public class HealthTab : HudPart
             }
         }
 
+        if (treatedSprite.isVisible && treatedAffliction != null)
+        {
+            treatedSprite.alpha = 0.6f;
+            treatedSprite.color = Color.magenta;
+
+            treatedSprite.scaleY = 20;
+
+            Debug.Log("treatTimeMax " + treatTimeMax);
+            Debug.Log("treatTime " + treatTime);
+
+            Debug.Log(1 - treatTime/ treatTimeMax);
+
+            treatedSprite.scaleX = Mathf.Lerp(0, 200, 1 - treatTime / treatTimeMax);
+
+            treatedSprite.x = Mathf.Lerp(DrawPos(timeStacker).x, DrawPos(timeStacker).x + 70, 1 - treatTime / treatTimeMax);
+
+            for (int i = 0; i < healthTabBodyParts.Count; i++)
+            {
+                if (healthTabBodyParts[i].bodyPart == treatedAffliction.part)
+                {
+                    for (int j = 0; j < healthTabBodyParts[i].combinedAfflictions.Count; j++)
+                    {
+                        if (healthTabBodyParts[i].combinedAfflictions.TryGetValue(healthTabBodyParts[i].CombinedAfflictionName(healthTabBodyParts[i].bodyPart, j), out List<RWAffliction> list) && list.Contains(treatedAffliction))
+                        {
+                            treatedSprite.y = healthTabBodyParts[i].DrawPos(timeStacker).y - 7 - 20 * j;
+
+                            treatedSprite.MoveInFrontOfOtherNode(healthTabBodyParts[i].background);
+
+                            Debug.Log("Treated Sprite bodypart is " + i + " and combinedAffliction is " + j);
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
         if (!selected)
         {
             return;
@@ -644,6 +671,7 @@ public class HealthTab : HudPart
                 int lastMaxVertical = 0;
 
                 int selectedBodyPart = 0;
+                int selectedAffliction = 0;
 
                 for (int i = 0; i < healthTabBodyParts.Count; i++)
                 {
@@ -652,6 +680,7 @@ public class HealthTab : HudPart
                     if (lastMaxVertical <= selectedVertical - (healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0) && maxVertical > selectedVertical - (healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0))
                     {
                         selectedBodyPart = i;
+                        selectedAffliction = selectedVertical - lastMaxVertical - healthTabWholeBody.afflictionNumber;
                         break;
                     }
                     else
@@ -660,17 +689,7 @@ public class HealthTab : HudPart
                     }
                 }
 
-                if (healthTabWholeBody.active)
-                {
-                    selectedSprite.y -= 10 + healthTabWholeBody.afflictionNumber * 10;
-                }
-
-                for (int i = 0; i < selectedBodyPart; i++)
-                {
-                    selectedSprite.y -= 10 + healthTabBodyParts[i].afflictionNumber * 10;
-                }
-
-                selectedSprite.y += 10 * healthTabBodyParts[selectedBodyPart].combinedAfflictions.Count / 2;
+                selectedSprite.y = healthTabBodyParts[selectedBodyPart].DrawPos(timeStacker).y - 7 - 20 * selectedAffliction;
 
                 selectedSprite.MoveInFrontOfOtherNode(healthTabBodyParts[selectedBodyPart].background);
 
@@ -940,6 +959,7 @@ public class HealthTab : HudPart
         }
 
         selectedSprite.RemoveFromContainer();
+        treatedSprite.RemoveFromContainer();
     }
 
     void TriggeredOn()
@@ -982,6 +1002,8 @@ public class HealthTab : HudPart
 
     public FSprite selectedSprite;
 
+    public FSprite treatedSprite;
+
     public List<string> statValueNamesNames;
 
     public AbstractCreature owner;
@@ -1006,8 +1028,9 @@ public class HealthTab : HudPart
 
     bool treating = false;
 
-    int treatTime = 10;
-    readonly float treatTimeBase = 100;
+    float treatTime = 10;
+    float treatTimeMax = 10;
+    readonly float treatTimeBase = 60;
 
     RWAffliction treatedAffliction = null;
 
@@ -1061,13 +1084,12 @@ public class HealthTabBodyPart
 
         if (owner.healthTabWholeBody.active)
         {
-            pos.y -= 10 + owner.healthTabWholeBody.afflictionNumber * 10 + (owner.healthTabWholeBody.afflictionNumber - 1) * 5;
-
+            pos.y -= 10 + (owner.healthTabWholeBody.afflictionNumber * 10) + ((owner.healthTabWholeBody.afflictionNumber - 1) * 10);
         }
 
         for (int i = 0; i < owner.healthTabBodyParts.IndexOf(this); i++)
         {
-            pos.y -= 10 + owner.healthTabBodyParts[i].afflictionNumber * 10 + (owner.healthTabBodyParts[i].afflictionNumber - 1) * 5;
+            pos.y -= 10 + (owner.healthTabBodyParts[i].afflictionNumber * 10) + ((owner.healthTabBodyParts[i].afflictionNumber - 1) * 10);
         }
 
         return pos;
@@ -1104,6 +1126,7 @@ public class HealthTabBodyPart
             slatedForDeletion = true;
         }
     }
+
     public void Draw(float timeStacker)
     {
         background.isVisible = owner.visible && owner.healthTabWholeBody.active ? !(owner.healthTabBodyParts.IndexOf(this) % 2 == 0) : owner.healthTabBodyParts.IndexOf(this) % 2 == 0;
@@ -1128,9 +1151,9 @@ public class HealthTabBodyPart
         if (background.isVisible)
         {
             background.x = DrawPos(timeStacker).x;
-            background.y = DrawPos(timeStacker).y - 2 - (10 * afflictionNumber)/2;
+            background.y = DrawPos(timeStacker).y - 2 - ((afflictionNumber > 1 ? 5f : 0) + (5 * afflictionNumber));
             background.scaleX = 340;
-            background.scaleY = 10 + (10 * afflictionNumber);
+            background.scaleY = 10 + ((afflictionNumber > 1 ? 10f : 0) + (10 * afflictionNumber));
             background.color = Color.black;
         }
 
@@ -1143,11 +1166,11 @@ public class HealthTabBodyPart
         for (int i = 0; i < combinedAfflictions.Count; i++)
         {
             afflictionNames[i].x = DrawPos(timeStacker).x - 25;
-            afflictionNames[i].y = DrawPos(timeStacker).y - 15 * i;
+            afflictionNames[i].y = DrawPos(timeStacker).y - 20 * i;
             afflictionNames[i].color = Color.white;
 
             afflictionIcons[i].x = DrawPos(timeStacker).x + 160;
-            afflictionIcons[i].y = DrawPos(timeStacker).y - 7 - 15 * i;
+            afflictionIcons[i].y = DrawPos(timeStacker).y - 7 - 20 * i;
             afflictionIcons[i].scale = 14;
 
             for (int j = 0; j < bodyPart.afflictions.Count; j++)
@@ -1200,7 +1223,7 @@ public class HealthTabBodyPart
         combinedAfflictions.Clear();
     }
 
-    string CombinedAfflictionName(RWBodyPart bodyPart, int i)
+    public string CombinedAfflictionName(RWBodyPart bodyPart, int i)
     {
         string name = "";
 

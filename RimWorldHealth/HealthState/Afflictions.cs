@@ -15,7 +15,7 @@ public class RWAffliction
 
     public float pain;
 
-    public bool isTended;
+    public bool isTended = false;
 
     public float tendQuality;
 }
@@ -39,7 +39,7 @@ public class RWInjury : RWAffliction
             healingDifficulty = new RWHealingDifficulty();
         }
 
-        if (part.isSolid || healingDifficulty.bleeding > 0)
+        if (part.isSolid || healingDifficulty.bleeding <= 0)
         {
             isBleeding = false;
         }
