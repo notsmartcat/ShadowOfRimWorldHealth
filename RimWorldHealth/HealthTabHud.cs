@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using RWCustom;
+using Unity.Mathematics;
 
 namespace ShadowOfRimWorldHealth;
 
@@ -138,7 +139,7 @@ public class HealthTab : HudPart
             }
         }
 
-        if (state.bloodLoss >= 15)
+        if (state.bloodLoss >= 0.15f)
         {
 
         }
@@ -414,7 +415,7 @@ public class HealthTab : HudPart
 
         statName.isVisible = visible;
 
-        bloodLossPerCycle.isVisible = visible && state.bloodLossPerCycle >= 1;
+        bloodLossPerCycle.isVisible = visible && state.bloodLossPerCycle >= 1 && state.bloodLoss < 1;
 
         selectedSprite.isVisible = visible && selected;
 
@@ -455,12 +456,14 @@ public class HealthTab : HudPart
 
         if (bloodLossPerCycle.isVisible)
         {
-            float bloodLoss = state.cycleLength / (state.bloodLossPerCycle / 100); //need to account for the blood already lost
+            float bloodLoss = state.cycleLength / ((state.bloodLossPerCycle / 100) + state.bloodLoss); //math is wrong, will fix when i figure out how
+
+            string bloodLossTime = bloodLoss < 0 ? Mathf.Floor(bloodLoss * 10000) / 100 + (Mathf.Floor(bloodLoss * 10000) / 100 == 1 ? " second" : " seconds") : bloodLoss > 60 ? Mathf.Floor(bloodLoss / 60 * 10) / 10 + (Mathf.Floor(bloodLoss / 60 * 10) / 10 == 1 ? " hour" : " hours") : Mathf.Floor(bloodLoss * 10) / 10 + (Mathf.Floor(bloodLoss * 10) / 10 == 1 ? " minute" : " minutes");
 
             bloodLossPerCycle.color = Color.white;
             bloodLossPerCycle.x = DrawPos(timeStacker).x - 165;
             bloodLossPerCycle.y = DrawPos(timeStacker).y - 105;
-            bloodLossPerCycle.text = "Bleeding: " + Mathf.Floor(state.bloodLossPerCycle) + "%/c (death in " + Mathf.Floor(bloodLoss) + " minutes)"; //if the time would be less then a minute change it to seconds
+            bloodLossPerCycle.text = "Bleeding: " + Mathf.Floor(state.bloodLossPerCycle) + "%/c (death in " + bloodLossTime + ")";
         }
 
         for (int i = 0; i < statValueNames.Count; i++)
@@ -486,61 +489,61 @@ public class HealthTab : HudPart
             switch (statValueNamesNames[i])
             {
                 case "Pain":
-                    value = Mathf.Floor(state.pain);
+                    value = state.pain;
                     break;
                 case "Consiousness":
-                    value = Mathf.Floor(state.consciousness);
+                    value = state.consciousness;
                     break;
                 case "Moving":
-                    value = Mathf.Floor(state.moving);
+                    value = state.moving;
                     break;
                 case "Manipulation":
-                    value = Mathf.Floor(state.manipulation);
+                    value = state.manipulation;
                     break;
                 case "Talking":
-                    value = Mathf.Floor(state.talking);
+                    value = state.talking;
                     break;
                 case "Eating":
-                    value = Mathf.Floor(state.eating);
+                    value = state.eating;
                     break;
                 case "Sight":
-                    value = Mathf.Floor(state.sight);
+                    value = state.sight;
                     break;
                 case "Hearing":
-                    value = Mathf.Floor(state.hearing);
+                    value = state.hearing;
                     break;
                 case "Breathing":
-                    value = Mathf.Floor(state.breathing);
+                    value = state.breathing;
                     break;
                 case "Blood filtrarion":
-                    value = Mathf.Floor(state.bloodFiltration);
+                    value = state.bloodFiltration;
                     break;
                 case "Blood pumping":
-                    value = Mathf.Floor(state.bloodPumping);
+                    value = state.bloodPumping;
                     break;
                 case "Digestion":
-                    value = Mathf.Floor(state.digestion);
+                    value = state.digestion;
                     break;
             }
 
             if (statValueNamesNames[i] == "Pain")
             {
-                if (value >= 80)
+                if (value >= 0.8f)
                 {
                     statValues[i].text = "Mind-shattering";
                     statValues[i].color = Color.red;
                 }
-                else if (value >= 40)
+                else if (value >= 0.4f)
                 {
                     statValues[i].text = "Intense";
                     statValues[i].color = Color.Lerp(Color.white, Color.black, 0.6f);
                 }
-                else if (value >= 15)
+                else if (value >= 0.15f)
                 {
                     statValues[i].text = "Serious";
                     statValues[i].color = Color.Lerp(Color.white, Color.black, 0.4f);
                 }
-                else if (value >= 1)
+                else if (value >= 0.01f)
                 {
                     statValues[i].text = "Minor";
                     statValues[i].color = Color.Lerp(Color.white, Color.black, 0.1f);
@@ -553,29 +556,29 @@ public class HealthTab : HudPart
             }
             else
             {
-                statValues[i].text = value + "%";
+                statValues[i].text = Mathf.Floor(value * 100) + "%";
 
-                if (value > 100)
+                if (value > 1)
                 {
                     statValues[i].color = Color.blue;
                 }
-                else if(value == 100)
+                else if(value == 1)
                 {
                     statValues[i].color = Color.green;
                 }
-                else if (value >= 80)
+                else if (value >= 0.8f)
                 {
                     statValues[i].color = Color.Lerp(Color.white, Color.black, 0.1f);
                 }
-                else if (value >= 40)
+                else if (value >= 0.4f)
                 {
                     statValues[i].color = Color.Lerp(Color.white, Color.black, 0.4f);
                 }
-                else if (value >= 15)
+                else if (value >= 0.15f)
                 {
                     statValues[i].color = Color.Lerp(Color.white, Color.black, 0.6f);
                 }
-                else if (value >= 1)
+                else if (value >= 0.01f)
                 {
                     statValues[i].color = Color.Lerp(Color.white, Color.black, 0.8f);
                 }
@@ -687,47 +690,47 @@ public class HealthTab : HudPart
 
             if (selectedVertical == 0)
             {
-                SetPainInfo(Mathf.Floor(state.pain));
+                SetPainInfo(state.pain);
             }
             else
             {
                 switch (statValueNamesNames[selectedVertical])
                 {
                     case "Pain":
-                        value = Mathf.Floor(state.pain);
+                        value = state.pain;
                         break;
                     case "Consiousness":
-                        value = Mathf.Floor(state.consciousness);
+                        value = state.consciousness;
                         break;
                     case "Moving":
-                        value = Mathf.Floor(state.moving);
+                        value = state.moving;
                         break;
                     case "Manipulation":
-                        value = Mathf.Floor(state.manipulation);
+                        value = state.manipulation;
                         break;
                     case "Talking":
-                        value = Mathf.Floor(state.talking);
+                        value = state.talking;
                         break;
                     case "Eating":
-                        value = Mathf.Floor(state.eating);
+                        value = state.eating;
                         break;
                     case "Sight":
-                        value = Mathf.Floor(state.sight);
+                        value = state.sight;
                         break;
                     case "Hearing":
-                        value = Mathf.Floor(state.hearing);
+                        value = state.hearing;
                         break;
                     case "Breathing":
-                        value = Mathf.Floor(state.breathing);
+                        value = state.breathing;
                         break;
                     case "Blood filtrarion":
-                        value = Mathf.Floor(state.bloodFiltration);
+                        value = state.bloodFiltration;
                         break;
                     case "Blood pumping":
-                        value = Mathf.Floor(state.bloodPumping);
+                        value = state.bloodPumping;
                         break;
                     case "Digestion":
-                        value = Mathf.Floor(state.digestion);
+                        value = state.digestion;
                         break;
                 }
 
@@ -751,7 +754,7 @@ public class HealthTab : HudPart
                 if (healthTabInfos.Count > 0)
                 {
                     healthTabInfos[0].name.text = "Pain: ";
-                    healthTabInfos[0].nameStatus.text = " " + value + "%";
+                    healthTabInfos[0].nameStatus.text = " " + Mathf.Clamp(Mathf.Floor(value * 100), 0, 100) + "%";
 
                     healthTabInfos[0].description.text = "";
                 }
@@ -773,23 +776,23 @@ public class HealthTab : HudPart
 
                 string stringValue;
 
-                if (value > 100)
+                if (value > 1)
                 {
                     stringValue = "Enhanced";
                 }
-                else if (value == 100)
+                else if (value == 1)
                 {
                     stringValue = "OK";
                 }
-                else if (value >= 40)
+                else if (value >= 0.4f)
                 {
                     stringValue = "Weakened";
                 }
-                else if (value >= 15)
+                else if (value >= 0.15f)
                 {
                     stringValue = "Poor";
                 }
-                else if (value >= 1)
+                else if (value >= 0.01f)
                 {
                     stringValue = "Very Poor";
                 }
@@ -825,7 +828,7 @@ public class HealthTab : HudPart
             if (healthTabWholeBody.bloodLossVisible && selectedVertical == 0)
             {
                 healthTabInfos[0].name.text = healthTabWholeBody.bloodLossName.text + ": ";
-                healthTabInfos[0].nameStatus.text = Mathf.Floor(state.bloodLoss) + "%";
+                healthTabInfos[0].nameStatus.text = Mathf.Floor(state.bloodLoss * 100) + "%";
 
                 healthTabInfos[0].description.text = "A reduction in the normal blood volume.\n" +
                     "Minor blood loss has relatively mild\n" +
@@ -839,11 +842,11 @@ public class HealthTab : HudPart
                     "as the body slowly regenerates its blood\n" +
                     "supply.";
 
-                if (state.bloodLoss >= 100)
+                if (state.bloodLoss >= 1)
                 {
 
                 }
-                else if (state.bloodLoss >= 60)
+                else if (state.bloodLoss >= 0.6f)
                 {
                     healthTabInfos[0].description.text += "\n" +
                         "\n" +
@@ -852,19 +855,19 @@ public class HealthTab : HudPart
                     healthTabInfos[0].description.text += "\n" +
                         "  - Consciousness: Max 10%";
                 }
-                else if (state.bloodLoss >= 45)
+                else if (state.bloodLoss >= 0.45f)
                 {
                     healthTabInfos[0].description.text += "\n" +
                         "\n" +
                         "  - Consciousness: -40%";
                 }
-                else if (state.bloodLoss >= 30)
+                else if (state.bloodLoss >= 0.3f)
                 {
                     healthTabInfos[0].description.text += "\n" +
                         "\n" +
                         "  - Consciousness: -20%";
                 }
-                else if (state.bloodLoss >= 15)
+                else if (state.bloodLoss >= 0.15f)
                 {
                     healthTabInfos[0].description.text += "\n" +
                         "\n" +
@@ -877,7 +880,7 @@ public class HealthTab : HudPart
 
                 if (state.wholeBodyAfflictions[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)] is RWDisease disease)
                 {
-                    healthTabInfos[0].nameStatus.text = Mathf.Floor(disease.severity) + "%";
+                    healthTabInfos[0].nameStatus.text = Mathf.Floor(disease.severity * 100) + "%";
                 }
 
                 healthTabInfos[0].description.text = "";
@@ -896,7 +899,9 @@ public class HealthTab : HudPart
                 healthTabInfos[0].name.text = healthTabBodyParts[selectedBodyPart].bodyPart.name + ": ";
                 healthTabInfos[0].nameStatus.text = Mathf.Floor(healthTabBodyParts[selectedBodyPart].bodyPart.health) + " / " + healthTabBodyParts[selectedBodyPart].bodyPart.maxHealth;
 
-                healthTabInfos[0].description.text = "Efficiency: " + healthTabBodyParts[selectedBodyPart].bodyPart.efficiency + "%";
+                float efficiency = Mathf.Floor(healthTabBodyParts[selectedBodyPart].bodyPart.efficiency * 100);
+
+                healthTabInfos[0].description.text = "Efficiency: " + (efficiency < 1 ? 1 : efficiency) + "%";
             }
         }
     }
@@ -1157,7 +1162,7 @@ public class HealthTabBodyPart
 
                         if (injury is RWDestroyed)
                         {
-                            text = (bodyPart.isInternal ? bodyPart.isSolid ? "Shattered" : injury.healingDifficulty.destroyedOut : injury.healingDifficulty.destroyed) + (injury.isBleeding ? " (fresh)" : "");
+                            text = (bodyPart.isInternal ? bodyPart.isSolid ? "Shattered" : injury.healingDifficulty.destroyedOut : injury.healingDifficulty.destroyed) + (injury.isBleeding && !injury.isTended ? " (fresh)" : "");
                         }
                         else
                         {
@@ -1288,7 +1293,7 @@ public class HealthTabWholeBody
 
     public void Update()
     {
-        bloodLossVisible = owner.state != null && owner.state.bloodLoss >= 15;
+        bloodLossVisible = owner.state != null && owner.state.bloodLoss >= 0.15f;
 
         afflictionNumber = bloodLossVisible ? 1 : 0 + (owner.state != null ? owner.state.wholeBodyAfflictions.Count : 0);
 
@@ -1334,19 +1339,19 @@ public class HealthTabWholeBody
             bloodLossName.x = DrawPos(timeStacker).x - 25;
             bloodLossName.y = DrawPos(timeStacker).y;
 
-            if (owner.state.bloodLoss >= 60)
+            if (owner.state.bloodLoss >= 0.6f)
             {
                 bloodLossName.text = "Blood loss (extreme)";
             }
-            else if (owner.state.bloodLoss >= 45)
+            else if (owner.state.bloodLoss >= 0.45f)
             {
                 bloodLossName.text = "Blood loss (severe)";
             }
-            else if (owner.state.bloodLoss >= 30)
+            else if (owner.state.bloodLoss >= 0.3f)
             {
                 bloodLossName.text = "Blood loss (moderate)";
             }
-            else if (owner.state.bloodLoss >= 15)
+            else if (owner.state.bloodLoss >= 0.15f)
             {
                 bloodLossName.text = "Blood loss (minor)";
             }
@@ -1494,7 +1499,6 @@ public class HealthTabInfo
         nameStatus.isVisible = visible;
 
         description.isVisible = visible && description.text != "";
-
 
         if (!visible)
         {

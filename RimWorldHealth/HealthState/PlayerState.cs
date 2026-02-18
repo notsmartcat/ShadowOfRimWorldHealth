@@ -92,17 +92,17 @@ public class RWPlayerHealthState : PlayerState
         bloodLossPerCycle = 0;
 
         pain = 0;
-        consciousness = 100;
-        moving = 100;
-        manipulation = 100;
-        talking = 100;
-        eating = 100;
-        sight = 100;
-        hearing = 100;
-        breathing = 100;
-        bloodFiltration = 100;
-        bloodPumping = 100;
-        digestion = 100;
+        consciousness = 1;
+        moving = 1;
+        manipulation = 1;
+        talking = 1;
+        eating = 1;
+        sight = 1;
+        hearing = 1;
+        breathing = 1;
+        bloodFiltration = 1;
+        bloodPumping = 1;
+        digestion = 1;
 
         if (healingRate > 0)
         {
@@ -118,7 +118,7 @@ public class RWPlayerHealthState : PlayerState
 
         List<RWInjury> healList = new();
 
-        float brainEfficiency = 100;
+        float brainEfficiency = 1;
 
         for (int i = 0; i < bodyParts.Count; i++)
         {
@@ -158,7 +158,7 @@ public class RWPlayerHealthState : PlayerState
                 }
             }
 
-            bodyParts[i].efficiency = Mathf.Max(0, Mathf.Floor(bodyParts[i].health / bodyParts[i].maxHealth * 100));
+            bodyParts[i].efficiency = Mathf.Max(0, bodyParts[i].health / bodyParts[i].maxHealth);
 
             if ((bodyParts[i].health > 0 && bodyParts[i].health < 1) || bodyParts[i].deathEffect == "" && bodyParts[i].health < 1)
             {
@@ -197,47 +197,48 @@ public class RWPlayerHealthState : PlayerState
             }
         }
 
-        consciousness = brainEfficiency * (1 - Mathf.Clamp((pain/100 - 0.1f) * 4 / 9, 0, 0.4f)) * (1 - 0.2f * (1 - bloodPumping/100)) *(1 - 0.2f * (1 - breathing/100)) *(1 - 0.1f * (1 - bloodFiltration/100));
+        consciousness = brainEfficiency * (1 - Mathf.Clamp((pain - 0.1f) * 4 / 9, 0, 0.4f)) * (1 - 0.2f * (1 - bloodPumping)) *(1 - 0.2f * (1 - breathing)) *(1 - 0.1f * (1 - bloodFiltration));
 
         if (bloodLossPerCycle == 0 && bloodLoss > 0)
         {
-            bloodLoss -= cycleLength / 33.3f;
+            bloodLoss -= 33.3f / (40 * 60 * cycleLength);
         } //Replenishes 33.3% of blood per cycle if not bleeding
         else if (bloodLossPerCycle > 0)
         {
-            bloodLoss += cycleLength / bloodLossPerCycle;
+            bloodLoss += bloodLossPerCycle / 100 / (40 * 60 * cycleLength);
         }
         //bloodLoss math definetly is not right, will need to fix
 
-        bloodLoss = Mathf.Clamp(bloodLoss, 0, 100);
+        bloodLoss = Mathf.Clamp(bloodLoss, 0, 1);
 
-        if (bloodLoss >= 60)
+        if (bloodLoss >= 0.6f)
         {
-            consciousness -= 40;
+            consciousness -= 0.4f;
 
-            consciousness = Mathf.Min(consciousness, 10);
+            consciousness = Mathf.Min(consciousness, 0.1f);
         }
-        else if(bloodLoss >= 45)
+        else if(bloodLoss >= 0.45f)
         {
-            consciousness -= 40;
+            consciousness -= 0.4f;
         }
-        else if (bloodLoss >= 30)
+        else if (bloodLoss >= 0.3f)
         {
-            consciousness -= 20;
+            consciousness -= 0.2f;
         }
-        else if (bloodLoss >= 15)
+        else if (bloodLoss >= 0.15f)
         {
-            consciousness -= 10;
+            consciousness -= 0.1f;
         }
 
-        //Debug.Log(bloodLoss);
+        Debug.Log("bloodlossPerCycle " + bloodLossPerCycle);
+        Debug.Log("bloodloss " + bloodLoss);
 
         consciousness = Mathf.Max(consciousness, 0);
 
-        moving *= Mathf.Min(1, consciousness / 100);
-        manipulation *= consciousness / 100;
-        talking *= consciousness / 100;
-        eating *= consciousness / 100;
+        moving *= Mathf.Min(1, consciousness);
+        manipulation *= consciousness;
+        talking *= consciousness;
+        eating *= consciousness;
 
         static int BloodLossMultiplier(RWBodyPart part)
         {
@@ -387,27 +388,27 @@ public class RWPlayerHealthState : PlayerState
 
     public float pain = 0;
 
-    public float consciousness = 100;
+    public float consciousness = 1;
 
-    public float moving = 100;
+    public float moving = 1;
 
-    public float manipulation = 100;
+    public float manipulation = 1;
 
-    public float talking = 100;
+    public float talking = 1;
 
-    public float eating = 100;
+    public float eating = 1;
 
-    public float sight = 100;
+    public float sight = 1;
 
-    public float hearing = 100;
+    public float hearing = 1;
 
-    public float breathing = 100;
+    public float breathing = 1;
 
-    public float bloodFiltration = 100;
+    public float bloodFiltration = 1;
 
-    public float bloodPumping = 100;
+    public float bloodPumping = 1;
 
-    public float digestion = 100;
+    public float digestion = 1;
 
     public float cycleLength = 13;
 

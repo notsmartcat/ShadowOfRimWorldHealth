@@ -49,7 +49,7 @@ public class RWBodyPart
     //if a bodypart has a special function whenever destroyed, such as cutting in half or decapitation
     public string deathEffect = "Destroy";
 
-    public float efficiency = 100;
+    public float efficiency = 1;
 
     public List<RWAffliction> afflictions = new();
 }
@@ -86,6 +86,7 @@ internal class LowerTorso : RWBodyPart
         deathEffect = "CutInHalf";
     }
 }
+
 internal class Neck : RWBodyPart
 {
     public Neck(RWPlayerHealthState state) : base(state)
@@ -130,54 +131,6 @@ internal class Head : RWBodyPart
         deathEffect = "Death";
     }
 }
-internal class Skull : RWBodyPart
-{
-    public Skull(RWPlayerHealthState state) : base(state)
-    {
-        name = "Skull";
-
-        maxHealth = 25;
-        health = 25;
-
-        coverage = 18f;
-
-        subPartOf = "Head";
-
-        isInternal = true;
-
-        isSolid = true;
-
-        group.Add("UpperHead");
-        group.Add("Eyes");
-        group.Add("FullHead");
-
-        deathEffect = "";
-    }
-}
-internal class Brain : RWBodyPart
-{
-    public Brain(RWPlayerHealthState state) : base(state)
-    {
-        name = "Brain";
-
-        maxHealth = 10;
-        health = 10;
-
-        coverage = 80f;
-
-        subPartOf = "Skull";
-
-        isInternal = true;
-
-        group.Add("UpperHead");
-        group.Add("Eyes");
-        group.Add("FullHead");
-
-        capacity.Add("Consciousness");
-
-        deathEffect = "Death";
-    }
-}
 internal class Eye : RWBodyPart
 {
     public Eye(RWPlayerHealthState state) : base(state)
@@ -193,54 +146,226 @@ internal class Eye : RWBodyPart
 
         subPartOf = "Head";
 
+        group.Add("FullHead");
         group.Add("Eyes");
+
+        capacity.Add("Sight");
+    }
+}
+internal class Ear : RWBodyPart
+{
+    public Ear(RWPlayerHealthState state) : base(state)
+    {
+        name = "Ear";
+
+        maxHealth = 12;
+        health = 12;
+
+        quantity = 2;
+
+        coverage = 7f;
+
+        subPartOf = "Head";
+
+        group.Add("UpperHead");
+        group.Add("FullHead");
+
+        capacity.Add("Hearing");
+    }
+}
+internal class Nose : RWBodyPart
+{
+    public Nose(RWPlayerHealthState state) : base(state)
+    {
+        name = "Nose";
+
+        maxHealth = 10;
+        health = 10;
+
+        coverage = 10f;
+
+        subPartOf = "Head";
+
         group.Add("FullHead");
     }
 }
-
-internal class Ribcage : RWBodyPart
+internal class Jaw : RWBodyPart
 {
-    public Ribcage(RWPlayerHealthState state) : base(state)
+    public Jaw(RWPlayerHealthState state) : base(state)
     {
-        name = "Ribcage";
+        name = "Jaw";
+
+        maxHealth = 20;
+        health = 20;
+
+        coverage = 15f;
+
+        subPartOf = "Head";
+
+        group.Add("FullHead");
+        group.Add("Mouth");
+
+        capacity.Add("Eating");
+        capacity.Add("Talking");
+    }
+}
+internal class Tongue : RWBodyPart
+{
+    public Tongue(RWPlayerHealthState state) : base(state)
+    {
+        name = "Jaw";
+
+        coverage = 0.1f;
+
+        subPartOf = "Jaw";
+
+        isInternal = true;
+
+        group.Add("FullHead");
+        //group.Add("Mouth");
+
+        capacity.Add("Talking");
+    }
+}
+
+internal class Shoulder : RWBodyPart
+{
+    public Shoulder(RWPlayerHealthState state) : base(state)
+    {
+        name = "Shoulder";
 
         maxHealth = 30;
         health = 30;
 
-        coverage = 3.6f;
+        quantity = 2;
+
+        coverage = 12f;
 
         subPartOf = "Upper Torso";
 
-        isInternal = true;
+        group.Add("Shoulders");
 
-        isSolid = true;
-
-        group.Add("upperTorso");
-
-        capacity.Add("Breathing");
-
-        deathEffect = "";
+        capacity.Add("Manipulation");
     }
 }
-internal class Heart : RWBodyPart
+internal class Arm : RWBodyPart
 {
-    public Heart(RWPlayerHealthState state) : base(state)
+    public Arm(RWPlayerHealthState state) : base(state)
     {
-        name = "Heart";
+        name = "Arm";
 
-        maxHealth = 15;
-        health = 15;
+        maxHealth = 30;
+        health = 30;
 
-        coverage = 2f;
+        quantity = 2;
 
-        subPartOf = "upperTorso"; //Might make this Ribcage
+        coverage = 77f;
 
-        isInternal = true;
+        subPartOf = "Shoulder";
 
-        group.Add("upperTorso");
+        group.Add("Arms");
 
-        capacity.Add("Blood Pumping");
+        capacity.Add("Manipulation");
+    }
+}
+internal class Hand : RWBodyPart
+{
+    public Hand(RWPlayerHealthState state) : base(state)
+    {
+        name = "Hand";
 
-        deathEffect = "Death";
+        maxHealth = 20;
+        health = 20;
+
+        quantity = 2;
+
+        coverage = 14f;
+
+        subPartOf = "Arm";
+
+        group.Add("Hands");
+
+        capacity.Add("Manipulation");
+    }
+}
+internal class Finger : RWBodyPart
+{
+    public Finger(RWPlayerHealthState state) : base(state)
+    {
+        name = "Finger";
+
+        maxHealth = 8;
+        health = 8;
+
+        quantity = 10;
+
+        coverage = 8f;
+
+        subPartOf = "Hand";
+
+        group.Add("Hands");
+
+        capacity.Add("Manipulation");
+    }
+}
+
+internal class Leg : RWBodyPart
+{
+    public Leg(RWPlayerHealthState state) : base(state)
+    {
+        name = "Leg";
+
+        maxHealth = 30;
+        health = 30;
+
+        quantity = 2;
+
+        coverage = 14f;
+
+        subPartOf = "Lower Torso";
+
+        group.Add("Legs");
+
+        capacity.Add("Moving");
+    }
+}
+internal class Foot : RWBodyPart
+{
+    public Foot(RWPlayerHealthState state) : base(state)
+    {
+        name = "Foot";
+
+        maxHealth = 25;
+        health = 25;
+
+        quantity = 2;
+
+        coverage = 10f;
+
+        subPartOf = "Leg";
+
+        group.Add("Feet");
+
+        capacity.Add("Moving");
+    }
+}
+internal class Toe : RWBodyPart
+{
+    public Toe(RWPlayerHealthState state) : base(state)
+    {
+        name = "Toe";
+
+        maxHealth = 8;
+        health = 8;
+
+        quantity = 10;
+
+        coverage = 9f;
+
+        subPartOf = "Foot";
+
+        group.Add("Feet");
+
+        capacity.Add("Moving");
     }
 }
