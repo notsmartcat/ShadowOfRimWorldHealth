@@ -369,3 +369,20 @@ internal class Toe : RWBodyPart
         capacity.Add("Moving");
     }
 }
+
+internal class Tail : RWBodyPart
+{
+    public Tail(RWPlayerHealthState state) : base(state)
+    {
+        name = "Tail";
+
+        maxHealth = 20;
+        health = 20;
+
+        coverage = 10f;
+
+        subPartOf = "Lower Torso";
+
+        group.Add("lowerTorso");
+    }
+}

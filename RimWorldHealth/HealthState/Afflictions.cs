@@ -39,7 +39,7 @@ public class RWInjury : RWAffliction
             healingDifficulty = new RWHealingDifficulty();
         }
 
-        if (part.isSolid && healingDifficulty.bleeding > 0)
+        if (part.isSolid || healingDifficulty.bleeding > 0)
         {
             isBleeding = false;
         }
@@ -61,20 +61,12 @@ public class RWInjury : RWAffliction
                 RWHealingDifficultyName = damageType.headiffs[0];
             }
 
-            RWHealingDifficulty healingDifficulty;
-
-            switch (RWHealingDifficultyName)
+            RWHealingDifficulty healingDifficulty = RWHealingDifficultyName switch
             {
-                case "Shredded":
-                    healingDifficulty = new RWShredded();
-                    break;
-                case "Crack":
-                    healingDifficulty = new RWCrack();
-                    break;
-                default:
-                    healingDifficulty = new RWHealingDifficulty();
-                    break;
-            }
+                "Shredded" => new RWShredded(),
+                "Crack" => new RWCrack(),
+                _ => new RWHealingDifficulty(),
+            };
 
             return healingDifficulty;
         }

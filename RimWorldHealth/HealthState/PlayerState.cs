@@ -45,16 +45,51 @@ public class RWPlayerHealthState : PlayerState
     {
         bodySizeFactor = 1;
 
-        List<RWBodyPart> bodyParts = new(3) {
+        List<RWBodyPart> bodyParts = new(33) {
                 new UpperTorso(this),
                 new LowerTorso(this),
+
                 new Neck(this),
                 new Head(this),
-                new Skull(this),
-                new Brain(this),
                 new Eye(this),
+                new Ear(this),
+                new Nose(this),
+                new Jaw(this),
+                new Tongue(this),
+
+                new Shoulder(this),
+                new Arm(this),
+                new Hand(this),
+                new Finger(this),
+
+                new Leg(this),
+                new Foot(this),
+                new Toe(this),
+
+                new Tail(this),
+
+                new Skull(this),
+
+                new Spine(this),
                 new Ribcage(this),
-                new Heart(this)
+                new Sternum(this),
+
+                new Clavicle(this),
+                new Humerus(this),
+                new Radius(this),
+
+                new Pelvis(this),
+
+                new Femur(this),
+                new Tibia(this),
+
+                new Brain(this),
+
+                new Stomach(this),
+                new Heart(this),
+                new Lung(this),
+                new Kidney(this),
+                new Liver(this),
             };
 
         for (int i = 0; i < bodyParts.Count; i++)
@@ -66,6 +101,90 @@ public class RWPlayerHealthState : PlayerState
                 {
                     bodyPart = new Eye(this);
                 }
+                else if (bodyParts[i] is Ear)
+                {
+                    bodyPart = new Ear(this);
+                }
+                else if (bodyParts[i] is Shoulder)
+                {
+                    bodyPart = new Shoulder(this);
+                }
+                else if (bodyParts[i] is Arm)
+                {
+                    bodyPart = new Arm(this);
+
+                    bodyPart.subPartOf = "Left " + bodyPart.subPartOf;
+
+                    bodyParts[i].subPartOf = "Right " + bodyParts[i].subPartOf;
+                }
+                else if (bodyParts[i] is Hand)
+                {
+                    bodyPart = new Hand(this);
+
+                    bodyPart.subPartOf = "Left " + bodyPart.subPartOf;
+
+                    bodyParts[i].subPartOf = "Right " + bodyParts[i].subPartOf;
+                }
+                else if (bodyParts[i] is Leg)
+                {
+                    bodyPart = new Leg(this);
+                }
+                else if (bodyParts[i] is Foot)
+                {
+                    bodyPart = new Foot(this);
+
+                    bodyPart.subPartOf = "Left " + bodyPart.subPartOf;
+
+                    bodyParts[i].subPartOf = "Right " + bodyParts[i].subPartOf;
+                }
+                else if (bodyParts[i] is Clavicle)
+                {
+                    bodyPart = new Clavicle(this);
+
+                    bodyPart.subPartOf = "Left " + bodyPart.subPartOf;
+
+                    bodyParts[i].subPartOf = "Right " + bodyParts[i].subPartOf;
+                }
+                else if (bodyParts[i] is Humerus)
+                {
+                    bodyPart = new Humerus(this);
+
+                    bodyPart.subPartOf = "Left " + bodyPart.subPartOf;
+
+                    bodyParts[i].subPartOf = "Right " + bodyParts[i].subPartOf;
+                }
+                else if (bodyParts[i] is Radius)
+                {
+                    bodyPart = new Radius(this);
+
+                    bodyPart.subPartOf = "Left " + bodyPart.subPartOf;
+
+                    bodyParts[i].subPartOf = "Right " + bodyParts[i].subPartOf;
+                }
+                else if (bodyParts[i] is Femur)
+                {
+                    bodyPart = new Femur(this);
+
+                    bodyPart.subPartOf = "Left " + bodyPart.subPartOf;
+
+                    bodyParts[i].subPartOf = "Right " + bodyParts[i].subPartOf;
+                }
+                else if (bodyParts[i] is Tibia)
+                {
+                    bodyPart = new Tibia(this);
+
+                    bodyPart.subPartOf = "Left " + bodyPart.subPartOf;
+
+                    bodyParts[i].subPartOf = "Right " + bodyParts[i].subPartOf;
+                }
+                else if (bodyParts[i] is Lung)
+                {
+                    bodyPart = new Lung(this);
+                }
+                else if (bodyParts[i] is Kidney)
+                {
+                    bodyPart = new Kidney(this);
+                }
 
                 if (bodyPart != null)
                 {
@@ -76,6 +195,128 @@ public class RWPlayerHealthState : PlayerState
                 bodyParts[i].name = "Right " + bodyParts[i].name;
                 this.bodyParts.Add(bodyParts[i]);
                 continue;
+            }
+            else if (bodyParts[i] is Finger finger)
+            {
+                for (int k = 0; k < 2; k++)
+                {
+                    for (int j = 0; j < bodyParts[i].quantity/2; j++)
+                    {
+                        if (finger == null)
+                        {
+                            finger = new Finger(this);
+                        }
+
+                        if (j == 0)
+                        {
+                            finger.name = "Pinky";
+
+                            finger.coverage = 6f;
+                        }
+                        else if (j == 1)
+                        {
+                            finger.name = "Ring Finger";
+
+                            finger.coverage = 7f;
+                        }
+                        else if (j == 2)
+                        {
+                            finger.name = "Middle Finger";
+
+                            finger.coverage = 8f;
+                        }
+                        else if (j == 3)
+                        {
+                            finger.name = "Index Finger";
+
+                            finger.coverage = 7f;
+                        }
+                        else if (j == 4)
+                        {
+                            finger.name = "Thumb";
+
+                            finger.coverage = 8f;
+                        }
+
+                        if (k == 0)
+                        {
+                            finger.name = "Right " + finger.name;
+                            finger.subPartOf = "Right " + finger.subPartOf;
+                            finger.group.Add("RightHand");
+                        }
+                        else
+                        {
+                            finger.name = "Left " + finger.name;
+                            finger.subPartOf = "Left " + finger.subPartOf;
+                            finger.group.Add("LeftHand");
+                        }
+
+                        this.bodyParts.Add(finger);
+
+                        finger = null;
+                    }
+                }
+            }
+            else if (bodyParts[i] is Toe toe)
+            {
+                for (int k = 0; k < 2; k++)
+                {
+                    for (int j = 0; j < bodyParts[i].quantity / 2; j++)
+                    {
+                        if (toe == null)
+                        {
+                            toe = new Toe(this);
+                        }
+
+                        if (j == 0)
+                        {
+                            toe.name = "Little Toe";
+
+                            toe.coverage = 6f;
+                        }
+                        else if (j == 1)
+                        {
+                            toe.name = "Fourth Toe";
+
+                            toe.coverage = 7f;
+                        }
+                        else if (j == 2)
+                        {
+                            toe.name = "Middle Toe";
+
+                            toe.coverage = 8f;
+                        }
+                        else if (j == 3)
+                        {
+                            toe.name = "Second Toe";
+
+                            toe.coverage = 9f;
+                        }
+                        else if (j == 4)
+                        {
+                            toe.name = "Big Toe";
+
+                            toe.coverage = 9f;
+                        }
+
+                        if (k == 0)
+                        {
+                            toe.name = "Right " + toe.name;
+                            toe.subPartOf = "Right " + toe.subPartOf;
+                            toe.group.Add("RightHand");
+                        }
+                        else
+                        {
+                            toe.name = "Left " + toe.name;
+                            toe.subPartOf = "Left " + toe.subPartOf;
+                            toe.group.Add("LeftHand");
+                        }
+
+                        this.bodyParts.Add(toe);
+
+                        toe = null;
+                    }
+                }
             }
 
             this.bodyParts.Add(bodyParts[i]);
