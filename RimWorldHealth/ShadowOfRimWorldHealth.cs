@@ -34,7 +34,7 @@ public class RimWorldHealth : BaseUnityPlugin
         catch (Exception e) { Logger.LogError(e); }
     }
 
-    private void PlayercheckInput(On.Player.orig_checkInput orig, Player self)
+    void PlayercheckInput(On.Player.orig_checkInput orig, Player self)
     {
         orig(self);
 
@@ -105,7 +105,7 @@ public class RimWorldHealth : BaseUnityPlugin
         return self.afflictions.Count != 0 && self.afflictions[0] is RWDestroyed;
     }
 
-    public static bool isSubPartDestroyed(RWPlayerHealthState state, RWBodyPart self)
+    public static bool IsSubPartDestroyed(RWPlayerHealthState state, RWBodyPart self)
     {
         if (self.afflictions.Count == 1 && self.afflictions[0] is RWDestroyed && self.subPartOf != "")
         {

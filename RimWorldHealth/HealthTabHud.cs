@@ -15,7 +15,7 @@ public class HealthTab : HudPart
 
         sprites = new FSprite[2];
 
-        statName = new(Custom.GetFont(), "Name")
+        capacityName = new(Custom.GetFont(), "Name")
         {
             alignment = FLabelAlignment.Left,
             anchorX = 0f,
@@ -31,15 +31,15 @@ public class HealthTab : HudPart
 
         for (int i = 0; i < 12; i++)
         {
-            statValueNames.Add(new FLabel(Custom.GetFont(), "StatName"));
-            statValueNames[i].alignment = FLabelAlignment.Left;
-            statValueNames[i].anchorX = 0f;
-            statValueNames[i].anchorY = 1f;
+            capacityValueNames.Add(new FLabel(Custom.GetFont(), "capacityName"));
+            capacityValueNames[i].alignment = FLabelAlignment.Left;
+            capacityValueNames[i].anchorX = 0f;
+            capacityValueNames[i].anchorY = 1f;
 
-            statValues.Add(new FLabel(Custom.GetFont(), "StatValue"));
-            statValues[i].alignment = FLabelAlignment.Left;
-            statValues[i].anchorX = 1f;
-            statValues[i].anchorY = 1f;
+            capacityValues.Add(new FLabel(Custom.GetFont(), "StatValue"));
+            capacityValues[i].alignment = FLabelAlignment.Left;
+            capacityValues[i].anchorX = 1f;
+            capacityValues[i].anchorY = 1f;
         }
 
         selectedSprite = new FSprite("pixel", true);
@@ -51,13 +51,13 @@ public class HealthTab : HudPart
             hud.fContainers[1].AddChild(sprites[k]);
         }
 
-        hud.fContainers[1].AddChild(statName);
+        hud.fContainers[1].AddChild(capacityName);
         hud.fContainers[1].AddChild(bloodLossPerCycle);
 
-        for (int k = 0; k < statValueNames.Count; k++)
+        for (int k = 0; k < capacityValueNames.Count; k++)
         {
-            hud.fContainers[1].AddChild(statValueNames[k]);
-            hud.fContainers[1].AddChild(statValues[k]);
+            hud.fContainers[1].AddChild(capacityValueNames[k]);
+            hud.fContainers[1].AddChild(capacityValues[k]);
         }
 
         hud.fContainers[1].AddChild(selectedSprite);
@@ -123,7 +123,7 @@ public class HealthTab : HudPart
                     {
                         alreadyExists = true;
 
-                        if (isSubPartDestroyed(state, healthTabBodyParts[j].bodyPart))
+                        if (IsSubPartDestroyed(state, healthTabBodyParts[j].bodyPart))
                         {
                             healthTabBodyParts[j].slatedForDeletion = true;
                         }
@@ -131,7 +131,7 @@ public class HealthTab : HudPart
                     }
                 }
 
-                if (!alreadyExists && !isSubPartDestroyed(state, state.bodyParts[i]))
+                if (!alreadyExists && !IsSubPartDestroyed(state, state.bodyParts[i]))
                 {
                     HealthTabBodyPart part = new( this, state.bodyParts[i]);
 
@@ -160,30 +160,6 @@ public class HealthTab : HudPart
                 {
                     selectedHorizontal = 1;
                 }
-
-                if (selectedVertical != -1)
-                {
-                    int maxVertical = selectedHorizontal == 0 ? 12 : -1;
-
-                    if (maxVertical == -1)
-                    {
-                        maxVertical = healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0;
-
-                        for (int i = 0; i < healthTabBodyParts.Count; i++)
-                        {
-                            maxVertical += healthTabBodyParts[i].combinedAfflictions.Count;
-                        }
-                    }
-
-                    if (selectedVertical >= maxVertical)
-                    {
-                        selectedVertical = maxVertical - 1;
-                    }
-                    else if (selectedVertical <= -1)
-                    {
-                        selectedVertical = 0;
-                    }
-                }
             }
         }
         else
@@ -207,31 +183,35 @@ public class HealthTab : HudPart
                 verticalOnce = true;
 
                 selectedVertical += input.y > 0 ? -1 : 1;
-
-                int maxVertical = selectedHorizontal == 0 ? 12 : -1;
-
-                if (maxVertical == -1)
-                {
-                    maxVertical = healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0;
-                    for (int i = 0; i < healthTabBodyParts.Count; i++)
-                    {
-                        maxVertical += healthTabBodyParts[i].combinedAfflictions.Count;
-                    }
-                }
-
-                if (selectedVertical >= maxVertical)
-                {
-                    selectedVertical = 0;
-                }
-                else if (selectedVertical <= -1)
-                {
-                    selectedVertical = maxVertical - 1;
-                }
             }
         }
         else
         {
             verticalOnce = false;
+        }
+
+        if (selectedVertical != -1)
+        {
+            int maxVertical = selectedHorizontal == 0 ? capacityValueNamesNames.Count : -1;
+
+            if (maxVertical == -1)
+            {
+                maxVertical = healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0;
+
+                for (int i = 0; i < healthTabBodyParts.Count; i++)
+                {
+                    maxVertical += healthTabBodyParts[i].combinedAfflictions.Count;
+                }
+            }
+
+            if (selectedVertical >= maxVertical)
+            {
+                selectedVertical = maxVertical - 1;
+            }
+            else if (selectedVertical <= -1)
+            {
+                selectedVertical = 0;
+            }
         }
 
         if (treating)
@@ -274,7 +254,7 @@ public class HealthTab : HudPart
                 {
                     if (!state.bodyParts[i].afflictions[j].isTended)
                     {
-                        if (state.bodyParts[i].afflictions[j] is RWDestroyed destroyed && !isSubPartDestroyed(state, state.bodyParts[i]) && destroyed.isBleeding)
+                        if (state.bodyParts[i].afflictions[j] is RWDestroyed destroyed && !IsSubPartDestroyed(state, state.bodyParts[i]) && destroyed.isBleeding)
                         {
                             destroyedAffliction = destroyed;
                             break;
@@ -396,13 +376,13 @@ public class HealthTab : HudPart
             sprites[i].isVisible = visible;
         }
 
-        for (int i = 0; i < statValueNames.Count; i++)
+        for (int i = 0; i < capacityValueNames.Count; i++)
         {
-            statValueNames[i].isVisible = visible;
-            statValues[i].isVisible = visible;
+            capacityValueNames[i].isVisible = visible;
+            capacityValues[i].isVisible = visible;
         }
 
-        statName.isVisible = visible;
+        capacityName.isVisible = visible;
 
         bloodLossPerCycle.isVisible = visible && state.bloodLossPerCycle >= 1 && state.bloodLoss < 1;
 
@@ -426,7 +406,14 @@ public class HealthTab : HudPart
             return;
         }
 
-        statValueNamesNames = new(12) { "Pain", "Consiousness", "Moving", "Manipulation", "Talking", "Eating", "Sight", "Hearing", "Breathing", "Blood filtrarion", "Blood pumping", "Digestion" };
+        if (!state.dead)
+        {
+            capacityValueNamesNames = new(12) { "Pain", "Consiousness", "Moving", "Manipulation", "Talking", "Eating", "Sight", "Hearing", "Breathing", "Blood filtrarion", "Blood pumping", "Digestion" };
+        }
+        else
+        {
+            capacityValueNamesNames = new(1) { "Pain" };
+        }
 
         sprites[0].x = DrawPos(timeStacker).x;
         sprites[0].y = DrawPos(timeStacker).y;
@@ -440,10 +427,10 @@ public class HealthTab : HudPart
         sprites[1].scaleY = 250;
         sprites[1].color = Color.black;
 
-        statName.color = Color.white;
-        statName.x = DrawPos(timeStacker).x - 320;
-        statName.y = DrawPos(timeStacker).y + 125;
-        statName.text = state.creature.ToString();
+        capacityName.color = Color.white;
+        capacityName.x = DrawPos(timeStacker).x - 320;
+        capacityName.y = DrawPos(timeStacker).y + 125;
+        capacityName.text = state.creature.ToString();
 
         if (bloodLossPerCycle.isVisible)
         {
@@ -457,27 +444,27 @@ public class HealthTab : HudPart
             bloodLossPerCycle.text = "Bleeding: " + Mathf.Floor(state.bloodLossPerCycle) + "%/c (death in " + bloodLossTime + ")";
         }
 
-        for (int i = 0; i < statValueNames.Count; i++)
+        for (int i = 0; i < capacityValueNames.Count; i++)
         {
-            if (i > statValueNamesNames.Count)
+            if (i >= capacityValueNamesNames.Count)
             {
-                statValueNames[i].isVisible = false;
-                statValues[i].isVisible = false;
+                capacityValueNames[i].isVisible = false;
+                capacityValues[i].isVisible = false;
                 continue;
             }
 
-            statValueNames[i].color = Color.white;
-            statValueNames[i].x = DrawPos(timeStacker).x - 320;
-            statValueNames[i].y = DrawPos(timeStacker).y + 100 - (17 * i);
+            capacityValueNames[i].color = Color.white;
+            capacityValueNames[i].x = DrawPos(timeStacker).x - 320;
+            capacityValueNames[i].y = DrawPos(timeStacker).y + 100 - (17 * i);
 
-            statValueNames[i].text = statValueNamesNames[i];
+            capacityValueNames[i].text = capacityValueNamesNames[i];
 
-            statValues[i].x = DrawPos(timeStacker).x - 180;
-            statValues[i].y = DrawPos(timeStacker).y + 100 - (17 * i);
+            capacityValues[i].x = DrawPos(timeStacker).x - 180;
+            capacityValues[i].y = DrawPos(timeStacker).y + 100 - (17 * i);
 
             float value = 0;
 
-            switch (statValueNamesNames[i])
+            switch (capacityValueNamesNames[i])
             {
                 case "Pain":
                     value = state.pain;
@@ -517,65 +504,65 @@ public class HealthTab : HudPart
                     break;
             }
 
-            if (statValueNamesNames[i] == "Pain")
+            if (capacityValueNamesNames[i] == "Pain")
             {
                 if (value >= 0.8f)
                 {
-                    statValues[i].text = "Mind-shattering";
-                    statValues[i].color = Color.red;
+                    capacityValues[i].text = "Mind-shattering";
+                    capacityValues[i].color = Color.red;
                 }
                 else if (value >= 0.4f)
                 {
-                    statValues[i].text = "Intense";
-                    statValues[i].color = Color.Lerp(Color.white, Color.black, 0.6f);
+                    capacityValues[i].text = "Intense";
+                    capacityValues[i].color = Color.Lerp(Color.white, Color.black, 0.6f);
                 }
                 else if (value >= 0.15f)
                 {
-                    statValues[i].text = "Serious";
-                    statValues[i].color = Color.Lerp(Color.white, Color.black, 0.4f);
+                    capacityValues[i].text = "Serious";
+                    capacityValues[i].color = Color.Lerp(Color.white, Color.black, 0.4f);
                 }
                 else if (value >= 0.01f)
                 {
-                    statValues[i].text = "Minor";
-                    statValues[i].color = Color.Lerp(Color.white, Color.black, 0.1f);
+                    capacityValues[i].text = "Minor";
+                    capacityValues[i].color = Color.Lerp(Color.white, Color.black, 0.1f);
                 }
                 else
                 {
-                    statValues[i].text = "None";
-                    statValues[i].color = Color.green;
+                    capacityValues[i].text = "None";
+                    capacityValues[i].color = Color.green;
                 }
             }
             else
             {
-                statValues[i].text = Mathf.Floor(value * 100) + "%";
+                capacityValues[i].text = Mathf.Floor(value * 100) + "%";
 
                 if (value > 1)
                 {
-                    statValues[i].color = Color.blue;
+                    capacityValues[i].color = Color.blue;
                 }
                 else if(value == 1)
                 {
-                    statValues[i].color = Color.green;
+                    capacityValues[i].color = Color.green;
                 }
                 else if (value >= 0.8f)
                 {
-                    statValues[i].color = Color.Lerp(Color.white, Color.black, 0.1f);
+                    capacityValues[i].color = Color.Lerp(Color.white, Color.black, 0.1f);
                 }
                 else if (value >= 0.4f)
                 {
-                    statValues[i].color = Color.Lerp(Color.white, Color.black, 0.4f);
+                    capacityValues[i].color = Color.Lerp(Color.white, Color.black, 0.4f);
                 }
                 else if (value >= 0.15f)
                 {
-                    statValues[i].color = Color.Lerp(Color.white, Color.black, 0.6f);
+                    capacityValues[i].color = Color.Lerp(Color.white, Color.black, 0.6f);
                 }
                 else if (value >= 0.01f)
                 {
-                    statValues[i].color = Color.Lerp(Color.white, Color.black, 0.8f);
+                    capacityValues[i].color = Color.Lerp(Color.white, Color.black, 0.8f);
                 }
                 else
                 {
-                    statValues[i].color = Color.red;
+                    capacityValues[i].color = Color.red;
                 }
             }
         }
@@ -643,7 +630,7 @@ public class HealthTab : HudPart
 
             if (selectedTimer <= 0)
             {
-                StatSelector();
+                CapacitySelector();
             }
         }
         else if (selectedHorizontal == 1)
@@ -703,7 +690,7 @@ public class HealthTab : HudPart
             selectedSprite.scaleY = 20;
         }
 
-        void StatSelector()
+        void CapacitySelector()
         {
             float value = 0;
 
@@ -713,7 +700,7 @@ public class HealthTab : HudPart
             }
             else
             {
-                switch (statValueNamesNames[selectedVertical])
+                switch (capacityValueNamesNames[selectedVertical])
                 {
                     case "Pain":
                         value = state.pain;
@@ -822,7 +809,7 @@ public class HealthTab : HudPart
 
                 if (healthTabInfos.Count > 0)
                 {
-                    healthTabInfos[0].name.text = statValueNamesNames[selectedVertical] + ": ";
+                    healthTabInfos[0].name.text = capacityValueNamesNames[selectedVertical] + ": ";
                     healthTabInfos[0].nameStatus.text = stringValue;
 
                     healthTabInfos[0].description.text = "";
@@ -920,7 +907,7 @@ public class HealthTab : HudPart
 
                 float efficiency = Mathf.Floor(healthTabBodyParts[selectedBodyPart].bodyPart.efficiency * 100);
 
-                healthTabInfos[0].description.text = "Efficiency: " + (efficiency < 1 ? 1 : efficiency) + "%";
+                healthTabInfos[0].description.text = "Efficiency: " + ((efficiency < 1 && efficiency > 0) ? 1 : efficiency) + "%";
             }
         }
     }
@@ -941,16 +928,16 @@ public class HealthTab : HudPart
             healthTabInfos[i].ClearSprites();
         }
 
-        statName.RemoveFromContainer();
+        capacityName.RemoveFromContainer();
 
-        for (int i = 0; i < statValueNames.Count; i++)
+        for (int i = 0; i < capacityValueNames.Count; i++)
         {
-            statValueNames[i].RemoveFromContainer();
+            capacityValueNames[i].RemoveFromContainer();
         }
 
-        for (int i = 0; i < statValues.Count; i++)
+        for (int i = 0; i < capacityValues.Count; i++)
         {
-            statValues[i].RemoveFromContainer();
+            capacityValues[i].RemoveFromContainer();
         }
 
         for (int i = 0; i < sprites.Length; i++)
@@ -992,19 +979,19 @@ public class HealthTab : HudPart
 
     public RWPlayerHealthState state;
 
-    public FLabel statName;
+    public FLabel capacityName;
 
     public FLabel bloodLossPerCycle;
 
-    public List<FLabel> statValueNames = new();
-    public List<FLabel> statValues = new();
+    public List<FLabel> capacityValueNames = new();
+    public List<FLabel> capacityValues = new();
     public FSprite[] sprites;
 
     public FSprite selectedSprite;
 
     public FSprite treatedSprite;
 
-    public List<string> statValueNamesNames;
+    public List<string> capacityValueNamesNames;
 
     public AbstractCreature owner;
 
@@ -1058,7 +1045,7 @@ public class HealthTabBodyPart
 
         for (int i = 0; i < 6; i++)
         {
-            afflictionNames.Add(new FLabel(Custom.GetFont(), "StatName"));
+            afflictionNames.Add(new FLabel(Custom.GetFont(), "capacityName"));
             afflictionNames[i].alignment = FLabelAlignment.Left;
             afflictionNames[i].anchorX = 0f;
             afflictionNames[i].anchorY = 1f;
@@ -1285,7 +1272,7 @@ public class HealthTabWholeBody
 
         for (int i = 0; i < 6; i++)
         {
-            afflictionNames.Add(new FLabel(Custom.GetFont(), "StatName"));
+            afflictionNames.Add(new FLabel(Custom.GetFont(), "capacityName"));
             afflictionNames[i].alignment = FLabelAlignment.Left;
             afflictionNames[i].anchorX = 0f;
             afflictionNames[i].anchorY = 1f;

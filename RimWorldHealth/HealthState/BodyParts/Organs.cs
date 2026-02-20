@@ -113,7 +113,7 @@ internal class Liver : RWOrgan
 {
     public Liver(RWPlayerHealthState state) : base(state)
     {
-        name = "Kidney";
+        name = "Liver";
 
         maxHealth = 20;
         health = 20;
