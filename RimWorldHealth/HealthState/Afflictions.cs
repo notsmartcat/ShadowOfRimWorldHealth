@@ -63,8 +63,8 @@ public class RWInjury : RWAffliction
 
             RWHealingDifficulty healingDifficulty = RWHealingDifficultyName switch
             {
-                "Shredded" => new RWShredded(),
-                "Crack" => new RWCrack(),
+                "Shredded" => new RWHDShredded(),
+                "Crack" => new RWHDCrack(),
                 _ => new RWHealingDifficulty(),
             };
 

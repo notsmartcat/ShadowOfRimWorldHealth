@@ -988,6 +988,13 @@ public class RWPlayerHealthState : PlayerState
 
         Debug.Log(focusedBodyPart.name + " was hit for " + damage + " damage, it's health is now " + health);
 
+        OverkillPrevention();
+
+        if (damage <= 0)
+        {
+            return;
+        }
+
         if (health < 0f)
         {
             if(focusedBodyPart.deathEffect != "" && focusedBodyPart is not UpperTorso)
@@ -1091,6 +1098,30 @@ public class RWPlayerHealthState : PlayerState
                     subParts[j].afflictions.Clear();
                     subParts[j].afflictions.Add(new RWDestroyed(this, subParts[j], 0f, damageType, attackerName));
                 }
+            }
+        }
+
+        void OverkillPrevention()
+        {
+            if (health > 0)
+            {
+                return;
+            }
+
+            float overkillPercentage = ((health * -1) / focusedBodyPart.maxHealth) * 100;
+
+            float chanceToDestroy = (overkillPercentage - damageType.overkillMin) / (damageType.overkillMax - damageType.overkillMin);
+
+            Debug.Log("overkillPercentagge = " + overkillPercentage);
+            Debug.Log("chanceToDestroy = " + chanceToDestroy);
+
+            if (Random.value > chanceToDestroy)
+            {
+                damage = (damage + health) - 1;
+                health = 1;
+
+                Debug.Log("damage = " + damage);
+                Debug.Log("health = " + health);
             }
         }
     }
