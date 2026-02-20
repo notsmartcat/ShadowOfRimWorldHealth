@@ -107,78 +107,177 @@ public class RWPlayerHealthState : PlayerState
                 {
                     bodyPart = new Ear(this);
                 }
+
                 else if (bodyParts[i] is Shoulder)
                 {
                     bodyPart = new Shoulder(this);
+
+                    if (!armSetNames.Contains("Right"))
+                    {
+                        armSetNames.Add("Right");
+                    }
+                    if (!armSetNames.Contains("Left"))
+                    {
+                        armSetNames.Add("Left");
+                    }
+
+                    if (armSet.TryGetValue("Right", out ArmSet rightSet))
+                    {
+                        rightSet.shoulder = bodyParts[i] as Shoulder;
+                    }
+                    else
+                    {
+                        armSet.Add("Right", new ArmSet() { shoulder = bodyParts[i] as Shoulder });
+                    }
+
+                    if (armSet.TryGetValue("Left", out ArmSet leftSet))
+                    {
+                        leftSet.shoulder = bodyPart as Shoulder;
+                    }
+                    else
+                    {
+                        armSet.Add("Left", new ArmSet() { shoulder = bodyPart as Shoulder });
+                    }
                 }
                 else if (bodyParts[i] is Arm)
                 {
                     bodyPart = new Arm(this);
 
-                    bodyPart.subPartOf = "Left " + bodyPart.subPartOf;
-
-                    bodyParts[i].subPartOf = "Right " + bodyParts[i].subPartOf;
+                    if (armSet.TryGetValue("Right", out ArmSet rightSet))
+                    {
+                        rightSet.arm = bodyParts[i] as Arm;
+                    }
+                    if (armSet.TryGetValue("Left", out ArmSet leftSet))
+                    {
+                        leftSet.arm = bodyPart as Arm;
+                    }
                 }
                 else if (bodyParts[i] is Hand)
                 {
                     bodyPart = new Hand(this);
 
-                    bodyPart.subPartOf = "Left " + bodyPart.subPartOf;
-
-                    bodyParts[i].subPartOf = "Right " + bodyParts[i].subPartOf;
+                    if (armSet.TryGetValue("Right", out ArmSet rightSet))
+                    {
+                        rightSet.hand = bodyParts[i] as Hand;
+                    }
+                    if (armSet.TryGetValue("Left", out ArmSet leftSet))
+                    {
+                        leftSet.hand = bodyPart as Hand;
+                    }
                 }
+
                 else if (bodyParts[i] is Leg)
                 {
                     bodyPart = new Leg(this);
+
+                    if (!legSetNames.Contains("Right"))
+                    {
+                        legSetNames.Add("Right");
+                    }
+                    if (!legSetNames.Contains("Left"))
+                    {
+                        legSetNames.Add("Left");
+                    }
+
+                    if (legSet.TryGetValue("Right", out LegSet rightSet))
+                    {
+                        rightSet.leg = bodyParts[i] as Leg;
+                    }
+                    else
+                    {
+                        legSet.Add("Right", new LegSet() { leg = bodyParts[i] as Leg });
+                    }
+
+                    if (legSet.TryGetValue("Left", out LegSet leftSet))
+                    {
+                        leftSet.leg = bodyPart as Leg;
+                    }
+                    else
+                    {
+                        legSet.Add("Left", new LegSet() { leg = bodyPart as Leg });
+                    }
                 }
                 else if (bodyParts[i] is Foot)
                 {
                     bodyPart = new Foot(this);
 
-                    bodyPart.subPartOf = "Left " + bodyPart.subPartOf;
-
-                    bodyParts[i].subPartOf = "Right " + bodyParts[i].subPartOf;
+                    if (legSet.TryGetValue("Right", out LegSet rightSet))
+                    {
+                        rightSet.foot = bodyParts[i] as Foot;
+                    }
+                    if (legSet.TryGetValue("Left", out LegSet leftSet))
+                    {
+                        leftSet.foot = bodyPart as Foot;
+                    }
                 }
+
                 else if (bodyParts[i] is Clavicle)
                 {
                     bodyPart = new Clavicle(this);
 
-                    bodyPart.subPartOf = "Left " + bodyPart.subPartOf;
-
-                    bodyParts[i].subPartOf = "Right " + bodyParts[i].subPartOf;
+                    if (armSet.TryGetValue("Right", out ArmSet rightSet))
+                    {
+                        rightSet.clavicle = bodyParts[i] as Clavicle;
+                    }
+                    if (armSet.TryGetValue("Left", out ArmSet leftSet))
+                    {
+                        leftSet.clavicle = bodyPart as Clavicle;
+                    }
                 }
                 else if (bodyParts[i] is Humerus)
                 {
                     bodyPart = new Humerus(this);
 
-                    bodyPart.subPartOf = "Left " + bodyPart.subPartOf;
-
-                    bodyParts[i].subPartOf = "Right " + bodyParts[i].subPartOf;
+                    if (armSet.TryGetValue("Right", out ArmSet rightSet))
+                    {
+                        rightSet.humerus = bodyParts[i] as Humerus;
+                    }
+                    if (armSet.TryGetValue("Left", out ArmSet leftSet))
+                    {
+                        leftSet.humerus = bodyPart as Humerus;
+                    }
                 }
                 else if (bodyParts[i] is Radius)
                 {
                     bodyPart = new Radius(this);
 
-                    bodyPart.subPartOf = "Left " + bodyPart.subPartOf;
-
-                    bodyParts[i].subPartOf = "Right " + bodyParts[i].subPartOf;
+                    if (armSet.TryGetValue("Right", out ArmSet rightSet))
+                    {
+                        rightSet.radius = bodyParts[i] as Radius;
+                    }
+                    if (armSet.TryGetValue("Left", out ArmSet leftSet))
+                    {
+                        leftSet.radius = bodyPart as Radius;
+                    }
                 }
+
                 else if (bodyParts[i] is Femur)
                 {
                     bodyPart = new Femur(this);
 
-                    bodyPart.subPartOf = "Left " + bodyPart.subPartOf;
-
-                    bodyParts[i].subPartOf = "Right " + bodyParts[i].subPartOf;
+                    if (legSet.TryGetValue("Right", out LegSet rightSet))
+                    {
+                        rightSet.femur = bodyParts[i] as Femur;
+                    }
+                    if (legSet.TryGetValue("Left", out LegSet leftSet))
+                    {
+                        leftSet.femur = bodyPart as Femur;
+                    }
                 }
                 else if (bodyParts[i] is Tibia)
                 {
                     bodyPart = new Tibia(this);
 
-                    bodyPart.subPartOf = "Left " + bodyPart.subPartOf;
-
-                    bodyParts[i].subPartOf = "Right " + bodyParts[i].subPartOf;
+                    if (legSet.TryGetValue("Right", out LegSet rightSet))
+                    {
+                        rightSet.tibia = bodyParts[i] as Tibia;
+                    }
+                    if (legSet.TryGetValue("Left", out LegSet leftSet))
+                    {
+                        leftSet.tibia = bodyPart as Tibia;
+                    }
                 }
+
                 else if (bodyParts[i] is Lung)
                 {
                     bodyPart = new Lung(this);
@@ -190,19 +289,23 @@ public class RWPlayerHealthState : PlayerState
 
                 if (bodyPart != null)
                 {
-                    bodyPart.name = "Left " + bodyPart.name;
+                    Debug.Log("Left " + bodyPart);
+
+                    bodyPart.subName = "Left";
+
                     this.bodyParts.Add(bodyPart);
                 }
 
-                bodyParts[i].name = "Right " + bodyParts[i].name;
+                Debug.Log("Right " + bodyParts[i]);
+
+                bodyParts[i].subName = "Right";
                 this.bodyParts.Add(bodyParts[i]);
-                continue;
             }
             else if (bodyParts[i] is Finger finger)
             {
-                for (int k = 0; k < 2; k++)
+                for (int k = 0; k < armSetNames.Count; k++)
                 {
-                    for (int j = 0; j < bodyParts[i].quantity/2; j++)
+                    for (int j = 0; j < bodyParts[i].quantity / armSetNames.Count; j++)
                     {
                         finger ??= new Finger(this);
 
@@ -237,17 +340,12 @@ public class RWPlayerHealthState : PlayerState
                             finger.coverage = 8f;
                         }
 
-                        if (k == 0)
+                        finger.subName = armSetNames[k];
+                        finger.group.Add(armSetNames[k] + "Hand");
+
+                        if (armSet.TryGetValue(armSetNames[k], out ArmSet set))
                         {
-                            finger.name = "Right " + finger.name;
-                            finger.subPartOf = "Right " + finger.subPartOf;
-                            finger.group.Add("RightHand");
-                        }
-                        else
-                        {
-                            finger.name = "Left " + finger.name;
-                            finger.subPartOf = "Left " + finger.subPartOf;
-                            finger.group.Add("LeftHand");
+                            set.fingers.Add(finger);
                         }
 
                         this.bodyParts.Add(finger);
@@ -258,9 +356,9 @@ public class RWPlayerHealthState : PlayerState
             }
             else if (bodyParts[i] is Toe toe)
             {
-                for (int k = 0; k < 2; k++)
+                for (int k = 0; k < legSetNames.Count; k++)
                 {
-                    for (int j = 0; j < bodyParts[i].quantity / 2; j++)
+                    for (int j = 0; j < bodyParts[i].quantity / legSetNames.Count; j++)
                     {
                         toe ??= new Toe(this);
 
@@ -295,17 +393,11 @@ public class RWPlayerHealthState : PlayerState
                             toe.coverage = 9f;
                         }
 
-                        if (k == 0)
+                        toe.subName = legSetNames[k];
+
+                        if (legSet.TryGetValue(legSetNames[k], out LegSet set))
                         {
-                            toe.name = "Right " + toe.name;
-                            toe.subPartOf = "Right " + toe.subPartOf;
-                            toe.group.Add("RightHand");
-                        }
-                        else
-                        {
-                            toe.name = "Left " + toe.name;
-                            toe.subPartOf = "Left " + toe.subPartOf;
-                            toe.group.Add("LeftHand");
+                            set.toes.Add(toe);
                         }
 
                         this.bodyParts.Add(toe);
@@ -314,13 +406,61 @@ public class RWPlayerHealthState : PlayerState
                     }
                 }
             }
-
-            this.bodyParts.Add(bodyParts[i]);
+            else
+            {
+                this.bodyParts.Add(bodyParts[i]);
+            }
         }
 
-        for (int i = 0; i < bodyParts.Count; i++)
+        for (int i = 0; i < this.bodyParts.Count; i++)
         {
-            maxHealth += bodyParts[i].maxHealth;
+            maxHealth += this.bodyParts[i].maxHealth;
+
+            if (this.bodyParts[i] is Shoulder || this.bodyParts[i] is Arm || this.bodyParts[i] is Hand || this.bodyParts[i] is Finger || this.bodyParts[i] is Leg || this.bodyParts[i] is Foot || this.bodyParts[i] is Clavicle || this.bodyParts[i] is Humerus || this.bodyParts[i] is Radius || this.bodyParts[i] is Femur || this.bodyParts[i] is Tibia || this.bodyParts[i] is Toe)
+            {
+                continue;
+            }
+
+            if (this.bodyParts[i].capacity.Contains("Blood Filtration"))
+            {
+                bloodFiltrationBP.Add(this.bodyParts[i]);
+            }
+            if (this.bodyParts[i].capacity.Contains("Blood Pumping"))
+            {
+                bloodPumpingBP.Add(this.bodyParts[i]);
+            }
+            if (this.bodyParts[i].capacity.Contains("Breathing"))
+            {
+                breathingBP.Add(this.bodyParts[i]);
+            }
+            if (this.bodyParts[i].capacity.Contains("Digestion"))
+            {
+                digestionBP.Add(this.bodyParts[i]);
+            }
+            if (this.bodyParts[i].capacity.Contains("Eating"))
+            {
+                eatingBP.Add(this.bodyParts[i]);
+            }
+            if (this.bodyParts[i].capacity.Contains("Hearing"))
+            {
+                hearingBP.Add(this.bodyParts[i]);
+            }
+            if (this.bodyParts[i].capacity.Contains("Manipulation"))
+            {
+                manipulationBP.Add(this.bodyParts[i]);
+            }
+            if (this.bodyParts[i].capacity.Contains("Moving"))
+            {
+                movingBP.Add(this.bodyParts[i]);
+            }
+            if (this.bodyParts[i].capacity.Contains("Sight"))
+            {
+                sightBP.Add(this.bodyParts[i]);
+            }
+            if (this.bodyParts[i].capacity.Contains("Talking"))
+            {
+                talkingBP.Add(this.bodyParts[i]);
+            }
         }
     }
 
@@ -345,17 +485,6 @@ public class RWPlayerHealthState : PlayerState
         List<RWInjury> healList = new();
 
         float brainEfficiency = 1;
-
-        List<RWBodyPart> bloodFiltrationBP = new();
-        List<RWBodyPart> bloodPumpingBP = new();
-        List<RWBodyPart> breathingBP = new();
-        List<RWBodyPart> digestionBP = new();
-        List<RWBodyPart> eatingBP = new();
-        List<RWBodyPart> hearingBP = new();
-        List<RWBodyPart> manipulationBP = new();
-        List<RWBodyPart> movingBP = new();
-        List<RWBodyPart> sightBP = new();
-        List<RWBodyPart> talkingBP = new();
 
         for (int i = 0; i < bodyParts.Count; i++)
         {
@@ -435,50 +564,6 @@ public class RWPlayerHealthState : PlayerState
             {
                 brainEfficiency = bodyParts[i].efficiency;
             }
-
-            for (int c = 0; c < bodyParts[i].capacity.Count; c++)
-            {
-                if (bodyParts[i].capacity[c] == "Blood Filtration")
-                {
-                    bloodFiltrationBP.Add(bodyParts[i]);
-                }
-                else if (bodyParts[i].capacity[c] == "Blood Pumping")
-                {
-                    bloodPumpingBP.Add(bodyParts[i]);
-                }
-                else if (bodyParts[i].capacity[c] == "Breathing")
-                {
-                    breathingBP.Add(bodyParts[i]);
-                }
-                else if (bodyParts[i].capacity[c] == "Digestion")
-                {
-                    digestionBP.Add(bodyParts[i]);
-                }
-                else if (bodyParts[i].capacity[c] == "Eating")
-                {
-                    eatingBP.Add(bodyParts[i]);
-                }
-                else if (bodyParts[i].capacity[c] == "Hearing")
-                {
-                    hearingBP.Add(bodyParts[i]);
-                }
-                else if (bodyParts[i].capacity[c] == "Manipulation")
-                {
-                    manipulationBP.Add(bodyParts[i]);
-                }
-                else if (bodyParts[i].capacity[c] == "Moving")
-                {
-                    movingBP.Add(bodyParts[i]);
-                }
-                else if (bodyParts[i].capacity[c] == "Sight")
-                {
-                    sightBP.Add(bodyParts[i]);
-                }
-                else if (bodyParts[i].capacity[c] == "Talking")
-                {
-                    talkingBP.Add(bodyParts[i]);
-                }
-            }
         }
 
         if (dead)
@@ -517,6 +602,7 @@ public class RWPlayerHealthState : PlayerState
             for (int i = 0; i < bloodFiltrationBP.Count; i++)
             {
                 baseEfficiency += (bloodFiltrationBP[i] is Kidney ? (bloodFiltrationBP[i].efficiency / 2) : bloodFiltrationBP[i].efficiency) / (bloodFiltrationBP.Count != 1 ? bloodFiltrationBP.Count - 1 : bloodFiltrationBP.Count);
+                Debug.Log(i + " " + bloodFiltrationBP[i] + " baseEfficiency = " + baseEfficiency);
             }
 
             bloodFiltration = (baseEfficiency + offsets) * postFactors;
@@ -671,112 +757,22 @@ public class RWPlayerHealthState : PlayerState
             hearing = 0;
         }
 
-        if (manipulationBP.Count > 0)
+        if ((armSetNames.Count + manipulationBP.Count) > 0)
         {
-            Dictionary<string, List<RWBodyPart>> limbs = new();
-            List<string> limbNames = new();
-
+            float baseEfficiency = 0;
             float offsets = 0;
             float postFactors = 1;
 
-            for (int j = 0; j < manipulationBP.Count; j++)
+            for (int i = 0; i < manipulationBP.Count; i++)
             {
-                string Temp = "";
-                for (int i = 0; i < manipulationBP[j].name.Length; i++)
-                {
-                    char letter = manipulationBP[j].name[i];
-
-                    if (letter.ToString() == " ")
-                    {
-                        if (limbs.TryGetValue(Temp, out _))
-                        {
-                            limbs[Temp].Add(manipulationBP[j]);
-                        }
-                        else
-                        {
-                            limbs[Temp] = new List<RWBodyPart>(1) { manipulationBP[j] };
-                            limbNames.Add(Temp);
-
-                            //Debug.Log("new LimbName " + Temp);
-                        }
-
-                        break;
-                    }
-                    else
-                    {
-                        Temp += letter;
-                    }
-                }
+                postFactors *= manipulationBP[i].efficiency;
             }
 
-            for (int i = 0; i < limbNames.Count; i++)
+            for (int i = 0; i < armSetNames.Count; i++)
             {
-                float armlimbEfficiency = 0;
-                float shoulderEfficiency = 0;
-                float clavicleEfficiency = 0;
-                float humerusEfficiency = 0;
-                float radiusEfficiency = 0;
-                float handEfficiency = 0;
-                float fingerEfficiency = 0;
-
-                int fingerNumber = 0;
-
-                for (int j = 0; j < limbs[limbNames[i]].Count; j++)
-                {
-                    if (limbs[limbNames[i]][j] is Arm)
-                    {
-                        armlimbEfficiency = limbs[limbNames[i]][j].efficiency;
-                    }
-                    else if (limbs[limbNames[i]][j] is Shoulder)
-                    {
-                        shoulderEfficiency = limbs[limbNames[i]][j].efficiency;
-                    }
-                    else if (limbs[limbNames[i]][j] is Clavicle)
-                    {
-                        clavicleEfficiency = limbs[limbNames[i]][j].efficiency;
-                    }
-                    else if (limbs[limbNames[i]][j] is Humerus)
-                    {
-                        humerusEfficiency = limbs[limbNames[i]][j].efficiency;
-                    }
-                    else if (limbs[limbNames[i]][j] is Radius)
-                    {
-                        radiusEfficiency = limbs[limbNames[i]][j].efficiency;
-                    }
-                    else if (limbs[limbNames[i]][j] is Hand)
-                    {
-                        handEfficiency = limbs[limbNames[i]][j].efficiency;
-                    }
-                    else if (limbs[limbNames[i]][j] is Finger)
-                    {
-                        fingerEfficiency += limbs[limbNames[i]][j].efficiency;
-                        fingerNumber++;
-                    }
-                }
-
-                float wholeArmEfficiency = (armlimbEfficiency) * (shoulderEfficiency) * (clavicleEfficiency) * (humerusEfficiency) * (radiusEfficiency) * (handEfficiency) * ((fingerEfficiency * (0.8f / fingerNumber)) + 0.2f);
-
-                wholeArmEfficiency = (wholeArmEfficiency + offsets) * postFactors;
-
-                //Debug.Log(limbNames[i] + " Efficiency is " + wholeArmEfficiency);
-
-                if (armEfficiency.Count > i)
-                {
-                    armEfficiency[i] = wholeArmEfficiency;
-                }
-                else
-                {
-                    armEfficiency.Add(wholeArmEfficiency);
-                }
+                baseEfficiency += armSet[armSetNames[i]].Efficiency(offsets, postFactors) / armSetNames.Count;
             }
 
-            float baseEfficiency = 0;
-
-            for (int i = 0; i < armEfficiency.Count; i++)
-            {
-                baseEfficiency += armEfficiency[i] / armEfficiency.Count;
-            }
-            
             manipulation = baseEfficiency;
         }
         else
@@ -784,113 +780,20 @@ public class RWPlayerHealthState : PlayerState
             manipulation = 0;
         }
 
-        if (movingBP.Count > 0)
+        if ((legSetNames.Count + movingBP.Count) > 0)
         {
-            Dictionary<string, List<RWBodyPart>> limbs = new();
-            List<string> limbNames = new();
-
+            float baseEfficiency = 0;
             float offsets = 0;
             float postFactors = 1;
 
-            for (int j = 0; j < movingBP.Count; j++)
+            for (int i = 0; i < movingBP.Count; i++)
             {
-                string Temp = "";
-                for (int i = 0; i < movingBP[j].name.Length; i++)
-                {
-                    char letter = movingBP[j].name[i];
-
-                    if (letter.ToString() == " ")
-                    {
-                        if (limbs.TryGetValue(Temp, out _))
-                        {
-                            limbs[Temp].Add(movingBP[j]);
-                        }
-                        else
-                        {
-                            limbs[Temp] = new List<RWBodyPart>(1) { movingBP[j] };
-                            limbNames.Add(Temp);
-
-                            //Debug.Log("new LimbName " + Temp);
-                        }
-
-                        break;
-                    }
-                    else
-                    {
-                        Temp += letter;
-                    }
-                }
+                postFactors *= movingBP[i].efficiency;
             }
 
-            for (int i = 0; i < limbNames.Count; i++)
+            for (int i = 0; i < legSetNames.Count; i++)
             {
-                float leglimbEfficiency = 0;
-                float tibiaEfficiency = 0;
-                float femurEfficiency = 0;
-                float footEfficiency = 0;
-                float toeEfficiency = 0;
-
-                float pelvisEfficiency = 0;
-                float spineEfficiency = 0;
-
-                int toeNumber = 0;
-
-                for (int j = 0; j < limbs[limbNames[i]].Count; j++)
-                {
-                    if (limbs[limbNames[i]][j] is Leg)
-                    {
-                        leglimbEfficiency = limbs[limbNames[i]][j].efficiency;
-                    }
-                    else if (limbs[limbNames[i]][j] is Tibia)
-                    {
-                        tibiaEfficiency = limbs[limbNames[i]][j].efficiency;
-                    }
-                    else if (limbs[limbNames[i]][j] is Femur)
-                    {
-                        femurEfficiency = limbs[limbNames[i]][j].efficiency;
-                    }
-                    else if (limbs[limbNames[i]][j] is Foot)
-                    {
-                        footEfficiency = limbs[limbNames[i]][j].efficiency;
-                    }
-                    else if (limbs[limbNames[i]][j] is Toe)
-                    {
-                        toeEfficiency += limbs[limbNames[i]][j].efficiency;
-                        toeNumber++;
-                    }
-                    else if (limbs[limbNames[i]][j] is Pelvis)
-                    {
-                        pelvisEfficiency = limbs[limbNames[i]][j].efficiency;
-                    }
-                    else if (limbs[limbNames[i]][j] is Spine)
-                    {
-                        spineEfficiency = limbs[limbNames[i]][j].efficiency;
-                    }
-                }
-
-                float wholeLegEfficiency = (1 + (bloodPumping - 1f) * 0.2f) * (1f + (breathing - 1) * 0.2f) + (leglimbEfficiency) * (tibiaEfficiency) * (femurEfficiency) * (footEfficiency) * ((toeEfficiency * (0.4f / toeNumber)) + 0.6f) * pelvisEfficiency * spineEfficiency;
-
-                wholeLegEfficiency *= Mathf.Min(1, consciousness);
-
-                wholeLegEfficiency = (wholeLegEfficiency + offsets) * postFactors;
-
-                //Debug.Log(limbNames[i] + " Efficiency is " + wholeLegEfficiency);
-
-                if (legEfficiency.Count > i)
-                {
-                    legEfficiency[i] = wholeLegEfficiency;
-                }
-                else
-                {
-                    legEfficiency.Add(wholeLegEfficiency);
-                }
-            }
-
-            float baseEfficiency = 0;
-
-            for (int i = 0; i < legEfficiency.Count; i++)
-            {
-                baseEfficiency += legEfficiency[i] / legEfficiency.Count;
+                baseEfficiency += legSet[legSetNames[i]].Efficiency(this, offsets, postFactors) / legSetNames.Count;
             }
 
             moving = baseEfficiency;
@@ -1130,8 +1033,21 @@ public class RWPlayerHealthState : PlayerState
 
     public List<RWAffliction> wholeBodyAfflictions = new();
 
-    public List<float> armEfficiency = new();
-    public List<float> legEfficiency = new();
+    List<string> armSetNames = new();
+    Dictionary<string, ArmSet> armSet = new();
+    List<string> legSetNames = new();
+    Dictionary<string, LegSet> legSet = new();
+
+    List<RWBodyPart> bloodFiltrationBP = new();
+    List<RWBodyPart> bloodPumpingBP = new();
+    List<RWBodyPart> breathingBP = new();
+    List<RWBodyPart> digestionBP = new();
+    List<RWBodyPart> eatingBP = new();
+    List<RWBodyPart> hearingBP = new();
+    List<RWBodyPart> manipulationBP = new();
+    List<RWBodyPart> movingBP = new();
+    List<RWBodyPart> sightBP = new();
+    List<RWBodyPart> talkingBP = new();
 
     public float maxHealth;
 

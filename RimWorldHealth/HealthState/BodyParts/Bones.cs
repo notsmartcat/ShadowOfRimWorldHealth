@@ -95,6 +95,8 @@ internal class Clavicle : RWBone
     {
         name = "Clavicle";
 
+        parentSubName = true;
+
         maxHealth = 25;
         health = 25;
 
@@ -117,6 +119,8 @@ internal class Humerus : RWBone
     {
         name = "Humerus";
 
+        parentSubName = true;
+
         maxHealth = 25;
         health = 25;
 
@@ -136,6 +140,8 @@ internal class Radius : RWBone
     public Radius(RWPlayerHealthState state) : base(state)
     {
         name = "Radius";
+
+        parentSubName = true;
 
         maxHealth = 20;
         health = 20;
@@ -179,6 +185,8 @@ internal class Femur : RWBone
     {
         name = "Femur";
 
+        parentSubName = true;
+
         maxHealth = 25;
         health = 25;
 
@@ -198,6 +206,8 @@ internal class Tibia : RWBone
     public Tibia(RWPlayerHealthState state) : base(state)
     {
         name = "Tibia";
+
+        parentSubName = true;
 
         maxHealth = 25;
         health = 25;

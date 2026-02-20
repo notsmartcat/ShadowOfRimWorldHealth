@@ -125,6 +125,7 @@ internal class Liver : RWOrgan
         group.Add("upperTorso");
 
         capacity.Add("Digestion");
+        capacity.Add("Blood Filtration");
 
         deathEffect = "Death"; //might make this one not cause death and slowly regenerate
     }

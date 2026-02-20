@@ -14,6 +14,12 @@ public class RWBodyPart
     //name is used for showing up in the Health Tab and for localization
     public string name = "Generic Body Part";
 
+    //subName is used in case there are multiple of the same bodyPart to diffirintiate between them, the subName is always added on before the name, most common subNames are "Right" and "Left"
+    public string subName = "";
+
+    //the parentSubName bool determines if the bodypart's parent also uses the same subName. for example a right hand's parent (right arm) will use a sub name while a right shoulder's parent (Upper Torso) will not
+    public bool parentSubName = false;
+
     //Max Health, 
     public float maxHealth = 10f;
 
@@ -254,6 +260,8 @@ internal class Arm : RWBodyPart
     {
         name = "Arm";
 
+        parentSubName = true;
+
         maxHealth = 30;
         health = 30;
 
@@ -274,6 +282,8 @@ internal class Hand : RWBodyPart
     {
         name = "Hand";
 
+        parentSubName = true;
+
         maxHealth = 20;
         health = 20;
 
@@ -293,6 +303,8 @@ internal class Finger : RWBodyPart
     public Finger(RWPlayerHealthState state) : base(state)
     {
         name = "Finger";
+
+        parentSubName = true;
 
         maxHealth = 8;
         health = 8;
@@ -335,6 +347,8 @@ internal class Foot : RWBodyPart
     {
         name = "Foot";
 
+        parentSubName = true;
+
         maxHealth = 25;
         health = 25;
 
@@ -354,6 +368,8 @@ internal class Toe : RWBodyPart
     public Toe(RWPlayerHealthState state) : base(state)
     {
         name = "Toe";
+
+        parentSubName = true;
 
         maxHealth = 8;
         health = 8;

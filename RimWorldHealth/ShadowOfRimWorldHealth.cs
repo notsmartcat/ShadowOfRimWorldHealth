@@ -120,4 +120,16 @@ public class RimWorldHealth : BaseUnityPlugin
 
         return false;
     }
+
+    public static bool IsSubPartName(RWBodyPart self, RWBodyPart other)
+    {
+        if (self.parentSubName)
+        {
+            return (self.subName + self.subPartOf) == (other.subName + other.name);
+        }
+        else
+        {
+            return self.subPartOf == other.name;
+        }
+    }
 }

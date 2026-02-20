@@ -47,7 +47,7 @@ internal class CreatureHooks
                 chance += list[i].coverage;
             }
 
-            float roll = UnityEngine.Random.Range(0f, chance);
+            float roll = Random.Range(0f, chance);
 
             chance = 0;
 
@@ -81,7 +81,7 @@ internal class CreatureHooks
 
                 for (int i = 0; i < state.bodyParts.Count; i++)
                 {
-                    if (!IsDestroyed(state.bodyParts[i]) && state.bodyParts[i].subPartOf == list[0].name)
+                    if (!IsDestroyed(state.bodyParts[i]) && IsSubPartName(state.bodyParts[i], list[0]))
                     {
                         Debug.Log("Adding Subpart of " + list[0].name + " with the name " + state.bodyParts[i].name);
                         list.Add(state.bodyParts[i]);
