@@ -21,6 +21,8 @@ internal class Brain : RWOrgan
 
         subPartOf = "Skull";
 
+        isDelicate = true;
+
         group.Add("UpperHead");
         group.Add("Eyes");
         group.Add("FullHead");

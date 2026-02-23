@@ -46,6 +46,9 @@ public class RWBodyPart
 
     public bool isSolid = false;
 
+    //delicate bodyparts (by dafault only eyes) will have a way higher chance to gain scars
+    public bool isDelicate = false;
+
     //What armour group covers this body part.
     public List<string> group = new();
 
@@ -151,6 +154,8 @@ internal class Eye : RWBodyPart
         coverage = 7f;
 
         subPartOf = "Head";
+
+        isDelicate = true;
 
         group.Add("FullHead");
         group.Add("Eyes");

@@ -528,7 +528,25 @@ public class RWPlayerHealthState : PlayerState
                     continue;
                 }
 
-                bodyParts[i].afflictions[j].pain = injury.damage * injury.healingDifficulty.pain / bodySizeFactor;
+                if (injury is RWScar scar && scar.isRevealed)
+                {
+                    if (scar.scarType == "painful")
+                    {
+                        bodyParts[i].afflictions[j].pain = (scar.scarDamage * 1.5f) * injury.healingDifficulty.scarPain / bodySizeFactor;
+                    }
+                    else if (scar.scarType == "")
+                    {
+                        bodyParts[i].afflictions[j].pain = scar.scarDamage * injury.healingDifficulty.scarPain / bodySizeFactor;
+                    }
+                    else if (scar.scarType == "")
+                    {
+                        bodyParts[i].afflictions[j].pain = (scar.scarDamage * 0.5f) * injury.healingDifficulty.scarPain / bodySizeFactor;
+                    }
+                }
+                else
+                {
+                    bodyParts[i].afflictions[j].pain = injury.damage * injury.healingDifficulty.pain / bodySizeFactor;
+                }
 
                 pain += bodyParts[i].afflictions[j].pain;
 
@@ -586,7 +604,19 @@ public class RWPlayerHealthState : PlayerState
 
             injury.damage -= healRate * 0.1f;
 
-            if (injury.damage <= 0)
+            if (injury is RWScar scar)
+            {
+                if (scar.damage <= scar.scarDamage)
+                {
+                    scar.damage = scar.scarDamage;
+                    scar.isTended = true;
+                    scar.isBleeding = false;
+                    scar.isRevealed = true;
+
+                    scar.healingDifficulty.combines = false;
+                }
+            }
+            else if (injury.damage <= 0)
             {
                 injury.healingDifficulty = null;
                 injury.part.afflictions.Remove(injury);
@@ -602,7 +632,6 @@ public class RWPlayerHealthState : PlayerState
             for (int i = 0; i < bloodFiltrationBP.Count; i++)
             {
                 baseEfficiency += (bloodFiltrationBP[i] is Kidney ? (bloodFiltrationBP[i].efficiency / 2) : bloodFiltrationBP[i].efficiency) / (bloodFiltrationBP.Count != 1 ? bloodFiltrationBP.Count - 1 : bloodFiltrationBP.Count);
-                Debug.Log(i + " " + bloodFiltrationBP[i] + " baseEfficiency = " + baseEfficiency);
             }
 
             bloodFiltration = (baseEfficiency + offsets) * postFactors;
@@ -648,7 +677,7 @@ public class RWPlayerHealthState : PlayerState
             breathing = 0;
         }
 
-        consciousness = brainEfficiency * (1 - Mathf.Clamp((pain - 0.1f) * 4 / 9, 0, 0.4f)) * (1 - 0.2f * (1 - bloodPumping)) *(1 - 0.2f * (1 - breathing)) *(1 - 0.1f * (1 - bloodFiltration));
+        consciousness = brainEfficiency * (1 - Mathf.Clamp((pain - 0.1f) * 4 / 9, 0, 0.4f)) * (1 - 0.2f * (1 - bloodPumping)) * (1 - 0.2f * (1 - breathing)) * (1 - 0.1f * (1 - bloodFiltration));
 
         if (bloodLossPerCycle == 0 && bloodLoss > 0)
         {
@@ -907,7 +936,7 @@ public class RWPlayerHealthState : PlayerState
         }
         else
         {
-            focusedBodyPart.afflictions.Add(new RWInjury(this, focusedBodyPart, damage, damageType, attackerName));
+            focusedBodyPart.afflictions.Add(Scar(damage));
         }
 
         while (true)
@@ -1027,27 +1056,103 @@ public class RWPlayerHealthState : PlayerState
                 Debug.Log("health = " + health);
             }
         }
+
+        RWInjury Scar(float damage)
+        {
+            if (damageType.headiffs.Count <= 2 && damageType.headiffs[2] == "Bruise" && !focusedBodyPart.isSolid && !focusedBodyPart.isInternal || damageType.armourCategory == "Blunt" && focusedBodyPart is RWOrgan && !focusedBodyPart.isDelicate)
+            {
+                return new(this, focusedBodyPart, damage, damageType, attackerName);
+            } //bruises never scar
+
+            float oddsOfScarring;
+
+            if (focusedBodyPart is Brain)
+            {
+                oddsOfScarring = 100;
+            }
+            else if (focusedBodyPart.isDelicate)
+            {
+                oddsOfScarring = 50f * Mathf.Clamp((damage - 1) / 5, 0, 1);
+            }
+            else if(focusedBodyPart.isSolid)
+            {
+                oddsOfScarring = 1f * Mathf.Clamp((damage - 4) / 10, 0, 1);
+            }
+            else
+            {
+                oddsOfScarring = 2f * Mathf.Clamp((damage - 4) / 10, 0, 1);
+            }
+
+            if ((Random.value * 100) >= oddsOfScarring)
+            {
+                return new(this, focusedBodyPart, damage, damageType, attackerName);
+            }
+
+            if (damage < 1)
+            {
+                damage = 1;
+            }
+
+            RWScar scar = new(this, focusedBodyPart, damage, damageType, attackerName);
+
+            float pain = Random.value;
+
+            if (pain <= 0.9f)
+            {
+                scar.scarType = "painful";
+            }
+            else if (pain <= 0.7f)
+            {
+                scar.scarType = "aching";
+            }
+            else if (pain <= 0.5f)
+            {
+                scar.scarType = "itchy";
+            }
+
+            if (focusedBodyPart.isDelicate)
+            {
+                scar.isPermanent = true;
+                scar.isRevealed = true;
+
+                scar.isTended = true;
+                scar.isBleeding = false;
+
+                scar.healingDifficulty.combines = false;
+            }
+
+            if (scar.isPermanent)
+            {
+                scar.scarDamage = damage;
+            }
+            else
+            {
+                scar.scarDamage = Mathf.Lerp(1, damage / 2, Random.value);
+            }
+
+            return scar;
+        }
     }
 
     public List<RWBodyPart> bodyParts = new();
 
     public List<RWAffliction> wholeBodyAfflictions = new();
 
-    List<string> armSetNames = new();
-    Dictionary<string, ArmSet> armSet = new();
-    List<string> legSetNames = new();
-    Dictionary<string, LegSet> legSet = new();
+    readonly List<string> armSetNames = new();
+    readonly Dictionary<string, ArmSet> armSet = new();
+    readonly List<string> legSetNames = new();
+    readonly Dictionary<string, LegSet> legSet = new();
 
-    List<RWBodyPart> bloodFiltrationBP = new();
-    List<RWBodyPart> bloodPumpingBP = new();
-    List<RWBodyPart> breathingBP = new();
-    List<RWBodyPart> digestionBP = new();
-    List<RWBodyPart> eatingBP = new();
-    List<RWBodyPart> hearingBP = new();
-    List<RWBodyPart> manipulationBP = new();
-    List<RWBodyPart> movingBP = new();
-    List<RWBodyPart> sightBP = new();
-    List<RWBodyPart> talkingBP = new();
+    readonly List<RWBodyPart> bloodFiltrationBP = new();
+    readonly List<RWBodyPart> bloodPumpingBP = new();
+    readonly List<RWBodyPart> breathingBP = new();
+    readonly List<RWBodyPart> digestionBP = new();
+    readonly List<RWBodyPart> eatingBP = new();
+    readonly List<RWBodyPart> hearingBP = new();
+    readonly List<RWBodyPart> manipulationBP = new();
+    readonly List<RWBodyPart> movingBP = new();
+    readonly List<RWBodyPart> sightBP = new();
+    readonly List<RWBodyPart> talkingBP = new();
 
     public float maxHealth;
 
@@ -1059,25 +1164,15 @@ public class RWPlayerHealthState : PlayerState
     public float pain = 0;
 
     public float consciousness = 1;
-
     public float moving = 1;
-
     public float manipulation = 1;
-
     public float talking = 1;
-
     public float eating = 1;
-
     public float sight = 1;
-
     public float hearing = 1;
-
     public float breathing = 1;
-
     public float bloodFiltration = 1;
-
     public float bloodPumping = 1;
-
     public float digestion = 1;
 
     public float cycleLength = 13;
