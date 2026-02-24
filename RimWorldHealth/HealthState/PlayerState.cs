@@ -933,10 +933,13 @@ public class RWPlayerHealthState : PlayerState
                 DestroyBodyPart();
 
             extraDamage = health * -1;
+
+            focusedBodyPart.health = 0;
         }
         else
         {
             focusedBodyPart.afflictions.Add(Scar(damage));
+            focusedBodyPart.health = health;
         }
 
         while (true)
@@ -960,10 +963,13 @@ public class RWPlayerHealthState : PlayerState
                         {
                             DestroyBodyPart();
                             extraDamage = health * -1;
+
+                            focusedBodyPart.health = 0;
                         }
                         else
                         {
-                            focusedBodyPart.afflictions.Add(new RWInjury(this, focusedBodyPart, damage, damageType, attackerName));
+                            focusedBodyPart.afflictions.Add(Scar(damage));
+                            focusedBodyPart.health = health;
                         }
 
                         break;

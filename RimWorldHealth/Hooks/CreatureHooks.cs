@@ -16,7 +16,7 @@ internal class CreatureHooks
     {
         orig(self, source, directionAndMomentum, hitChunk, hitAppendage, type, damage, stunBonus);
 
-        if (self is not Player || hitChunk == null || self.State == null || self.State is not RWPlayerHealthState state)
+        if (type == Creature.DamageType.Explosion || self is not Player || hitChunk == null || self.State == null || self.State is not RWPlayerHealthState state)
         {
             return;
         }
@@ -100,7 +100,7 @@ internal class CreatureHooks
                     chance += list[i].coverage;
                 }
 
-                float roll = UnityEngine.Random.Range(0f, chance);
+                float roll = Random.Range(0f, chance);
 
                 chance = 0;
 

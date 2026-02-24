@@ -1,6 +1,8 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
 using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace ShadowOfRimWorldHealth;
@@ -9,6 +11,13 @@ namespace ShadowOfRimWorldHealth;
 
 public class RimWorldHealth : BaseUnityPlugin
 {
+    public class OneTimeUseData
+    {
+        public List<Creature> creatures = new();
+    }
+
+    public static readonly ConditionalWeakTable<PhysicalObject, OneTimeUseData> singleUse = new();
+
     public static string all = "ShadowOfRWHealth: ";
     internal static new ManualLogSource Logger;
 
@@ -30,6 +39,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
             ILHooks.Apply();
             CreatureHooks.Apply();
+            WeaponHooks.Apply();
         }
         catch (Exception e) { Logger.LogError(e); }
     }

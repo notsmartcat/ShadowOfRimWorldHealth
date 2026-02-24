@@ -611,9 +611,9 @@ public class HealthTab : HudPart
 
             treatedSprite.scaleY = 20;
 
-            treatedSprite.scaleX = Mathf.Lerp(0, 200, 1 - treatTime / treatTimeMax);
+            treatedSprite.scaleX = Mathf.Lerp(0, 220, 1 - treatTime / treatTimeMax);
 
-            treatedSprite.x = Mathf.Lerp(DrawPos(timeStacker).x, DrawPos(timeStacker).x + 70, 1 - treatTime / treatTimeMax);
+            treatedSprite.x = Mathf.Lerp(DrawPos(timeStacker).x, DrawPos(timeStacker).x + 60, 1 - treatTime / treatTimeMax);
 
             for (int i = 0; i < healthTabBodyParts.Count; i++)
             {
@@ -682,7 +682,7 @@ public class HealthTab : HudPart
         }
         else if (selectedHorizontal == 1)
         {
-            selectedSprite.x += 70;
+            selectedSprite.x += 60;
 
             selectedSprite.y += 120;
 
@@ -733,7 +733,7 @@ public class HealthTab : HudPart
                 }
             }
 
-            selectedSprite.scaleX = 200;
+            selectedSprite.scaleX = 220;
             selectedSprite.scaleY = 20;
         }
 
@@ -1211,7 +1211,7 @@ public class HealthTabBodyPart
 
         for (int i = 0; i < afflictionNumber; i++)
         {
-            afflictionNames[i].x = DrawPos(timeStacker).x - 25;
+            afflictionNames[i].x = DrawPos(timeStacker).x - 45;
             afflictionNames[i].y = DrawPos(timeStacker).y - 20 * i;
             afflictionNames[i].color = Color.white;
 
