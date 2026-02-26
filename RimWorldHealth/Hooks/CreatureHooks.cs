@@ -12,7 +12,7 @@ internal class CreatureHooks
         On.Creature.Violence += CreatureViolence;
     }
 
-    static void CreatureViolence(On.Creature.orig_Violence orig, Creature self, BodyChunk source, UnityEngine.Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos hitAppendage, Creature.DamageType type, float damage, float stunBonus)
+    static void CreatureViolence(On.Creature.orig_Violence orig, Creature self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos hitAppendage, Creature.DamageType type, float damage, float stunBonus)
     {
         orig(self, source, directionAndMomentum, hitChunk, hitAppendage, type, damage, stunBonus);
 
@@ -23,12 +23,14 @@ internal class CreatureHooks
 
         Debug.Log("Bodychunk " + hitChunk.index + " was hit!");
 
+        RWBodyPart focusedBodyPart = null;
+        RWBodyPart secondaryFocusedBodyPart = null;
+
         List<RWBodyPart> list = new();
-        List<RWBodyPart> list2 = new();
 
         for (int i = 0; i < state.bodyParts.Count; i++)
         {
-            if (state.bodyParts[i].connectedBodyChunks.Contains(hitChunk.index) && !IsDestroyed(state.bodyParts[i]))
+            if (state.bodyParts[i].connectedBodyChunks.Contains(hitChunk.index) && !state.bodyParts[i].isInternal && !IsDestroyed(state.bodyParts[i]) && HitBodyPartCheck(state.bodyParts[i]))
             {
                 list.Add(state.bodyParts[i]);
 
@@ -61,36 +63,30 @@ internal class CreatureHooks
                 {
                     Debug.Log("Success for " + list[i].name);
 
-                    list2.Add(list[i]);
+                    focusedBodyPart = list[i];
                     break;
                 }
             }
         }
 
-        if (list2.Count != 0)
-        {
-            list = new(list2);
-            list2.Clear();
-        }
+        list = new();
 
-        if (list.Count > 0)
+        if (focusedBodyPart != null)
         {
-            while (true && list[0] is not Neck) 
+            if (type == Creature.DamageType.Blunt && 0.4f < Random.value)
             {
-                RWBodyPart focusedBodyPart = list[0];
-
                 for (int i = 0; i < state.bodyParts.Count; i++)
                 {
-                    if (!IsDestroyed(state.bodyParts[i]) && IsSubPartName(state.bodyParts[i], list[0]))
+                    if (!IsDestroyed(state.bodyParts[i]) && state.bodyParts[i].isInternal && IsSubPartName(state.bodyParts[i], focusedBodyPart))
                     {
-                        Debug.Log("Adding Subpart of " + list[0].name + " with the name " + state.bodyParts[i].name);
+                        Debug.Log("Adding Subpart of " + focusedBodyPart.name + " with the name " + state.bodyParts[i].name);
                         list.Add(state.bodyParts[i]);
                     }
                 }
 
                 if (list.Count <= 1)
                 {
-                    break;
+                    goto skip1;
                 }
 
                 float chance = 0;
@@ -104,9 +100,7 @@ internal class CreatureHooks
 
                 chance = 0;
 
-                list2 = new(list);
-
-                for (int i = 0; i < list2.Count; i++)
+                for (int i = 0; i < list.Count; i++)
                 {
                     chance += list[i].coverage;
 
@@ -114,45 +108,83 @@ internal class CreatureHooks
 
                     if (roll <= chance)
                     {
-                        list.Clear();
+                        secondaryFocusedBodyPart = list[i];
 
-                        list.Add(list2[i]);
-
-                        Debug.Log("Bodypart out all subparts that was hit is " + list[0].name);
+                        Debug.Log("Bodypart out all subparts that was hit is " + secondaryFocusedBodyPart.name);
                         break;
                     }
                 }
-
-                if (list.Count <= 1 || list[0] == focusedBodyPart)
-                {
-                    break;
-                }
             }
 
-            if (list.Count > 0)
+        skip1:
+
+            float extraDamage = 0;
+
+            if (type == Creature.DamageType.Blunt)
             {
-                Debug.Log("Bodypart hit is " + list[0].name);
+                damage = Random.Range(0.8f, 1.2f);
+            }
 
-                string attackerName = "";
-
-                if (source != null && source.owner != null)
+            if (focusedBodyPart != null)
+            {
+                float tempDamage = damage;
+                Debug.Log("damage = " + damage);
+                if (type == Creature.DamageType.Blunt && secondaryFocusedBodyPart != null)
                 {
-                    attackerName = source.owner.ToString();
+                    tempDamage = damage * Random.Range(0.8f, 0.9f);
+                    Debug.Log("TempDamage = " + tempDamage);
+                    extraDamage = damage - tempDamage;
+                    Debug.Log("ExtraDamage = " + extraDamage);
                 }
 
-                RWDamageType damageType;
-
-                if (type == Creature.DamageType.Explosion)
+                Damage(focusedBodyPart, tempDamage);
+            }
+            if (secondaryFocusedBodyPart != null)
+            {
+                if (type == Creature.DamageType.Blunt)
                 {
-                    damageType = new RWBomb();
-                }
-                else
-                {
-                    damageType = new RWDamageType();
+                    damage = (damage * Random.Range(0.2f, 0.35f)) + extraDamage;
                 }
 
-                state.Damage(damageType, damage * 10, list[0], attackerName);
+                Debug.Log("secondary damage = " + damage);
+
+                Damage(secondaryFocusedBodyPart, damage);
             }
         }
-    }
+
+        void Damage(RWBodyPart focusedBodyPart, float damage)
+        {
+            Debug.Log("Bodypart hit is " + focusedBodyPart.name);
+
+            string attackerName = "";
+
+            if (source != null && source.owner != null)
+            {
+                attackerName = source.owner.ToString();
+            }
+
+            RWDamageType damageType;
+
+            if (type == Creature.DamageType.Blunt)
+            {
+                damageType = new RWBlunt();
+            }
+            else
+            {
+                damageType = new RWDamageType();
+            }
+
+            state.Damage(damageType, damage, focusedBodyPart, attackerName);
+        }
+
+        bool HitBodyPartCheck(RWBodyPart part)
+        {
+            if (type == Creature.DamageType.Blunt)
+            {
+                return !part.isInternal && part is not Eye;
+            }
+
+            return true;
+        }
+    } // this whole hook might need to go in the future, all attacks will be hooked into where Violence is called so the right DamageType can be used
 }

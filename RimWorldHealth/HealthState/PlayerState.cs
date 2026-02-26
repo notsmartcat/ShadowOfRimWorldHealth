@@ -532,20 +532,20 @@ public class RWPlayerHealthState : PlayerState
                 {
                     if (scar.scarType == "painful")
                     {
-                        bodyParts[i].afflictions[j].pain = (scar.scarDamage * 1.5f) * injury.healingDifficulty.scarPain / bodySizeFactor;
+                        bodyParts[i].afflictions[j].pain = ((scar.scarDamage * 1.5f) * injury.healingDifficulty.scarPain / bodySizeFactor)/ 100;
                     }
                     else if (scar.scarType == "")
                     {
-                        bodyParts[i].afflictions[j].pain = scar.scarDamage * injury.healingDifficulty.scarPain / bodySizeFactor;
+                        bodyParts[i].afflictions[j].pain = (scar.scarDamage * injury.healingDifficulty.scarPain / bodySizeFactor)/ 100;
                     }
                     else if (scar.scarType == "")
                     {
-                        bodyParts[i].afflictions[j].pain = (scar.scarDamage * 0.5f) * injury.healingDifficulty.scarPain / bodySizeFactor;
+                        bodyParts[i].afflictions[j].pain = ((scar.scarDamage * 0.5f) * injury.healingDifficulty.scarPain / bodySizeFactor)/ 100;
                     }
                 }
                 else
                 {
-                    bodyParts[i].afflictions[j].pain = injury.damage * injury.healingDifficulty.pain / bodySizeFactor;
+                    bodyParts[i].afflictions[j].pain = (injury.damage * injury.healingDifficulty.pain / bodySizeFactor)/100;
                 }
 
                 pain += bodyParts[i].afflictions[j].pain;

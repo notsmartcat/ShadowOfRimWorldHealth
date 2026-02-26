@@ -148,7 +148,6 @@ internal class ILHooks
                 val.MoveAfterLabels();
 
                 val.Emit(OpCodes.Ldarg_0);
-                val.Emit<Explosion>(OpCodes.Ldfld, "sourceObject");
                 val.Emit(OpCodes.Ldarg_0);
                 val.Emit<UpdatableAndDeletable>(OpCodes.Ldfld, "room");
                 val.Emit<Room>(OpCodes.Ldfld, "physicalObjects");
@@ -174,9 +173,9 @@ internal class ILHooks
         catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
     }
 
-    public static void ExplosionUpdate(PhysicalObject obj, Creature self, float damage)
+    public static void ExplosionUpdate(Explosion obj, Creature self, float damage)
     {
-        if (obj == null || !singleUse.TryGetValue(obj, out OneTimeUseData data) || data.creatures.Contains(self) || damage <= 0 || self.State == null || self.State is not RWPlayerHealthState state)
+        if (obj.sourceObject == null || !singleUse.TryGetValue(obj.sourceObject, out OneTimeUseData data) || data.creatures.Contains(self) || damage <= 0 || self.State == null || self.State is not RWPlayerHealthState state)
         {
             return;
         }
@@ -191,18 +190,19 @@ internal class ILHooks
 
         for (int p = 0; p < amount; p++)
         {
+            RWBodyPart focusedBodyPart = null;
+
             List<RWBodyPart> list = new();
-            List<RWBodyPart> list2 = new();
 
             for (int i = 0; i < state.bodyParts.Count; i++)
             {
-                if (state.bodyParts[i].connectedBodyChunks.Count != 0 && !IsDestroyed(state.bodyParts[i]))
+                if (!IsDestroyed(state.bodyParts[i]))
                 {
                     list.Add(state.bodyParts[i]);
 
-                    Debug.Log("Explosion possible hit Bodypart is = " + state.bodyParts[i].name);
+                    //Debug.Log("Explosion possible hit Bodypart is = " + state.bodyParts[i].name);
                 }
-            }
+            } //Add all non-Destroyed BodyParts because explosions can hit any BodyPart
 
             if (list.Count > 1)
             {
@@ -229,95 +229,39 @@ internal class ILHooks
                     {
                         Debug.Log("Explosion Success for " + list[i].name);
 
-                        list2.Add(list[i]);
+                        focusedBodyPart = list[i];
                         break;
                     }
                 }
             }
 
-            if (list2.Count != 0)
+            if (focusedBodyPart != null)
             {
-                list = new(list2);
-                list2.Clear();
-            }
+                Debug.Log("Explosion Bodypart hit is " + list[0].name);
 
-            if (list.Count > 0)
-            {
-                while (true && list[0] is not Neck)
+                PhysicalObject sourceObj = obj.sourceObject;
+
+                string attackerName = obj.ToString();
+
+                if (sourceObj is ScavengerBomb)
                 {
-                    RWBodyPart focusedBodyPart = list[0];
-
-                    for (int i = 0; i < state.bodyParts.Count; i++)
-                    {
-                        if (!IsDestroyed(state.bodyParts[i]) && IsSubPartName(state.bodyParts[i], list[0]))
-                        {
-                            Debug.Log("Explosion Adding Subpart of " + list[0].name + " with the name " + state.bodyParts[i].name);
-                            list.Add(state.bodyParts[i]);
-                        }
-                    }
-
-                    if (list.Count <= 1)
-                    {
-                        break;
-                    }
-
-                    float chance = 0;
-
-                    for (int i = 0; i < list.Count; i++)
-                    {
-                        chance += list[i].coverage;
-                    }
-
-                    float roll = UnityEngine.Random.Range(0f, chance);
-
-                    chance = 0;
-
-                    list2 = new(list);
-
-                    for (int i = 0; i < list2.Count; i++)
-                    {
-                        chance += list[i].coverage;
-
-                        Debug.Log("Explosion Roll = " + roll + "/" + chance + " for " + list[i].name);
-
-                        if (roll <= chance)
-                        {
-                            list.Clear();
-
-                            list.Add(list2[i]);
-
-                            Debug.Log("Explosion Bodypart out all subparts that was hit is " + list[0].name);
-                            break;
-                        }
-                    }
-
-                    if (list.Count <= 1 || list[0] == focusedBodyPart)
-                    {
-                        break;
-                    }
+                    attackerName = "Scavenger bomb";
+                }
+                else if (sourceObj is ExplosiveSpear)
+                {
+                    attackerName = "Explosive spear";
                 }
 
-                if (list.Count > 0)
+                if (obj.killTagHolder != null)
                 {
-                    Debug.Log("Explosion Bodypart hit is " + list[0].name);
-
-                    string attackerName = obj.ToString();
-
-                    if (obj is ScavengerBomb)
-                    {
-                        attackerName = "Scavenger bomb";
-                    }
-                    else if (obj is ExplosiveSpear)
-                    {
-                        attackerName = "Explosive spear";
-                    }
-
-                    RWDamageType damageType;
-
-                    damageType = new RWBomb();
-
-                    state.Damage(damageType, damage/amount, list[0], attackerName);
+                    attackerName = obj.killTagHolder + " - " + attackerName;
                 }
+
+                RWDamageType damageType;
+
+                damageType = new RWBomb();
+
+                state.Damage(damageType, damage / amount, focusedBodyPart, attackerName);
             }
         }
     }

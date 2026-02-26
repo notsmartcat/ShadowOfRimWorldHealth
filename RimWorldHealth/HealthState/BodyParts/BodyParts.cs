@@ -153,6 +153,8 @@ internal class Eye : RWBodyPart
 
         coverage = 7f;
 
+        connectedBodyChunks.Add(0);
+
         subPartOf = "Head";
 
         isDelicate = true;
@@ -176,6 +178,8 @@ internal class Ear : RWBodyPart
 
         coverage = 7f;
 
+        connectedBodyChunks.Add(0);
+
         subPartOf = "Head";
 
         group.Add("UpperHead");
@@ -195,6 +199,8 @@ internal class Nose : RWBodyPart
 
         coverage = 10f;
 
+        connectedBodyChunks.Add(0);
+
         subPartOf = "Head";
 
         group.Add("FullHead");
@@ -210,6 +216,8 @@ internal class Jaw : RWBodyPart
         health = 20;
 
         coverage = 15f;
+
+        connectedBodyChunks.Add(0);
 
         subPartOf = "Head";
 
@@ -252,6 +260,8 @@ internal class Shoulder : RWBodyPart
 
         coverage = 12f;
 
+        connectedBodyChunks.Add(1);
+
         subPartOf = "Upper Torso";
 
         group.Add("Shoulders");
@@ -273,6 +283,8 @@ internal class Arm : RWBodyPart
         quantity = 2;
 
         coverage = 77f;
+
+        connectedBodyChunks.Add(1);
 
         subPartOf = "Shoulder";
 
@@ -296,6 +308,8 @@ internal class Hand : RWBodyPart
 
         coverage = 14f;
 
+        connectedBodyChunks.Add(1);
+
         subPartOf = "Arm";
 
         group.Add("Hands");
@@ -318,6 +332,8 @@ internal class Finger : RWBodyPart
 
         coverage = 8f;
 
+        connectedBodyChunks.Add(1);
+
         subPartOf = "Hand";
 
         group.Add("Hands");
@@ -338,6 +354,8 @@ internal class Leg : RWBodyPart
         quantity = 2;
 
         coverage = 14f;
+
+        connectedBodyChunks.Add(2);
 
         subPartOf = "Lower Torso";
 
@@ -361,6 +379,8 @@ internal class Foot : RWBodyPart
 
         coverage = 10f;
 
+        connectedBodyChunks.Add(2);
+
         subPartOf = "Leg";
 
         group.Add("Feet");
@@ -383,6 +403,8 @@ internal class Toe : RWBodyPart
 
         coverage = 9f;
 
+        connectedBodyChunks.Add(2);
+
         subPartOf = "Foot";
 
         group.Add("Feet");
@@ -401,6 +423,8 @@ internal class Tail : RWBodyPart
         health = 20;
 
         coverage = 10f;
+
+        connectedBodyChunks.Add(2);
 
         subPartOf = "Lower Torso";
 
