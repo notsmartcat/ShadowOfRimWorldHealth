@@ -63,8 +63,17 @@ public class RWInjury : RWAffliction
 
             RWHealingDifficulty healingDifficulty = RWHealingDifficultyName switch
             {
-                "Shredded" => new RWHDShredded(),
+                "Burn" => new RWHDBurn(),
+                "Crush" => new RWHDCrush(),
                 "Crack" => new RWHDCrack(),
+                "Surgical cut" => new RWHDSurgicalCut(),
+                "Scratch" => new RWHDScratch(),
+                "Bite" => new RWHDBite(),
+                "Stab" => new RWHDStab(),
+                "Gunshot" => new RWHDGunshot(),
+                "Shredded" => new RWHDShredded(),
+                "Bruise" => new RWHDBruise(),
+                "Frostbite" => new RWHDFrostbite(),
                 _ => new RWHealingDifficulty(),
             };
 

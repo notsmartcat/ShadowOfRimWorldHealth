@@ -44,7 +44,7 @@ internal class Stomach : RWOrgan
 
         coverage = 2.5f;
 
-        subPartOf = "upperTorso";
+        subPartOf = "Upper Torso";
 
         group.Add("upperTorso");
 
@@ -62,7 +62,7 @@ internal class Heart : RWOrgan
 
         coverage = 2f;
 
-        subPartOf = "upperTorso"; //Might make this Ribcage
+        subPartOf = "Upper Torso"; //Might make this Ribcage
 
         group.Add("upperTorso");
 
@@ -84,7 +84,7 @@ internal class Lung : RWOrgan
 
         coverage = 2.5f;
 
-        subPartOf = "upperTorso";
+        subPartOf = "Upper Torso";
 
         group.Add("upperTorso");
 
@@ -104,7 +104,7 @@ internal class Kidney : RWOrgan
 
         coverage = 1.7f;
 
-        subPartOf = "upperTorso";
+        subPartOf = "Upper Torso";
 
         group.Add("upperTorso");
 
@@ -122,7 +122,7 @@ internal class Liver : RWOrgan
 
         coverage = 2.5f;
 
-        subPartOf = "upperTorso";
+        subPartOf = "Upper Torso";
 
         group.Add("upperTorso");
 

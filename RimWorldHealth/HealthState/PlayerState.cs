@@ -800,6 +800,8 @@ public class RWPlayerHealthState : PlayerState
             for (int i = 0; i < armSetNames.Count; i++)
             {
                 baseEfficiency += armSet[armSetNames[i]].Efficiency(offsets, postFactors) / armSetNames.Count;
+
+                //Debug.Log(armSetNames[i] + " Arm set efficiency = " + baseEfficiency);
             }
 
             manipulation = baseEfficiency;
@@ -927,7 +929,7 @@ public class RWPlayerHealthState : PlayerState
             return;
         }
 
-        if (health < 0f)
+        if (health <= 0f)
         {
             if(focusedBodyPart.deathEffect != "" && focusedBodyPart is not UpperTorso)
                 DestroyBodyPart();
@@ -942,7 +944,12 @@ public class RWPlayerHealthState : PlayerState
             focusedBodyPart.health = health;
         }
 
-        while (true)
+        if (damageType.armourCategory == "Blunt")
+        {
+            damage = 0;
+        }
+
+        while (extraDamage > 0 || damage > 0)
         {
             if (focusedBodyPart.isInternal && focusedBodyPart.subPartOf != "")
             {
@@ -957,9 +964,9 @@ public class RWPlayerHealthState : PlayerState
 
                         Debug.Log(focusedBodyPart.name + " was hit for " + damage + " damage and " + extraDamage + " extraDamage now it's health is " + health);
 
-                        extraDamage = 0f;
+                        OverkillPrevention();
 
-                        if (health < 0f)
+                        if (health <= 0f)
                         {
                             DestroyBodyPart();
                             extraDamage = health * -1;
@@ -968,6 +975,8 @@ public class RWPlayerHealthState : PlayerState
                         }
                         else
                         {
+                            extraDamage = 0f;
+
                             focusedBodyPart.afflictions.Add(Scar(damage));
                             focusedBodyPart.health = health;
                         }
@@ -984,7 +993,12 @@ public class RWPlayerHealthState : PlayerState
 
         void DestroyBodyPart()
         {
-            if (focusedBodyPart.deathEffect == "Destroy" || focusedBodyPart.deathEffect == "Death" || focusedBodyPart.deathEffect == "CutInHalf" || focusedBodyPart.deathEffect == "Decapitation" || focusedBodyPart.deathEffect == "")
+            if (focusedBodyPart == null)
+            {
+                return;
+            }
+
+            if (true || focusedBodyPart.deathEffect == "Destroy" || focusedBodyPart.deathEffect == "Death" || focusedBodyPart.deathEffect == "CutInHalf" || focusedBodyPart.deathEffect == "Decapitation" || focusedBodyPart.deathEffect == "")
             {
                 List<RWBodyPart> subParts = new()
                 {
@@ -1005,15 +1019,12 @@ public class RWPlayerHealthState : PlayerState
                         {
                             if (!subParts.Contains(bodyParts[i]) && !subPartsRestricted.Contains(bodyParts[i]) && bodyParts[i].subPartOf == subParts[j].name)
                             {
-                                if (subParts[j].afflictions.Count == 1)
+                                if (subParts[j].afflictions.Count == 1 && subParts[j].afflictions[0] is RWDestroyed)
                                 {
-                                    if (subParts[j].afflictions[0] is RWDestroyed)
-                                    {
-                                        Debug.Log("Tried to destroy subBody part = " + subParts[j].name + " but it was already destroyed");
+                                    Debug.Log("Tried to destroy subBody part = " + subParts[j].name + " but it was already destroyed");
 
-                                        subPartsRestricted.Add(bodyParts[i]);
-                                        continue;
-                                    }
+                                    subPartsRestricted.Add(bodyParts[i]);
+                                    continue;
                                 }
 
                                 Debug.Log("Destroying subBody part = " + bodyParts[i].name);
@@ -1093,6 +1104,8 @@ public class RWPlayerHealthState : PlayerState
             {
                 return new(this, focusedBodyPart, damage, damageType, attackerName);
             }
+
+            Debug.Log(focusedBodyPart + " is scarred!");
 
             if (damage < 1)
             {

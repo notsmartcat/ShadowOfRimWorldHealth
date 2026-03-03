@@ -188,11 +188,14 @@ internal class ILHooks
 
         int amount = UnityEngine.Random.Range(1, 5);
 
+        RWBodyPart focusedBodyPart;
+
+        List<RWBodyPart> list = new();
+
         for (int p = 0; p < amount; p++)
         {
-            RWBodyPart focusedBodyPart = null;
-
-            List<RWBodyPart> list = new();
+            focusedBodyPart = null;
+            list.Clear();
 
             for (int i = 0; i < state.bodyParts.Count; i++)
             {
@@ -234,10 +237,14 @@ internal class ILHooks
                     }
                 }
             }
+            else if (list.Count == 1)
+            {
+                focusedBodyPart = list[0];
+            }
 
             if (focusedBodyPart != null)
             {
-                Debug.Log("Explosion Bodypart hit is " + list[0].name);
+                Debug.Log("Explosion Bodypart hit is " + focusedBodyPart.name);
 
                 PhysicalObject sourceObj = obj.sourceObject;
 
