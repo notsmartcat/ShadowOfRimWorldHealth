@@ -728,11 +728,27 @@ public class HealthTab : HudPart
                     }
                 }
 
-                selectedSprite.y = healthTabBodyParts[selectedBodyPart].DrawPos(timeStacker).y - 7 - 20 * selectedAffliction - ((healthTabBodyParts[selectedBodyPart].totalHeight - 1) * 10);
+                int extraHeight = 0;
+                int prevHeight = 0;
+
+                if (healthTabBodyParts[selectedBodyPart].combinedAfflictionsHeight.TryGetValue(healthTabBodyParts[selectedBodyPart].CombinedAfflictionName(healthTabBodyParts[selectedBodyPart].bodyPart, selectedAffliction), out List<int> dic))
+                {
+                    extraHeight = dic[0] - 1;
+                    prevHeight = dic[1];
+                }
+                else if (healthTabBodyParts[selectedBodyPart].afflictionsHeight.Count >= selectedAffliction - healthTabBodyParts[selectedBodyPart].combinedAfflictions.Count)
+                {
+                    extraHeight = healthTabBodyParts[selectedBodyPart].afflictionsHeight[selectedAffliction - healthTabBodyParts[selectedBodyPart].combinedAfflictions.Count][0] - 1;
+                    prevHeight = healthTabBodyParts[selectedBodyPart].afflictionsHeight[selectedAffliction - healthTabBodyParts[selectedBodyPart].combinedAfflictions.Count][1];
+
+                    Debug.Log("bodypart " + selectedBodyPart + " affliction number " + (selectedAffliction - healthTabBodyParts[selectedBodyPart].combinedAfflictions.Count) + " extraHeight is " + extraHeight + " and prevHeight is " + prevHeight);
+                }
+
+                selectedSprite.y = healthTabBodyParts[selectedBodyPart].DrawPos(timeStacker).y - (-1 + (17.5f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
 
                 selectedSprite.MoveInFrontOfOtherNode(healthTabBodyParts[selectedBodyPart].background);
 
-                selectedSprite.scaleY = 20 * healthTabBodyParts[selectedBodyPart].totalHeight;
+                selectedSprite.scaleY = 1 + 17.5f + (15 * extraHeight);
 
                 if (selectedTimer <= 0)
                 {
@@ -1037,6 +1053,7 @@ public class HealthTab : HudPart
         treatedAffliction = null;
     }
 
+    #region Values
     public RWPlayerHealthState state;
 
     public FLabel capacityName;
@@ -1082,6 +1099,7 @@ public class HealthTab : HudPart
     RWAffliction treatedAffliction = null;
 
     public Player.InputPackage input;
+    #endregion
 }
 
 public class HealthTabBodyPart
@@ -1188,14 +1206,12 @@ public class HealthTabBodyPart
     public void Draw(float timeStacker)
     {
         background.isVisible = owner.visible && owner.healthTabWholeBody.active ? !(owner.healthTabBodyParts.IndexOf(this) % 2 == 0) : owner.healthTabBodyParts.IndexOf(this) % 2 == 0;
-
         bodyPartName.isVisible = owner.visible;
 
         for (int i = 0; i < afflictionNames.Count; i++)
         {
             afflictionNames[i].isVisible = owner.visible && afflictionNumber > i;
         }
-
         for (int i = 0; i < afflictionIcons.Length; i++)
         {
             afflictionIcons[i].isVisible = owner.visible && afflictionNumber > i;
@@ -1252,7 +1268,7 @@ public class HealthTabBodyPart
                         afflictionNames[i].text = text;
                         Menu.MenuLabel.WordWrapLabel(afflictionNames[i], wordWrap);
 
-                        combinedAfflictionsHeight.Add(CombinedAfflictionName(bodyPart, j), Mathf.FloorToInt(afflictionNames[i].textRect.height / afflictionNames[i].FontLineHeight));
+                        combinedAfflictionsHeight.Add(CombinedAfflictionName(bodyPart, j), new(2) { Mathf.FloorToInt(afflictionNames[i].textRect.height / afflictionNames[i].FontLineHeight), extraHeight });
 
                         HeightChanges(i, Mathf.FloorToInt(afflictionNames[i].textRect.height / afflictionNames[i].FontLineHeight));
 
@@ -1295,7 +1311,7 @@ public class HealthTabBodyPart
 
                         afflictionNames[i].text = text;
                         Menu.MenuLabel.WordWrapLabel(afflictionNames[i], wordWrap);
-                        afflictionsHeight.Add(Mathf.FloorToInt(afflictionNames[i].textRect.height / afflictionNames[i].FontLineHeight));
+                        afflictionsHeight.Add(new(2) { Mathf.FloorToInt(afflictionNames[i].textRect.height / afflictionNames[i].FontLineHeight), extraHeight });
 
                         HeightChanges(i, Mathf.FloorToInt(afflictionNames[i].textRect.height / afflictionNames[i].FontLineHeight));
 
@@ -1372,9 +1388,9 @@ public class HealthTabBodyPart
     public int extraHeight = 0;
 
     public Dictionary<string, List<RWAffliction>> combinedAfflictions;
-    public Dictionary<string, int> combinedAfflictionsHeight;
+    public Dictionary<string, List<int>> combinedAfflictionsHeight;
     public List<RWAffliction> afflictions;
-    public List<int> afflictionsHeight;
+    public List<List<int>> afflictionsHeight;
 
     public int partPriority;
 
@@ -1567,6 +1583,7 @@ public class HealthTabWholeBody
         }
     }
 
+    #region Values
     public HealthTab owner;
 
     public FSprite background;
@@ -1588,6 +1605,7 @@ public class HealthTabWholeBody
     public bool active = false;
 
     const float wordWrap = 200;
+    #endregion
 }
 
 public class HealthTabInfo
@@ -1769,6 +1787,7 @@ public class HealthTabInfo
         description.RemoveFromContainer();
     }
 
+    #region Values
     public HealthTab owner;
 
     public FSprite[] backgrounds;
@@ -1779,4 +1798,5 @@ public class HealthTabInfo
     public FLabel description;
 
     public bool slatedForDeletion = false;
+    #endregion
 }
