@@ -470,6 +470,18 @@ public class RWPlayerHealthState : PlayerState
 
         pain = 0;
 
+        consciousness = 0;
+        moving = 0;
+        manipulation = 0;
+        talking = 0;
+        eating = 0;
+        sight = 0;
+        hearing = 0;
+        breathing = 0;
+        bloodFiltration = 0;
+        bloodPumping = 0;
+        digestion = 0;
+
         if (healingRate > 0)
         {
             healingRate--;
@@ -485,6 +497,8 @@ public class RWPlayerHealthState : PlayerState
         List<RWInjury> healList = new();
 
         float brainEfficiency = 1;
+
+        List<RWAffliction> afflictionList;
 
         for (int i = 0; i < bodyParts.Count; i++)
         {
@@ -503,9 +517,11 @@ public class RWPlayerHealthState : PlayerState
                 goto line1;
             }
 
-            for (int j = 0; j < bodyParts[i].afflictions.Count; j++)
+            afflictionList = new(bodyParts[i].afflictions);
+
+            for (int j = 0; j < afflictionList.Count; j++)
             {
-                if (bodyParts[i].afflictions[j] is RWDestroyed destroyed)
+                if (afflictionList[j] is RWDestroyed destroyed)
                 {
                     bodyParts[i].health = 0;
 
@@ -516,8 +532,13 @@ public class RWPlayerHealthState : PlayerState
                     break;
                 }
 
-                if (bodyParts[i].afflictions[j] is not RWInjury injury)
+                if (afflictionList[j] is not RWInjury injury)
                 {
+                    if (afflictionList[j] is RWDisease disease)
+                    {
+                        Disease(disease, bodyParts[i]);
+                    }
+
                     return;
                 }
 
@@ -532,23 +553,23 @@ public class RWPlayerHealthState : PlayerState
                 {
                     if (scar.scarType == "painful")
                     {
-                        bodyParts[i].afflictions[j].pain = ((scar.scarDamage * 1.5f) * injury.healingDifficulty.scarPain / bodySizeFactor)/ 100;
+                        afflictionList[j].pain = scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / bodySizeFactor / 100;
                     }
                     else if (scar.scarType == "")
                     {
-                        bodyParts[i].afflictions[j].pain = (scar.scarDamage * injury.healingDifficulty.scarPain / bodySizeFactor)/ 100;
+                        afflictionList[j].pain = scar.scarDamage * injury.healingDifficulty.scarPain / bodySizeFactor / 100;
                     }
                     else if (scar.scarType == "")
                     {
-                        bodyParts[i].afflictions[j].pain = ((scar.scarDamage * 0.5f) * injury.healingDifficulty.scarPain / bodySizeFactor)/ 100;
+                        afflictionList[j].pain = scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / bodySizeFactor / 100;
                     }
                 }
                 else
                 {
-                    bodyParts[i].afflictions[j].pain = (injury.damage * injury.healingDifficulty.pain / bodySizeFactor)/100;
+                    afflictionList[j].pain = injury.damage * injury.healingDifficulty.pain / bodySizeFactor / 100;
                 }
 
-                pain += bodyParts[i].afflictions[j].pain;
+                pain += afflictionList[j].pain;
 
                 bloodLossPerCycle += injury.isBleeding && !injury.isTended ? injury.healingDifficulty.bleeding * injury.damage * bodySizeFactor * BloodLossMultiplier(bodyParts[i]) : 0;
 
@@ -581,6 +602,16 @@ public class RWPlayerHealthState : PlayerState
             if (bodyParts[i] is Brain)
             {
                 brainEfficiency = bodyParts[i].efficiency;
+            }
+        }
+
+        afflictionList = new(wholeBodyAfflictions);
+
+        for (int i = 0; i < afflictionList.Count; i++)
+        {
+            if (afflictionList[i] is RWDisease disease)
+            {
+                Disease(disease);
             }
         }
 
@@ -626,7 +657,7 @@ public class RWPlayerHealthState : PlayerState
         if (bloodFiltrationBP.Count > 0)
         {
             float baseEfficiency = 0;
-            float offsets = 0;
+            float offsets = bloodFiltration;
             float postFactors = 1;
 
             for (int i = 0; i < bloodFiltrationBP.Count; i++)
@@ -644,7 +675,7 @@ public class RWPlayerHealthState : PlayerState
         if (bloodPumpingBP.Count > 0)
         {
             float baseEfficiency = 0;
-            float offsets = 0;
+            float offsets = bloodPumping;
             float postFactors = 1;
 
             for (int i = 0; i < bloodPumpingBP.Count; i++)
@@ -662,7 +693,7 @@ public class RWPlayerHealthState : PlayerState
         if (breathingBP.Count > 0)
         {
             float baseEfficiency = 0;
-            float offsets = 0;
+            float offsets = breathing;
             float postFactors = 1;
 
             for (int i = 0; i < breathingBP.Count; i++)
@@ -677,7 +708,9 @@ public class RWPlayerHealthState : PlayerState
             breathing = 0;
         }
 
-        consciousness = brainEfficiency * (1 - Mathf.Clamp((pain - 0.1f) * 4 / 9, 0, 0.4f)) * (1 - 0.2f * (1 - bloodPumping)) * (1 - 0.2f * (1 - breathing)) * (1 - 0.1f * (1 - bloodFiltration));
+        float consciounessOffset = consciousness;
+
+        consciousness = (brainEfficiency * (1 - Mathf.Clamp((pain - 0.1f) * 4 / 9, 0, 0.4f)) * (1 - 0.2f * (1 - bloodPumping)) * (1 - 0.2f * (1 - breathing)) * (1 - 0.1f * (1 - bloodFiltration))) + consciounessOffset;
 
         if (bloodLossPerCycle == 0 && bloodLoss > 0)
         {
@@ -717,7 +750,7 @@ public class RWPlayerHealthState : PlayerState
         if (digestionBP.Count > 0)
         {
             float baseEfficiency = 0;
-            float offsets = 0;
+            float offsets = digestion;
             float postFactors = 1;
 
             for (int i = 0; i < digestionBP.Count; i++)
@@ -735,7 +768,7 @@ public class RWPlayerHealthState : PlayerState
         if (eatingBP.Count > 0)
         {
             float baseEfficiency = 0;
-            float offsets = 0;
+            float offsets = eating;
             float postFactors = 1;
 
             for (int i = 0; i < eatingBP.Count; i++)
@@ -753,7 +786,7 @@ public class RWPlayerHealthState : PlayerState
         if (hearingBP.Count > 0)
         {
             float baseEfficiency = 0;
-            float offsets = 0;
+            float offsets = hearing;
             float postFactors = 1;
 
             if (hearingBP.Count == 1)
@@ -789,7 +822,7 @@ public class RWPlayerHealthState : PlayerState
         if ((armSetNames.Count + manipulationBP.Count) > 0)
         {
             float baseEfficiency = 0;
-            float offsets = 0;
+            float offsets = manipulation;
             float postFactors = 1;
 
             for (int i = 0; i < manipulationBP.Count; i++)
@@ -814,7 +847,7 @@ public class RWPlayerHealthState : PlayerState
         if ((legSetNames.Count + movingBP.Count) > 0)
         {
             float baseEfficiency = 0;
-            float offsets = 0;
+            float offsets = moving;
             float postFactors = 1;
 
             for (int i = 0; i < movingBP.Count; i++)
@@ -837,7 +870,7 @@ public class RWPlayerHealthState : PlayerState
         if (sightBP.Count > 0)
         {
             float baseEfficiency = 0;
-            float offsets = 0;
+            float offsets = sight;
             float postFactors = 1;
 
             if (sightBP.Count == 1)
@@ -873,7 +906,7 @@ public class RWPlayerHealthState : PlayerState
         if (talkingBP.Count > 0)
         {
             float baseEfficiency = 0;
-            float offsets = 0;
+            float offsets = talking;
             float postFactors = 1;
 
             for (int i = 0; i < talkingBP.Count; i++)
@@ -908,6 +941,70 @@ public class RWPlayerHealthState : PlayerState
             }
 
             return multiplier;
+        }
+
+        void Disease(RWDisease disease, RWBodyPart part = null)
+        {
+            if (!disease.isImmune)
+            {
+                disease.severity += disease.severityGain * disease.InfectionLuck / (40 * 60 * cycleLength);
+
+                if (disease.isTended)
+                {
+                    disease.severity -= disease.treatment * disease.tendQuality / (40 * 60 * cycleLength);
+                }
+
+                disease.immunity += disease.immunityGain / (40 * 60 * cycleLength);
+
+                disease.timeUntilTreatment -= 1 / (40 * 60 * cycleLength);
+
+                if (disease.timeUntilTreatment <= -3)
+                {
+                    disease.isTended = false;
+                }
+            }
+            else
+            {
+                disease.severity -= disease.severityLoss / (40 * 60 * cycleLength);
+            }
+
+            if (disease.isImmune && disease.severity <= 0)
+            {
+                if (part == null)
+                {
+                    wholeBodyAfflictions.Remove(disease);
+                }
+                else
+                {
+                    part.afflictions.Remove(disease);
+                }
+
+                return;
+            }
+
+            if (disease is RWFlu)
+            {
+                if (disease.severity <= 0.665f)
+                {
+                    consciousness -= 0.05f;
+                    manipulation -= 0.05f;
+                    breathing -= 0.1f;
+                }
+                else if (disease.severity <= 0.832f)
+                {
+                    consciousness -= 0.1f;
+                    manipulation -= 0.1f;
+                    breathing -= 0.15f;
+                }
+                else if (disease.severity <= 0.999f)
+                {
+                    pain += 0.05f;
+
+                    consciousness -= 0.15f;
+                    manipulation -= 0.2f;
+                    breathing -= 0.2f;
+                }
+            }
         }
     }
 

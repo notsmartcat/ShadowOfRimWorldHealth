@@ -4,6 +4,7 @@ using UnityEngine;
 using RWCustom;
 
 using static ShadowOfRimWorldHealth.RimWorldHealth;
+using System.Runtime.Remoting.Lifetime;
 
 namespace ShadowOfRimWorldHealth;
 
@@ -144,7 +145,7 @@ public class HealthTab : HudPart
 
         if (input.x != 0)
         {
-            if (!horizontalOnce && healthTabBodyParts.Count > 0)
+            if (!horizontalOnce && healthTabBodyParts.Count + healthTabWholeBody.afflictionNumber > 0)
             {
                 horizontalOnce = true;
 
@@ -191,7 +192,7 @@ public class HealthTab : HudPart
             horizontalOnce = false;
         }
 
-        if (healthTabBodyParts.Count <= 0)
+        if (healthTabBodyParts.Count + healthTabWholeBody.afflictionNumber <= 0)
         {
             selectedHorizontal = 0;
         }
@@ -263,10 +264,16 @@ public class HealthTab : HudPart
             {
                 treatedAffliction.isTended = true;
                 treating = false;
+                treatedAffliction.tendQuality = Random.value;
 
                 if (treatedAffliction is RWInjury injury)
                 {
                     injury.isBleeding = false;
+                }
+                else if (treatedAffliction is RWDisease disease)
+                {
+                    disease.timeUntilTreatment = state.cycleLength * disease.treatmentTimes;
+                    disease.totalTendQuality += disease.tendQuality;
                 }
 
                 Debug.Log("Treated Affliction " + treatedAffliction + " has been treated");
@@ -322,7 +329,7 @@ public class HealthTab : HudPart
 
                             }
                         }
-                        else if (state.bodyParts[i].afflictions[j] is RWDisease disease)
+                        else if (state.bodyParts[i].afflictions[j] is RWDisease disease && disease.timeUntilTreatment <= 0)
                         {
                             if (diseaseAffliction != null)
                             {
@@ -338,6 +345,17 @@ public class HealthTab : HudPart
                             Debug.Log("Error affliction " + state.bodyParts[i].afflictions[j] + " does not belong to any tendable check");
                         }
                     }
+                    else if (state.bodyParts[i].afflictions[j] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                    {
+                        if (diseaseAffliction != null)
+                        {
+                            if (disease.severity > diseaseAffliction.severity)
+                            {
+                                diseaseAffliction = disease;
+                            }
+                        }
+                        else diseaseAffliction ??= disease;
+                    }
                 }
             }
 
@@ -345,7 +363,7 @@ public class HealthTab : HudPart
             {
                 for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
                 {
-                    if (state.wholeBodyAfflictions[i] is RWDisease disease)
+                    if (state.wholeBodyAfflictions[i] is RWDisease disease && disease.timeUntilTreatment <= 0)
                     {
                         if (diseaseAffliction != null)
                         {
@@ -606,47 +624,103 @@ public class HealthTab : HudPart
 
         if (treatedSprite.isVisible && treatedAffliction != null)
         {
+            treatedSprite.x = Mathf.Lerp(DrawPos(timeStacker).x, DrawPos(timeStacker).x + 60, 1 - treatTime / treatTimeMax);
             treatedSprite.alpha = 0.6f;
             treatedSprite.color = Color.magenta;
 
             treatedSprite.scaleY = 20;
-
             treatedSprite.scaleX = Mathf.Lerp(0, 220, 1 - treatTime / treatTimeMax);
 
-            treatedSprite.x = Mathf.Lerp(DrawPos(timeStacker).x, DrawPos(timeStacker).x + 60, 1 - treatTime / treatTimeMax);
+            int selectedBodyPart = 0;
+            int selectedAffliction = 0;
 
-            for (int i = 0; i < healthTabBodyParts.Count; i++)
+            if (state.wholeBodyAfflictions.Count > 0 && state.wholeBodyAfflictions.Contains(treatedAffliction))
             {
-                if (healthTabBodyParts[i].bodyPart == treatedAffliction.part)
+                for (int j = 0; j < state.wholeBodyAfflictions.Count - (healthTabWholeBody.bloodLossVisible ? 1 : 0); j++)
                 {
-                    bool foundTreatee = false;
-
-                    for (int j = 0; j < healthTabBodyParts[i].combinedAfflictions.Count; j++)
+                    if (state.wholeBodyAfflictions[j] == treatedAffliction)
                     {
-                        if (healthTabBodyParts[i].combinedAfflictions.TryGetValue(healthTabBodyParts[i].CombinedAfflictionName(healthTabBodyParts[i].bodyPart, j), out List<RWAffliction> list) && list.Contains(treatedAffliction))
-                        {
-                            treatedSprite.y = healthTabBodyParts[i].DrawPos(timeStacker).y - 7 - 20 * j;
-
-                            treatedSprite.MoveInFrontOfOtherNode(healthTabBodyParts[i].background);
-
-                            foundTreatee = true;
-                        }
+                        selectedAffliction = j;
+                        break;
                     }
+                }
 
-                    if (!foundTreatee)
+                int extraHeight = 0;
+                int prevHeight = 0;
+
+                if (healthTabWholeBody.afflictionsHeight.Count >= selectedAffliction)
+                {
+                    extraHeight = healthTabWholeBody.afflictionsHeight[selectedAffliction][0] - 1;
+                    prevHeight = healthTabWholeBody.afflictionsHeight[selectedAffliction][1];
+                }
+
+                treatedSprite.y = healthTabWholeBody.DrawPos(timeStacker).y  - ((healthTabWholeBody.bloodLossVisible ? 17.5f : 0) + -1 + (17.5f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
+
+                treatedSprite.MoveInFrontOfOtherNode(healthTabWholeBody.background);
+
+                treatedSprite.scaleY = 2 + 17.5f + (15 * extraHeight);
+            }
+            else
+            {
+                for (int i = 0; i < healthTabBodyParts.Count; i++)
+                {
+                    if (healthTabBodyParts[i].bodyPart == treatedAffliction.part)
                     {
-                        for (int j = 0; j < healthTabBodyParts[i].afflictions.Count; j++)
-                        {
-                            if (healthTabBodyParts[i].afflictions[j] == treatedAffliction)
-                            {
-                                treatedSprite.y = healthTabBodyParts[i].DrawPos(timeStacker).y - 7 - 20 * j;
+                        bool foundTreatee = false;
 
-                                treatedSprite.MoveInFrontOfOtherNode(healthTabBodyParts[i].background);
+                        for (int j = 0; j < healthTabBodyParts[i].combinedAfflictions.Count; j++)
+                        {
+                            if (healthTabBodyParts[i].combinedAfflictions.TryGetValue(healthTabBodyParts[i].CombinedAfflictionName(healthTabBodyParts[i].bodyPart, j), out List<RWAffliction> list) && list.Contains(treatedAffliction))
+                            {
+                                selectedBodyPart = i;
+                                selectedAffliction = j;
+
+                                foundTreatee = true;
+                                break;
                             }
                         }
+
+                        if (!foundTreatee)
+                        {
+                            for (int j = 0; j < healthTabBodyParts[i].afflictions.Count; j++)
+                            {
+                                if (healthTabBodyParts[i].afflictions[j] == treatedAffliction)
+                                {
+                                    selectedBodyPart = i;
+                                    selectedAffliction = j;
+
+                                    foundTreatee = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (foundTreatee)
+                        {
+                            break;
+                        }
                     }
-                    break;
                 }
+
+                int extraHeight = 0;
+                int prevHeight = 0;
+
+                if (healthTabBodyParts[selectedBodyPart].combinedAfflictionsHeight.TryGetValue(healthTabBodyParts[selectedBodyPart].CombinedAfflictionName(healthTabBodyParts[selectedBodyPart].bodyPart, selectedAffliction), out List<int> dic))
+                {
+                    extraHeight = dic[0] - 1;
+                    prevHeight = dic[1];
+                }
+                else if (healthTabBodyParts[selectedBodyPart].afflictionsHeight.Count >= selectedAffliction - healthTabBodyParts[selectedBodyPart].combinedAfflictions.Count)
+                {
+                    extraHeight = healthTabBodyParts[selectedBodyPart].afflictionsHeight[selectedAffliction - healthTabBodyParts[selectedBodyPart].combinedAfflictions.Count][0] - 1;
+                    prevHeight = healthTabBodyParts[selectedBodyPart].afflictionsHeight[selectedAffliction - healthTabBodyParts[selectedBodyPart].combinedAfflictions.Count][1];
+                }
+
+                treatedSprite.y = healthTabBodyParts[selectedBodyPart].DrawPos(timeStacker).y - (-1 + (17.5f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
+
+                treatedSprite.MoveInFrontOfOtherNode(healthTabBodyParts[selectedBodyPart].background);
+
+                treatedSprite.scaleY = 2 + 17.5f + (15 * extraHeight);
             }
         }
 
@@ -685,7 +759,6 @@ public class HealthTab : HudPart
             selectedSprite.x += 60;
 
             selectedSprite.y += 120;
-
             selectedSprite.y -= 11.6f;
 
             selectedSprite.scaleX = 220;
@@ -718,8 +791,6 @@ public class HealthTab : HudPart
                     {
                         selectedBodyPart = i;
                         selectedAffliction = selectedVertical - lastMaxVertical - healthTabWholeBody.afflictionNumber;
-
-                        Debug.Log("Bodypart " + selectedBodyPart + " affliction " + selectedAffliction);
                         break;
                     }
                     else
@@ -748,7 +819,7 @@ public class HealthTab : HudPart
 
                 selectedSprite.MoveInFrontOfOtherNode(healthTabBodyParts[selectedBodyPart].background);
 
-                selectedSprite.scaleY = 1 + 17.5f + (15 * extraHeight);
+                selectedSprite.scaleY = 2 + 17.5f + (15 * extraHeight);
 
                 if (selectedTimer <= 0)
                 {
@@ -953,10 +1024,62 @@ public class HealthTab : HudPart
 
                 if (state.wholeBodyAfflictions[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)] is RWDisease disease)
                 {
-                    healthTabInfos[0].nameStatus.text = Mathf.Floor(disease.severity * 100) + "%";
-                }
+                    healthTabInfos[0].nameStatus.text = (Mathf.Floor(disease.severity * 1000) / 10) + "%";
 
-                healthTabInfos[0].description.text = "";
+                    if (disease is RWFlu)
+                    {
+                        healthTabInfos[0].description.text = "An infectious disease.";
+
+                        if (disease.severity <= 0.665f)
+                        {
+                            healthTabInfos[0].description.text += "\n" +
+                                "\n" +
+                                "  - Consciousness: -5%\n" +
+                                "  - Manipulation: -5%\n" +
+                                "  - Breathing: -10%\n";
+                        }
+                        else if (disease.severity <= 0.832f)
+                        {
+                            healthTabInfos[0].description.text += "\n" +
+                                "\n" +
+                                "  - Consciousness: -10%\n" +
+                                "  - Manipulation: -10%\n" +
+                                "  - Breathing: -15%\n";
+                        }
+                        else
+                        {
+                            healthTabInfos[0].description.text += "\n" +
+                                "\n" +
+                                "  - Pain: -5%\n" +
+                                "  - Consciousness: -15%\n" +
+                                "  - Manipulation: -20%\n" +
+                                "  - Breathing: -20%\n";
+                        }
+
+                        if (!disease.isTended)
+                        {
+                            healthTabInfos[0].description.text += "\n" +
+                                "Needs tending now\n";
+                        }
+                        else
+                        {
+                            float tendedIn = disease.timeUntilTreatment;
+
+                            string canBeTendedIn = tendedIn < 0 ? Mathf.Floor(tendedIn * 10000) / 100 + (Mathf.Floor(tendedIn * 10000) / 100 == 1 ? " second" : " seconds") : tendedIn > 60 ? Mathf.Floor(tendedIn / 60 * 10) / 10 + (Mathf.Floor(tendedIn / 60 * 10) / 10 == 1 ? " hour" : " hours") : Mathf.Floor(tendedIn * 10) / 10 + (Mathf.Floor(tendedIn * 10) / 10 == 1 ? " minute" : " minutes");
+
+                            float expiresIn = disease.timeUntilTreatment + 3;
+
+                            string tendingExpiresIn = expiresIn < 0 ? Mathf.Floor(expiresIn * 10000) / 100 + (Mathf.Floor(expiresIn * 10000) / 100 == 1 ? " second" : " seconds") : expiresIn > 60 ? Mathf.Floor(expiresIn / 60 * 10) / 10 + (Mathf.Floor(expiresIn / 60 * 10) / 10 == 1 ? " hour" : " hours") : Mathf.Floor(expiresIn * 10) / 10 + (Mathf.Floor(expiresIn * 10) / 10 == 1 ? " minute" : " minutes");
+
+
+                            healthTabInfos[0].description.text += "\n" +
+                                "Tend quality: " + Mathf.Floor(disease.tendQuality * 100) + "%\n" +
+                                "Can be tended in " + canBeTendedIn + "\n" +
+                                "Tending expires in " + tendingExpiresIn + "\n";
+                        }
+                        healthTabInfos[0].description.text += "Immunity: " + (Mathf.Floor(disease.immunity * 1000)/10) + "%";
+                    }
+                }
             }
 
         }
@@ -1536,18 +1659,35 @@ public class HealthTabWholeBody
             afflictionIcons[i].y = DrawPos(timeStacker).y - 7 - (bloodLossVisible ? 17.5f : 0 + (17.5f * i));
             afflictionIcons[i].scale = 14;
 
-            if (owner.state.wholeBodyAfflictions[i] is RWDisease diesease)
+            if (owner.state.wholeBodyAfflictions[i] is RWDisease disease)
             {
-                string text = diesease.name;
+                string text = disease.name;
+
+                if (disease is RWFlu && disease.severity > 0)
+                {
+                    if (disease.severity <= 0.665f)
+                    {
+                        text += " (minor)";
+                    }
+                    else if (disease.severity <= 0.832f)
+                    {
+                        text += " (major)";
+                    }
+                    else
+                    {
+                        text += " (extreme)";
+                    }
+                }
+
                 afflictionNames[i].text = text;
 
                 Menu.MenuLabel.WordWrapLabel(afflictionNames[i], wordWrap);
-                afflictionsHeight.Add(Mathf.FloorToInt(afflictionNames[i].textRect.height / afflictionNames[i].FontLineHeight));
+
+                afflictionsHeight.Add(new(2) { Mathf.FloorToInt(afflictionNames[i].textRect.height / afflictionNames[i].FontLineHeight), extraHeight });
 
                 HeightChanges(i, Mathf.FloorToInt(afflictionNames[i].textRect.height / afflictionNames[i].FontLineHeight));
 
-
-                afflictionIcons[i].color = diesease.isTended ? Color.white : Color.grey;
+                afflictionIcons[i].color = disease.isTended ? Color.white : Color.grey;
             }
         }
 
@@ -1594,7 +1734,7 @@ public class HealthTabWholeBody
 
     public List<FLabel> afflictionNames = new();
     public FSprite[] afflictionIcons;
-    public List<int> afflictionsHeight;
+    public List<List<int>> afflictionsHeight = new();
 
     public int afflictionNumber = 0;
     public int totalHeight = 1;
@@ -1735,7 +1875,10 @@ public class HealthTabInfo
                 else
                 {
                     description.x = name.x;
-                    description.y = name.y - name.textRect.height;
+                    description.y = name.y - (name.textRect.height * 2);
+
+                    backgroundPos.y -= name.textRect.height;
+                    backgroundSize.y += name.textRect.height;
                 }
             }
             else if (owner.healthTabInfos.IndexOf(this) == 0)

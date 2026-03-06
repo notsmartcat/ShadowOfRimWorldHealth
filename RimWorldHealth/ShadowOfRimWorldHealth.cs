@@ -120,6 +120,13 @@ public class RimWorldHealth : BaseUnityPlugin
                     }
                 }
             }
+            if (Input.GetKey("m"))
+            {
+                if (state.wholeBodyAfflictions.Count == 0)
+                {
+                    state.wholeBodyAfflictions.Add(new RWFlu(state, null));
+                }
+            }
         }
 
         if (self.Stunned && !self.dead)
