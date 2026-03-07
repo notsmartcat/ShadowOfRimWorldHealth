@@ -25,9 +25,9 @@ public class RWHealingDifficulty
 
     public int bleeding = 6;
 
-    public int infectionChance = 0;
+    public float infectionChance = 0;
 
-    public int becomeOldChance = 1;
+    public float becomeOldChance = 0.01f;
 
     public bool naturallyHeals = true;
 
@@ -54,7 +54,7 @@ public class RWHDBurn : RWHealingDifficulty
 
         bleeding = 0;
 
-        infectionChance = 30;
+        infectionChance = 0.3f;
 
         destroyed = "Burned off";
         destroyedOut = "Burned out";
@@ -68,7 +68,7 @@ public class RWHDCrush : RWHealingDifficulty
 
         bleeding = 1;
 
-        infectionChance = 15;
+        infectionChance = 0.15f;
 
         destroyed = "Crushed";
         destroyedOut = "Crushed";
@@ -83,8 +83,6 @@ public class RWHDCrack : RWHealingDifficulty
         pain = 1;
 
         bleeding = 0;
-
-        infectionChance = 0;
 
         becomeOldChance = 0;
 
@@ -103,7 +101,7 @@ public class RWHDCut : RWHealingDifficulty
 
         oldLabel = "Cut scar";
 
-        infectionChance = 15;
+        infectionChance = 0.15f;
 
         destroyed = "Cut off";
         destroyedOut = "Cut out";
@@ -117,7 +115,7 @@ public class RWHDSurgicalCut : RWHealingDifficulty
 
         oldLabel = "Cut scar";
 
-        infectionChance = 15;
+        infectionChance = 0.15f;
 
         destroyed = "Cut off";
         destroyedOut = "Cut out";
@@ -133,7 +131,7 @@ public class RWHDScratch : RWHealingDifficulty
 
         combines = false;
 
-        infectionChance = 15;
+        infectionChance = 0.15f;
 
         destroyed = "Torn off";
         destroyedOut = "Torn out";
@@ -149,7 +147,7 @@ public class RWHDBite : RWHealingDifficulty
 
         combines = false;
 
-        infectionChance = 30;
+        infectionChance = 0.3f;
 
         destroyed = "Bitten off";
         destroyedOut = "Bitten out";
@@ -165,7 +163,7 @@ public class RWHDStab : RWHealingDifficulty
 
         combines = false;
 
-        infectionChance = 15;
+        infectionChance = 0.15f;
 
         destroyed = "Cut off";
         destroyedOut = "Cut out";
@@ -181,7 +179,7 @@ public class RWHDGunshot : RWHealingDifficulty
 
         combines = false;
 
-        infectionChance = 15;
+        infectionChance = 0.15f;
 
         destroyed = "Shot off";
         destroyedOut = "Shot out";
@@ -193,7 +191,7 @@ public class RWHDShredded : RWHealingDifficulty
     {
         name = "Shredded";
 
-        infectionChance = 20;
+        infectionChance = 0.2f;
 
         destroyed = "Torn off";
         destroyedOut = "Torn out";
@@ -211,8 +209,6 @@ public class RWHDBruise : RWHealingDifficulty
 
         bleeding = 0;
 
-        infectionChance = 0;
-
         becomeOldChance = 0;
     }
 }
@@ -226,7 +222,7 @@ public class RWHDFrostbite : RWHealingDifficulty
 
         bleeding = 0;
 
-        infectionChance = 25;
+        infectionChance = 0.25f;
 
         destroyed = "Lost to frostbite";
     }

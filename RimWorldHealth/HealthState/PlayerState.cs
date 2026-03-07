@@ -289,14 +289,10 @@ public class RWPlayerHealthState : PlayerState
 
                 if (bodyPart != null)
                 {
-                    Debug.Log("Left " + bodyPart);
-
                     bodyPart.subName = "Left";
 
                     this.bodyParts.Add(bodyPart);
                 }
-
-                Debug.Log("Right " + bodyParts[i]);
 
                 bodyParts[i].subName = "Right";
                 this.bodyParts.Add(bodyParts[i]);
@@ -539,7 +535,7 @@ public class RWPlayerHealthState : PlayerState
                         Disease(disease, bodyParts[i]);
                     }
 
-                    return;
+                    continue;
                 }
 
                 bodyParts[i].health -= injury.damage;
@@ -555,11 +551,11 @@ public class RWPlayerHealthState : PlayerState
                     {
                         afflictionList[j].pain = scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / bodySizeFactor / 100;
                     }
-                    else if (scar.scarType == "")
+                    else if (scar.scarType == "aching")
                     {
                         afflictionList[j].pain = scar.scarDamage * injury.healingDifficulty.scarPain / bodySizeFactor / 100;
                     }
-                    else if (scar.scarType == "")
+                    else if (scar.scarType == "itchy")
                     {
                         afflictionList[j].pain = scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / bodySizeFactor / 100;
                     }
@@ -572,6 +568,26 @@ public class RWPlayerHealthState : PlayerState
                 pain += afflictionList[j].pain;
 
                 bloodLossPerCycle += injury.isBleeding && !injury.isTended ? injury.healingDifficulty.bleeding * injury.damage * bodySizeFactor * BloodLossMultiplier(bodyParts[i]) : 0;
+
+                if (injury.infectionTimer > 0)
+                {
+                    injury.infectionTimer--;
+
+                    if (injury.infectionTimer <= 0)
+                    {
+                        float infectionChance = injury.healingDifficulty.infectionChance * (injury.isTended ? Mathf.Lerp(0.05f, 0.85f , injury.tendQuality) : 1);
+
+                        if (creature.Room != null && creature.Room.shelter)
+                        {
+                            infectionChance *= 0.5f;
+                        }
+
+                        if (infectionChance < Random.value || true)
+                        {
+                            bodyParts[i].afflictions.Add(new RWInfection(this, bodyParts[i]));
+                        }
+                    }
+                }
 
                 if (heal)
                 {
@@ -727,7 +743,7 @@ public class RWPlayerHealthState : PlayerState
         {
             consciousness -= 0.4f;
 
-            consciousness = Mathf.Min(consciousness, 0.1f);
+            forceUnconsciousness = true;
         }
         else if(bloodLoss >= 0.45f)
         {
@@ -742,8 +758,10 @@ public class RWPlayerHealthState : PlayerState
             consciousness -= 0.1f;
         }
 
-        //Debug.Log("bloodlossPerCycle " + bloodLossPerCycle);
-        //Debug.Log("bloodloss " + bloodLoss);
+        if (forceUnconsciousness)
+        {
+            consciousness = Mathf.Min(consciousness, 0.1f);
+        }
 
         consciousness = Mathf.Max(consciousness, 0);
 
@@ -833,8 +851,6 @@ public class RWPlayerHealthState : PlayerState
             for (int i = 0; i < armSetNames.Count; i++)
             {
                 baseEfficiency += armSet[armSetNames[i]].Efficiency(offsets, postFactors) / armSetNames.Count;
-
-                //Debug.Log(armSetNames[i] + " Arm set efficiency = " + baseEfficiency);
             }
 
             manipulation = baseEfficiency;
@@ -927,22 +943,6 @@ public class RWPlayerHealthState : PlayerState
 
         eating = Mathf.Max(0.1f, eating);
 
-        static int BloodLossMultiplier(RWBodyPart part)
-        {
-            int multiplier = 1;
-
-            if (part is Neck)
-            {
-                multiplier = 3;
-            }
-            else if (part is Heart)
-            {
-                multiplier = 5;
-            }
-
-            return multiplier;
-        }
-
         void Disease(RWDisease disease, RWBodyPart part = null)
         {
             if (!disease.isImmune)
@@ -996,13 +996,38 @@ public class RWPlayerHealthState : PlayerState
                     manipulation -= 0.1f;
                     breathing -= 0.15f;
                 }
-                else if (disease.severity <= 0.999f)
+                else
                 {
                     pain += 0.05f;
 
                     consciousness -= 0.15f;
                     manipulation -= 0.2f;
                     breathing -= 0.2f;
+                }
+            }
+            else if (disease is RWInfection)
+            {
+                if (disease.severity <= 0.32f)
+                {
+                    pain += 0.05f;
+                }
+                else if (disease.severity <= 0.77f)
+                {
+                    pain += 0.08f;
+                }
+                else if (disease.severity <= 0.86f)
+                {
+                    pain += 0.12f;
+
+                    consciousness -= 0.5f;
+                }
+                else
+                {
+                    forceUnconsciousness = true;
+
+                    pain += 0.85f;
+
+                    breathing -= 0.5f;
                 }
             }
         }
@@ -1016,8 +1041,6 @@ public class RWPlayerHealthState : PlayerState
         health -= damage;
 
         float extraDamage = 0f;
-
-        Debug.Log(focusedBodyPart.name + " was hit for " + damage + " damage, it's health is now " + health);
 
         OverkillPrevention();
 
@@ -1058,8 +1081,6 @@ public class RWPlayerHealthState : PlayerState
 
                         health = focusedBodyPart.health;
                         health -= damage + extraDamage;
-
-                        Debug.Log(focusedBodyPart.name + " was hit for " + damage + " damage and " + extraDamage + " extraDamage now it's health is " + health);
 
                         OverkillPrevention();
 
@@ -1104,8 +1125,6 @@ public class RWPlayerHealthState : PlayerState
 
                 List<RWBodyPart> subPartsRestricted = new();
 
-                Debug.Log("Destroying body part " + focusedBodyPart.name);
-
                 while (true)
                 {
                     bool newBodyParts = false;
@@ -1118,13 +1137,9 @@ public class RWPlayerHealthState : PlayerState
                             {
                                 if (subParts[j].afflictions.Count == 1 && subParts[j].afflictions[0] is RWDestroyed)
                                 {
-                                    Debug.Log("Tried to destroy subBody part = " + subParts[j].name + " but it was already destroyed");
-
                                     subPartsRestricted.Add(bodyParts[i]);
                                     continue;
                                 }
-
-                                Debug.Log("Destroying subBody part = " + bodyParts[i].name);
 
                                 newBodyParts = true;
                                 subParts.Add(bodyParts[i]);
@@ -1158,16 +1173,10 @@ public class RWPlayerHealthState : PlayerState
 
             float chanceToDestroy = (overkillPercentage - damageType.overkillMin) / (damageType.overkillMax - damageType.overkillMin);
 
-            Debug.Log("overkillPercentagge = " + overkillPercentage);
-            Debug.Log("chanceToDestroy = " + chanceToDestroy);
-
             if (Random.value > chanceToDestroy)
             {
                 damage = (damage + health) - 1;
                 health = 1;
-
-                Debug.Log("damage = " + damage);
-                Debug.Log("health = " + health);
             }
         }
 
@@ -1202,8 +1211,6 @@ public class RWPlayerHealthState : PlayerState
                 return new(this, focusedBodyPart, damage, damageType, attackerName);
             }
 
-            Debug.Log(focusedBodyPart + " is scarred!");
-
             if (damage < 1)
             {
                 damage = 1;
@@ -1213,15 +1220,15 @@ public class RWPlayerHealthState : PlayerState
 
             float pain = Random.value;
 
-            if (pain <= 0.9f)
+            if (pain > 0.9f)
             {
                 scar.scarType = "painful";
             }
-            else if (pain <= 0.7f)
+            else if (pain > 0.7f)
             {
                 scar.scarType = "aching";
             }
-            else if (pain <= 0.5f)
+            else if (pain > 0.5f)
             {
                 scar.scarType = "itchy";
             }
@@ -1248,6 +1255,22 @@ public class RWPlayerHealthState : PlayerState
 
             return scar;
         }
+    }
+
+    public int BloodLossMultiplier(RWBodyPart part)
+    {
+        int multiplier = 1;
+
+        if (part is Neck)
+        {
+            multiplier = 3;
+        }
+        else if (part is Heart)
+        {
+            multiplier = 5;
+        }
+
+        return multiplier;
     }
 
     public List<RWBodyPart> bodyParts = new();
@@ -1292,6 +1315,8 @@ public class RWPlayerHealthState : PlayerState
     public float digestion = 1;
 
     public float cycleLength = 13;
+
+    public bool forceUnconsciousness = false;
 
     const int healingRateTics = 600;
     int healingRate = healingRateTics;

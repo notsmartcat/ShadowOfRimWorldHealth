@@ -21,8 +21,6 @@ internal class CreatureHooks
             return;
         }
 
-        Debug.Log("Bodychunk " + hitChunk.index + " was hit!");
-
         RWBodyPart focusedBodyPart = null;
         RWBodyPart secondaryFocusedBodyPart = null;
 
@@ -33,15 +31,11 @@ internal class CreatureHooks
             if (state.bodyParts[i].connectedBodyChunks.Contains(hitChunk.index) && !state.bodyParts[i].isInternal && !IsDestroyed(state.bodyParts[i]) && HitBodyPartCheck(state.bodyParts[i]))
             {
                 list.Add(state.bodyParts[i]);
-
-                Debug.Log("Bodychunk " + hitChunk.index + " possible hit Bodypart is = " + state.bodyParts[i].name);
             }
         }
 
         if (list.Count > 1)
         {
-            Debug.Log("More then 1 possible BodyPart!");
-
             float chance = 0;
 
             for (int i = 0; i < list.Count; i++)
@@ -57,12 +51,8 @@ internal class CreatureHooks
             {
                 chance += list[i].coverage;
 
-                Debug.Log("Roll = " + roll + "/" + chance + " for " + list[i].name);
-
                 if (roll <= chance)
                 {
-                    Debug.Log("Success for " + list[i].name);
-
                     focusedBodyPart = list[i];
                     break;
                 }
@@ -79,7 +69,6 @@ internal class CreatureHooks
                 {
                     if (!IsDestroyed(state.bodyParts[i]) && state.bodyParts[i].isInternal && IsSubPartName(state.bodyParts[i], focusedBodyPart))
                     {
-                        Debug.Log("Adding Subpart of " + focusedBodyPart.name + " with the name " + state.bodyParts[i].name);
                         list.Add(state.bodyParts[i]);
                     }
                 }
@@ -104,13 +93,10 @@ internal class CreatureHooks
                 {
                     chance += list[i].coverage;
 
-                    Debug.Log("Roll = " + roll + "/" + chance + " for " + list[i].name);
-
                     if (roll <= chance)
                     {
                         secondaryFocusedBodyPart = list[i];
 
-                        Debug.Log("Bodypart out all subparts that was hit is " + secondaryFocusedBodyPart.name);
                         break;
                     }
                 }
@@ -128,13 +114,10 @@ internal class CreatureHooks
             if (focusedBodyPart != null)
             {
                 float tempDamage = damage;
-                Debug.Log("damage = " + damage);
                 if (type == Creature.DamageType.Blunt && secondaryFocusedBodyPart != null)
                 {
                     tempDamage = damage * Random.Range(0.8f, 0.9f);
-                    Debug.Log("TempDamage = " + tempDamage);
                     extraDamage = damage - tempDamage;
-                    Debug.Log("ExtraDamage = " + extraDamage);
                 }
 
                 Damage(focusedBodyPart, tempDamage);
@@ -146,16 +129,12 @@ internal class CreatureHooks
                     damage = (damage * Random.Range(0.2f, 0.35f)) + extraDamage;
                 }
 
-                Debug.Log("secondary damage = " + damage);
-
                 Damage(secondaryFocusedBodyPart, damage);
             }
         }
 
         void Damage(RWBodyPart focusedBodyPart, float damage)
         {
-            Debug.Log("Bodypart hit is " + focusedBodyPart.name);
-
             string attackerName = "";
 
             if (source != null && source.owner != null)

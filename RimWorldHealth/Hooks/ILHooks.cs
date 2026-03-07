@@ -182,9 +182,7 @@ internal class ILHooks
 
         data.creatures.Add(self);
 
-        Debug.Log("Pre " + damage);
         damage *= 200;
-        Debug.Log("Post " + damage);
 
         int amount = UnityEngine.Random.Range(1, 5);
 
@@ -202,15 +200,11 @@ internal class ILHooks
                 if (!IsDestroyed(state.bodyParts[i]))
                 {
                     list.Add(state.bodyParts[i]);
-
-                    //Debug.Log("Explosion possible hit Bodypart is = " + state.bodyParts[i].name);
                 }
             } //Add all non-Destroyed BodyParts because explosions can hit any BodyPart
 
             if (list.Count > 1)
             {
-                Debug.Log("Explosion More then 1 possible BodyPart!");
-
                 float chance = 0;
 
                 for (int i = 0; i < list.Count; i++)
@@ -226,12 +220,8 @@ internal class ILHooks
                 {
                     chance += list[i].coverage;
 
-                    Debug.Log("Explosion Roll = " + roll + "/" + chance + " for " + list[i].name);
-
                     if (roll <= chance)
                     {
-                        Debug.Log("Explosion Success for " + list[i].name);
-
                         focusedBodyPart = list[i];
                         break;
                     }
@@ -244,8 +234,6 @@ internal class ILHooks
 
             if (focusedBodyPart != null)
             {
-                Debug.Log("Explosion Bodypart hit is " + focusedBodyPart.name);
-
                 PhysicalObject sourceObj = obj.sourceObject;
 
                 string attackerName = obj.ToString();

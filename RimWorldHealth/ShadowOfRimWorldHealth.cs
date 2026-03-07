@@ -105,15 +105,15 @@ public class RimWorldHealth : BaseUnityPlugin
 
                         if (j == 0)
                         {
-                            state.Damage(new RWPoke(), 0.5f, head, "testtesttesttesttesttest");
+                            state.Damage(new RWBomb(), 0.5f, head, "testtesttesttesttesttest");
                         }
                         else if(j == 1)
                         {
-                            state.Damage(new RWPoke(), 0.5f, head, "testtesttesttesttesttest testtesttesttesttesttest");
+                            state.Damage(new RWBomb(), 0.5f, head, "testtesttesttesttesttest testtesttesttesttesttest");
                         }
                         else if (j == 2)
                         {
-                            state.Damage(new RWPoke(), 0.5f, head, "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
+                            state.Damage(new RWBomb(), 0.5f, head, "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
                         }
 
                         break;

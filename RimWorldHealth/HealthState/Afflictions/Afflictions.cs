@@ -46,6 +46,12 @@ public class RWInjury : RWAffliction
             isBleeding = false;
         }
 
+        if (isBleeding && healingDifficulty.infectionChance < UnityEngine.Random.value || true)
+        {
+            infectionTimer = UnityEngine.Random.Range(150, 451);
+            infection = true;
+        }
+
         RWHealingDifficulty HealingDifficulty()
         {
             string RWHealingDifficultyName;
@@ -94,6 +100,8 @@ public class RWInjury : RWAffliction
     public RWHealingDifficulty healingDifficulty;
 
     public float infectionTimer;
+
+    public bool infection = false;
 }
 
 public class RWDisease : RWAffliction
