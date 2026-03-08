@@ -988,7 +988,7 @@ public class HealthTab : HudPart
             }
             else
             {
-                healthTabInfos[0].name.text = healthTabWholeBody.afflictionNames[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)].text + ": ";
+                healthTabInfos[0].name.text = healthTabWholeBody.afflictionVisuals[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)].name.text + ": ";
 
                 if (state.wholeBodyAfflictions[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)] is RWDisease disease)
                 {
@@ -1230,7 +1230,7 @@ public class HealthTab : HudPart
                     }
                 }
 
-                healthTabInfos[1].name.text = healthTabBodyParts[selectedBodyPart].afflictionNames[selectedAffliction - (healthTabWholeBody.bloodLossVisible ? 1 : 0)].text;
+                healthTabInfos[1].name.text = healthTabBodyParts[selectedBodyPart].afflictionVisuals[selectedAffliction - (healthTabWholeBody.bloodLossVisible ? 1 : 0)].name.text;
 
                 if (affliction is RWInjury injury)
                 {
@@ -1559,26 +1559,10 @@ public class HealthTabBodyPart
             anchorY = 1f
         };
 
-        afflictionIcons = new FSprite[6];
-
-        for (int i = 0; i < 6; i++)
-        {
-            afflictionNames.Add(new FLabel(Custom.GetFont(), "capacityName"));
-            afflictionNames[i].alignment = FLabelAlignment.Left;
-            afflictionNames[i].anchorX = 0f;
-            afflictionNames[i].anchorY = 1f;
-
-            afflictionIcons[i] = new FSprite("pixel", true);
-        }
-
         owner.hud.fContainers[1].AddChild(background);
         owner.hud.fContainers[1].AddChild(bodyPartName);
 
-        for (int i = 0; i < 6; i++)
-        {
-            owner.hud.fContainers[1].AddChild(afflictionNames[i]);
-            owner.hud.fContainers[1].AddChild(afflictionIcons[i]);
-        }
+        afflictionVisuals.Add(new(owner));
     }
 
     public Vector2 DrawPos(float timeStacker)
@@ -1632,21 +1616,33 @@ public class HealthTabBodyPart
                 afflictions.Add(bodyPart.afflictions[i]);
             }
         }
+
+        if (afflictionNumber < afflictionVisuals.Count)
+        {
+            List<HealthTabAffliction> list = new(afflictionVisuals);
+
+            for (int i = list.Count - 1; i >= afflictionNumber; i--)
+            {
+                afflictionVisuals[i].ClearSprites();
+
+                afflictionVisuals.Remove(list[i]);
+            }
+        }
+        else if (afflictionNumber > afflictionVisuals.Count)
+        {
+            List<HealthTabAffliction> list = new(afflictionVisuals);
+
+            for (int i = 0; i < afflictionNumber - list.Count; i++)
+            {
+                afflictionVisuals.Add(new(owner));
+            }
+        }
     }
 
     public void Draw(float timeStacker)
     {
         background.isVisible = owner.visible && owner.healthTabWholeBody.active ? !(owner.healthTabBodyParts.IndexOf(this) % 2 == 0) : owner.healthTabBodyParts.IndexOf(this) % 2 == 0;
         bodyPartName.isVisible = owner.visible;
-
-        for (int i = 0; i < afflictionNames.Count; i++)
-        {
-            afflictionNames[i].isVisible = owner.visible && afflictionNumber > i;
-        }
-        for (int i = 0; i < afflictionIcons.Length; i++)
-        {
-            afflictionIcons[i].isVisible = owner.visible && afflictionNumber > i;
-        }
 
         if (owner == null || !owner.visible)
         {
@@ -1676,15 +1672,15 @@ public class HealthTabBodyPart
         totalHeight = 0;
         extraHeight = 0;
 
-        for (int i = 0; i < afflictionNumber; i++)
+        for (int i = 0; i < afflictionVisuals.Count; i++)
         {
-            afflictionNames[i].x = DrawPos(timeStacker).x - 45;
-            afflictionNames[i].y = DrawPos(timeStacker).y - 17.5f * i;
-            afflictionNames[i].color = Color.white;
+            afflictionVisuals[i].name.x = DrawPos(timeStacker).x - 45;
+            afflictionVisuals[i].name.y = DrawPos(timeStacker).y - 17.5f * i;
+            afflictionVisuals[i].name.color = Color.white;
 
-            afflictionIcons[i].x = DrawPos(timeStacker).x + 160;
-            afflictionIcons[i].y = DrawPos(timeStacker).y - 7 - 17.5f * i;
-            afflictionIcons[i].scale = 14;
+            afflictionVisuals[i].icon.x = DrawPos(timeStacker).x + 160;
+            afflictionVisuals[i].icon.y = DrawPos(timeStacker).y - 7 - 17.5f * i;
+            afflictionVisuals[i].icon.scale = 14;
 
             for (int j = 0; j < bodyPart.afflictions.Count; j++)
             {
@@ -1696,16 +1692,16 @@ public class HealthTabBodyPart
                     {
                         string text;
 
-                        text = injury.healingDifficulty.name + (injury.attackerName != "" ? " (" + injury.attackerName + ") " : "") + (dic.Count > 1 ? " x" + dic.Count : "");
+                        text = injury.healingDifficulty.name + (injury.attackerName != "" ? " (" + injury.attackerName + ")" : "") + (dic.Count > 1 ? " x" + dic.Count : "");
 
-                        afflictionNames[i].text = text;
-                        Menu.MenuLabel.WordWrapLabel(afflictionNames[i], wordWrap);
+                        afflictionVisuals[i].name.text = text;
+                        Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
 
-                        allAfflictionsHeight.Add(new(2) { Mathf.FloorToInt(afflictionNames[i].textRect.height / afflictionNames[i].FontLineHeight), extraHeight });
+                        allAfflictionsHeight.Add(new(2) { Mathf.FloorToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight });
 
-                        HeightChanges(i, Mathf.FloorToInt(afflictionNames[i].textRect.height / afflictionNames[i].FontLineHeight));
+                        HeightChanges(i, Mathf.FloorToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight));
 
-                        afflictionIcons[i].color = injury.isTended ? Color.white : injury.isBleeding ? Color.red : Color.blue;
+                        afflictionVisuals[i].icon.color = injury.isTended ? Color.white : injury.isBleeding ? Color.red : Color.blue;
                     }
 
                     allAfflictions.Add(bodyPart.afflictions[j]);
@@ -1744,15 +1740,15 @@ public class HealthTabBodyPart
                             text = injury.healingDifficulty.name + (injury.attackerName != "" ? " (" + injury.attackerName + ") " : "");
                         }
 
-                        afflictionNames[i].text = text;
-                        afflictionNames[i].color = Color.white;
+                        afflictionVisuals[i].name.text = text;
+                        afflictionVisuals[i].name.color = Color.white;
 
-                        Menu.MenuLabel.WordWrapLabel(afflictionNames[i], wordWrap);
-                        allAfflictionsHeight.Add(new(2) { Mathf.FloorToInt(afflictionNames[i].textRect.height / afflictionNames[i].FontLineHeight), extraHeight });
+                        Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
+                        allAfflictionsHeight.Add(new(2) { Mathf.FloorToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight });
 
-                        HeightChanges(i, Mathf.FloorToInt(afflictionNames[i].textRect.height / afflictionNames[i].FontLineHeight));
+                        HeightChanges(i, Mathf.FloorToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight));
 
-                        afflictionIcons[i].color = injury.isTended ? Color.white : injury.isBleeding ? Color.red : Color.blue;
+                        afflictionVisuals[i].icon.color = injury.isTended ? Color.white : injury.isBleeding ? Color.red : Color.blue;
                     }
                     else if (bodyPart.afflictions[j] is RWDisease disease)
                     {
@@ -1774,16 +1770,16 @@ public class HealthTabBodyPart
                             }
                         }
 
-                        afflictionNames[i].text = text;
-                        afflictionNames[i].color = Color.yellow;
+                        afflictionVisuals[i].name.text = text;
+                        afflictionVisuals[i].name.color = Color.yellow;
 
-                        Menu.MenuLabel.WordWrapLabel(afflictionNames[i], wordWrap);
+                        Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
 
-                        allAfflictionsHeight.Add(new(2) { Mathf.FloorToInt(afflictionNames[i].textRect.height / afflictionNames[i].FontLineHeight), extraHeight });
+                        allAfflictionsHeight.Add(new(2) { Mathf.FloorToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight });
 
-                        HeightChanges(i, Mathf.FloorToInt(afflictionNames[i].textRect.height / afflictionNames[i].FontLineHeight));
+                        HeightChanges(i, Mathf.FloorToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight));
 
-                        afflictionIcons[i].color = disease.isTended ? Color.white : Color.grey;
+                        afflictionVisuals[i].icon.color = disease.isTended ? Color.white : Color.grey;
                     }
 
                     allAfflictions.Add(bodyPart.afflictions[j]);
@@ -1795,8 +1791,8 @@ public class HealthTabBodyPart
 
         void HeightChanges(int i, int height)
         {
-            afflictionNames[i].y -= 15 * extraHeight;
-            afflictionIcons[i].y -= 15 * extraHeight;
+            afflictionVisuals[i].name.y -= 15 * extraHeight;
+            afflictionVisuals[i].icon.y -= 15 * extraHeight;
 
             background.y -= 7.5f * (height - 1);
             background.scaleY += 15 * (height - 1);
@@ -1812,17 +1808,20 @@ public class HealthTabBodyPart
 
         bodyPartName.RemoveFromContainer();
 
-        for (int i = 0; i < afflictionNames.Count; i++)
+        for (int i = 0; i < afflictionVisuals.Count; i++)
         {
-            afflictionNames[i].RemoveFromContainer();
+            afflictionVisuals[i].ClearSprites();
         }
 
-        for (int i = 0; i < afflictionIcons.Length; i++)
-        {
-            afflictionIcons[i].RemoveFromContainer();
-        }
+        afflictionVisuals.Clear();
 
         combinedAfflictions.Clear();
+        combinedAfflictionsHeight.Clear();
+        afflictions.Clear();
+        afflictionsHeight.Clear();
+
+        allAfflictions.Clear();
+        allAfflictionsHeight.Clear();
     }
 
     public string CombinedAfflictionName(RWBodyPart bodyPart, int i)
@@ -1850,8 +1849,7 @@ public class HealthTabBodyPart
 
     public FLabel bodyPartName;
 
-    public List<FLabel> afflictionNames = new();
-    public FSprite[] afflictionIcons;
+    public List<HealthTabAffliction> afflictionVisuals = new();
 
     public int afflictionNumber = 1;
     public int totalHeight = 1;
@@ -1889,8 +1887,6 @@ public class HealthTabWholeBody
             color = Color.grey
         };
 
-        afflictionIcons = new FSprite[6];
-
         bloodLossName = new(Custom.GetFont(), "Blood loss ()")
         {
             alignment = FLabelAlignment.Left,
@@ -1899,26 +1895,10 @@ public class HealthTabWholeBody
             color = Color.white
         };
 
-        for (int i = 0; i < 6; i++)
-        {
-            afflictionNames.Add(new FLabel(Custom.GetFont(), "capacityName"));
-            afflictionNames[i].alignment = FLabelAlignment.Left;
-            afflictionNames[i].anchorX = 0f;
-            afflictionNames[i].anchorY = 1f;
-
-            afflictionIcons[i] = new FSprite("pixel", true);
-        }
-
         owner.hud.fContainers[1].AddChild(background);
         owner.hud.fContainers[1].AddChild(name);
 
         owner.hud.fContainers[1].AddChild(bloodLossName);
-
-        for (int i = 0; i < 6; i++)
-        {
-            owner.hud.fContainers[1].AddChild(afflictionNames[i]);
-            owner.hud.fContainers[1].AddChild(afflictionIcons[i]);
-        }
     }
 
     public Vector2 DrawPos(float timeStacker)
@@ -1943,15 +1923,6 @@ public class HealthTabWholeBody
         background.isVisible = owner.visible && active;
         name.isVisible = owner.visible && active;
         bloodLossName.isVisible = owner.visible && active && bloodLossVisible;
-
-        for (int i = 0; i < afflictionNames.Count; i++)
-        {
-            afflictionNames[i].isVisible = owner.visible && active && afflictionNumber - (bloodLossVisible ? 1 : 0) > i;
-        }
-        for (int i = 0; i < afflictionIcons.Length; i++)
-        {
-            afflictionIcons[i].isVisible = owner.visible && active && afflictionNumber - (bloodLossVisible ? 1 : 0) > i;
-        }
 
         if (owner == null || owner.state == null || !owner.visible || !active)
         {
@@ -2001,13 +1972,13 @@ public class HealthTabWholeBody
 
         for (int i = 0; i < afflictionNumber - (bloodLossVisible ? 1 : 0); i++)
         {
-            afflictionNames[i].x = DrawPos(timeStacker).x - 45;
-            afflictionNames[i].y = DrawPos(timeStacker).y - (bloodLossVisible ? 17.5f : 0 + (17.5f * i));
-            afflictionNames[i].color = Color.yellow;
+            afflictionVisuals[i].name.x = DrawPos(timeStacker).x - 45;
+            afflictionVisuals[i].name.y = DrawPos(timeStacker).y - (bloodLossVisible ? 17.5f : 0 + (17.5f * i));
+            afflictionVisuals[i].name.color = Color.yellow;
 
-            afflictionIcons[i].x = DrawPos(timeStacker).x + 160;
-            afflictionIcons[i].y = DrawPos(timeStacker).y - 7 - (bloodLossVisible ? 17.5f : 0 + (17.5f * i));
-            afflictionIcons[i].scale = 14;
+            afflictionVisuals[i].icon.x = DrawPos(timeStacker).x + 160;
+            afflictionVisuals[i].icon.y = DrawPos(timeStacker).y - 7 - (bloodLossVisible ? 17.5f : 0 + (17.5f * i));
+            afflictionVisuals[i].icon.scale = 14;
 
             if (owner.state.wholeBodyAfflictions[i] is RWDisease disease)
             {
@@ -2029,22 +2000,22 @@ public class HealthTabWholeBody
                     }
                 }
 
-                afflictionNames[i].text = text;
+                afflictionVisuals[i].name.text = text;
 
-                Menu.MenuLabel.WordWrapLabel(afflictionNames[i], wordWrap);
+                Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
 
-                afflictionsHeight.Add(new(2) { Mathf.FloorToInt(afflictionNames[i].textRect.height / afflictionNames[i].FontLineHeight), extraHeight });
+                afflictionsHeight.Add(new(2) { Mathf.FloorToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight });
 
-                HeightChanges(i, Mathf.FloorToInt(afflictionNames[i].textRect.height / afflictionNames[i].FontLineHeight));
+                HeightChanges(i, Mathf.FloorToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight));
 
-                afflictionIcons[i].color = disease.isTended ? Color.white : Color.grey;
+                afflictionVisuals[i].icon.color = disease.isTended ? Color.white : Color.grey;
             }
         }
 
         void HeightChanges(int i, int height)
         {
-            afflictionNames[i].y -= 15 * extraHeight;
-            afflictionIcons[i].y -= 15 * extraHeight;
+            afflictionVisuals[i].name.y -= 15 * extraHeight;
+            afflictionVisuals[i].icon.y -= 15 * extraHeight;
 
             background.y -= 7.5f * (height - 1);
             background.scaleY += 15 * (height - 1);
@@ -2062,15 +2033,13 @@ public class HealthTabWholeBody
 
         bloodLossName.RemoveFromContainer();
 
-        for (int i = 0; i < afflictionNames.Count; i++)
+        for (int i = 0; i < afflictionVisuals.Count; i++)
         {
-            afflictionNames[i].RemoveFromContainer();
+            afflictionVisuals[i].ClearSprites();
         }
 
-        for (int i = 0; i < afflictionIcons.Length; i++)
-        {
-            afflictionIcons[i].RemoveFromContainer();
-        }
+        afflictionVisuals.Clear();
+        afflictionsHeight.Clear();
     }
 
     #region Values
@@ -2082,8 +2051,8 @@ public class HealthTabWholeBody
 
     public FLabel bloodLossName;
 
-    public List<FLabel> afflictionNames = new();
-    public FSprite[] afflictionIcons;
+    public List<HealthTabAffliction> afflictionVisuals = new();
+
     public List<List<int>> afflictionsHeight = new();
 
     public int afflictionNumber = 0;
@@ -2095,6 +2064,37 @@ public class HealthTabWholeBody
     public bool active = false;
 
     const float wordWrap = 200;
+    #endregion
+}
+
+public class HealthTabAffliction
+{
+    public HealthTabAffliction(HealthTab owner)
+    {
+        name = new FLabel(Custom.GetFont(), "capacityName")
+        {
+            alignment = FLabelAlignment.Left,
+            anchorX = 0f,
+            anchorY = 1f
+        };
+
+        icon = new FSprite("pixel", true);
+
+        owner.hud.fContainers[1].AddChild(name);
+        owner.hud.fContainers[1].AddChild(icon);
+    }
+
+    public void ClearSprites()
+    {
+        name.RemoveFromContainer();
+        icon.RemoveFromContainer();
+    }
+
+    #region Values
+    public RWBodyPart bodyPart;
+
+    public FLabel name;
+    public FSprite icon;
     #endregion
 }
 
