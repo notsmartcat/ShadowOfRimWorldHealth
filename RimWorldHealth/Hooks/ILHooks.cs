@@ -1,10 +1,10 @@
-﻿using Mono.Cecil;
-using Mono.Cecil.Cil;
+﻿using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+
 using static ShadowOfRimWorldHealth.RimWorldHealth;
 
 namespace ShadowOfRimWorldHealth;
@@ -197,11 +197,11 @@ internal class ILHooks
 
             for (int i = 0; i < state.bodyParts.Count; i++)
             {
-                if (!IsDestroyed(state.bodyParts[i]))
+                if (state.bodyParts[i].connectedBodyChunks.Count > 0 && !state.bodyParts[i].isInternal && !IsDestroyed(state.bodyParts[i]))
                 {
                     list.Add(state.bodyParts[i]);
                 }
-            } //Add all non-Destroyed BodyParts because explosions can hit any BodyPart
+            }
 
             if (list.Count > 1)
             {
@@ -232,31 +232,96 @@ internal class ILHooks
                 focusedBodyPart = list[0];
             }
 
+            list.Clear();
+
+            list.Add(focusedBodyPart);
+
+            while (focusedBodyPart != null && focusedBodyPart is not Neck)
+            {
+                for (int i = 0; i < state.bodyParts.Count; i++)
+                {
+                    if (!IsDestroyed(state.bodyParts[i]) && state.bodyParts[i].isInternal && IsSubPartName(state.bodyParts[i], list[0]))
+                    {
+                        Debug.Log("Adding Subpart of " + focusedBodyPart.name + " with the name " + state.bodyParts[i].name);
+                        list.Add(state.bodyParts[i]);
+                    }
+                }
+
+                if (list.Count == 0)
+                {
+                    break;
+                }
+                else if (list.Count == 1)
+                {
+                    focusedBodyPart = list[0];
+                    break;
+                }
+
+                float chance = 0;
+
+                for (int i = 0; i < list.Count; i++)
+                {
+                    chance += list[i].coverage;
+                }
+
+                float roll = UnityEngine.Random.Range(0f, chance);
+
+                chance = 0;
+
+                RWBodyPart tempFocusedBodyPart = null;
+
+                for (int i = 0; i < list.Count; i++)
+                {
+                    chance += list[i].coverage;
+
+                    Debug.Log("Roll = " + roll + "/" + chance + " for " + list[i].name);
+
+                    if (roll <= chance)
+                    {
+                        tempFocusedBodyPart = list[i];
+
+                        Debug.Log("Bodypart out all subparts that was hit is " + tempFocusedBodyPart.name);
+                        break;
+                    }
+                }
+
+                if (tempFocusedBodyPart == null || tempFocusedBodyPart == focusedBodyPart)
+                {
+                    break;
+                }
+                else
+                {
+                    list.Clear();
+                    list.Add(tempFocusedBodyPart);
+                }
+            }
+
             if (focusedBodyPart != null)
             {
                 PhysicalObject sourceObj = obj.sourceObject;
 
-                string attackerName = obj.ToString();
+                string attackName = obj.ToString();
+                string attackerName = "";
 
                 if (sourceObj is ScavengerBomb)
                 {
-                    attackerName = "Scavenger bomb";
+                    attackName = "Bomb";
                 }
                 else if (sourceObj is ExplosiveSpear)
                 {
-                    attackerName = "Explosive spear";
+                    attackName = "Explosive spear";
                 }
 
                 if (obj.killTagHolder != null)
                 {
-                    attackerName = obj.killTagHolder + " - " + attackerName;
+                    attackerName = obj.killTagHolder.ToString();
                 }
 
                 RWDamageType damageType;
 
                 damageType = new RWBomb();
 
-                state.Damage(damageType, damage / amount, focusedBodyPart, attackerName);
+                state.Damage(damageType, damage / amount, focusedBodyPart, attackName, attackerName);
             }
         }
     }

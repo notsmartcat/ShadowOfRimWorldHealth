@@ -19,25 +19,15 @@ public class RWHealthState : CreatureState
     public float pain;
 
     public float consciousness;
-
     public float moving;
-
     public float manipulation;
-
     public float talking;
-
     public float eating;
-
     public float sight;
-
     public float hearing;
-
     public float breathing;
-
     public float bloodFiltration;
-
     public float bloodPumping;
-
     public float digestion;
 }
 
@@ -547,15 +537,15 @@ public class RWPlayerHealthState : PlayerState
 
                 if (injury is RWScar scar && scar.isRevealed)
                 {
-                    if (scar.scarType == "painful")
+                    if (scar.painCategory == "painful")
                     {
                         afflictionList[j].pain = scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / bodySizeFactor / 100;
                     }
-                    else if (scar.scarType == "aching")
+                    else if (scar.painCategory == "aching")
                     {
                         afflictionList[j].pain = scar.scarDamage * injury.healingDifficulty.scarPain / bodySizeFactor / 100;
                     }
-                    else if (scar.scarType == "itchy")
+                    else if (scar.painCategory == "itchy")
                     {
                         afflictionList[j].pain = scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / bodySizeFactor / 100;
                     }
@@ -575,14 +565,16 @@ public class RWPlayerHealthState : PlayerState
 
                     if (injury.infectionTimer <= 0)
                     {
-                        float infectionChance = injury.healingDifficulty.infectionChance * (injury.isTended ? Mathf.Lerp(0.05f, 0.85f , injury.tendQuality) : 1);
+                        float infectionChance = injury.healingDifficulty.infectionChance * (injury.isTended ? Mathf.Lerp(0.85f, 0.05f , injury.tendQuality) : 1);
 
                         if (creature.Room != null && creature.Room.shelter)
                         {
                             infectionChance *= 0.5f;
                         }
 
-                        if (infectionChance < Random.value || true)
+                        float random = Random.value;
+
+                        if (random < infectionChance)
                         {
                             bodyParts[i].afflictions.Add(new RWInfection(this, bodyParts[i]));
                         }
@@ -1033,7 +1025,7 @@ public class RWPlayerHealthState : PlayerState
         }
     }
 
-    public void Damage(RWDamageType damageType, float damage, RWBodyPart bodyPart, string attackerName = "")
+    public void Damage(RWDamageType damageType, float damage, RWBodyPart bodyPart, string attackName = "", string attackerName = "")
     {
         RWBodyPart focusedBodyPart = bodyPart;
 
@@ -1071,11 +1063,13 @@ public class RWPlayerHealthState : PlayerState
 
         while (extraDamage > 0 || damage > 0)
         {
+            bool bodypartHit = false;
+
             if (focusedBodyPart.isInternal && focusedBodyPart.subPartOf != "")
             {
                 for (int i = 0; i < bodyParts.Count; i++)
                 {
-                    if (bodyParts[i].name == focusedBodyPart.subPartOf)
+                    if (IsSubPartName(focusedBodyPart, bodyParts[i]))
                     {
                         focusedBodyPart = bodyParts[i];
 
@@ -1099,11 +1093,86 @@ public class RWPlayerHealthState : PlayerState
                             focusedBodyPart.health = health;
                         }
 
+                        bodypartHit = true;
+
+                        break;
+                    }
+                }
+            }
+            else if (damageType is RWBomb && BombDestroyBodyparts())
+            {
+                for (int i = 0; i < bodyParts.Count; i++)
+                {
+                    if (IsSubPartName(bodyParts[i], focusedBodyPart))
+                    {
+                        focusedBodyPart = bodyParts[i];
+
+                        health = focusedBodyPart.health;
+                        health -= damage + extraDamage;
+
+                        OverkillPrevention();
+
+                        if (health <= 0f)
+                        {
+                            DestroyBodyPart();
+                            extraDamage = health * -1;
+
+                            focusedBodyPart.health = 0;
+                        }
+                        else
+                        {
+                            extraDamage = 0f;
+
+                            focusedBodyPart.afflictions.Add(Scar(damage));
+                            focusedBodyPart.health = health;
+                        }
+
+                        bodypartHit = true;
+
+                        break;
+                    }
+                }
+            }
+            else if (damageType is RWSuperBomb)
+            {
+                for (int i = 0; i < bodyParts.Count; i++)
+                {
+                    if (IsSubPartName(bodyParts[i], focusedBodyPart))
+                    {
+                        focusedBodyPart = bodyParts[i];
+
+                        health = focusedBodyPart.health;
+                        health -= damage + extraDamage;
+
+                        OverkillPrevention();
+
+                        if (health <= 0f)
+                        {
+                            DestroyBodyPart();
+                            extraDamage = health * -1;
+
+                            focusedBodyPart.health = 0;
+                        }
+                        else
+                        {
+                            extraDamage = 0f;
+
+                            focusedBodyPart.afflictions.Add(Scar(damage));
+                            focusedBodyPart.health = health;
+                        }
+
+                        bodypartHit = true;
+
                         break;
                     }
                 }
             }
             else
+            {
+                break;
+            }
+
+            if (!bodypartHit)
             {
                 break;
             }
@@ -1116,7 +1185,7 @@ public class RWPlayerHealthState : PlayerState
                 return;
             }
 
-            if (true || focusedBodyPart.deathEffect == "Destroy" || focusedBodyPart.deathEffect == "Death" || focusedBodyPart.deathEffect == "CutInHalf" || focusedBodyPart.deathEffect == "Decapitation" || focusedBodyPart.deathEffect == "")
+            if (true || focusedBodyPart.deathEffect == "Destroy" || focusedBodyPart.deathEffect == "Death" || focusedBodyPart.deathEffect == "CutInHalf" || focusedBodyPart.deathEffect == "Decapitation")
             {
                 List<RWBodyPart> subParts = new()
                 {
@@ -1157,7 +1226,7 @@ public class RWPlayerHealthState : PlayerState
                 for (int j = 0; j < subParts.Count; j++)
                 {
                     subParts[j].afflictions.Clear();
-                    subParts[j].afflictions.Add(new RWDestroyed(this, subParts[j], 0f, damageType, attackerName));
+                    subParts[j].afflictions.Add(new RWDestroyed(this, subParts[j], 0f, damageType, attackName, attackerName));
                 }
             }
         }
@@ -1169,7 +1238,7 @@ public class RWPlayerHealthState : PlayerState
                 return;
             }
 
-            float overkillPercentage = ((health * -1) / focusedBodyPart.maxHealth) * 100;
+            float overkillPercentage = health * -1 / focusedBodyPart.maxHealth * 100;
 
             float chanceToDestroy = (overkillPercentage - damageType.overkillMin) / (damageType.overkillMax - damageType.overkillMin);
 
@@ -1184,7 +1253,7 @@ public class RWPlayerHealthState : PlayerState
         {
             if (damageType.headiffs.Count <= 2 && damageType.headiffs[2] == "Bruise" && !focusedBodyPart.isSolid && !focusedBodyPart.isInternal || damageType.armourCategory == "Blunt" && focusedBodyPart is RWOrgan && !focusedBodyPart.isDelicate)
             {
-                return new(this, focusedBodyPart, damage, damageType, attackerName);
+                return new(this, focusedBodyPart, damage, damageType, attackName, attackerName);
             } //bruises never scar
 
             float oddsOfScarring;
@@ -1208,7 +1277,7 @@ public class RWPlayerHealthState : PlayerState
 
             if ((Random.value * 100) >= oddsOfScarring)
             {
-                return new(this, focusedBodyPart, damage, damageType, attackerName);
+                return new(this, focusedBodyPart, damage, damageType, attackName, attackerName);
             }
 
             if (damage < 1)
@@ -1216,21 +1285,21 @@ public class RWPlayerHealthState : PlayerState
                 damage = 1;
             }
 
-            RWScar scar = new(this, focusedBodyPart, damage, damageType, attackerName);
+            RWScar scar = new(this, focusedBodyPart, damage, damageType, attackName, attackerName);
 
             float pain = Random.value;
 
             if (pain > 0.9f)
             {
-                scar.scarType = "painful";
+                scar.painCategory = "painful";
             }
             else if (pain > 0.7f)
             {
-                scar.scarType = "aching";
+                scar.painCategory = "aching";
             }
             else if (pain > 0.5f)
             {
-                scar.scarType = "itchy";
+                scar.painCategory = "itchy";
             }
 
             if (focusedBodyPart.isDelicate)
@@ -1254,6 +1323,16 @@ public class RWPlayerHealthState : PlayerState
             }
 
             return scar;
+        }
+
+        bool BombDestroyBodyparts()
+        {
+            if (focusedBodyPart is Finger || focusedBodyPart is Hand || focusedBodyPart is Toe || focusedBodyPart is Foot || focusedBodyPart is Ear || focusedBodyPart is Jaw || focusedBodyPart is Eye)
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 

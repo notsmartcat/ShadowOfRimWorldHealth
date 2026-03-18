@@ -135,11 +135,11 @@ internal class CreatureHooks
 
         void Damage(RWBodyPart focusedBodyPart, float damage)
         {
-            string attackerName = "";
+            string attackName = "";
 
             if (source != null && source.owner != null)
             {
-                attackerName = source.owner.ToString();
+                attackName = source.owner.ToString();
             }
 
             RWDamageType damageType;
@@ -153,7 +153,7 @@ internal class CreatureHooks
                 damageType = new RWDamageType();
             }
 
-            state.Damage(damageType, damage, focusedBodyPart, attackerName);
+            state.Damage(damageType, damage, focusedBodyPart, attackName);
         }
 
         bool HitBodyPartCheck(RWBodyPart part)

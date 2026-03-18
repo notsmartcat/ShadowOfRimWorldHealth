@@ -66,7 +66,7 @@ public class HealthTab : HudPart
         healthTabWholeBody = new HealthTabWholeBody(this);
     }
 
-    public Vector2 DrawPos(float timeStacker)
+    public Vector2 DrawPos()
     {
         return new Vector2(hud.rainWorld.screenSize.x / 2, hud.rainWorld.screenSize.y / 2) + new Vector2(0.1f, 0.1f);
     }
@@ -247,7 +247,6 @@ public class HealthTab : HudPart
             {
                 selectedVertical = maxVertical - 1;
             }
-
         }
 
         if (treating)
@@ -442,15 +441,15 @@ public class HealthTab : HudPart
 
         treatedSprite.isVisible = visible && treating;
 
-        healthTabWholeBody.Draw(timeStacker);
+        healthTabWholeBody.Draw();
 
         for (int i = healthTabBodyParts.Count - 1; i >= 0; i--)
         {
-            healthTabBodyParts[i].Draw(timeStacker);
+            healthTabBodyParts[i].Draw();
         }
         for (int i = healthTabInfos.Count - 1; i >= 0; i--)
         {
-            healthTabInfos[i].Draw(timeStacker);
+            healthTabInfos[i].Draw();
         }
 
         if (!visible || state == null)
@@ -467,32 +466,32 @@ public class HealthTab : HudPart
             capacityValueNamesNames = new(1) { "Pain" };
         }
 
-        sprites[0].x = DrawPos(timeStacker).x;
-        sprites[0].y = DrawPos(timeStacker).y;
+        sprites[0].x = DrawPos().x;
+        sprites[0].y = DrawPos().y;
         sprites[0].scaleX = 350;
         sprites[0].scaleY = 250;
         sprites[0].color = Color.gray;
 
-        sprites[1].x = DrawPos(timeStacker).x - 250;
-        sprites[1].y = DrawPos(timeStacker).y;
+        sprites[1].x = DrawPos().x - 250;
+        sprites[1].y = DrawPos().y;
         sprites[1].scaleX = 150;
         sprites[1].scaleY = 250;
         sprites[1].color = Color.black;
 
         capacityName.color = Color.white;
-        capacityName.x = DrawPos(timeStacker).x - 320;
-        capacityName.y = DrawPos(timeStacker).y + 125;
+        capacityName.x = DrawPos().x - 320;
+        capacityName.y = DrawPos().y + 125;
         capacityName.text = state.creature.ToString();
 
         if (bloodLossPerCycle.isVisible)
         {
-            float bloodLoss = (state.cycleLength * (1 - state.bloodLoss)) / (state.bloodLossPerCycle / 100);
+            float bloodLoss = state.cycleLength * (1 - state.bloodLoss) / (state.bloodLossPerCycle / 100);
 
             string bloodLossTime = bloodLoss < 0 ? Mathf.Floor(bloodLoss * 10000) / 100 + (Mathf.Floor(bloodLoss * 10000) / 100 == 1 ? " second" : " seconds") : bloodLoss > 60 ? Mathf.Floor(bloodLoss / 60 * 10) / 10 + (Mathf.Floor(bloodLoss / 60 * 10) / 10 == 1 ? " hour" : " hours") : Mathf.Floor(bloodLoss * 10) / 10 + (Mathf.Floor(bloodLoss * 10) / 10 == 1 ? " minute" : " minutes");
 
             bloodLossPerCycle.color = Color.white;
-            bloodLossPerCycle.x = DrawPos(timeStacker).x - 165;
-            bloodLossPerCycle.y = DrawPos(timeStacker).y - 105;
+            bloodLossPerCycle.x = DrawPos().x - 165;
+            bloodLossPerCycle.y = DrawPos().y - 105;
             bloodLossPerCycle.text = "Bleeding: " + Mathf.Floor(state.bloodLossPerCycle) + "%/c (death in " + bloodLossTime + ")";
         }
 
@@ -506,13 +505,13 @@ public class HealthTab : HudPart
             }
 
             capacityValueNames[i].color = Color.white;
-            capacityValueNames[i].x = DrawPos(timeStacker).x - 320;
-            capacityValueNames[i].y = DrawPos(timeStacker).y + 100 - (17 * i);
+            capacityValueNames[i].x = DrawPos().x - 320;
+            capacityValueNames[i].y = DrawPos().y + 100 - (17 * i);
 
             capacityValueNames[i].text = capacityValueNamesNames[i];
 
-            capacityValues[i].x = DrawPos(timeStacker).x - 180;
-            capacityValues[i].y = DrawPos(timeStacker).y + 100 - (17 * i);
+            capacityValues[i].x = DrawPos().x - 180;
+            capacityValues[i].y = DrawPos().y + 100 - (17 * i);
 
             float value = 0;
 
@@ -621,7 +620,7 @@ public class HealthTab : HudPart
 
         if (treatedSprite.isVisible && treatedAffliction != null)
         {
-            treatedSprite.x = Mathf.Lerp(DrawPos(timeStacker).x, DrawPos(timeStacker).x + 60, 1 - treatTime / treatTimeMax);
+            treatedSprite.x = Mathf.Lerp(DrawPos().x, DrawPos().x + 60, 1 - treatTime / treatTimeMax);
             treatedSprite.alpha = 0.6f;
             treatedSprite.color = Color.magenta;
 
@@ -651,10 +650,8 @@ public class HealthTab : HudPart
                     prevHeight = healthTabWholeBody.afflictionsHeight[selectedAffliction][1];
                 }
 
-                treatedSprite.y = healthTabWholeBody.DrawPos(timeStacker).y - ((healthTabWholeBody.bloodLossVisible ? 17.5f : 0) + -1 + (17.5f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
-
+                treatedSprite.y = healthTabWholeBody.DrawPos().y - ((healthTabWholeBody.bloodLossVisible ? 17.5f : 0) + -1 + (17.5f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
                 treatedSprite.MoveInFrontOfOtherNode(healthTabWholeBody.background);
-
                 treatedSprite.scaleY = 2 + 17.5f + (15 * extraHeight);
             }
             else
@@ -670,6 +667,7 @@ public class HealthTab : HudPart
                             selectedAffliction = healthTabBodyParts[i].allAfflictions.IndexOf(treatedAffliction);
                             break;
                         }
+
                         for (int j = 0; j < healthTabBodyParts[i].combinedAfflictions.Count; j++)
                         {
                             if (healthTabBodyParts[i].combinedAfflictions.TryGetValue(healthTabBodyParts[i].CombinedAfflictionName(healthTabBodyParts[i].bodyPart, j), out List<RWAffliction> list) && list.Contains(treatedAffliction))
@@ -682,11 +680,9 @@ public class HealthTab : HudPart
                                         break;
                                     }
                                 }
-
                                 break;
                             }
                         }
-
                         break;
                     }
                 }
@@ -694,10 +690,7 @@ public class HealthTab : HudPart
                 int extraHeight = healthTabBodyParts[selectedBodyPart].allAfflictionsHeight[selectedAffliction][0] - 1;
                 int prevHeight = healthTabBodyParts[selectedBodyPart].allAfflictionsHeight[selectedAffliction][1];
 
-                Debug.Log("Extra " + extraHeight);
-                Debug.Log("Prev " + prevHeight);
-
-                treatedSprite.y = healthTabBodyParts[selectedBodyPart].DrawPos(timeStacker).y - (-1 + (17.5f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
+                treatedSprite.y = healthTabBodyParts[selectedBodyPart].DrawPos().y - (-1 + (17.5f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
 
                 treatedSprite.MoveInFrontOfOtherNode(healthTabBodyParts[selectedBodyPart].background);
 
@@ -715,8 +708,8 @@ public class HealthTab : HudPart
             selectedTimer -= timeStacker;
         }
 
-        selectedSprite.x = DrawPos(timeStacker).x;
-        selectedSprite.y = DrawPos(timeStacker).y;
+        selectedSprite.x = DrawPos().x;
+        selectedSprite.y = DrawPos().y;
         selectedSprite.alpha = 0.4f;
         selectedSprite.color = Color.white;
 
@@ -747,7 +740,21 @@ public class HealthTab : HudPart
 
             if (healthTabWholeBody.active && selectedVertical < healthTabWholeBody.afflictionNumber)
             {
-                selectedSprite.y += 10 * healthTabWholeBody.afflictionNumber / 2;
+                if (healthTabWholeBody.bloodLossVisible && selectedVertical == 0)
+                {
+                    selectedSprite.y += 5;
+
+                    selectedSprite.scaleY = 2 + 17.5f;
+                }
+                else
+                {
+                    int extraHeight = healthTabWholeBody.afflictionsHeight[selectedVertical][0] - 1;
+                    int prevHeight = healthTabWholeBody.afflictionsHeight[selectedVertical][1];
+
+                    selectedSprite.y = healthTabWholeBody.DrawPos().y - (-1 + (17.5f * selectedVertical) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
+
+                    selectedSprite.scaleY = 2 + 17.5f + (15 * extraHeight);
+                }
 
                 selectedSprite.MoveInFrontOfOtherNode(healthTabWholeBody.background);
 
@@ -783,7 +790,7 @@ public class HealthTab : HudPart
                 int extraHeight = healthTabBodyParts[selectedBodyPart].allAfflictionsHeight[selectedAffliction][0] - 1;
                 int prevHeight = healthTabBodyParts[selectedBodyPart].allAfflictionsHeight[selectedAffliction][1];
 
-                selectedSprite.y = healthTabBodyParts[selectedBodyPart].DrawPos(timeStacker).y - (-1 + (17.5f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
+                selectedSprite.y = healthTabBodyParts[selectedBodyPart].DrawPos().y - (-1 + (17.5f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
 
                 selectedSprite.MoveInFrontOfOtherNode(healthTabBodyParts[selectedBodyPart].background);
 
@@ -866,7 +873,7 @@ public class HealthTab : HudPart
                 if (healthTabInfos.Count > 0)
                 {
                     healthTabInfos[0].name.text = "Pain: ";
-                    healthTabInfos[0].nameStatus.text = " " + Mathf.Clamp(Mathf.Floor(value * 100), 0, 100) + "%";
+                    healthTabInfos[0].nameStatus.text = Mathf.Clamp(Mathf.Floor(value * 100), 0, 100) + "%";
 
                     healthTabInfos[0].description.text = "";
                 }
@@ -931,7 +938,7 @@ public class HealthTab : HudPart
             }
             else if (healthTabInfos.Count > 1)
             {
-                for (int i = 1; i < healthTabInfos.Count; i--)
+                for (int i = 1; i < healthTabInfos.Count; i++)
                 {
                     healthTabInfos[i].slatedForDeletion = true;
                 }
@@ -939,8 +946,8 @@ public class HealthTab : HudPart
 
             if (healthTabWholeBody.bloodLossVisible && selectedVertical == 0)
             {
-                healthTabInfos[0].name.text = healthTabWholeBody.bloodLossName.text + ": ";
-                healthTabInfos[0].nameStatus.text = Mathf.Floor(state.bloodLoss * 100) + "%";
+                healthTabInfos[0].name.text = healthTabWholeBody.bloodLossName.text;
+                healthTabInfos[0].nameStatus.text = " : " + Mathf.Floor(state.bloodLoss * 100) + "%";
 
                 healthTabInfos[0].description.text = "A reduction in the normal blood volume.\n" +
                     "Minor blood loss has relatively mild\n" +
@@ -1068,13 +1075,11 @@ public class HealthTab : HudPart
             }
 
             healthTabInfos[0].name.text = name;
-            healthTabInfos[0].nameStatus.text = ": " + Mathf.Floor(healthTabBodyParts[selectedBodyPart].bodyPart.health) + " / " + healthTabBodyParts[selectedBodyPart].bodyPart.maxHealth;
+            healthTabInfos[0].nameStatus.text = " : " + Mathf.Floor(healthTabBodyParts[selectedBodyPart].bodyPart.health) + " / " + healthTabBodyParts[selectedBodyPart].bodyPart.maxHealth;
 
             float efficiency = Mathf.Floor(healthTabBodyParts[selectedBodyPart].bodyPart.efficiency * 100);
 
             healthTabInfos[0].description.text = "Efficiency: " + ((efficiency < 1 && efficiency > 0) ? 1 : efficiency) + "%";
-
-            //healthTabInfos[0].name.text = healthTabWholeBody.afflictionNames[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)].text + ": ";
 
             bool isCombined = false;
 
@@ -1093,7 +1098,6 @@ public class HealthTab : HudPart
                             break;
                         }
                     }
-
                     break;
                 }
             }
@@ -1132,9 +1136,9 @@ public class HealthTab : HudPart
 
                     if (affliction is RWInjury injury)
                     {
-                        healthTabInfos[j].name.text = injury.healingDifficulty.name + (injury.attackerName != "" ? " (" + injury.attackerName + ") " : "") + (afflictions.Count > 1 ? " x" + afflictions.Count : "");
+                        healthTabInfos[j].name.text = injury.healingDifficulty.name + (injury.attackName != "" ? " (" + injury.attackName + ") " : "") + (afflictions.Count > 1 ? " x" + afflictions.Count : "");
 
-                        healthTabInfos[j].nameStatus.text = ": " + (Mathf.Floor(injury.damage * 10) / 10).ToString();
+                        healthTabInfos[j].nameStatus.text = " : " + (Mathf.Floor(injury.damage * 10) / 10).ToString();
 
                         string description = "";
 
@@ -1205,6 +1209,8 @@ public class HealthTab : HudPart
             }
             else
             {
+                Debug.Log("bodypart " + selectedBodyPart + " affliction " + selectedAffliction);
+
                 if (affliction == null)
                 {
                     if (healthTabInfos.Count > 1)
@@ -1230,7 +1236,7 @@ public class HealthTab : HudPart
                     }
                 }
 
-                healthTabInfos[1].name.text = healthTabBodyParts[selectedBodyPart].afflictionVisuals[selectedAffliction - (healthTabWholeBody.bloodLossVisible ? 1 : 0)].name.text;
+                healthTabInfos[1].name.text = healthTabBodyParts[selectedBodyPart].afflictionVisuals[selectedAffliction].name.text;
 
                 if (affliction is RWInjury injury)
                 {
@@ -1244,34 +1250,34 @@ public class HealthTab : HudPart
                     {
                         if (scar.isPermanent)
                         {
-                            string namee = injury.healingDifficulty.name;
+                            name = injury.healingDifficulty.name;
 
-                            namee = char.ToLowerInvariant(namee[0]) + namee.Substring(1);
+                            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
 
-                            healthTabInfos[1].name.text = "Permanent " + namee + ((injury.attackerName != "" || scar.scarType != "") ? " (" + (injury.attackerName != "" ? injury.attackerName + (scar.scarType != "" ? ", " + scar.scarType : "") : scar.scarType) + ") " : "");
+                            healthTabInfos[1].name.text = "Permanent " + name + ((injury.attackName != "" || scar.painCategory != "") ? " (" + (injury.attackName != "" ? injury.attackName + (scar.painCategory != "" ? ", " + scar.painCategory : "") : scar.painCategory) + ") " : "");
                         }
                         else
                         {
-                            healthTabInfos[1].name.text = injury.healingDifficulty.name + " scar" + ((injury.attackerName != "" || scar.scarType != "") ? " (" + (injury.attackerName != "" ? injury.attackerName + (scar.scarType != "" ? ", " + scar.scarType : "") : scar.scarType) + ") " : "");
+                            healthTabInfos[1].name.text = injury.healingDifficulty.name + " scar" + ((injury.attackName != "" || scar.painCategory != "") ? " (" + (injury.attackName != "" ? injury.attackName + (scar.painCategory != "" ? ", " + scar.painCategory : "") : scar.painCategory) + ") " : "");
                         }
 
-                        healthTabInfos[1].nameStatus.text = ": " + (Mathf.Floor(scar.damage * 10) / 10).ToString();
+                        healthTabInfos[1].nameStatus.text = " : " + (Mathf.Floor(scar.damage * 10) / 10).ToString();
 
                         string description = "";
 
-                        if (scar.scarType != "")
+                        if (scar.painCategory != "")
                         {
                             description = "  - Pain: +";
 
-                            if (scar.scarType == "painful")
+                            if (scar.painCategory == "painful")
                             {
                                 description += (scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100).ToString();
                             }
-                            else if (scar.scarType == "aching")
+                            else if (scar.painCategory == "aching")
                             {
                                 description += (scar.scarDamage * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100).ToString();
                             }
-                            else if (scar.scarType == "itchy")
+                            else if (scar.painCategory == "itchy")
                             {
                                 description += (scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100).ToString();
                             }
@@ -1283,8 +1289,8 @@ public class HealthTab : HudPart
                     }
                     else
                     {
-                        healthTabInfos[1].name.text = injury.healingDifficulty.name + (injury.attackerName != "" ? " (" + injury.attackerName + ")" : "");
-                        healthTabInfos[1].nameStatus.text = ": " + (Mathf.Floor(injury.damage * 10) / 10).ToString();
+                        healthTabInfos[1].name.text = injury.healingDifficulty.name + (injury.attackName != "" ? " (" + injury.attackName + ")" : "");
+                        healthTabInfos[1].nameStatus.text = " : " + (Mathf.Floor(injury.damage * 10) / 10).ToString();
 
                         string description = "";
 
@@ -1565,9 +1571,9 @@ public class HealthTabBodyPart
         afflictionVisuals.Add(new(owner));
     }
 
-    public Vector2 DrawPos(float timeStacker)
+    public Vector2 DrawPos()
     {
-        Vector2 pos = owner.DrawPos(timeStacker);
+        Vector2 pos = owner.DrawPos();
 
         pos.y += 120;
 
@@ -1639,7 +1645,7 @@ public class HealthTabBodyPart
         }
     }
 
-    public void Draw(float timeStacker)
+    public void Draw()
     {
         background.isVisible = owner.visible && owner.healthTabWholeBody.active ? !(owner.healthTabBodyParts.IndexOf(this) % 2 == 0) : owner.healthTabBodyParts.IndexOf(this) % 2 == 0;
         bodyPartName.isVisible = owner.visible;
@@ -1651,15 +1657,15 @@ public class HealthTabBodyPart
 
         if (background.isVisible)
         {
-            background.x = DrawPos(timeStacker).x;
-            background.y = DrawPos(timeStacker).y - (-2 + (8.75f * afflictionNumber));
+            background.x = DrawPos().x;
+            background.y = DrawPos().y - (-2 + (8.75f * afflictionNumber));
             background.scaleX = 340;
             background.scaleY = 2 + 17.5f * afflictionNumber;
             background.color = Color.black;
         }
 
-        bodyPartName.x = DrawPos(timeStacker).x - 165;
-        bodyPartName.y = DrawPos(timeStacker).y;
+        bodyPartName.x = DrawPos().x - 165;
+        bodyPartName.y = DrawPos().y;
         bodyPartName.color = Color.white;
 
         List<string> usedCombinedAfflictions = new();
@@ -1674,12 +1680,12 @@ public class HealthTabBodyPart
 
         for (int i = 0; i < afflictionVisuals.Count; i++)
         {
-            afflictionVisuals[i].name.x = DrawPos(timeStacker).x - 45;
-            afflictionVisuals[i].name.y = DrawPos(timeStacker).y - 17.5f * i;
+            afflictionVisuals[i].name.x = DrawPos().x - 45;
+            afflictionVisuals[i].name.y = DrawPos().y - 17.5f * i;
             afflictionVisuals[i].name.color = Color.white;
 
-            afflictionVisuals[i].icon.x = DrawPos(timeStacker).x + 160;
-            afflictionVisuals[i].icon.y = DrawPos(timeStacker).y - 7 - 17.5f * i;
+            afflictionVisuals[i].icon.x = DrawPos().x + 160;
+            afflictionVisuals[i].icon.y = DrawPos().y - 7 - 17.5f * i;
             afflictionVisuals[i].icon.scale = 14;
 
             for (int j = 0; j < bodyPart.afflictions.Count; j++)
@@ -1692,7 +1698,7 @@ public class HealthTabBodyPart
                     {
                         string text;
 
-                        text = injury.healingDifficulty.name + (injury.attackerName != "" ? " (" + injury.attackerName + ")" : "") + (dic.Count > 1 ? " x" + dic.Count : "");
+                        text = injury.healingDifficulty.name + (injury.attackName != "" ? " (" + injury.attackName + ")" : "") + (dic.Count > 1 ? " x" + dic.Count : "");
 
                         afflictionVisuals[i].name.text = text;
                         Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
@@ -1728,16 +1734,16 @@ public class HealthTabBodyPart
 
                                 name = char.ToLowerInvariant(name[0]) + name.Substring(1);
 
-                                text = "Permanent " + name + ((injury.attackerName != "" || scar.scarType != "") ? " (" + (injury.attackerName != "" ? injury.attackerName + (scar.scarType != "" ? ", " + scar.scarType : "") : scar.scarType) + ") " : "");
+                                text = "Permanent " + name + ((injury.attackName != "" || scar.painCategory != "") ? " (" + (injury.attackName != "" ? injury.attackName + (scar.painCategory != "" ? ", " + scar.painCategory : "") : scar.painCategory) + ") " : "");
                             }
                             else
                             {
-                                text = injury.healingDifficulty.name + " scar" + ((injury.attackerName != "" || scar.scarType != "") ? " (" + (injury.attackerName != "" ? injury.attackerName + (scar.scarType != "" ? ", " + scar.scarType : "") : scar.scarType) + ") " : "");
+                                text = injury.healingDifficulty.name + " scar" + ((injury.attackName != "" || scar.painCategory != "") ? " (" + (injury.attackName != "" ? injury.attackName + (scar.painCategory != "" ? ", " + scar.painCategory : "") : scar.painCategory) + ") " : "");
                             }
                         }
                         else
                         {
-                            text = injury.healingDifficulty.name + (injury.attackerName != "" ? " (" + injury.attackerName + ") " : "");
+                            text = injury.healingDifficulty.name + (injury.attackName != "" ? " (" + injury.attackName + ") " : "");
                         }
 
                         afflictionVisuals[i].name.text = text;
@@ -1830,7 +1836,7 @@ public class HealthTabBodyPart
 
         if (bodyPart.afflictions[i] is RWInjury injury)
         {
-            name = injury.healingDifficulty.name + injury.attackerName + injury.isTended;
+            name = injury.healingDifficulty.name + injury.attackName + injury.isTended;
         }
         else if (bodyPart.afflictions[i] is RWDisease disease)
         {
@@ -1901,9 +1907,9 @@ public class HealthTabWholeBody
         owner.hud.fContainers[1].AddChild(bloodLossName);
     }
 
-    public Vector2 DrawPos(float timeStacker)
+    public Vector2 DrawPos()
     {
-        Vector2 pos = owner.DrawPos(timeStacker);
+        Vector2 pos = owner.DrawPos();
 
         pos.y += 120;
 
@@ -1914,11 +1920,32 @@ public class HealthTabWholeBody
     {
         bloodLossVisible = owner.state != null && owner.state.bloodLoss >= 0.15f;
 
-        afflictionNumber = bloodLossVisible ? 1 : 0 + (owner.state != null ? owner.state.wholeBodyAfflictions.Count : 0);
+        afflictionNumber = (bloodLossVisible ? 1 : 0) + (owner.state != null ? owner.state.wholeBodyAfflictions.Count : 0);
 
         active = afflictionNumber > 0;
+
+        if ((owner.state != null ? owner.state.wholeBodyAfflictions.Count : 0) < afflictionVisuals.Count)
+        {
+            List<HealthTabAffliction> list = new(afflictionVisuals);
+
+            for (int i = list.Count - 1; i >= afflictionNumber; i--)
+            {
+                afflictionVisuals[i].ClearSprites();
+
+                afflictionVisuals.Remove(list[i]);
+            }
+        }
+        else if ((owner.state != null ? owner.state.wholeBodyAfflictions.Count : 0) > afflictionVisuals.Count)
+        {
+            List<HealthTabAffliction> list = new(afflictionVisuals);
+
+            for (int i = 0; i < afflictionNumber - list.Count; i++)
+            {
+                afflictionVisuals.Add(new(owner));
+            }
+        }
     }
-    public void Draw(float timeStacker)
+    public void Draw()
     {
         background.isVisible = owner.visible && active;
         name.isVisible = owner.visible && active;
@@ -1931,20 +1958,20 @@ public class HealthTabWholeBody
 
         if (background.isVisible)
         {
-            background.x = DrawPos(timeStacker).x;
-            background.y = DrawPos(timeStacker).y - (-2 + (8.75f * afflictionNumber));
+            background.x = DrawPos().x;
+            background.y = DrawPos().y - (-2 + (8.75f * afflictionNumber));
             background.scaleX = 340;
-            background.scaleY = 2 + 17.5f * afflictionNumber;
+            background.scaleY = 2 + (17.5f * afflictionNumber);
             background.color = Color.black;
         }
 
-        name.x = DrawPos(timeStacker).x - 165;
-        name.y = DrawPos(timeStacker).y;
+        name.x = DrawPos().x - 165;
+        name.y = DrawPos().y;
 
         if (bloodLossVisible)
         {
-            bloodLossName.x = DrawPos(timeStacker).x - 45;
-            bloodLossName.y = DrawPos(timeStacker).y;
+            bloodLossName.x = DrawPos().x - 45;
+            bloodLossName.y = DrawPos().y;
 
             if (owner.state.bloodLoss >= 0.6f)
             {
@@ -1970,14 +1997,14 @@ public class HealthTabWholeBody
             bloodLossName.color = Color.white;
         }
 
-        for (int i = 0; i < afflictionNumber - (bloodLossVisible ? 1 : 0); i++)
+        for (int i = 0; i < afflictionVisuals.Count && i < owner.state.wholeBodyAfflictions.Count; i++)
         {
-            afflictionVisuals[i].name.x = DrawPos(timeStacker).x - 45;
-            afflictionVisuals[i].name.y = DrawPos(timeStacker).y - (bloodLossVisible ? 17.5f : 0 + (17.5f * i));
+            afflictionVisuals[i].name.x = DrawPos().x - 45;
+            afflictionVisuals[i].name.y = DrawPos().y - ((bloodLossVisible ? 17.5f : 0) + (17.5f * i));
             afflictionVisuals[i].name.color = Color.yellow;
 
-            afflictionVisuals[i].icon.x = DrawPos(timeStacker).x + 160;
-            afflictionVisuals[i].icon.y = DrawPos(timeStacker).y - 7 - (bloodLossVisible ? 17.5f : 0 + (17.5f * i));
+            afflictionVisuals[i].icon.x = DrawPos().x + 160;
+            afflictionVisuals[i].icon.y = DrawPos().y - 7 - ((bloodLossVisible ? 17.5f : 0) + (17.5f * i));
             afflictionVisuals[i].icon.scale = 14;
 
             if (owner.state.wholeBodyAfflictions[i] is RWDisease disease)
@@ -2113,7 +2140,7 @@ public class HealthTabInfo
             anchorY = 1f
         };
 
-        nameStatus = new(Custom.GetFont(), ": Status")
+        nameStatus = new(Custom.GetFont(), " : Status")
         {
             alignment = FLabelAlignment.Left,
             anchorX = 0f,
@@ -2139,7 +2166,7 @@ public class HealthTabInfo
         owner.hud.fContainers[1].AddChild(description);
     }
 
-    public Vector2 DrawPos(float timeStacker)
+    public Vector2 DrawPos()
     {
         Vector2 pos = new(owner.selectedSprite.x, owner.selectedSprite.y);
 
@@ -2161,7 +2188,7 @@ public class HealthTabInfo
             slatedForDeletion = true;
         }
     }
-    public void Draw(float timeStacker)
+    public void Draw()
     {
         bool visible = owner.visible && owner.selectedTimer <= 0;
 
@@ -2189,14 +2216,14 @@ public class HealthTabInfo
             name.color = Color.white;
         }
 
-        name.x = DrawPos(timeStacker).x;
-        name.y = DrawPos(timeStacker).y;
+        name.x = DrawPos().x;
+        name.y = DrawPos().y;
 
-        nameStatus.x = DrawPos(timeStacker).x;
+        nameStatus.x = DrawPos().x;
 
         nameStatus.x += name.textRect.width;
 
-        nameStatus.y = DrawPos(timeStacker).y;
+        nameStatus.y = DrawPos().y;
 
         Vector2 backgroundPos = new()
         {
@@ -2252,15 +2279,15 @@ public class HealthTabInfo
             backgroundSize.y += description.textRect.height;
         }
 
-        backgrounds[0].x = DrawPos(timeStacker).x + (backgroundPos.x / 2);
-        backgrounds[0].y = DrawPos(timeStacker).y + (backgroundPos.y / 2) - 15;
+        backgrounds[0].x = DrawPos().x + (backgroundPos.x / 2);
+        backgrounds[0].y = DrawPos().y + (backgroundPos.y / 2) - 15;
 
         backgrounds[0].scaleX = backgroundSize.x + 10;
         backgrounds[0].scaleY = backgroundSize.y + 10;
         backgrounds[0].color = Color.black;
 
-        backgrounds[1].x = DrawPos(timeStacker).x + (backgroundPos.x / 2);
-        backgrounds[1].y = DrawPos(timeStacker).y + (backgroundPos.y / 2) - 15;
+        backgrounds[1].x = DrawPos().x + (backgroundPos.x / 2);
+        backgrounds[1].y = DrawPos().y + (backgroundPos.y / 2) - 15;
 
         backgrounds[1].scaleX = backgroundSize.x + 8;
         backgrounds[1].scaleY = backgroundSize.y + 8;

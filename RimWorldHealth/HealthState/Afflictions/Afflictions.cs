@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ShadowOfRimWorldHealth;
+﻿namespace ShadowOfRimWorldHealth;
 
 public class RWAffliction
 {
@@ -24,12 +22,13 @@ public class RWAffliction
 
 public class RWInjury : RWAffliction
 {
-    public RWInjury(RWPlayerHealthState state, RWBodyPart part, float damage, RWDamageType damageType, string attackerName) : base(state, part)
+    public RWInjury(RWPlayerHealthState state, RWBodyPart part, float damage, RWDamageType damageType, string attackName = "", string attackerName = "") : base(state, part)
     {
         this.damage = damage;
 
         this.damageType = damageType;
 
+        this.attackName = attackName;
         this.attackerName = attackerName;
 
         if (damageType != null && damageType.headiffs.Count > 0 && damageType.headiffs[0] != "")
@@ -46,10 +45,9 @@ public class RWInjury : RWAffliction
             isBleeding = false;
         }
 
-        if (isBleeding && healingDifficulty.infectionChance < UnityEngine.Random.value || true)
+        if (isBleeding && healingDifficulty.infectionChance > 0)
         {
-            infectionTimer = UnityEngine.Random.Range(150, 451);
-            infection = true;
+            infectionTimer = UnityEngine.Random.Range(15000, 45001);
         }
 
         RWHealingDifficulty HealingDifficulty()
@@ -89,19 +87,17 @@ public class RWInjury : RWAffliction
         }
     }
 
-    public string attackerName;
+    public string attackName; //Name of the attack, used in the HealthTab
+    public string attackerName; //Name of the attacker (currently unused but will be used in the HealthTab)
 
     public float damage;
-
     public RWDamageType damageType;
 
     public bool isBleeding = true;
 
+    public float infectionTimer; //If the wound is injury bleeds and the Healing Difficulty has infection chance a random time between 4.17 and 12.5 minutes will be set, when the timer finishes the Infection will be rolled
+
     public RWHealingDifficulty healingDifficulty;
-
-    public float infectionTimer;
-
-    public bool infection = false;
 }
 
 public class RWDisease : RWAffliction
@@ -113,31 +109,22 @@ public class RWDisease : RWAffliction
 
     public string name = "";
 
-    //Lethal diseases will kill when their severity reaches 100%
-    public bool lethal = false;
+    public bool lethal = false; //Lethal diseases will kill when their severity reaches 100%
 
-    //severity ranges from 0 to 1, if the disease is lethal and severity reaches 1 the creature will die
-    public float severity = 0;
-    //severity gain per cycle
-    public float severityGain = 0;
-    //severity loss per cycle when the patient is immune
-    public float severityLoss = 0;
+    public float severity = 0; //Severity ranges from 0 to 1, if the disease is lethal and severity reaches 1 the creature will die
+    public float severityGain = 0; //Severity gain per cycle
+    public float severityLoss = 0; //Severity loss per cycle when the patient is immune
 
     public bool isImmune = false;
-    //immunity ranges from 0 to 1, if the disease is lethal and immunity reaches 1 before severity the creature will not die
-    public float immunity = 0;
-    //immunity gain per cycle
-    public float immunityGain = 0;
+    public float immunity = 0; //Immunity ranges from 0 to 1, if the disease is lethal and immunity reaches 1 before severity the creature will not die
+    public float immunityGain = 0; //Immunity gain per cycle
 
-    //treatment will negate severity gain per cycle, the shown treatment amount shows what it would be at 100% tend quality
-    public float treatment = 0;
+    public float treatment = 0; //Treatment will negate severity gain per cycle, the shown treatment amount shows what it would be at 100% tend quality
 
     public float timeUntilTreatment = 0;
-    //tend times determine how often a new tend is allowd, this is multiplied off of the cycle time. so if tendTime is 1 and the cycleLength is 13 it will take 13 minutes before a new tend can be done
-    public float treatmentTimes = 1;
+    public float treatmentTimes = 1; //Tend times determine how often a new tend is allowd, this is multiplied off of the cycle time. so if tendTime is 0.5 and the cycleLength is 13 it will take 6.5 minutes before a new tend can be done
 
-    //some diseases require the total tend quality to reach 300% before being treated
-    public float totalTendQuality = 0;
+    public float totalTendQuality = 0; //Some diseases require the total tend quality to reach 300% before being treated
 
-    public float InfectionLuck = 0;
+    public float InfectionLuck = 0; //Infection luck ranges from 0.8 to 1.2 and it multiplies the severity gained/lost
 }

@@ -92,28 +92,25 @@ public class RimWorldHealth : BaseUnityPlugin
 
             if (Input.GetKey("n"))
             {
+                state.bloodLoss = 0.5f;
+
                 for (int i = 0; i < state.bodyParts.Count; i++)
                 {
                     if (state.bodyParts[i] is Head head)
                     {
-                        if (head.afflictions.Count > 5)
-                        {
-                            break;
-                        }
-
                         int j = UnityEngine.Random.Range(0, 3);
 
                         if (j == 0)
                         {
-                            state.Damage(new RWBomb(), 0.5f, head, "testtesttesttesttesttest");
+                            state.Damage(new RWPoke(), 0.5f, head, "testtesttesttesttesttest");
                         }
                         else if(j == 1)
                         {
-                            state.Damage(new RWBomb(), 0.5f, head, "testtesttesttesttesttest testtesttesttesttesttest");
+                            state.Damage(new RWPoke(), 0.5f, head, "testtesttesttesttesttest testtesttesttesttesttest");
                         }
                         else if (j == 2)
                         {
-                            state.Damage(new RWBomb(), 0.5f, head, "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
+                            state.Damage(new RWPoke(), 0.5f, head, "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
                         }
 
                         break;
@@ -126,6 +123,8 @@ public class RimWorldHealth : BaseUnityPlugin
                 {
                     state.wholeBodyAfflictions.Add(new RWFlu(state, null));
                 }
+
+                //state.bloodLoss = 0.5f;
             }
         }
 

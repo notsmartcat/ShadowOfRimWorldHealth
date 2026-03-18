@@ -2,21 +2,21 @@
 
 public class RWScar : RWInjury
 {
-    public RWScar(RWPlayerHealthState state, RWBodyPart part, float damage, RWDamageType damageType, string attackerName) : base(state, part, damage, damageType, attackerName)
+    public RWScar(RWPlayerHealthState state, RWBodyPart part, float damage, RWDamageType damageType, string attackName = "", string attackerName = "") : base(state, part, damage, damageType, attackName, attackerName)
     {
     }
 
-    public bool isRevealed = false;
+    public bool isRevealed = false; //Scars reveal when the injuries damage get's healed to the scarDamage
 
-    public bool isPermanent = false;
+    public bool isPermanent = false; //Permanent scars get revealed on creation and they use the total damage dealt rather then a fraction
 
-    public float scarDamage = 0;
+    public float scarDamage = 0; //Non-permanent scars will act as regular injuries until their damage get's to this threshold, then they will be revealed
 
-    public string scarType = "";
+    public string painCategory = ""; //The pain category consist of: Painless (no pain), Low (50% of pain), Medium (100% pain), High (150% pain)
 }
 public class RWDestroyed : RWInjury
 {
-    public RWDestroyed(RWPlayerHealthState state, RWBodyPart part, float damage, RWDamageType damageType, string attackerName) : base(state, part, damage, damageType, attackerName)
+    public RWDestroyed(RWPlayerHealthState state, RWBodyPart part, float damage, RWDamageType damageType, string attackName = "", string attackerName = "") : base(state, part, damage, damageType, attackName, attackerName)
     {
         if (isBleeding && part is not RWOrgan && part is not RWBone)
         {
