@@ -13,9 +13,9 @@ internal class WeaponHooks
     {
         orig(self, room, sourceObject, pos, lifeTime, rad, force, damage, stun, deafen, killTagHolder, killTagHolderDmgFactor, minStun, backgroundNoise);
 
-        if (!singleUse.TryGetValue(self.sourceObject, out _))
+        if (!singleExplosion.TryGetValue(self, out _))
         {
-            singleUse.Add(self.sourceObject, new());
+            singleExplosion.Add(self, new());
         }
     }
 }

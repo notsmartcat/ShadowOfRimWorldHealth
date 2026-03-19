@@ -175,14 +175,15 @@ internal class ILHooks
 
     public static void ExplosionUpdate(Explosion obj, Creature self, float damage)
     {
-        if (obj.sourceObject == null || !singleUse.TryGetValue(obj.sourceObject, out OneTimeUseData data) || data.creatures.Contains(self) || damage <= 0 || self.State == null || self.State is not RWPlayerHealthState state)
+        if (obj.sourceObject != null && obj.sourceObject is Snail || !singleExplosion.TryGetValue(obj, out OneTimeUseData data) || data.creatures.Contains(self) || damage <= 0 || self.State == null || self.State is not RWPlayerHealthState state)
         {
             return;
         }
 
         data.creatures.Add(self);
 
-        damage *= 200;
+        if(obj.sourceObject != null && obj.sourceObject is not FirecrackerPlant)
+            damage *= 200;
 
         int amount = UnityEngine.Random.Range(1, 5);
 
@@ -298,18 +299,58 @@ internal class ILHooks
 
             if (focusedBodyPart != null)
             {
-                PhysicalObject sourceObj = obj.sourceObject;
+                PhysicalObject sourceObj = obj.sourceObject ?? null;
 
                 string attackName = obj.ToString();
                 string attackerName = "";
 
-                if (sourceObj is ScavengerBomb)
+                bool super = false;
+
+                if (sourceObj == null)
                 {
-                    attackName = "Bomb";
+                    attackName = "Explosion";
+                }
+                else if (sourceObj is EggBug)
+                {
+                    attackName = "FireBug - Explosion";
                 }
                 else if (sourceObj is ExplosiveSpear)
                 {
                     attackName = "Explosive spear";
+                }
+                else if (sourceObj is FirecrackerPlant)
+                {
+                    attackName = "Firecracker";
+                }
+                else if (sourceObj is ScavengerBomb)
+                {
+                    attackName = "Bomb";
+                }
+                else if (sourceObj is Player)
+                {
+                    attackName = "Slugcat - Explosion";
+                }
+                else if (sourceObj is Vulture)
+                {
+                    attackName = "Miros Vulture - Laser explosion";
+                }
+                else if (ModManager.MSC && sourceObj is MoreSlugcats.EnergyCell)
+                {
+                    attackName = "Energy cell";
+                    super = true;
+                }
+                else if (ModManager.MSC && sourceObj is MoreSlugcats.FireEgg)
+                {
+                    attackName = "Fire egg";
+                }
+                else if (ModManager.MSC && sourceObj is MoreSlugcats.SingularityBomb)
+                {
+                    attackName = "Singularity bomb";
+                    super = true;
+                }
+                else if (ModManager.MSC && sourceObj is Oracle)
+                {
+                    attackName = "Oracle";
                 }
 
                 if (obj.killTagHolder != null)
@@ -319,9 +360,11 @@ internal class ILHooks
 
                 RWDamageType damageType;
 
-                damageType = new RWBomb();
+                damageType = super ? new RWSuperBomb() : new RWBomb();
 
-                state.Damage(damageType, damage / amount, focusedBodyPart, attackName, attackerName);
+                float tempDamage = super ? damage * 800 : damage;
+
+                state.Damage(damageType, tempDamage / amount, focusedBodyPart, attackName, attackerName);
             }
         }
     }

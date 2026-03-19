@@ -1043,10 +1043,10 @@ public class RWPlayerHealthState : PlayerState
 
         if (health <= 0f)
         {
-            if(focusedBodyPart.deathEffect != "" && focusedBodyPart is not UpperTorso)
-                DestroyBodyPart();
+            DestroyBodyPart();
 
             extraDamage = health * -1;
+            damage = 0;
 
             focusedBodyPart.health = 0;
         }
@@ -1078,10 +1078,13 @@ public class RWPlayerHealthState : PlayerState
 
                         OverkillPrevention();
 
+                        float tempDamage = damage + extraDamage;
+
                         if (health <= 0f)
                         {
                             DestroyBodyPart();
                             extraDamage = health * -1;
+                            damage = 0;
 
                             focusedBodyPart.health = 0;
                         }
@@ -1089,7 +1092,7 @@ public class RWPlayerHealthState : PlayerState
                         {
                             extraDamage = 0f;
 
-                            focusedBodyPart.afflictions.Add(Scar(damage));
+                            focusedBodyPart.afflictions.Add(Scar(tempDamage));
                             focusedBodyPart.health = health;
                         }
 
@@ -1099,11 +1102,11 @@ public class RWPlayerHealthState : PlayerState
                     }
                 }
             }
-            else if (damageType is RWBomb && BombDestroyBodyparts())
+            else if (extraDamage > 0 && damageType is RWBomb && BombDestroyBodyparts())
             {
                 for (int i = 0; i < bodyParts.Count; i++)
                 {
-                    if (IsSubPartName(bodyParts[i], focusedBodyPart))
+                    if (IsSubPartName(focusedBodyPart, bodyParts[i]))
                     {
                         focusedBodyPart = bodyParts[i];
 
@@ -1112,10 +1115,13 @@ public class RWPlayerHealthState : PlayerState
 
                         OverkillPrevention();
 
+                        float tempDamage = damage + extraDamage;
+
                         if (health <= 0f)
                         {
                             DestroyBodyPart();
                             extraDamage = health * -1;
+                            damage = 0;
 
                             focusedBodyPart.health = 0;
                         }
@@ -1123,7 +1129,7 @@ public class RWPlayerHealthState : PlayerState
                         {
                             extraDamage = 0f;
 
-                            focusedBodyPart.afflictions.Add(Scar(damage));
+                            focusedBodyPart.afflictions.Add(Scar(tempDamage));
                             focusedBodyPart.health = health;
                         }
 
@@ -1133,11 +1139,11 @@ public class RWPlayerHealthState : PlayerState
                     }
                 }
             }
-            else if (damageType is RWSuperBomb)
+            else if (extraDamage > 0 && damageType is RWSuperBomb)
             {
                 for (int i = 0; i < bodyParts.Count; i++)
                 {
-                    if (IsSubPartName(bodyParts[i], focusedBodyPart))
+                    if (IsSubPartName(focusedBodyPart, bodyParts[i]))
                     {
                         focusedBodyPart = bodyParts[i];
 
@@ -1146,10 +1152,13 @@ public class RWPlayerHealthState : PlayerState
 
                         OverkillPrevention();
 
+                        float tempDamage = damage + extraDamage;
+
                         if (health <= 0f)
                         {
                             DestroyBodyPart();
                             extraDamage = health * -1;
+                            damage = 0;
 
                             focusedBodyPart.health = 0;
                         }
@@ -1157,7 +1166,7 @@ public class RWPlayerHealthState : PlayerState
                         {
                             extraDamage = 0f;
 
-                            focusedBodyPart.afflictions.Add(Scar(damage));
+                            focusedBodyPart.afflictions.Add(Scar(tempDamage));
                             focusedBodyPart.health = health;
                         }
 
@@ -1180,7 +1189,7 @@ public class RWPlayerHealthState : PlayerState
 
         void DestroyBodyPart()
         {
-            if (focusedBodyPart == null)
+            if (focusedBodyPart == null || focusedBodyPart.deathEffect == "" || focusedBodyPart is UpperTorso)
             {
                 return;
             }
@@ -1202,9 +1211,9 @@ public class RWPlayerHealthState : PlayerState
                     {
                         for (int j = 0; j < subParts.Count; j++)
                         {
-                            if (!subParts.Contains(bodyParts[i]) && !subPartsRestricted.Contains(bodyParts[i]) && bodyParts[i].subPartOf == subParts[j].name)
+                            if (!subParts.Contains(bodyParts[i]) && !subPartsRestricted.Contains(bodyParts[i]) && IsSubPartName(bodyParts[i], subParts[j]))
                             {
-                                if (subParts[j].afflictions.Count == 1 && subParts[j].afflictions[0] is RWDestroyed)
+                                if (subParts[j].afflictions.Count == 1 && subParts[j].afflictions[0] is RWDestroyed || subParts[j].deathEffect == "")
                                 {
                                     subPartsRestricted.Add(bodyParts[i]);
                                     continue;
@@ -1251,7 +1260,7 @@ public class RWPlayerHealthState : PlayerState
 
         RWInjury Scar(float damage)
         {
-            if (damageType.headiffs.Count <= 2 && damageType.headiffs[2] == "Bruise" && !focusedBodyPart.isSolid && !focusedBodyPart.isInternal || damageType.armourCategory == "Blunt" && focusedBodyPart is RWOrgan && !focusedBodyPart.isDelicate)
+            if (damageType.headiffs.Count >= 2 && damageType.headiffs[2] == "Bruise" && !focusedBodyPart.isSolid && !focusedBodyPart.isInternal || damageType.armourCategory == "Blunt" && focusedBodyPart is RWOrgan && !focusedBodyPart.isDelicate)
             {
                 return new(this, focusedBodyPart, damage, damageType, attackName, attackerName);
             } //bruises never scar

@@ -1094,6 +1094,7 @@ public class HealthTab : HudPart
                     {
                         if (healthTabBodyParts[selectedBodyPart].allAfflictions.Contains(list[k]))
                         {
+                            isCombined = true;
                             afflictions = list;
                             break;
                         }
@@ -1138,7 +1139,7 @@ public class HealthTab : HudPart
                     {
                         healthTabInfos[j].name.text = injury.healingDifficulty.name + (injury.attackName != "" ? " (" + injury.attackName + ") " : "") + (afflictions.Count > 1 ? " x" + afflictions.Count : "");
 
-                        healthTabInfos[j].nameStatus.text = " : " + (Mathf.Floor(injury.damage * 10) / 10).ToString();
+                        healthTabInfos[j].nameStatus.text = ": " + (Mathf.Floor(injury.damage * 10) / 10).ToString();
 
                         string description = "";
 
@@ -1147,9 +1148,7 @@ public class HealthTab : HudPart
                         if (injury.isBleeding)
                         {
                             description += "  - Bleeding: ";
-
                             description += bleeding.ToString();
-
                             description += "%/c";
                         }
 
@@ -1163,9 +1162,7 @@ public class HealthTab : HudPart
                             }
 
                             description += "  - Pain: +";
-
                             description += pain.ToString();
-
                             description += "%";
                         }
 
@@ -1209,8 +1206,6 @@ public class HealthTab : HudPart
             }
             else
             {
-                Debug.Log("bodypart " + selectedBodyPart + " affliction " + selectedAffliction);
-
                 if (affliction == null)
                 {
                     if (healthTabInfos.Count > 1)
@@ -1261,7 +1256,7 @@ public class HealthTab : HudPart
                             healthTabInfos[1].name.text = injury.healingDifficulty.name + " scar" + ((injury.attackName != "" || scar.painCategory != "") ? " (" + (injury.attackName != "" ? injury.attackName + (scar.painCategory != "" ? ", " + scar.painCategory : "") : scar.painCategory) + ") " : "");
                         }
 
-                        healthTabInfos[1].nameStatus.text = " : " + (Mathf.Floor(scar.damage * 10) / 10).ToString();
+                        healthTabInfos[1].nameStatus.text = ": " + (Mathf.Floor(scar.damage * 10) / 10).ToString();
 
                         string description = "";
 
@@ -1290,7 +1285,7 @@ public class HealthTab : HudPart
                     else
                     {
                         healthTabInfos[1].name.text = injury.healingDifficulty.name + (injury.attackName != "" ? " (" + injury.attackName + ")" : "");
-                        healthTabInfos[1].nameStatus.text = " : " + (Mathf.Floor(injury.damage * 10) / 10).ToString();
+                        healthTabInfos[1].nameStatus.text = ": " + (Mathf.Floor(injury.damage * 10) / 10).ToString();
 
                         string description = "";
 
