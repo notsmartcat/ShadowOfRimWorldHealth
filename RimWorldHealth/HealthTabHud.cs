@@ -995,11 +995,11 @@ public class HealthTab : HudPart
             }
             else
             {
-                healthTabInfos[0].name.text = healthTabWholeBody.afflictionVisuals[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)].name.text + ": ";
+                healthTabInfos[0].name.text = healthTabWholeBody.afflictionVisuals[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)].name.text;
 
                 if (state.wholeBodyAfflictions[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)] is RWDisease disease)
                 {
-                    healthTabInfos[0].nameStatus.text = (Mathf.Floor(disease.severity * 1000) / 10) + "%";
+                    healthTabInfos[0].nameStatus.text = " : " + (Mathf.Floor(disease.severity * 1000) / 10) + "%";
 
                     if (disease is RWFlu)
                     {
@@ -1137,9 +1137,9 @@ public class HealthTab : HudPart
 
                     if (affliction is RWInjury injury)
                     {
-                        healthTabInfos[j].name.text = injury.healingDifficulty.name + (injury.attackName != "" ? " (" + injury.attackName + ") " : "") + (afflictions.Count > 1 ? " x" + afflictions.Count : "");
+                        healthTabInfos[j].name.text = injury.healingDifficulty.name + (injury.attackName != "" ? " (" + injury.attackName + ")" : "");
 
-                        healthTabInfos[j].nameStatus.text = ": " + (Mathf.Floor(injury.damage * 10) / 10).ToString();
+                        healthTabInfos[j].nameStatus.text = " : " + (Mathf.Floor(injury.damage * 10) / 10).ToString();
 
                         string description = "";
 
@@ -1249,14 +1249,14 @@ public class HealthTab : HudPart
 
                             name = char.ToLowerInvariant(name[0]) + name.Substring(1);
 
-                            healthTabInfos[1].name.text = "Permanent " + name + ((injury.attackName != "" || scar.painCategory != "") ? " (" + (injury.attackName != "" ? injury.attackName + (scar.painCategory != "" ? ", " + scar.painCategory : "") : scar.painCategory) + ") " : "");
+                            healthTabInfos[1].name.text = "Permanent " + name + ((injury.attackName != "" || scar.painCategory != "") ? " (" + (injury.attackName != "" ? injury.attackName + (scar.painCategory != "" ? ", " + scar.painCategory : "") : scar.painCategory) + ")" : "");
                         }
                         else
                         {
-                            healthTabInfos[1].name.text = injury.healingDifficulty.name + " scar" + ((injury.attackName != "" || scar.painCategory != "") ? " (" + (injury.attackName != "" ? injury.attackName + (scar.painCategory != "" ? ", " + scar.painCategory : "") : scar.painCategory) + ") " : "");
+                            healthTabInfos[1].name.text = injury.healingDifficulty.name + " scar" + ((injury.attackName != "" || scar.painCategory != "") ? " (" + (injury.attackName != "" ? injury.attackName + (scar.painCategory != "" ? ", " + scar.painCategory : "") : scar.painCategory) + ")" : "");
                         }
 
-                        healthTabInfos[1].nameStatus.text = ": " + (Mathf.Floor(scar.damage * 10) / 10).ToString();
+                        healthTabInfos[1].nameStatus.text = " : " + (Mathf.Floor(scar.damage * 10) / 10).ToString();
 
                         string description = "";
 
@@ -1266,15 +1266,15 @@ public class HealthTab : HudPart
 
                             if (scar.painCategory == "painful")
                             {
-                                description += (scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100).ToString();
+                                description += Mathf.Floor(scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100).ToString();
                             }
                             else if (scar.painCategory == "aching")
                             {
-                                description += (scar.scarDamage * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100).ToString();
+                                description += Mathf.Floor(scar.scarDamage * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100).ToString();
                             }
                             else if (scar.painCategory == "itchy")
                             {
-                                description += (scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100).ToString();
+                                description += Mathf.Floor(scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100).ToString();
                             }
 
                             description += "%";
@@ -1285,7 +1285,7 @@ public class HealthTab : HudPart
                     else
                     {
                         healthTabInfos[1].name.text = injury.healingDifficulty.name + (injury.attackName != "" ? " (" + injury.attackName + ")" : "");
-                        healthTabInfos[1].nameStatus.text = ": " + (Mathf.Floor(injury.damage * 10) / 10).ToString();
+                        healthTabInfos[1].nameStatus.text = " : " + (Mathf.Floor(injury.damage * 10) / 10).ToString();
 
                         string description = "";
 
@@ -1355,7 +1355,7 @@ public class HealthTab : HudPart
                 }
                 else if (affliction is RWDisease disease)
                 {
-                    healthTabInfos[1].nameStatus.text = ": " + (Mathf.Floor(disease.severity * 1000) / 10) + "%";
+                    healthTabInfos[1].nameStatus.text = " : " + (Mathf.Floor(disease.severity * 1000) / 10) + "%";
 
                     if (disease is RWInfection)
                     {

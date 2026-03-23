@@ -452,21 +452,10 @@ public class RWPlayerHealthState : PlayerState
 
     public void Update()
     {
-        bloodLossPerCycle = 0;
-
-        pain = 0;
-
-        consciousness = 0;
-        moving = 0;
-        manipulation = 0;
-        talking = 0;
-        eating = 0;
-        sight = 0;
-        hearing = 0;
-        breathing = 0;
-        bloodFiltration = 0;
-        bloodPumping = 0;
-        digestion = 0;
+        if (dead)
+        {
+            goto dead;
+        }
 
         if (healingRate > 0)
         {
@@ -482,42 +471,19 @@ public class RWPlayerHealthState : PlayerState
 
         List<RWInjury> healList = new();
 
-        float brainEfficiency = 1;
-
         List<RWAffliction> afflictionList;
 
         for (int i = 0; i < bodyParts.Count; i++)
         {
-            bodyParts[i].health = bodyParts[i].maxHealth;
-
-            if (bodyParts[i].afflictions.Count == 0)
+            if (bodyParts[i].afflictions.Count == 0 || IsSubPartDestroyed(this, bodyParts[i]))
             {
-                goto line1;
-            }
-            else if (IsSubPartDestroyed(this, bodyParts[i]))
-            {
-                bodyParts[i].health = 0;
-
-                bodyParts[i].efficiency = 0;
-
-                goto line1;
+                continue;
             }
 
             afflictionList = new(bodyParts[i].afflictions);
 
             for (int j = 0; j < afflictionList.Count; j++)
             {
-                if (afflictionList[j] is RWDestroyed destroyed)
-                {
-                    bodyParts[i].health = 0;
-
-                    bodyParts[i].efficiency = 0;
-
-                    bloodLossPerCycle += destroyed.isBleeding && !destroyed.isTended ? destroyed.healingDifficulty.bleeding * bodySizeFactor * BloodLossMultiplier(bodyParts[i]) : 0;
-
-                    break;
-                }
-
                 if (afflictionList[j] is not RWInjury injury)
                 {
                     if (afflictionList[j] is RWDisease disease)
@@ -527,37 +493,6 @@ public class RWPlayerHealthState : PlayerState
 
                     continue;
                 }
-
-                bodyParts[i].health -= injury.damage;
-
-                if (dead)
-                {
-                    continue;
-                }
-
-                if (injury is RWScar scar && scar.isRevealed)
-                {
-                    if (scar.painCategory == "painful")
-                    {
-                        afflictionList[j].pain = scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / bodySizeFactor / 100;
-                    }
-                    else if (scar.painCategory == "aching")
-                    {
-                        afflictionList[j].pain = scar.scarDamage * injury.healingDifficulty.scarPain / bodySizeFactor / 100;
-                    }
-                    else if (scar.painCategory == "itchy")
-                    {
-                        afflictionList[j].pain = scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / bodySizeFactor / 100;
-                    }
-                }
-                else
-                {
-                    afflictionList[j].pain = injury.damage * injury.healingDifficulty.pain / bodySizeFactor / 100;
-                }
-
-                pain += afflictionList[j].pain;
-
-                bloodLossPerCycle += injury.isBleeding && !injury.isTended ? injury.healingDifficulty.bleeding * injury.damage * bodySizeFactor * BloodLossMultiplier(bodyParts[i]) : 0;
 
                 if (injury.infectionTimer > 0)
                 {
@@ -586,31 +521,6 @@ public class RWPlayerHealthState : PlayerState
                     healList.Add(injury);
                 }
             }
-
-        line1:
-
-            bodyParts[i].efficiency = Mathf.Max(0, bodyParts[i].health / bodyParts[i].maxHealth);
-
-            if ((bodyParts[i].health > 0 && bodyParts[i].health < 1) || bodyParts[i].deathEffect == "" && bodyParts[i].health < 1)
-            {
-                bodyParts[i].health = 1;
-                bodyParts[i].efficiency = 0;
-            }
-            else if (bodyParts[i] is UpperTorso && bodyParts[i].health <= 0)
-            {
-                bodyParts[i].health = 0;
-                bodyParts[i].efficiency = 0;
-            }
-
-            if (dead)
-            {
-                continue;
-            }
-
-            if (bodyParts[i] is Brain)
-            {
-                brainEfficiency = bodyParts[i].efficiency;
-            }
         }
 
         afflictionList = new(wholeBodyAfflictions);
@@ -621,11 +531,6 @@ public class RWPlayerHealthState : PlayerState
             {
                 Disease(disease);
             }
-        }
-
-        if (dead)
-        {
-            return;
         }
 
         if (healList.Count > 0)
@@ -660,283 +565,50 @@ public class RWPlayerHealthState : PlayerState
                 injury.healingDifficulty = null;
                 injury.part.afflictions.Remove(injury);
             }
+
+            updateCapacities = true;
         }
 
-        if (bloodFiltrationBP.Count > 0)
-        {
-            float baseEfficiency = 0;
-            float offsets = bloodFiltration;
-            float postFactors = 1;
-
-            for (int i = 0; i < bloodFiltrationBP.Count; i++)
-            {
-                baseEfficiency += (bloodFiltrationBP[i] is Kidney ? (bloodFiltrationBP[i].efficiency / 2) : bloodFiltrationBP[i].efficiency) / (bloodFiltrationBP.Count != 1 ? bloodFiltrationBP.Count - 1 : bloodFiltrationBP.Count);
-            }
-
-            bloodFiltration = (baseEfficiency + offsets) * postFactors;
-        }
-        else
-        {
-            bloodFiltration = 0;
-        }
-
-        if (bloodPumpingBP.Count > 0)
-        {
-            float baseEfficiency = 0;
-            float offsets = bloodPumping;
-            float postFactors = 1;
-
-            for (int i = 0; i < bloodPumpingBP.Count; i++)
-            {
-                baseEfficiency += bloodPumpingBP[i].efficiency / bloodPumpingBP.Count;
-            }
-
-            bloodPumping = (baseEfficiency + offsets) * postFactors;
-        }
-        else
-        {
-            bloodPumping = 0;
-        }
-
-        if (breathingBP.Count > 0)
-        {
-            float baseEfficiency = 0;
-            float offsets = breathing;
-            float postFactors = 1;
-
-            for (int i = 0; i < breathingBP.Count; i++)
-            {
-                baseEfficiency += (breathingBP[i] is Lung ? (breathingBP[i].efficiency / 2) : breathingBP[i].efficiency) / (breathingBP.Count != 1 ? (breathingBP.Count - 1) : breathingBP.Count);
-            }
-
-            breathing = (baseEfficiency + offsets) * postFactors;
-        }
-        else
-        {
-            breathing = 0;
-        }
-
-        float consciounessOffset = consciousness;
-
-        consciousness = (brainEfficiency * (1 - Mathf.Clamp((pain - 0.1f) * 4 / 9, 0, 0.4f)) * (1 - 0.2f * (1 - bloodPumping)) * (1 - 0.2f * (1 - breathing)) * (1 - 0.1f * (1 - bloodFiltration))) + consciounessOffset;
+        float prevbloodLoss = bloodLoss;
 
         if (bloodLossPerCycle == 0 && bloodLoss > 0)
         {
             bloodLoss -= 0.333f / (40 * 60 * cycleLength);
+
+            if (updateBloodLoss())
+            {
+                updateCapacities = true;
+            }
         } //Replenishes 33.3% of blood per cycle if not bleeding
         else if (bloodLossPerCycle > 0)
         {
             bloodLoss += bloodLossPerCycle / 100 / (40 * 60 * cycleLength);
+
+            if (updateBloodLoss())
+            {
+                updateCapacities = true;
+            }
         }
 
         bloodLoss = Mathf.Clamp(bloodLoss, 0, 1);
 
-        if (bloodLoss >= 0.6f)
+    dead:
+
+        if (updateCapacities)
         {
-            consciousness -= 0.4f;
-
-            forceUnconsciousness = true;
+            updateCapacities = false;
+            UpdateCapacities();
         }
-        else if(bloodLoss >= 0.45f)
-        {
-            consciousness -= 0.4f;
-        }
-        else if (bloodLoss >= 0.3f)
-        {
-            consciousness -= 0.2f;
-        }
-        else if (bloodLoss >= 0.15f)
-        {
-            consciousness -= 0.1f;
-        }
-
-        if (forceUnconsciousness)
-        {
-            consciousness = Mathf.Min(consciousness, 0.1f);
-        }
-
-        consciousness = Mathf.Max(consciousness, 0);
-
-        if (digestionBP.Count > 0)
-        {
-            float baseEfficiency = 0;
-            float offsets = digestion;
-            float postFactors = 1;
-
-            for (int i = 0; i < digestionBP.Count; i++)
-            {
-                baseEfficiency += ((digestionBP[i] is Stomach || digestionBP[i] is Liver) ? digestionBP[i].efficiency / 2 : digestionBP[i].efficiency) / (digestionBP.Count != 1 ? digestionBP.Count - 1 : digestionBP.Count);
-            }
-
-            digestion = (baseEfficiency + offsets) * postFactors;
-        }
-        else
-        {
-            digestion = 0;
-        }
-
-        if (eatingBP.Count > 0)
-        {
-            float baseEfficiency = 0;
-            float offsets = eating;
-            float postFactors = 1;
-
-            for (int i = 0; i < eatingBP.Count; i++)
-            {
-                baseEfficiency += eatingBP[i].efficiency / eatingBP.Count;
-            }
-
-            eating = (baseEfficiency + offsets) * postFactors;
-        }
-        else
-        {
-            eating = 0;
-        }
-
-        if (hearingBP.Count > 0)
-        {
-            float baseEfficiency = 0;
-            float offsets = hearing;
-            float postFactors = 1;
-
-            if (hearingBP.Count == 1)
-            {
-                baseEfficiency = hearingBP[0].efficiency;
-
-                hearing = (baseEfficiency + offsets) * postFactors;
-            }
-            else
-            {
-                float bestEfficiency = 0;
-
-                for (int i = 0; i < hearingBP.Count; i++)
-                {
-                    baseEfficiency += hearingBP[i].efficiency / (hearingBP.Count * 2);
-
-                    if (hearingBP[i].efficiency > bestEfficiency)
-                    {
-                        bestEfficiency = hearingBP[i].efficiency;
-                    }
-                }
-
-                baseEfficiency += bestEfficiency / 2;
-
-                hearing = (baseEfficiency + offsets) * postFactors;
-            }
-        }
-        else
-        {
-            hearing = 0;
-        }
-
-        if ((armSetNames.Count + manipulationBP.Count) > 0)
-        {
-            float baseEfficiency = 0;
-            float offsets = manipulation;
-            float postFactors = 1;
-
-            for (int i = 0; i < manipulationBP.Count; i++)
-            {
-                postFactors *= manipulationBP[i].efficiency;
-            }
-
-            for (int i = 0; i < armSetNames.Count; i++)
-            {
-                baseEfficiency += armSet[armSetNames[i]].Efficiency(offsets, postFactors) / armSetNames.Count;
-            }
-
-            manipulation = baseEfficiency;
-        }
-        else
-        {
-            manipulation = 0;
-        }
-
-        if ((legSetNames.Count + movingBP.Count) > 0)
-        {
-            float baseEfficiency = 0;
-            float offsets = moving;
-            float postFactors = 1;
-
-            for (int i = 0; i < movingBP.Count; i++)
-            {
-                postFactors *= movingBP[i].efficiency;
-            }
-
-            for (int i = 0; i < legSetNames.Count; i++)
-            {
-                baseEfficiency += legSet[legSetNames[i]].Efficiency(this, offsets, postFactors) / legSetNames.Count;
-            }
-
-            moving = baseEfficiency;
-        }
-        else
-        {
-            moving = 0;
-        }
-
-        if (sightBP.Count > 0)
-        {
-            float baseEfficiency = 0;
-            float offsets = sight;
-            float postFactors = 1;
-
-            if (sightBP.Count == 1)
-            {
-                baseEfficiency = sightBP[0].efficiency;
-
-                sight = (baseEfficiency + offsets) * postFactors;
-            }
-            else
-            {
-                float bestEfficiency = 0;
-
-                for (int i = 0; i < sightBP.Count; i++)
-                {
-                    baseEfficiency += sightBP[i].efficiency / (sightBP.Count * 2);
-
-                    if (sightBP[i].efficiency > bestEfficiency)
-                    {
-                        bestEfficiency = sightBP[i].efficiency;
-                    }
-                }
-
-                baseEfficiency += bestEfficiency / 2;
-
-                sight = (baseEfficiency + offsets) * postFactors;
-            }
-        }
-        else
-        {
-            sight = 0;
-        }
-
-        if (talkingBP.Count > 0)
-        {
-            float baseEfficiency = 0;
-            float offsets = talking;
-            float postFactors = 1;
-
-            for (int i = 0; i < talkingBP.Count; i++)
-            {
-                baseEfficiency += talkingBP[i].efficiency / talkingBP.Count;
-            }
-
-            talking = (baseEfficiency + offsets) * postFactors;
-        }
-        else
-        {
-            talking = 0;
-        }
-
-        manipulation *= consciousness;
-        talking *= consciousness;
-        eating *= consciousness;
-
-        eating = Mathf.Max(0.1f, eating);
 
         void Disease(RWDisease disease, RWBodyPart part = null)
         {
+            if (disease.severity >= 1)
+            {
+                return;
+            }
+
+            float prevSeverity = disease.severity;
+
             if (!disease.isImmune)
             {
                 disease.severity += disease.severityGain * disease.InfectionLuck / (40 * 60 * cycleLength);
@@ -965,63 +637,485 @@ public class RWPlayerHealthState : PlayerState
                 if (part == null)
                 {
                     wholeBodyAfflictions.Remove(disease);
+                    updateCapacities = true;
                 }
                 else
                 {
                     part.afflictions.Remove(disease);
+                    updateCapacities = true;
                 }
 
                 return;
             }
-
-            if (disease is RWFlu)
+            else if (prevSeverity == disease.severity)
             {
-                if (disease.severity <= 0.665f)
+                return;
+            }
+
+            if (disease is RWFlu && (disease.severity <= 0.665f && prevSeverity > 0.665f || disease.severity > 0.665f && prevSeverity <= 0.665f || disease.severity <= 0.832f && prevSeverity > 0.832f || disease.severity > 0.832f && prevSeverity <= 0.832f))
+            {
+                updateCapacities = true;
+            }
+            else if (disease is RWInfection && (disease.severity <= 0.32f && prevSeverity > 0.32f || disease.severity > 0.32f && prevSeverity <= 0.32f || disease.severity <= 0.77f && prevSeverity > 0.77f || disease.severity > 0.77f && prevSeverity <= 0.77f || disease.severity <= 0.86f && prevSeverity > 0.86f || disease.severity > 0.86f && prevSeverity <= 0.86f))
+            {
+                updateCapacities = true;
+            }
+        }
+
+        void UpdateCapacities()
+        {
+            if (!dead)
+            {
+                bloodLossPerCycle = 0;
+
+                pain = 0;
+
+                consciousness = 0;
+                moving = 0;
+                manipulation = 0;
+                talking = 0;
+                eating = 0;
+                sight = 0;
+                hearing = 0;
+                breathing = 0;
+                bloodFiltration = 0;
+                bloodPumping = 0;
+                digestion = 0;
+            }
+
+            float brainEfficiency = 1;
+
+            List<RWAffliction> afflictionList;
+
+            for (int i = 0; i < bodyParts.Count; i++)
+            {
+                bodyParts[i].health = bodyParts[i].maxHealth;
+
+                if (bodyParts[i].afflictions.Count == 0)
                 {
-                    consciousness -= 0.05f;
-                    manipulation -= 0.05f;
-                    breathing -= 0.1f;
+                    goto line1;
                 }
-                else if (disease.severity <= 0.832f)
+                else if (IsSubPartDestroyed(this, bodyParts[i]))
                 {
-                    consciousness -= 0.1f;
-                    manipulation -= 0.1f;
-                    breathing -= 0.15f;
+                    bodyParts[i].health = 0;
+
+                    bodyParts[i].efficiency = 0;
+
+                    goto line1;
+                }
+
+                afflictionList = new(bodyParts[i].afflictions);
+
+                for (int j = 0; j < afflictionList.Count; j++)
+                {
+                    if (afflictionList[j] is RWDestroyed destroyed)
+                    {
+                        bodyParts[i].health = 0;
+
+                        bodyParts[i].efficiency = 0;
+
+                        bloodLossPerCycle += destroyed.isBleeding && !destroyed.isTended ? destroyed.healingDifficulty.bleeding * bodySizeFactor * BloodLossMultiplier(bodyParts[i]) : 0;
+
+                        break;
+                    }
+
+                    if (afflictionList[j] is not RWInjury injury)
+                    {
+                        if (!dead && afflictionList[j] is RWDisease disease)
+                        {
+                            Disease(disease);
+                        }
+
+                        continue;
+                    }
+
+                    bodyParts[i].health -= injury.damage;
+
+                    if (dead)
+                    {
+                        continue;
+                    }
+
+                    if (injury is RWScar scar && scar.isRevealed)
+                    {
+                        if (scar.painCategory == "painful")
+                        {
+                            afflictionList[j].pain = scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / bodySizeFactor / 100;
+                        }
+                        else if (scar.painCategory == "aching")
+                        {
+                            afflictionList[j].pain = scar.scarDamage * injury.healingDifficulty.scarPain / bodySizeFactor / 100;
+                        }
+                        else if (scar.painCategory == "itchy")
+                        {
+                            afflictionList[j].pain = scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / bodySizeFactor / 100;
+                        }
+                    }
+                    else
+                    {
+                        afflictionList[j].pain = injury.damage * injury.healingDifficulty.pain / bodySizeFactor / 100;
+                    }
+
+                    pain += afflictionList[j].pain;
+
+                    bloodLossPerCycle += injury.isBleeding && !injury.isTended ? injury.healingDifficulty.bleeding * injury.damage * bodySizeFactor * BloodLossMultiplier(bodyParts[i]) : 0;
+                }
+
+            line1:
+
+                bodyParts[i].efficiency = Mathf.Max(0, bodyParts[i].health / bodyParts[i].maxHealth);
+
+                if ((bodyParts[i].health > 0 && bodyParts[i].health < 1) || bodyParts[i].deathEffect == "" && bodyParts[i].health < 1)
+                {
+                    bodyParts[i].health = 1;
+                    bodyParts[i].efficiency = 0;
+                }
+                else if (bodyParts[i] is UpperTorso && bodyParts[i].health <= 0)
+                {
+                    bodyParts[i].health = 0;
+                    bodyParts[i].efficiency = 0;
+                }
+
+                if (dead)
+                {
+                    continue;
+                }
+
+                if (bodyParts[i] is Brain)
+                {
+                    brainEfficiency = bodyParts[i].efficiency;
+                }
+            }
+
+            if (dead)
+            {
+                return;
+            }
+
+            afflictionList = new(wholeBodyAfflictions);
+
+            for (int i = 0; i < afflictionList.Count; i++)
+            {
+                if (afflictionList[i] is RWDisease disease)
+                {
+                    Disease(disease);
+                }
+            }
+
+            pain = Mathf.Clamp(pain, 0, 1);
+
+            if (bloodFiltrationBP.Count > 0)
+            {
+                float baseEfficiency = 0;
+                float offsets = bloodFiltration;
+                float postFactors = 1;
+
+                for (int i = 0; i < bloodFiltrationBP.Count; i++)
+                {
+                    baseEfficiency += (bloodFiltrationBP[i] is Kidney ? (bloodFiltrationBP[i].efficiency / 2) : bloodFiltrationBP[i].efficiency) / (bloodFiltrationBP.Count != 1 ? bloodFiltrationBP.Count - 1 : bloodFiltrationBP.Count);
+                }
+
+                bloodFiltration = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
+            }
+            else
+            {
+                bloodFiltration = 0;
+            }
+
+            if (bloodPumpingBP.Count > 0)
+            {
+                float baseEfficiency = 0;
+                float offsets = bloodPumping;
+                float postFactors = 1;
+
+                for (int i = 0; i < bloodPumpingBP.Count; i++)
+                {
+                    baseEfficiency += bloodPumpingBP[i].efficiency / bloodPumpingBP.Count;
+                }
+
+                bloodPumping = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
+            }
+            else
+            {
+                bloodPumping = 0;
+            }
+
+            if (breathingBP.Count > 0)
+            {
+                float baseEfficiency = 0;
+                float offsets = breathing;
+                float postFactors = 1;
+
+                for (int i = 0; i < breathingBP.Count; i++)
+                {
+                    baseEfficiency += (breathingBP[i] is Lung ? (breathingBP[i].efficiency / 2) : breathingBP[i].efficiency) / (breathingBP.Count != 1 ? (breathingBP.Count - 1) : breathingBP.Count);
+                }
+
+                breathing = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
+            }
+            else
+            {
+                breathing = 0;
+            }
+
+            float consciounessOffset = consciousness;
+
+            consciousness = (brainEfficiency * (1 - Mathf.Clamp((pain - 0.1f) * 4 / 9, 0, 0.4f)) * (1 - 0.2f * (1 - bloodPumping)) * (1 - 0.2f * (1 - breathing)) * (1 - 0.1f * (1 - bloodFiltration))) + consciounessOffset;
+
+            if (bloodLoss >= 0.6f)
+            {
+                consciousness -= 0.4f;
+
+                forceUnconsciousness = true;
+            }
+            else if (bloodLoss >= 0.45f)
+            {
+                consciousness -= 0.4f;
+            }
+            else if (bloodLoss >= 0.3f)
+            {
+                consciousness -= 0.2f;
+            }
+            else if (bloodLoss >= 0.15f)
+            {
+                consciousness -= 0.1f;
+            }
+
+            if (forceUnconsciousness)
+            {
+                consciousness = Mathf.Min(consciousness, 0.1f);
+            }
+
+            consciousness = Mathf.Max(consciousness, 0);
+
+            if (digestionBP.Count > 0)
+            {
+                float baseEfficiency = 0;
+                float offsets = digestion;
+                float postFactors = 1;
+
+                for (int i = 0; i < digestionBP.Count; i++)
+                {
+                    baseEfficiency += ((digestionBP[i] is Stomach || digestionBP[i] is Liver) ? digestionBP[i].efficiency / 2 : digestionBP[i].efficiency) / (digestionBP.Count != 1 ? digestionBP.Count - 1 : digestionBP.Count);
+                }
+
+                digestion = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
+            }
+            else
+            {
+                digestion = 0;
+            }
+
+            if (eatingBP.Count > 0)
+            {
+                float baseEfficiency = 0;
+                float offsets = eating;
+                float postFactors = 1;
+
+                for (int i = 0; i < eatingBP.Count; i++)
+                {
+                    baseEfficiency += eatingBP[i].efficiency / eatingBP.Count;
+                }
+
+                eating = Mathf.Max(0.1f, (baseEfficiency + offsets) * postFactors * consciousness);
+            }
+            else
+            {
+                eating = 0;
+            }
+
+            if (hearingBP.Count > 0)
+            {
+                float baseEfficiency = 0;
+                float offsets = hearing;
+                float postFactors = 1;
+
+                if (hearingBP.Count == 1)
+                {
+                    baseEfficiency = hearingBP[0].efficiency;
+
+                    hearing = (baseEfficiency + offsets) * postFactors;
                 }
                 else
                 {
-                    pain += 0.05f;
+                    float bestEfficiency = 0;
 
-                    consciousness -= 0.15f;
-                    manipulation -= 0.2f;
-                    breathing -= 0.2f;
+                    for (int i = 0; i < hearingBP.Count; i++)
+                    {
+                        baseEfficiency += hearingBP[i].efficiency / (hearingBP.Count * 2);
+
+                        if (hearingBP[i].efficiency > bestEfficiency)
+                        {
+                            bestEfficiency = hearingBP[i].efficiency;
+                        }
+                    }
+
+                    baseEfficiency += bestEfficiency / 2;
+
+                    hearing = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
                 }
             }
-            else if (disease is RWInfection)
+            else
             {
-                if (disease.severity <= 0.32f)
-                {
-                    pain += 0.05f;
-                }
-                else if (disease.severity <= 0.77f)
-                {
-                    pain += 0.08f;
-                }
-                else if (disease.severity <= 0.86f)
-                {
-                    pain += 0.12f;
+                hearing = 0;
+            }
 
-                    consciousness -= 0.5f;
+            if ((armSetNames.Count + manipulationBP.Count) > 0)
+            {
+                float baseEfficiency = 0;
+                float offsets = manipulation;
+                float postFactors = 1;
+
+                for (int i = 0; i < manipulationBP.Count; i++)
+                {
+                    postFactors *= manipulationBP[i].efficiency;
+                }
+
+                for (int i = 0; i < armSetNames.Count; i++)
+                {
+                    baseEfficiency += armSet[armSetNames[i]].Efficiency(offsets, postFactors) / armSetNames.Count;
+                }
+
+                manipulation = Mathf.Max(0, baseEfficiency * consciousness);
+            }
+            else
+            {
+                manipulation = 0;
+            }
+
+            if ((legSetNames.Count + movingBP.Count) > 0)
+            {
+                float baseEfficiency = 0;
+                float offsets = moving;
+                float postFactors = 1;
+
+                for (int i = 0; i < movingBP.Count; i++)
+                {
+                    postFactors *= movingBP[i].efficiency;
+                }
+
+                for (int i = 0; i < legSetNames.Count; i++)
+                {
+                    baseEfficiency += legSet[legSetNames[i]].Efficiency(this, offsets, postFactors) / legSetNames.Count;
+                }
+
+                moving = moving = Mathf.Max(0, baseEfficiency);
+            }
+            else
+            {
+                moving = 0;
+            }
+
+            if (sightBP.Count > 0)
+            {
+                float baseEfficiency = 0;
+                float offsets = sight;
+                float postFactors = 1;
+
+                if (sightBP.Count == 1)
+                {
+                    baseEfficiency = sightBP[0].efficiency;
+
+                    sight = (baseEfficiency + offsets) * postFactors;
                 }
                 else
                 {
-                    forceUnconsciousness = true;
+                    float bestEfficiency = 0;
 
-                    pain += 0.85f;
+                    for (int i = 0; i < sightBP.Count; i++)
+                    {
+                        baseEfficiency += sightBP[i].efficiency / (sightBP.Count * 2);
 
-                    breathing -= 0.5f;
+                        if (sightBP[i].efficiency > bestEfficiency)
+                        {
+                            bestEfficiency = sightBP[i].efficiency;
+                        }
+                    }
+
+                    baseEfficiency += bestEfficiency / 2;
+
+                    sight = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
                 }
             }
+            else
+            {
+                sight = 0;
+            }
+
+            if (talkingBP.Count > 0)
+            {
+                float baseEfficiency = 0;
+                float offsets = talking;
+                float postFactors = 1;
+
+                for (int i = 0; i < talkingBP.Count; i++)
+                {
+                    baseEfficiency += talkingBP[i].efficiency / talkingBP.Count;
+                }
+
+                talking = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
+            }
+            else
+            {
+                talking = 0;
+            }
+
+            void Disease(RWDisease disease)
+            {
+                if (disease is RWFlu)
+                {
+                    if (disease.severity <= 0.665f)
+                    {
+                        consciousness -= 0.05f;
+                        manipulation -= 0.05f;
+                        breathing -= 0.1f;
+                    }
+                    else if (disease.severity <= 0.832f)
+                    {
+                        consciousness -= 0.1f;
+                        manipulation -= 0.1f;
+                        breathing -= 0.15f;
+                    }
+                    else
+                    {
+                        pain += 0.05f;
+
+                        consciousness -= 0.15f;
+                        manipulation -= 0.2f;
+                        breathing -= 0.2f;
+                    }
+                }
+                else if (disease is RWInfection)
+                {
+                    if (disease.severity <= 0.32f)
+                    {
+                        pain += 0.05f;
+                    }
+                    else if (disease.severity <= 0.77f)
+                    {
+                        pain += 0.08f;
+                    }
+                    else if (disease.severity <= 0.86f)
+                    {
+                        pain += 0.12f;
+
+                        consciousness -= 0.5f;
+                    }
+                    else
+                    {
+                        forceUnconsciousness = true;
+
+                        pain += 0.85f;
+
+                        breathing -= 0.5f;
+                    }
+                }
+            }
+        }
+
+        bool updateBloodLoss()
+        {
+            return bloodLoss >= 0.6f && prevbloodLoss < 0.6f || bloodLoss < 0.6f && prevbloodLoss >= 0.6f || bloodLoss >= 0.45f && prevbloodLoss < 0.45f || bloodLoss < 0.45f && prevbloodLoss >= 0.45f || bloodLoss >= 0.3f && prevbloodLoss < 0.3f || bloodLoss < 0.3f && prevbloodLoss >= 0.3f || bloodLoss >= 0.15f && prevbloodLoss < 0.15f || bloodLoss < 0.15f && prevbloodLoss >= 0.15f;
         }
     }
 
@@ -1055,6 +1149,8 @@ public class RWPlayerHealthState : PlayerState
             focusedBodyPart.afflictions.Add(Scar(damage));
             focusedBodyPart.health = health;
         }
+
+        updateCapacities = true;
 
         if (damageType.armourCategory == "Blunt")
         {
@@ -1096,6 +1192,8 @@ public class RWPlayerHealthState : PlayerState
                             focusedBodyPart.health = health;
                         }
 
+                        updateCapacities = true;
+
                         bodypartHit = true;
 
                         break;
@@ -1133,6 +1231,8 @@ public class RWPlayerHealthState : PlayerState
                             focusedBodyPart.health = health;
                         }
 
+                        updateCapacities = true;
+
                         bodypartHit = true;
 
                         break;
@@ -1169,6 +1269,8 @@ public class RWPlayerHealthState : PlayerState
                             focusedBodyPart.afflictions.Add(Scar(tempDamage));
                             focusedBodyPart.health = health;
                         }
+
+                        updateCapacities = true;
 
                         bodypartHit = true;
 
@@ -1401,6 +1503,8 @@ public class RWPlayerHealthState : PlayerState
     public float bloodFiltration = 1;
     public float bloodPumping = 1;
     public float digestion = 1;
+
+    public bool updateCapacities = false;
 
     public float cycleLength = 13;
 
