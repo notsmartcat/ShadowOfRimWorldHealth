@@ -14,7 +14,7 @@ public class RWBodyPart
     //name is used for showing up in the Health Tab and for localization
     public string name = "Generic Body Part";
 
-    //subName is used in case there are multiple of the same bodyPart to diffirintiate between them, the subName is always added on before the name, most common subNames are "Right" and "Left"
+    //subName is used in case there are multiple of the same bodyPart to differentiate between them, the subName is always added on before the name, most common subNames are "Right" and "Left"
     public string subName = "";
 
     //the parentSubName bool determines if the bodypart's parent also uses the same subName. for example a right hand's parent (right arm) will use a sub name while a right shoulder's parent (Upper Torso) will not
@@ -63,7 +63,7 @@ public class RWBodyPart
     public List<RWAffliction> afflictions = new();
 }
 
-internal class UpperTorso : RWBodyPart
+public class UpperTorso : RWBodyPart
 {
     public UpperTorso(RWPlayerHealthState state) : base(state)
     {
@@ -79,7 +79,7 @@ internal class UpperTorso : RWBodyPart
         deathEffect = "Death";
     }
 }
-internal class LowerTorso : RWBodyPart
+public class LowerTorso : RWBodyPart
 {
     public LowerTorso(RWPlayerHealthState state) : base(state)
     {
@@ -96,7 +96,7 @@ internal class LowerTorso : RWBodyPart
     }
 }
 
-internal class Neck : RWBodyPart
+public class Neck : RWBodyPart
 {
     public Neck(RWPlayerHealthState state) : base(state)
     {
@@ -119,7 +119,7 @@ internal class Neck : RWBodyPart
         deathEffect = "Decapitation";
     }
 }
-internal class Head : RWBodyPart
+public class Head : RWBodyPart
 {
     public Head(RWPlayerHealthState state) : base(state)
     {
@@ -140,7 +140,7 @@ internal class Head : RWBodyPart
         deathEffect = "Death";
     }
 }
-internal class Eye : RWBodyPart
+public class Eye : RWBodyPart
 {
     public Eye(RWPlayerHealthState state) : base(state)
     {
@@ -165,7 +165,7 @@ internal class Eye : RWBodyPart
         capacity.Add("Sight");
     }
 }
-internal class Ear : RWBodyPart
+public class Ear : RWBodyPart
 {
     public Ear(RWPlayerHealthState state) : base(state)
     {
@@ -188,7 +188,7 @@ internal class Ear : RWBodyPart
         capacity.Add("Hearing");
     }
 }
-internal class Nose : RWBodyPart
+public class Nose : RWBodyPart
 {
     public Nose(RWPlayerHealthState state) : base(state)
     {
@@ -206,7 +206,7 @@ internal class Nose : RWBodyPart
         group.Add("FullHead");
     }
 }
-internal class Jaw : RWBodyPart
+public class Jaw : RWBodyPart
 {
     public Jaw(RWPlayerHealthState state) : base(state)
     {
@@ -228,7 +228,7 @@ internal class Jaw : RWBodyPart
         capacity.Add("Talking");
     }
 }
-internal class Tongue : RWBodyPart
+public class Tongue : RWBodyPart
 {
     public Tongue(RWPlayerHealthState state) : base(state)
     {
@@ -247,7 +247,7 @@ internal class Tongue : RWBodyPart
     }
 }
 
-internal class Shoulder : RWBodyPart
+public class Shoulder : RWBodyPart
 {
     public Shoulder(RWPlayerHealthState state) : base(state)
     {
@@ -269,7 +269,7 @@ internal class Shoulder : RWBodyPart
         capacity.Add("Manipulation");
     }
 }
-internal class Arm : RWBodyPart
+public class Arm : RWBodyPart
 {
     public Arm(RWPlayerHealthState state) : base(state)
     {
@@ -293,7 +293,7 @@ internal class Arm : RWBodyPart
         capacity.Add("Manipulation");
     }
 }
-internal class Hand : RWBodyPart
+public class Hand : RWBodyPart
 {
     public Hand(RWPlayerHealthState state) : base(state)
     {
@@ -317,7 +317,7 @@ internal class Hand : RWBodyPart
         capacity.Add("Manipulation");
     }
 }
-internal class Finger : RWBodyPart
+public class Finger : RWBodyPart
 {
     public Finger(RWPlayerHealthState state) : base(state)
     {
@@ -342,7 +342,7 @@ internal class Finger : RWBodyPart
     }
 }
 
-internal class Leg : RWBodyPart
+public class Leg : RWBodyPart
 {
     public Leg(RWPlayerHealthState state) : base(state)
     {
@@ -364,7 +364,7 @@ internal class Leg : RWBodyPart
         capacity.Add("Moving");
     }
 }
-internal class Foot : RWBodyPart
+public class Foot : RWBodyPart
 {
     public Foot(RWPlayerHealthState state) : base(state)
     {
@@ -388,7 +388,7 @@ internal class Foot : RWBodyPart
         capacity.Add("Moving");
     }
 }
-internal class Toe : RWBodyPart
+public class Toe : RWBodyPart
 {
     public Toe(RWPlayerHealthState state) : base(state)
     {
@@ -413,7 +413,7 @@ internal class Toe : RWBodyPart
     }
 }
 
-internal class Tail : RWBodyPart
+public class Tail : RWBodyPart
 {
     public Tail(RWPlayerHealthState state) : base(state)
     {

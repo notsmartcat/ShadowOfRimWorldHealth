@@ -1,6 +1,6 @@
 ﻿namespace ShadowOfRimWorldHealth;
 
-internal class RWBone : RWBodyPart
+public class RWBone : RWBodyPart
 {
     public RWBone(RWPlayerHealthState state) : base(state)
     {
@@ -9,7 +9,7 @@ internal class RWBone : RWBodyPart
     }
 }
 
-internal class Skull : RWBone
+public class Skull : RWBone
 {
     public Skull(RWPlayerHealthState state) : base(state)
     {
@@ -30,7 +30,7 @@ internal class Skull : RWBone
     }
 }
 
-internal class Spine : RWBone
+public class Spine : RWBone
 {
     public Spine(RWPlayerHealthState state) : base(state)
     {
@@ -48,7 +48,7 @@ internal class Spine : RWBone
         capacity.Add("Moving");
     }
 }
-internal class Ribcage : RWBone
+public class Ribcage : RWBone
 {
     public Ribcage(RWPlayerHealthState state) : base(state)
     {
@@ -68,7 +68,7 @@ internal class Ribcage : RWBone
         deathEffect = "";
     }
 }
-internal class Sternum : RWBone
+public class Sternum : RWBone
 {
     public Sternum(RWPlayerHealthState state) : base(state)
     {
@@ -89,7 +89,7 @@ internal class Sternum : RWBone
     }
 }
 
-internal class Clavicle : RWBone
+public class Clavicle : RWBone
 {
     public Clavicle(RWPlayerHealthState state) : base(state)
     {
@@ -113,7 +113,7 @@ internal class Clavicle : RWBone
         deathEffect = "";
     }
 }
-internal class Humerus : RWBone
+public class Humerus : RWBone
 {
     public Humerus(RWPlayerHealthState state) : base(state)
     {
@@ -135,7 +135,7 @@ internal class Humerus : RWBone
         capacity.Add("Manipulation");
     }
 }
-internal class Radius : RWBone
+public class Radius : RWBone
 {
     public Radius(RWPlayerHealthState state) : base(state)
     {
@@ -158,7 +158,7 @@ internal class Radius : RWBone
     }
 }
 
-internal class Pelvis : RWBone
+public class Pelvis : RWBone
 {
     public Pelvis(RWPlayerHealthState state) : base(state)
     {
@@ -179,7 +179,7 @@ internal class Pelvis : RWBone
     }
 }
 
-internal class Femur : RWBone
+public class Femur : RWBone
 {
     public Femur(RWPlayerHealthState state) : base(state)
     {
@@ -201,7 +201,7 @@ internal class Femur : RWBone
         capacity.Add("Moving");
     }
 }
-internal class Tibia : RWBone
+public class Tibia : RWBone
 {
     public Tibia(RWPlayerHealthState state) : base(state)
     {

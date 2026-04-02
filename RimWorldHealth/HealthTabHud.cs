@@ -813,47 +813,7 @@ public class HealthTab : HudPart
             }
             else
             {
-                switch (capacityValueNamesNames[selectedVertical])
-                {
-                    case "Pain":
-                        value = state.pain;
-                        break;
-                    case "Consiousness":
-                        value = state.consciousness;
-                        break;
-                    case "Moving":
-                        value = state.moving;
-                        break;
-                    case "Manipulation":
-                        value = state.manipulation;
-                        break;
-                    case "Talking":
-                        value = state.talking;
-                        break;
-                    case "Eating":
-                        value = state.eating;
-                        break;
-                    case "Sight":
-                        value = state.sight;
-                        break;
-                    case "Hearing":
-                        value = state.hearing;
-                        break;
-                    case "Breathing":
-                        value = state.breathing;
-                        break;
-                    case "Blood filtrarion":
-                        value = state.bloodFiltration;
-                        break;
-                    case "Blood pumping":
-                        value = state.bloodPumping;
-                        break;
-                    case "Digestion":
-                        value = state.digestion;
-                        break;
-                }
-
-                SetInfo(value);
+                SetInfo();
             }
 
             void SetPainInfo(float value)
@@ -879,7 +839,7 @@ public class HealthTab : HudPart
                 }
 
             }
-            void SetInfo(float value)
+            void SetInfo()
             {
                 if (healthTabInfos.Count == 0)
                 {
@@ -893,7 +853,264 @@ public class HealthTab : HudPart
                     }
                 }
 
-                string stringValue;
+                string stringValue = capacityValueNamesNames[selectedVertical];
+                string description = "\n" +
+                    "\n" +
+                    "Affected by:\n";
+
+                bool isCapacityAffected = false;
+
+                if (stringValue == "Consiousness")
+                {
+                    value = state.consciousness;
+
+                    if (state.consciousnessSource != null && state.consciousnessSource.efficiency != 1)
+                    {
+                        isCapacityAffected = true;
+                        description += "  " + state.consciousnessSource.name + ": " + Mathf.Floor(state.consciousnessSource.health) + " / " + state.consciousnessSource.maxHealth + "\n";
+                    }
+
+                    if (state.bloodLoss >= 0.15f)
+                    {
+                        isCapacityAffected = true;
+                        description += "  " + healthTabWholeBody.bloodLossName.text + "\n";
+                    }
+
+                    if (state.pain > 0.1f)
+                    {
+                        isCapacityAffected = true;
+                        description += "  Pain " + Mathf.Floor(state.pain * 100) + "%\n";
+                    }
+
+                    if (state.bloodPumping < 1f)
+                    {
+                        isCapacityAffected = true;
+                        description += "  Blood pumping " + Mathf.Floor(state.bloodPumping * 100) + "%\n";
+                    }
+                    if (state.breathing < 1f)
+                    {
+                        isCapacityAffected = true;
+                        description += "  Breathing " + Mathf.Floor(state.breathing * 100) + "%\n";
+                    }
+                    if (state.bloodFiltration < 1f)
+                    {
+                        isCapacityAffected = true;
+                        description += "  Blood filtration " + Mathf.Floor(state.bloodFiltration * 100) + "%\n";
+                    }
+
+                    CapacityAffectingAffliction(description);
+                }
+                else if (stringValue == "Moving")
+                {
+                    value = state.moving;
+
+                    if (state.consciousness < 1f)
+                    {
+                        isCapacityAffected = true;
+                        description += "  Consciousness " + Mathf.Floor(state.consciousness * 100) + "%\n";
+                    }
+                    if (state.bloodPumping < 1f)
+                    {
+                        isCapacityAffected = true;
+                        description += "  Blood pumping " + Mathf.Floor(state.bloodPumping * 100) + "%\n";
+                    }
+                    if (state.breathing < 1f)
+                    {
+                        isCapacityAffected = true;
+                        description += "  Breathing " + Mathf.Floor(state.breathing * 100) + "%\n";
+                    }
+
+                    for (int i = 0; i < state.movingBP.Count; i++)
+                    {
+                        if (state.movingBP[i].efficiency < 1)
+                        {
+                            isCapacityAffected = true;
+                            description += "  " + state.movingBP[i].name + ": " + Mathf.Floor(state.movingBP[i].health) + " / " + state.movingBP[i].maxHealth + "\n";
+                        }
+                    }
+
+                    for (int i = 0; i < state.legSetNames.Count; i++)
+                    {
+                        string temp = state.legSet[state.legSetNames[i]].CapacityAffectingAffliction();
+
+                        if (temp != "")
+                        {
+                            isCapacityAffected = true;
+                            description += temp;
+                        }
+                    }
+
+                    CapacityAffectingAffliction(description);
+                }
+                else if (stringValue == "Manipulation")
+                {
+                    value = state.manipulation;
+
+                    if (state.consciousness < 1f)
+                    {
+                        isCapacityAffected = true;
+                        description += "  Consciousness " + Mathf.Floor(state.consciousness * 100) + "%\n";
+                    }
+
+                    for (int i = 0; i < state.manipulationBP.Count; i++)
+                    {
+                        if (state.manipulationBP[i].efficiency < 1)
+                        {
+                            isCapacityAffected = true;
+                            description += "  " + state.manipulationBP[i].name + ": " + Mathf.Floor(state.manipulationBP[i].health) + " / " + state.manipulationBP[i].maxHealth + "\n";
+                        }
+                    }
+
+                    for (int i = 0; i < state.armSetNames.Count; i++)
+                    {
+                        string temp = state.armSet[state.armSetNames[i]].CapacityAffectingAffliction();
+
+                        if (temp != "")
+                        {
+                            isCapacityAffected = true;
+                            description += temp;
+                        }
+                    }
+
+                    CapacityAffectingAffliction(description);
+                }
+                else if (stringValue == "Talking")
+                {
+                    value = state.talking;
+
+                    if (state.consciousness < 1f)
+                    {
+                        isCapacityAffected = true;
+                        description += "  Consciousness " + Mathf.Floor(state.consciousness * 100) + "%\n";
+                    }
+
+                    for (int i = 0; i < state.talkingBP.Count; i++)
+                    {
+                        if (state.talkingBP[i].efficiency < 1)
+                        {
+                            isCapacityAffected = true;
+                            description += "  " + state.talkingBP[i].name + ": " + Mathf.Floor(state.talkingBP[i].health) + " / " + state.talkingBP[i].maxHealth + "\n";
+                        }
+                    }
+
+                    CapacityAffectingAffliction(description);
+                }
+                else if (stringValue == "Eating")
+                {
+                    value = state.eating;
+
+                    if (state.consciousness < 1f)
+                    {
+                        isCapacityAffected = true;
+                        description += "  Consciousness " + Mathf.Floor(state.consciousness * 100) + "%\n";
+                    }
+
+                    for (int i = 0; i < state.eatingBP.Count; i++)
+                    {
+                        if (state.eatingBP[i].efficiency < 1)
+                        {
+                            isCapacityAffected = true;
+                            description += "  " + state.eatingBP[i].name + ": " + Mathf.Floor(state.eatingBP[i].health) + " / " + state.eatingBP[i].maxHealth + "\n";
+                        }
+                    }
+
+                    CapacityAffectingAffliction(description);
+                }
+                else if (stringValue == "Sight")
+                {
+                    value = state.sight;
+
+                    for (int i = 0; i < state.sightBP.Count; i++)
+                    {
+                        if (state.sightBP[i].efficiency < 1)
+                        {
+                            isCapacityAffected = true;
+                            description += "  " + state.sightBP[i].name + ": " + Mathf.Floor(state.sightBP[i].health) + " / " + state.sightBP[i].maxHealth + "\n";
+                        }
+                    }
+
+                    CapacityAffectingAffliction(description);
+                }
+                else if (stringValue == "Hearing")
+                {
+                    value = state.hearing;
+
+                    for (int i = 0; i < state.hearingBP.Count; i++)
+                    {
+                        if (state.hearingBP[i].efficiency < 1)
+                        {
+                            isCapacityAffected = true;
+                            description += "  " + state.hearingBP[i].name + ": " + Mathf.Floor(state.hearingBP[i].health) + " / " + state.hearingBP[i].maxHealth + "\n";
+                        }
+                    }
+
+                    CapacityAffectingAffliction(description);
+                }
+                else if (stringValue == "Breathing")
+                {
+                    value = state.breathing;
+
+                    for (int i = 0; i < state.breathingBP.Count; i++)
+                    {
+                        if (state.breathingBP[i].efficiency < 1)
+                        {
+                            isCapacityAffected = true;
+                            description += "  " + state.breathingBP[i].name + ": " + Mathf.Floor(state.breathingBP[i].health) + " / " + state.breathingBP[i].maxHealth + "\n";
+                        }
+                    }
+
+                    CapacityAffectingAffliction(description);
+                }
+                else if (stringValue == "Blood filtrarion")
+                {
+                    value = state.bloodFiltration;
+
+                    for (int i = 0; i < state.bloodFiltrationBP.Count; i++)
+                    {
+                        if (state.bloodFiltrationBP[i].efficiency < 1)
+                        {
+                            isCapacityAffected = true;
+                            description += "  " + state.bloodFiltrationBP[i].name + ": " + Mathf.Floor(state.bloodFiltrationBP[i].health) + " / " + state.bloodFiltrationBP[i].maxHealth + "\n";
+                        }
+                    }
+
+                    CapacityAffectingAffliction(description);
+                }
+                else if (stringValue == "Blood pumping")
+                {
+                    value = state.bloodPumping;
+
+                    for (int i = 0; i < state.bloodPumpingBP.Count; i++)
+                    {
+                        if (state.bloodPumpingBP[i].efficiency < 1)
+                        {
+                            isCapacityAffected = true;
+                            description += "  " + state.bloodPumpingBP[i].name + ": " + Mathf.Floor(state.bloodPumpingBP[i].health) + " / " + state.bloodPumpingBP[i].maxHealth + "\n";
+                        }
+                    }
+
+                    CapacityAffectingAffliction(description);
+                }
+                else if (stringValue == "Digestion")
+                {
+                    value = state.digestion;
+
+                    for (int i = 0; i < state.digestionBP.Count; i++)
+                    {
+                        if (state.digestionBP[i].efficiency < 1)
+                        {
+                            isCapacityAffected = true;
+                            description += "  " + state.digestionBP[i].name + ": " + Mathf.Floor(state.digestionBP[i].health) + " / " + state.digestionBP[i].maxHealth + "\n";
+                        }
+                    }
+
+                    CapacityAffectingAffliction(description);
+                }
+
+                if (!isCapacityAffected)
+                {
+                    description = "";
+                }
 
                 if (value > 1)
                 {
@@ -925,7 +1142,70 @@ public class HealthTab : HudPart
                     healthTabInfos[0].name.text = capacityValueNamesNames[selectedVertical] + ": ";
                     healthTabInfos[0].nameStatus.text = stringValue;
 
-                    healthTabInfos[0].description.text = "";
+                    healthTabInfos[0].description.text = description;
+                }
+
+                void CapacityAffectingAffliction(string description)
+                {
+                    for (int i = 0; i < state.capacityAffectingAffliction.Count; i++)
+                    {
+                        if (state.capacityAffectingAffliction[i] is RWDisease disease)
+                        {
+                            if (disease is RWFlu)
+                            {
+                                if (stringValue != "Consiousness" && stringValue != "Manipulation" && stringValue != "Breathing")
+                                {
+                                    continue;
+                                }
+
+                                isCapacityAffected = true;
+
+                                if (disease.severity <= 0.665f)
+                                {
+                                    description += "  " + disease.name + " (minor)" + "\n";
+                                }
+                                else if (disease.severity <= 0.832f)
+                                {
+                                    description += "  " + disease.name + " (major)" + "\n";
+                                }
+                                else
+                                {
+                                    description += "  " + disease.name + " (extreme)" + "\n";
+                                }
+                            }
+                            else if (disease is RWInfection)
+                            {
+                                if (stringValue != "Consiousness" && stringValue != "Breathing")
+                                {
+                                    continue;
+                                }
+
+                                if (disease.severity > 0.77f && disease.severity <= 0.86f)
+                                {
+                                    if (stringValue == "Breathing")
+                                    {
+                                        continue;
+                                    }
+
+                                    isCapacityAffected = true;
+                                    description += "  " + disease.name + " (major)" + "\n";
+                                }
+                                else if (disease.severity > 0.86f)
+                                {
+                                    isCapacityAffected = true;
+                                    description += "  " + disease.name + " (extreme)" + "\n";
+                                }
+                            }
+                            else
+                            {
+                                Debug.Log(state.capacityAffectingAffliction[i] + " is not a valid type of disease");
+                            }
+                        }
+                        else
+                        {
+                            Debug.Log(state.capacityAffectingAffliction[i] + " is not a valid type of affliction");
+                        }
+                    }
                 }
             }
         }
@@ -2232,7 +2512,7 @@ public class HealthTabInfo
             y = name.textRect.height
         };
 
-        if (owner.selectedHorizontal == 1 && description.text != "")
+        if (description.text != "")
         {
             if (owner.healthTabInfos.IndexOf(this) == 0)
             {

@@ -395,6 +395,11 @@ public class RWPlayerHealthState : PlayerState
             else
             {
                 this.bodyParts.Add(bodyParts[i]);
+
+                if (bodyParts[i] is Brain brain)
+                {
+                    consciousnessSource = brain;
+                }
             }
         }
 
@@ -402,7 +407,7 @@ public class RWPlayerHealthState : PlayerState
         {
             maxHealth += this.bodyParts[i].maxHealth;
 
-            if (this.bodyParts[i] is Shoulder || this.bodyParts[i] is Arm || this.bodyParts[i] is Hand || this.bodyParts[i] is Finger || this.bodyParts[i] is Leg || this.bodyParts[i] is Foot || this.bodyParts[i] is Clavicle || this.bodyParts[i] is Humerus || this.bodyParts[i] is Radius || this.bodyParts[i] is Femur || this.bodyParts[i] is Tibia || this.bodyParts[i] is Toe)
+            if (this.bodyParts[i].capacity.Count == 0 || this.bodyParts[i] is Shoulder || this.bodyParts[i] is Arm || this.bodyParts[i] is Hand || this.bodyParts[i] is Finger || this.bodyParts[i] is Leg || this.bodyParts[i] is Foot || this.bodyParts[i] is Clavicle || this.bodyParts[i] is Humerus || this.bodyParts[i] is Radius || this.bodyParts[i] is Femur || this.bodyParts[i] is Tibia || this.bodyParts[i] is Toe)
             {
                 continue;
             }
@@ -664,6 +669,8 @@ public class RWPlayerHealthState : PlayerState
 
         void UpdateCapacities()
         {
+            capacityAffectingAffliction.Clear();
+
             if (!dead)
             {
                 bloodLossPerCycle = 0;
@@ -682,8 +689,6 @@ public class RWPlayerHealthState : PlayerState
                 bloodPumping = 0;
                 digestion = 0;
             }
-
-            float brainEfficiency = 1;
 
             List<RWAffliction> afflictionList;
 
@@ -780,11 +785,6 @@ public class RWPlayerHealthState : PlayerState
                 {
                     continue;
                 }
-
-                if (bodyParts[i] is Brain)
-                {
-                    brainEfficiency = bodyParts[i].efficiency;
-                }
             }
 
             if (dead)
@@ -860,7 +860,7 @@ public class RWPlayerHealthState : PlayerState
 
             float consciounessOffset = consciousness;
 
-            consciousness = (brainEfficiency * (1 - Mathf.Clamp((pain - 0.1f) * 4 / 9, 0, 0.4f)) * (1 - 0.2f * (1 - bloodPumping)) * (1 - 0.2f * (1 - breathing)) * (1 - 0.1f * (1 - bloodFiltration))) + consciounessOffset;
+            consciousness = ((consciousnessSource == null ? 1 : consciousnessSource.efficiency) * (1 - Mathf.Clamp((pain - 0.1f) * 4 / 9, 0, 0.4f)) * (1 - 0.2f * (1 - bloodPumping)) * (1 - 0.2f * (1 - breathing)) * (1 - 0.1f * (1 - bloodFiltration))) + consciounessOffset;
 
             if (bloodLoss >= 0.6f)
             {
@@ -968,7 +968,7 @@ public class RWPlayerHealthState : PlayerState
 
                 for (int i = 0; i < manipulationBP.Count; i++)
                 {
-                    postFactors *= manipulationBP[i].efficiency;
+                    postFactors *= manipulationBP[i].efficiency * consciousness;
                 }
 
                 for (int i = 0; i < armSetNames.Count; i++)
@@ -976,7 +976,7 @@ public class RWPlayerHealthState : PlayerState
                     baseEfficiency += armSet[armSetNames[i]].Efficiency(offsets, postFactors) / armSetNames.Count;
                 }
 
-                manipulation = Mathf.Max(0, baseEfficiency * consciousness);
+                manipulation = Mathf.Max(0, baseEfficiency);
             }
             else
             {
@@ -991,7 +991,7 @@ public class RWPlayerHealthState : PlayerState
 
                 for (int i = 0; i < movingBP.Count; i++)
                 {
-                    postFactors *= movingBP[i].efficiency;
+                    postFactors *= movingBP[i].efficiency * Mathf.Min(1, consciousness);
                 }
 
                 for (int i = 0; i < legSetNames.Count; i++)
@@ -1064,6 +1064,8 @@ public class RWPlayerHealthState : PlayerState
             {
                 if (disease is RWFlu)
                 {
+                    capacityAffectingAffliction.Add(disease);
+
                     if (disease.severity <= 0.665f)
                     {
                         consciousness -= 0.05f;
@@ -1100,6 +1102,8 @@ public class RWPlayerHealthState : PlayerState
                         pain += 0.12f;
 
                         consciousness -= 0.5f;
+
+                        capacityAffectingAffliction.Add(disease);
                     }
                     else
                     {
@@ -1108,6 +1112,8 @@ public class RWPlayerHealthState : PlayerState
                         pain += 0.85f;
 
                         breathing -= 0.5f;
+
+                        capacityAffectingAffliction.Add(disease);
                     }
                 }
             }
@@ -1467,21 +1473,25 @@ public class RWPlayerHealthState : PlayerState
 
     public List<RWAffliction> wholeBodyAfflictions = new();
 
-    readonly List<string> armSetNames = new();
-    readonly Dictionary<string, ArmSet> armSet = new();
-    readonly List<string> legSetNames = new();
-    readonly Dictionary<string, LegSet> legSet = new();
+    public RWBodyPart consciousnessSource = null;
 
-    readonly List<RWBodyPart> bloodFiltrationBP = new();
-    readonly List<RWBodyPart> bloodPumpingBP = new();
-    readonly List<RWBodyPart> breathingBP = new();
-    readonly List<RWBodyPart> digestionBP = new();
-    readonly List<RWBodyPart> eatingBP = new();
-    readonly List<RWBodyPart> hearingBP = new();
-    readonly List<RWBodyPart> manipulationBP = new();
-    readonly List<RWBodyPart> movingBP = new();
-    readonly List<RWBodyPart> sightBP = new();
-    readonly List<RWBodyPart> talkingBP = new();
+    public readonly List<string> armSetNames = new();
+    public readonly Dictionary<string, ArmSet> armSet = new();
+    public readonly List<string> legSetNames = new();
+    public readonly Dictionary<string, LegSet> legSet = new();
+
+    public readonly List<RWBodyPart> bloodFiltrationBP = new();
+    public readonly List<RWBodyPart> bloodPumpingBP = new();
+    public readonly List<RWBodyPart> breathingBP = new();
+    public readonly List<RWBodyPart> digestionBP = new();
+    public readonly List<RWBodyPart> eatingBP = new();
+    public readonly List<RWBodyPart> hearingBP = new();
+    public readonly List<RWBodyPart> manipulationBP = new();
+    public readonly List<RWBodyPart> movingBP = new();
+    public readonly List<RWBodyPart> sightBP = new();
+    public readonly List<RWBodyPart> talkingBP = new();
+
+    public readonly List<RWAffliction> capacityAffectingAffliction = new();
 
     public float maxHealth;
 

@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace ShadowOfRimWorldHealth;
 
-internal class ArmSet
+public class ArmSet
 {
     public float Efficiency(float offsets = 0, float postFactors = 1)
     {
@@ -20,6 +21,74 @@ internal class ArmSet
         return efficiency;
     }
 
+    public string CapacityAffectingAffliction()
+    {
+        string description = "";
+
+        string name;
+
+        if (shoulder != null && shoulder.efficiency < 1)
+        {
+            name = shoulder.name;
+            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
+
+            description += "  " + shoulder.subName + " " + name + ": " + Mathf.Floor(shoulder.health) + " / " + shoulder.maxHealth + "\n";
+        }
+
+        if (clavicle != null && clavicle.efficiency < 1)
+        {
+            name = clavicle.name;
+            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
+
+            description += "  " + clavicle.subName + " " + name + ": " + Mathf.Floor(clavicle.health) + " / " + clavicle.maxHealth + "\n";
+        }
+
+        if (arm != null && arm.efficiency < 1)
+        {
+            name = arm.name;
+            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
+
+            description += "  " + arm.subName + " " + name + ": " + Mathf.Floor(arm.health) + " / " + arm.maxHealth + "\n";
+        }
+
+        if (humerus != null && humerus.efficiency < 1)
+        {
+            name = humerus.name;
+            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
+
+            description += "  " + humerus.subName + " " + name + ": " + Mathf.Floor(humerus.health) + " / " + humerus.maxHealth + "\n";
+        }
+
+        if (hand != null && hand.efficiency < 1)
+        {
+            name = hand.name;
+            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
+
+            description += "  " + hand.subName + " " + name + ": " + Mathf.Floor(hand.health) + " / " + hand.maxHealth + "\n";
+        }
+
+        if (radius != null && radius.efficiency < 1)
+        {
+            name = radius.name;
+            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
+
+            description += "  " + radius.subName + " " + name + ": " + Mathf.Floor(radius.health) + " / " + radius.maxHealth + "\n";
+        }
+
+        for (int i = 0; i < fingers.Count; i++)
+        {
+            if (fingers[i].efficiency < 1)
+            {
+                name = fingers[i].name;
+                name = char.ToLowerInvariant(name[0]) + name.Substring(1);
+
+                description += "  " + fingers[i].subName + " " + name + ": " + Mathf.Floor(fingers[i].health) + " / " + fingers[i].maxHealth + "\n";
+            }
+        }
+
+        return description;
+    }
+
     public Shoulder shoulder;
     public Arm arm;
     public Hand hand;
@@ -32,7 +101,7 @@ internal class ArmSet
     public float efficiency = 0;
 }
 
-internal class LegSet
+public class LegSet
 {
     public float Efficiency(RWPlayerHealthState state = null, float offsets = 0, float postFactors = 1)
     {
@@ -48,6 +117,58 @@ internal class LegSet
         efficiency = (((state != null ? (1 + (state.bloodPumping - 1f) * 0.2f) * (1f + (state.breathing - 1) * 0.2f) : 0) * efficiency) + offsets) * postFactors;
 
         return efficiency;
+    }
+
+    public string CapacityAffectingAffliction()
+    {
+        string description = "";
+
+        string name;
+
+        if (leg != null && leg.efficiency < 1)
+        {
+            name = leg.name;
+            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
+
+            description += "  " + leg.subName + " " + name + ": " + Mathf.Floor(leg.health) + " / " + leg.maxHealth + "\n";
+        }
+
+        if (femur != null && femur.efficiency < 1)
+        {
+            name = femur.name;
+            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
+
+            description += "  " + femur.subName + " " + name + ": " + Mathf.Floor(femur.health) + " / " + femur.maxHealth + "\n";
+        }
+
+        if (foot != null && foot.efficiency < 1)
+        {
+            name = foot.name;
+            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
+
+            description += "  " + foot.subName + " " + name + ": " + Mathf.Floor(foot.health) + " / " + foot.maxHealth + "\n";
+        }
+
+        if (tibia != null && tibia.efficiency < 1)
+        {
+            name = tibia.name;
+            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
+
+            description += "  " + tibia.subName + " " + name + ": " + Mathf.Floor(tibia.health) + " / " + tibia.maxHealth + "\n";
+        }
+
+        for (int i = 0; i < toes.Count; i++)
+        {
+            if (toes[i].efficiency < 1)
+            {
+                name = toes[i].name;
+                name = char.ToLowerInvariant(name[0]) + name.Substring(1);
+
+                description += "  " + toes[i].subName + " " + name + ": " + Mathf.Floor(toes[i].health) + " / " + toes[i].maxHealth + "\n";
+            }
+        }
+
+        return description;
     }
 
     public Leg leg;
