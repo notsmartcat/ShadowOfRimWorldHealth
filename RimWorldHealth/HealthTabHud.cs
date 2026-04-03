@@ -847,7 +847,7 @@ public class HealthTab : HudPart
                 }
                 else if (healthTabInfos.Count > 1)
                 {
-                    for (int i = 1; i < healthTabInfos.Count; i--)
+                    for (int i = 1; i < healthTabInfos.Count; i++)
                     {
                         healthTabInfos[i].slatedForDeletion = true;
                     }
@@ -1432,7 +1432,7 @@ public class HealthTab : HudPart
                             description += "%/c";
                         }
 
-                        float pain = Mathf.Floor(injury.damage * injury.healingDifficulty.pain / state.bodySizeFactor / 100);
+                        float pain = Mathf.Floor(injury.damage * injury.healingDifficulty.pain / state.bodySizeFactor);
 
                         if (injury.healingDifficulty.pain > 0 && pain > 0f)
                         {
@@ -1546,15 +1546,15 @@ public class HealthTab : HudPart
 
                             if (scar.painCategory == "painful")
                             {
-                                description += Mathf.Floor(scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100).ToString();
+                                description += Mathf.Floor(scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor).ToString();
                             }
                             else if (scar.painCategory == "aching")
                             {
-                                description += Mathf.Floor(scar.scarDamage * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100).ToString();
+                                description += Mathf.Floor(scar.scarDamage * injury.healingDifficulty.scarPain / state.bodySizeFactor).ToString();
                             }
                             else if (scar.painCategory == "itchy")
                             {
-                                description += Mathf.Floor(scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100).ToString();
+                                description += Mathf.Floor(scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor).ToString();
                             }
 
                             description += "%";
@@ -1580,7 +1580,7 @@ public class HealthTab : HudPart
                             description += "%/c";
                         }
 
-                        float pain = Mathf.Floor(injury.damage * injury.healingDifficulty.pain / state.bodySizeFactor / 100);
+                        float pain = Mathf.Floor(injury.damage * injury.healingDifficulty.pain / state.bodySizeFactor);
 
                         if (injury.healingDifficulty.pain > 0 && pain > 0f)
                         {
@@ -1880,7 +1880,7 @@ public class HealthTabBodyPart
 
         for (int i = 0; i < bodyPart.afflictions.Count; i++)
         {
-            if (bodyPart.afflictions[i] is RWInjury injury && bodyPart.afflictions[i] is not RWDestroyed && injury.healingDifficulty.combines)
+            if (bodyPart.afflictions[i] is RWInjury injury && injury is not RWDestroyed && injury.healingDifficulty.combines && (injury is not RWScar scar || !scar.isRevealed))
             {
                 if (combinedAfflictions.TryGetValue(CombinedAfflictionName(bodyPart, i), out List<RWAffliction> dic))
                 {

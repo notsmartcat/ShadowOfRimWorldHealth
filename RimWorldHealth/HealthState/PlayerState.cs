@@ -453,6 +453,8 @@ public class RWPlayerHealthState : PlayerState
                 talkingBP.Add(this.bodyParts[i]);
             }
         }
+
+        updateCapacities = true;
     }
 
     public void Update()
@@ -521,7 +523,7 @@ public class RWPlayerHealthState : PlayerState
                     }
                 }
 
-                if (heal)
+                if (heal && injury is not RWDestroyed && (injury is not RWScar scar || !scar.isRevealed))
                 {
                     healList.Add(injury);
                 }
@@ -561,8 +563,6 @@ public class RWPlayerHealthState : PlayerState
                     scar.isTended = true;
                     scar.isBleeding = false;
                     scar.isRevealed = true;
-
-                    scar.healingDifficulty.combines = false;
                 }
             }
             else if (injury.damage <= 0)
@@ -669,6 +669,8 @@ public class RWPlayerHealthState : PlayerState
 
         void UpdateCapacities()
         {
+            Debug.Log("Capacities Update");
+
             capacityAffectingAffliction.Clear();
 
             if (!dead)
@@ -965,15 +967,16 @@ public class RWPlayerHealthState : PlayerState
                 float baseEfficiency = 0;
                 float offsets = manipulation;
                 float postFactors = 1;
+                float otherEfficiency = 1;
 
                 for (int i = 0; i < manipulationBP.Count; i++)
                 {
-                    postFactors *= manipulationBP[i].efficiency * consciousness;
+                    otherEfficiency *= manipulationBP[i].efficiency;
                 }
 
                 for (int i = 0; i < armSetNames.Count; i++)
                 {
-                    baseEfficiency += armSet[armSetNames[i]].Efficiency(offsets, postFactors) / armSetNames.Count;
+                    baseEfficiency += armSet[armSetNames[i]].Efficiency(this, offsets / armSetNames.Count, postFactors, otherEfficiency) / armSetNames.Count;
                 }
 
                 manipulation = Mathf.Max(0, baseEfficiency);
@@ -988,15 +991,16 @@ public class RWPlayerHealthState : PlayerState
                 float baseEfficiency = 0;
                 float offsets = moving;
                 float postFactors = 1;
+                float otherEfficiency = 1;
 
                 for (int i = 0; i < movingBP.Count; i++)
                 {
-                    postFactors *= movingBP[i].efficiency * Mathf.Min(1, consciousness);
+                    otherEfficiency *= movingBP[i].efficiency;
                 }
 
                 for (int i = 0; i < legSetNames.Count; i++)
                 {
-                    baseEfficiency += legSet[legSetNames[i]].Efficiency(this, offsets, postFactors) / legSetNames.Count;
+                    baseEfficiency += legSet[legSetNames[i]].Efficiency(this, offsets / armSetNames.Count, postFactors, otherEfficiency) / legSetNames.Count;
                 }
 
                 moving = moving = Mathf.Max(0, baseEfficiency);
@@ -1426,8 +1430,6 @@ public class RWPlayerHealthState : PlayerState
 
                 scar.isTended = true;
                 scar.isBleeding = false;
-
-                scar.healingDifficulty.combines = false;
             }
 
             if (scar.isPermanent)

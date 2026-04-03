@@ -5,7 +5,7 @@ namespace ShadowOfRimWorldHealth;
 
 public class ArmSet
 {
-    public float Efficiency(float offsets = 0, float postFactors = 1)
+    public float Efficiency(RWPlayerHealthState state, float offsets = 0, float postFactors = 1, float otherEfficiency = 1)
     {
         float fingerEfficiency = 0;
 
@@ -14,9 +14,9 @@ public class ArmSet
             fingerEfficiency += fingers[i].efficiency;
         }
 
-        efficiency = (arm != null ? arm.efficiency : 0) * (shoulder != null ? shoulder.efficiency : 0) * (clavicle != null ? clavicle.efficiency : 0) * (humerus != null ? humerus.efficiency : 0) * (radius != null ? radius.efficiency : 0) * (hand != null ? hand.efficiency : 0) * ((fingerEfficiency * (0.8f / fingers.Count)) + 0.2f);
+        efficiency = (arm != null ? arm.efficiency : 0) * (shoulder != null ? shoulder.efficiency : 0) * (clavicle != null ? clavicle.efficiency : 0) * (humerus != null ? humerus.efficiency : 0) * (radius != null ? radius.efficiency : 0) * (hand != null ? hand.efficiency : 0) * ((fingerEfficiency * (0.8f / fingers.Count)) + 0.2f) * otherEfficiency;
 
-        efficiency = (efficiency + offsets) * postFactors;
+        efficiency = ((state.consciousness * efficiency) + offsets) * postFactors;
 
         return efficiency;
     }
@@ -103,7 +103,7 @@ public class ArmSet
 
 public class LegSet
 {
-    public float Efficiency(RWPlayerHealthState state = null, float offsets = 0, float postFactors = 1)
+    public float Efficiency(RWPlayerHealthState state, float offsets = 0, float postFactors = 1, float otherEfficiency = 1)
     {
         float toeEfficiency = 0;
 
@@ -112,9 +112,9 @@ public class LegSet
             toeEfficiency += toes[i].efficiency;
         }
 
-        efficiency = (leg != null ? leg.efficiency : 0) * (tibia != null ? tibia.efficiency : 0) * (femur != null ? femur.efficiency : 0) * (foot != null ? foot.efficiency : 0) * ((toeEfficiency * (0.4f / toes.Count)) + 0.6f);
+        efficiency = (leg != null ? leg.efficiency : 0) * (tibia != null ? tibia.efficiency : 0) * (femur != null ? femur.efficiency : 0) * (foot != null ? foot.efficiency : 0) * ((toeEfficiency * (0.4f / toes.Count)) + 0.6f) * otherEfficiency;
 
-        efficiency = (((state != null ? (1 + (state.bloodPumping - 1f) * 0.2f) * (1f + (state.breathing - 1) * 0.2f) : 0) * efficiency) + offsets) * postFactors;
+        efficiency = ((Mathf.Min(1, state.consciousness) * (1 + (state.bloodPumping - 1f) * 0.2f) * (1f + (state.breathing - 1) * 0.2f) * efficiency) + offsets) * postFactors;
 
         return efficiency;
     }

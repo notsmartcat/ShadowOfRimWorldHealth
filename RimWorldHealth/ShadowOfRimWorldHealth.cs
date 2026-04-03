@@ -39,6 +39,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
             ILHooks.Apply();
             CreatureHooks.Apply();
+            SlugcatHooks.Apply();
             WeaponHooks.Apply();
         }
         catch (Exception e) { Logger.LogError(e); }
@@ -188,5 +189,43 @@ public class RimWorldHealth : BaseUnityPlugin
         {
             return self.subPartOf == other.name;
         }
+    }
+
+    public static bool LegCheck(RWPlayerHealthState state)
+    {
+        if (state.moving < 0.5f)
+        {
+            return false;
+        }
+
+        int workingLegs = 0;
+        int maxWorkingLegs = state.legSetNames.Count;
+
+        for (int i = 0; i < state.legSetNames.Count; i++)
+        {
+            if (state.legSet[state.legSetNames[i]].efficiency > 0)
+            {
+                //Debug.Log(state.legSetNames[i] + " Leg has " + state.legSet[state.legSetNames[i]].efficiency + " efficiency");
+                workingLegs++;
+            }
+        }
+
+        return workingLegs >= maxWorkingLegs / 2;
+    }
+
+    public static bool ArmCheck(RWPlayerHealthState state)
+    {
+        int workingArms = 0;
+
+        for (int i = 0; i < state.armSetNames.Count; i++)
+        {
+            if (state.armSet[state.armSetNames[i]].efficiency > 0)
+            {
+                //Debug.Log(state.armSetNames[i] + " Arm has " + state.armSet[state.armSetNames[i]].efficiency + " efficiency");
+                workingArms++;
+            }
+        }
+
+        return workingArms > 0;
     }
 }
