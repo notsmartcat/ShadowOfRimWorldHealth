@@ -1,11 +1,13 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
+using static ShadowOfRimWorldHealth.RimWorldHealth;
+
 namespace ShadowOfRimWorldHealth;
 
 public class ArmSet
 {
-    public float Efficiency(RWPlayerHealthState state, float offsets = 0, float postFactors = 1, float otherEfficiency = 1)
+    public float Efficiency(RWState state, float offsets = 0, float postFactors = 1, float otherEfficiency = 1)
     {
         float fingerEfficiency = 0;
 
@@ -98,12 +100,12 @@ public class ArmSet
     public Humerus humerus;
     public Radius radius;
 
-    public float efficiency = 0;
+    public float efficiency = 1;
 }
 
 public class LegSet
 {
-    public float Efficiency(RWPlayerHealthState state, float offsets = 0, float postFactors = 1, float otherEfficiency = 1)
+    public float Efficiency(RWState state, float offsets = 0, float postFactors = 1, float otherEfficiency = 1)
     {
         float toeEfficiency = 0;
 
@@ -178,5 +180,5 @@ public class LegSet
     public Femur femur;
     public Tibia tibia;
 
-    public float efficiency = 0;
+    public float efficiency = 1;
 }

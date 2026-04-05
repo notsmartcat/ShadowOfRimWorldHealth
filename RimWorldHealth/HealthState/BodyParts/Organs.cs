@@ -2,7 +2,7 @@
 
 public class RWOrgan : RWBodyPart
 {
-    public RWOrgan(RWPlayerHealthState state) : base(state)
+    public RWOrgan(CreatureState state) : base(state)
     {
         isInternal = true;
     }
@@ -10,7 +10,7 @@ public class RWOrgan : RWBodyPart
 
 public class Brain : RWOrgan
 {
-    public Brain(RWPlayerHealthState state) : base(state)
+    public Brain(CreatureState state) : base(state)
     {
         name = "Brain";
 
@@ -35,7 +35,7 @@ public class Brain : RWOrgan
 
 public class Stomach : RWOrgan
 {
-    public Stomach(RWPlayerHealthState state) : base(state)
+    public Stomach(CreatureState state) : base(state)
     {
         name = "Stomach";
 
@@ -53,7 +53,7 @@ public class Stomach : RWOrgan
 }
 public class Heart : RWOrgan
 {
-    public Heart(RWPlayerHealthState state) : base(state)
+    public Heart(CreatureState state) : base(state)
     {
         name = "Heart";
 
@@ -73,7 +73,7 @@ public class Heart : RWOrgan
 }
 public class Lung : RWOrgan
 {
-    public Lung(RWPlayerHealthState state) : base(state)
+    public Lung(CreatureState state) : base(state)
     {
         name = "Lung";
 
@@ -93,7 +93,7 @@ public class Lung : RWOrgan
 }
 public class Kidney : RWOrgan
 {
-    public Kidney(RWPlayerHealthState state) : base(state)
+    public Kidney(CreatureState state) : base(state)
     {
         name = "Kidney";
 
@@ -113,7 +113,7 @@ public class Kidney : RWOrgan
 }
 public class Liver : RWOrgan
 {
-    public Liver(RWPlayerHealthState state) : base(state)
+    public Liver(CreatureState state) : base(state)
     {
         name = "Liver";
 

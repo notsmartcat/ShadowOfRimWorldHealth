@@ -11,10 +11,69 @@ namespace ShadowOfRimWorldHealth;
 
 public class RimWorldHealth : BaseUnityPlugin
 {
+    public class RWState
+    {
+        public List<RWBodyPart> bodyParts = new();
+
+        public List<RWAffliction> wholeBodyAfflictions = new();
+
+        public RWBodyPart consciousnessSource = null;
+
+        public readonly List<string> armSetNames = new();
+        public readonly Dictionary<string, ArmSet> armSet = new();
+        public readonly List<string> legSetNames = new();
+        public readonly Dictionary<string, LegSet> legSet = new();
+
+        public readonly List<RWBodyPart> bloodFiltrationBP = new();
+        public readonly List<RWBodyPart> bloodPumpingBP = new();
+        public readonly List<RWBodyPart> breathingBP = new();
+        public readonly List<RWBodyPart> digestionBP = new();
+        public readonly List<RWBodyPart> eatingBP = new();
+        public readonly List<RWBodyPart> hearingBP = new();
+        public readonly List<RWBodyPart> manipulationBP = new();
+        public readonly List<RWBodyPart> movingBP = new();
+        public readonly List<RWBodyPart> sightBP = new();
+        public readonly List<RWBodyPart> talkingBP = new();
+
+        public readonly List<RWAffliction> capacityAffectingAffliction = new();
+
+        public float maxHealth;
+
+        public float bodySizeFactor = 1;
+
+        public float bloodLoss = 0;
+        public float bloodLossPerCycle = 0;
+
+        public float pain = 0;
+
+        public float consciousness = 1;
+        public float moving = 1;
+        public float manipulation = 1;
+        public float talking = 1;
+        public float eating = 1;
+        public float sight = 1;
+        public float hearing = 1;
+        public float breathing = 1;
+        public float bloodFiltration = 1;
+        public float bloodPumping = 1;
+        public float digestion = 1;
+
+        public bool updateCapacities = false;
+
+        public float cycleLength = 13;
+
+        public bool forceUnconsciousness = false;
+
+        public int healingRateTics = 600;
+        public int healingRate = 600;
+    }
+
     public class OneTimeUseData
     {
         public List<Creature> creatures = new();
     }
+
+    public static readonly ConditionalWeakTable<CreatureState, RWState> healthState = new();
 
     public static readonly ConditionalWeakTable<Explosion, OneTimeUseData> singleExplosion = new();
 
@@ -87,9 +146,9 @@ public class RimWorldHealth : BaseUnityPlugin
     {
         orig(self, eu);
 
-        if (self.State is RWPlayerHealthState state)
+        if (healthState.TryGetValue(self.State, out RWState state))
         {
-            state.Update();
+            RWHealthState.Update(self.State, state);
 
             if (Input.GetKey("n"))
             {
@@ -103,15 +162,15 @@ public class RimWorldHealth : BaseUnityPlugin
 
                         if (j == 0)
                         {
-                            state.Damage(new RWBomb(), 0.5f, head, "testtesttesttesttesttest");
+                            RWHealthState.Damage(self.State, state, new RWBomb(), 0.5f, head, "testtesttesttesttesttest");
                         }
                         else if(j == 1)
                         {
-                            state.Damage(new RWBomb(), 0.5f, head, "testtesttesttesttesttest testtesttesttesttesttest");
+                            RWHealthState.Damage(self.State, state, new RWBomb(), 0.5f, head, "testtesttesttesttesttest testtesttesttesttesttest");
                         }
                         else if (j == 2)
                         {
-                            state.Damage(new RWBomb(), 0.5f, head, "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
+                            RWHealthState.Damage(self.State, state, new RWBomb(), 0.5f, head, "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
                         }
 
                         break;
@@ -122,7 +181,7 @@ public class RimWorldHealth : BaseUnityPlugin
             {
                 if (state.wholeBodyAfflictions.Count == 0)
                 {
-                    state.wholeBodyAfflictions.Add(new RWFlu(state, null));
+                    state.wholeBodyAfflictions.Add(new RWFlu(self.State, null));
                 }
 
                 /*
@@ -149,7 +208,7 @@ public class RimWorldHealth : BaseUnityPlugin
             if (buttonHeld == false)
             {
                 buttonHeld = true;
-                healthTab.ToggleVisibility(self.State as RWPlayerHealthState);
+                healthTab.ToggleVisibility(self.State, state);
             }
         }
         else
@@ -163,7 +222,7 @@ public class RimWorldHealth : BaseUnityPlugin
         return self.afflictions.Count != 0 && self.afflictions[0] is RWDestroyed;
     }
 
-    public static bool IsSubPartDestroyed(RWPlayerHealthState state, RWBodyPart self)
+    public static bool IsSubPartDestroyed(RWState state, RWBodyPart self)
     {
         if (self.afflictions.Count == 1 && self.afflictions[0] is RWDestroyed && self.subPartOf != "")
         {
@@ -191,7 +250,7 @@ public class RimWorldHealth : BaseUnityPlugin
         }
     }
 
-    public static bool LegCheck(RWPlayerHealthState state)
+    public static bool LegCheck(RWState state)
     {
         if (state.moving < 0.5f)
         {
@@ -213,7 +272,7 @@ public class RimWorldHealth : BaseUnityPlugin
         return workingLegs >= maxWorkingLegs / 2;
     }
 
-    public static bool ArmCheck(RWPlayerHealthState state)
+    public static bool ArmCheck(RWState state)
     {
         int workingArms = 0;
 

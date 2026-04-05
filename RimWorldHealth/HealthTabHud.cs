@@ -275,6 +275,8 @@ public class HealthTab : HudPart
                 }
 
                 treatedAffliction = null;
+
+                state.updateCapacities = true;
             }
 
             return;
@@ -400,13 +402,14 @@ public class HealthTab : HudPart
         }
     }
 
-    public void ToggleVisibility(RWPlayerHealthState state)
+    public void ToggleVisibility(CreatureState self, RWState state)
     {
         visible = !visible;
 
         if (visible)
         {
             this.state = state;
+            this.creatureState = self;
 
             TriggeredOn();
         }
@@ -457,7 +460,7 @@ public class HealthTab : HudPart
             return;
         }
 
-        if (!state.dead)
+        if (!creatureState.dead)
         {
             capacityValueNamesNames = new(12) { "Pain", "Consiousness", "Moving", "Manipulation", "Talking", "Eating", "Sight", "Hearing", "Breathing", "Blood filtrarion", "Blood pumping", "Digestion" };
         }
@@ -481,7 +484,7 @@ public class HealthTab : HudPart
         capacityName.color = Color.white;
         capacityName.x = DrawPos().x - 320;
         capacityName.y = DrawPos().y + 125;
-        capacityName.text = state.creature.ToString();
+        capacityName.text = creatureState.creature.ToString();
 
         if (bloodLossPerCycle.isVisible)
         {
@@ -1423,7 +1426,7 @@ public class HealthTab : HudPart
 
                         string description = "";
 
-                        float bleeding = Mathf.Max(1f, Mathf.Floor(injury.healingDifficulty.bleeding * injury.damage * state.bodySizeFactor * state.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
+                        float bleeding = Mathf.Max(1f, Mathf.Floor(injury.healingDifficulty.bleeding * injury.damage * state.bodySizeFactor * RWHealthState.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
 
                         if (injury.isBleeding)
                         {
@@ -1569,7 +1572,7 @@ public class HealthTab : HudPart
 
                         string description = "";
 
-                        float bleeding = Mathf.Max(1f, Mathf.Floor(injury.healingDifficulty.bleeding * injury.damage * state.bodySizeFactor * state.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
+                        float bleeding = Mathf.Max(1f, Mathf.Floor(injury.healingDifficulty.bleeding * injury.damage * state.bodySizeFactor * RWHealthState.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
 
                         if (injury.isBleeding)
                         {
@@ -1766,7 +1769,8 @@ public class HealthTab : HudPart
     }
 
     #region Values
-    public RWPlayerHealthState state;
+    public RWState state;
+    public CreatureState creatureState;
 
     public FLabel capacityName;
 

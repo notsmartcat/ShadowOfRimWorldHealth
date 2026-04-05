@@ -5,83 +5,57 @@ using static ShadowOfRimWorldHealth.RimWorldHealth;
 
 namespace ShadowOfRimWorldHealth;
 
-public class RWHealthState : CreatureState
+public class RWHealthState
 {
-    public RWHealthState(AbstractCreature crit) : base(crit)
+    public static void NewRWHealthState(CreatureState self, RWState state)
     {
-
-    }
-
-    public List<RWBodyPart> bodyParts = new();
-
-    public float blood;
-
-    public float pain;
-
-    public float consciousness;
-    public float moving;
-    public float manipulation;
-    public float talking;
-    public float eating;
-    public float sight;
-    public float hearing;
-    public float breathing;
-    public float bloodFiltration;
-    public float bloodPumping;
-    public float digestion;
-}
-
-public class RWPlayerHealthState : PlayerState
-{
-    public RWPlayerHealthState(AbstractCreature crit, int playerNumber, SlugcatStats.Name slugcatCharacter, bool isGhost) : base(crit, playerNumber, slugcatCharacter, isGhost)
-    {
-        bodySizeFactor = 1;
+        state.bodySizeFactor = 1;
 
         List<RWBodyPart> bodyParts = new(33) {
-                new UpperTorso(this),
-                new LowerTorso(this),
+                new UpperTorso(self),
+                new LowerTorso(self),
 
-                new Neck(this),
-                new Head(this),
-                new Eye(this),
-                new Ear(this),
-                new Nose(this),
-                new Jaw(this),
-                new Tongue(this),
+                new Neck(self),
+                new Head(self),
+                new Eye(self),
+                new Ear(self),
+                new Nose(self),
+                new Jaw(self),
+                new Tongue(self),
 
-                new Shoulder(this),
-                new Arm(this),
-                new Hand(this),
-                new Finger(this),
+                new Shoulder(self),
+                new Arm(self),
+                new Hand(self),
+                new Finger(self),
 
-                new Leg(this),
-                new Foot(this),
-                new Toe(this),
+                new Leg(self),
+                new Foot(self),
+                new Toe(self),
 
-                new Tail(this),
+                new Tail(self),
 
-                new Skull(this),
+                new Skull(self),
 
-                new Spine(this),
-                new Ribcage(this),
-                new Sternum(this),
+                new Spine(self),
+                new Ribcage(self),
+                new Sternum(self),
 
-                new Clavicle(this),
-                new Humerus(this),
-                new Radius(this),
+                new Clavicle(self),
+                new Humerus(self),
+                new Radius(self),
 
-                new Pelvis(this),
+                new Pelvis(self),
 
-                new Femur(this),
-                new Tibia(this),
+                new Femur(self),
+                new Tibia(self),
 
-                new Brain(this),
+                new Brain(self),
 
-                new Stomach(this),
-                new Heart(this),
-                new Lung(this),
-                new Kidney(this),
-                new Liver(this),
+                new Stomach(self),
+                new Heart(self),
+                new Lung(self),
+                new Kidney(self),
+                new Liver(self),
             };
 
         for (int i = 0; i < bodyParts.Count; i++)
@@ -91,66 +65,66 @@ public class RWPlayerHealthState : PlayerState
                 RWBodyPart bodyPart = null;
                 if (bodyParts[i] is Eye)
                 {
-                    bodyPart = new Eye(this);
+                    bodyPart = new Eye(self);
                 }
                 else if (bodyParts[i] is Ear)
                 {
-                    bodyPart = new Ear(this);
+                    bodyPart = new Ear(self);
                 }
 
                 else if (bodyParts[i] is Shoulder)
                 {
-                    bodyPart = new Shoulder(this);
+                    bodyPart = new Shoulder(self);
 
-                    if (!armSetNames.Contains("Right"))
+                    if (!state.armSetNames.Contains("Right"))
                     {
-                        armSetNames.Add("Right");
+                        state.armSetNames.Add("Right");
                     }
-                    if (!armSetNames.Contains("Left"))
+                    if (!state.armSetNames.Contains("Left"))
                     {
-                        armSetNames.Add("Left");
+                        state.armSetNames.Add("Left");
                     }
 
-                    if (armSet.TryGetValue("Right", out ArmSet rightSet))
+                    if (state.armSet.TryGetValue("Right", out ArmSet rightSet))
                     {
                         rightSet.shoulder = bodyParts[i] as Shoulder;
                     }
                     else
                     {
-                        armSet.Add("Right", new ArmSet() { shoulder = bodyParts[i] as Shoulder });
+                        state.armSet.Add("Right", new ArmSet() { shoulder = bodyParts[i] as Shoulder });
                     }
 
-                    if (armSet.TryGetValue("Left", out ArmSet leftSet))
+                    if (state.armSet.TryGetValue("Left", out ArmSet leftSet))
                     {
                         leftSet.shoulder = bodyPart as Shoulder;
                     }
                     else
                     {
-                        armSet.Add("Left", new ArmSet() { shoulder = bodyPart as Shoulder });
+                        state.armSet.Add("Left", new ArmSet() { shoulder = bodyPart as Shoulder });
                     }
                 }
                 else if (bodyParts[i] is Arm)
                 {
-                    bodyPart = new Arm(this);
+                    bodyPart = new Arm(self);
 
-                    if (armSet.TryGetValue("Right", out ArmSet rightSet))
+                    if (state.armSet.TryGetValue("Right", out ArmSet rightSet))
                     {
                         rightSet.arm = bodyParts[i] as Arm;
                     }
-                    if (armSet.TryGetValue("Left", out ArmSet leftSet))
+                    if (state.armSet.TryGetValue("Left", out ArmSet leftSet))
                     {
                         leftSet.arm = bodyPart as Arm;
                     }
                 }
                 else if (bodyParts[i] is Hand)
                 {
-                    bodyPart = new Hand(this);
+                    bodyPart = new Hand(self);
 
-                    if (armSet.TryGetValue("Right", out ArmSet rightSet))
+                    if (state.armSet.TryGetValue("Right", out ArmSet rightSet))
                     {
                         rightSet.hand = bodyParts[i] as Hand;
                     }
-                    if (armSet.TryGetValue("Left", out ArmSet leftSet))
+                    if (state.armSet.TryGetValue("Left", out ArmSet leftSet))
                     {
                         leftSet.hand = bodyPart as Hand;
                     }
@@ -158,44 +132,44 @@ public class RWPlayerHealthState : PlayerState
 
                 else if (bodyParts[i] is Leg)
                 {
-                    bodyPart = new Leg(this);
+                    bodyPart = new Leg(self);
 
-                    if (!legSetNames.Contains("Right"))
+                    if (!state.legSetNames.Contains("Right"))
                     {
-                        legSetNames.Add("Right");
+                        state.legSetNames.Add("Right");
                     }
-                    if (!legSetNames.Contains("Left"))
+                    if (!state.legSetNames.Contains("Left"))
                     {
-                        legSetNames.Add("Left");
+                        state.legSetNames.Add("Left");
                     }
 
-                    if (legSet.TryGetValue("Right", out LegSet rightSet))
+                    if (state.legSet.TryGetValue("Right", out LegSet rightSet))
                     {
                         rightSet.leg = bodyParts[i] as Leg;
                     }
                     else
                     {
-                        legSet.Add("Right", new LegSet() { leg = bodyParts[i] as Leg });
+                        state.legSet.Add("Right", new LegSet() { leg = bodyParts[i] as Leg });
                     }
 
-                    if (legSet.TryGetValue("Left", out LegSet leftSet))
+                    if (state.legSet.TryGetValue("Left", out LegSet leftSet))
                     {
                         leftSet.leg = bodyPart as Leg;
                     }
                     else
                     {
-                        legSet.Add("Left", new LegSet() { leg = bodyPart as Leg });
+                        state.legSet.Add("Left", new LegSet() { leg = bodyPart as Leg });
                     }
                 }
                 else if (bodyParts[i] is Foot)
                 {
-                    bodyPart = new Foot(this);
+                    bodyPart = new Foot(self);
 
-                    if (legSet.TryGetValue("Right", out LegSet rightSet))
+                    if (state.legSet.TryGetValue("Right", out LegSet rightSet))
                     {
                         rightSet.foot = bodyParts[i] as Foot;
                     }
-                    if (legSet.TryGetValue("Left", out LegSet leftSet))
+                    if (state.legSet.TryGetValue("Left", out LegSet leftSet))
                     {
                         leftSet.foot = bodyPart as Foot;
                     }
@@ -203,39 +177,39 @@ public class RWPlayerHealthState : PlayerState
 
                 else if (bodyParts[i] is Clavicle)
                 {
-                    bodyPart = new Clavicle(this);
+                    bodyPart = new Clavicle(self);
 
-                    if (armSet.TryGetValue("Right", out ArmSet rightSet))
+                    if (state.armSet.TryGetValue("Right", out ArmSet rightSet))
                     {
                         rightSet.clavicle = bodyParts[i] as Clavicle;
                     }
-                    if (armSet.TryGetValue("Left", out ArmSet leftSet))
+                    if (state.armSet.TryGetValue("Left", out ArmSet leftSet))
                     {
                         leftSet.clavicle = bodyPart as Clavicle;
                     }
                 }
                 else if (bodyParts[i] is Humerus)
                 {
-                    bodyPart = new Humerus(this);
+                    bodyPart = new Humerus(self);
 
-                    if (armSet.TryGetValue("Right", out ArmSet rightSet))
+                    if (state.armSet.TryGetValue("Right", out ArmSet rightSet))
                     {
                         rightSet.humerus = bodyParts[i] as Humerus;
                     }
-                    if (armSet.TryGetValue("Left", out ArmSet leftSet))
+                    if (state.armSet.TryGetValue("Left", out ArmSet leftSet))
                     {
                         leftSet.humerus = bodyPart as Humerus;
                     }
                 }
                 else if (bodyParts[i] is Radius)
                 {
-                    bodyPart = new Radius(this);
+                    bodyPart = new Radius(self);
 
-                    if (armSet.TryGetValue("Right", out ArmSet rightSet))
+                    if (state.armSet.TryGetValue("Right", out ArmSet rightSet))
                     {
                         rightSet.radius = bodyParts[i] as Radius;
                     }
-                    if (armSet.TryGetValue("Left", out ArmSet leftSet))
+                    if (state.armSet.TryGetValue("Left", out ArmSet leftSet))
                     {
                         leftSet.radius = bodyPart as Radius;
                     }
@@ -243,26 +217,26 @@ public class RWPlayerHealthState : PlayerState
 
                 else if (bodyParts[i] is Femur)
                 {
-                    bodyPart = new Femur(this);
+                    bodyPart = new Femur(self);
 
-                    if (legSet.TryGetValue("Right", out LegSet rightSet))
+                    if (state.legSet.TryGetValue("Right", out LegSet rightSet))
                     {
                         rightSet.femur = bodyParts[i] as Femur;
                     }
-                    if (legSet.TryGetValue("Left", out LegSet leftSet))
+                    if (state.legSet.TryGetValue("Left", out LegSet leftSet))
                     {
                         leftSet.femur = bodyPart as Femur;
                     }
                 }
                 else if (bodyParts[i] is Tibia)
                 {
-                    bodyPart = new Tibia(this);
+                    bodyPart = new Tibia(self);
 
-                    if (legSet.TryGetValue("Right", out LegSet rightSet))
+                    if (state.legSet.TryGetValue("Right", out LegSet rightSet))
                     {
                         rightSet.tibia = bodyParts[i] as Tibia;
                     }
-                    if (legSet.TryGetValue("Left", out LegSet leftSet))
+                    if (state.legSet.TryGetValue("Left", out LegSet leftSet))
                     {
                         leftSet.tibia = bodyPart as Tibia;
                     }
@@ -270,30 +244,30 @@ public class RWPlayerHealthState : PlayerState
 
                 else if (bodyParts[i] is Lung)
                 {
-                    bodyPart = new Lung(this);
+                    bodyPart = new Lung(self);
                 }
                 else if (bodyParts[i] is Kidney)
                 {
-                    bodyPart = new Kidney(this);
+                    bodyPart = new Kidney(self);
                 }
 
                 if (bodyPart != null)
                 {
                     bodyPart.subName = "Left";
 
-                    this.bodyParts.Add(bodyPart);
+                    state.bodyParts.Add(bodyPart);
                 }
 
                 bodyParts[i].subName = "Right";
-                this.bodyParts.Add(bodyParts[i]);
+                state.bodyParts.Add(bodyParts[i]);
             }
             else if (bodyParts[i] is Finger finger)
             {
-                for (int k = 0; k < armSetNames.Count; k++)
+                for (int k = 0; k < state.armSetNames.Count; k++)
                 {
-                    for (int j = 0; j < bodyParts[i].quantity / armSetNames.Count; j++)
+                    for (int j = 0; j < bodyParts[i].quantity / state.armSetNames.Count; j++)
                     {
-                        finger ??= new Finger(this);
+                        finger ??= new Finger(self);
 
                         if (j == 0)
                         {
@@ -326,15 +300,15 @@ public class RWPlayerHealthState : PlayerState
                             finger.coverage = 8f;
                         }
 
-                        finger.subName = armSetNames[k];
-                        finger.group.Add(armSetNames[k] + "Hand");
+                        finger.subName = state.armSetNames[k];
+                        finger.group.Add(state.armSetNames[k] + "Hand");
 
-                        if (armSet.TryGetValue(armSetNames[k], out ArmSet set))
+                        if (state.armSet.TryGetValue(state.armSetNames[k], out ArmSet set))
                         {
                             set.fingers.Add(finger);
                         }
 
-                        this.bodyParts.Add(finger);
+                        state.bodyParts.Add(finger);
 
                         finger = null;
                     }
@@ -342,11 +316,11 @@ public class RWPlayerHealthState : PlayerState
             }
             else if (bodyParts[i] is Toe toe)
             {
-                for (int k = 0; k < legSetNames.Count; k++)
+                for (int k = 0; k < state.legSetNames.Count; k++)
                 {
-                    for (int j = 0; j < bodyParts[i].quantity / legSetNames.Count; j++)
+                    for (int j = 0; j < bodyParts[i].quantity / state.legSetNames.Count; j++)
                     {
-                        toe ??= new Toe(this);
+                        toe ??= new Toe(self);
 
                         if (j == 0)
                         {
@@ -379,14 +353,14 @@ public class RWPlayerHealthState : PlayerState
                             toe.coverage = 9f;
                         }
 
-                        toe.subName = legSetNames[k];
+                        toe.subName = state.legSetNames[k];
 
-                        if (legSet.TryGetValue(legSetNames[k], out LegSet set))
+                        if (state.legSet.TryGetValue(state.legSetNames[k], out LegSet set))
                         {
                             set.toes.Add(toe);
                         }
 
-                        this.bodyParts.Add(toe);
+                        state.bodyParts.Add(toe);
 
                         toe = null;
                     }
@@ -394,100 +368,98 @@ public class RWPlayerHealthState : PlayerState
             }
             else
             {
-                this.bodyParts.Add(bodyParts[i]);
+                state.bodyParts.Add(bodyParts[i]);
 
                 if (bodyParts[i] is Brain brain)
                 {
-                    consciousnessSource = brain;
+                    state.consciousnessSource = brain;
                 }
             }
         }
 
-        for (int i = 0; i < this.bodyParts.Count; i++)
+        for (int i = 0; i < state.bodyParts.Count; i++)
         {
-            maxHealth += this.bodyParts[i].maxHealth;
+            state.maxHealth += state.bodyParts[i].maxHealth;
 
-            if (this.bodyParts[i].capacity.Count == 0 || this.bodyParts[i] is Shoulder || this.bodyParts[i] is Arm || this.bodyParts[i] is Hand || this.bodyParts[i] is Finger || this.bodyParts[i] is Leg || this.bodyParts[i] is Foot || this.bodyParts[i] is Clavicle || this.bodyParts[i] is Humerus || this.bodyParts[i] is Radius || this.bodyParts[i] is Femur || this.bodyParts[i] is Tibia || this.bodyParts[i] is Toe)
+            if (state.bodyParts[i].capacity.Count == 0 || state.bodyParts[i] is Shoulder || state.bodyParts[i] is Arm || state.bodyParts[i] is Hand || state.bodyParts[i] is Finger || state.bodyParts[i] is Leg || state.bodyParts[i] is Foot || state.bodyParts[i] is Clavicle || state.bodyParts[i] is Humerus || state.bodyParts[i] is Radius || state.bodyParts[i] is Femur || state.bodyParts[i] is Tibia || state.bodyParts[i] is Toe)
             {
                 continue;
             }
 
-            if (this.bodyParts[i].capacity.Contains("Blood Filtration"))
+            if (state.bodyParts[i].capacity.Contains("Blood Filtration"))
             {
-                bloodFiltrationBP.Add(this.bodyParts[i]);
+                state.bloodFiltrationBP.Add(state.bodyParts[i]);
             }
-            if (this.bodyParts[i].capacity.Contains("Blood Pumping"))
+            if (state.bodyParts[i].capacity.Contains("Blood Pumping"))
             {
-                bloodPumpingBP.Add(this.bodyParts[i]);
+                state.bloodPumpingBP.Add(state.bodyParts[i]);
             }
-            if (this.bodyParts[i].capacity.Contains("Breathing"))
+            if (state.bodyParts[i].capacity.Contains("Breathing"))
             {
-                breathingBP.Add(this.bodyParts[i]);
+                state.breathingBP.Add(state.bodyParts[i]);
             }
-            if (this.bodyParts[i].capacity.Contains("Digestion"))
+            if (state.bodyParts[i].capacity.Contains("Digestion"))
             {
-                digestionBP.Add(this.bodyParts[i]);
+                state.digestionBP.Add(state.bodyParts[i]);
             }
-            if (this.bodyParts[i].capacity.Contains("Eating"))
+            if (state.bodyParts[i].capacity.Contains("Eating"))
             {
-                eatingBP.Add(this.bodyParts[i]);
+                state.eatingBP.Add(state.bodyParts[i]);
             }
-            if (this.bodyParts[i].capacity.Contains("Hearing"))
+            if (state.bodyParts[i].capacity.Contains("Hearing"))
             {
-                hearingBP.Add(this.bodyParts[i]);
+                state.hearingBP.Add(state.bodyParts[i]);
             }
-            if (this.bodyParts[i].capacity.Contains("Manipulation"))
+            if (state.bodyParts[i].capacity.Contains("Manipulation"))
             {
-                manipulationBP.Add(this.bodyParts[i]);
+                state.manipulationBP.Add(state.bodyParts[i]);
             }
-            if (this.bodyParts[i].capacity.Contains("Moving"))
+            if (state.bodyParts[i].capacity.Contains("Moving"))
             {
-                movingBP.Add(this.bodyParts[i]);
+                state.movingBP.Add(state.bodyParts[i]);
             }
-            if (this.bodyParts[i].capacity.Contains("Sight"))
+            if (state.bodyParts[i].capacity.Contains("Sight"))
             {
-                sightBP.Add(this.bodyParts[i]);
+                state.sightBP.Add(state.bodyParts[i]);
             }
-            if (this.bodyParts[i].capacity.Contains("Talking"))
+            if (state.bodyParts[i].capacity.Contains("Talking"))
             {
-                talkingBP.Add(this.bodyParts[i]);
+                state.talkingBP.Add(state.bodyParts[i]);
             }
         }
-
-        updateCapacities = true;
     }
 
-    public void Update()
+    public static void Update(CreatureState self, RWState state)
     {
-        if (dead)
+        if (self.dead)
         {
             goto dead;
         }
 
-        if (healingRate > 0)
+        if (state.healingRate > 0)
         {
-            healingRate--;
+            state.healingRate--;
         }
 
-        bool heal = healingRate <= 0;
+        bool heal = state.healingRate <= 0;
 
         if (heal)
         {
-            healingRate = healingRateTics;
+            state.healingRate = state.healingRateTics;
         }
 
         List<RWInjury> healList = new();
 
         List<RWAffliction> afflictionList;
 
-        for (int i = 0; i < bodyParts.Count; i++)
+        for (int i = 0; i < state.bodyParts.Count; i++)
         {
-            if (bodyParts[i].afflictions.Count == 0 || IsSubPartDestroyed(this, bodyParts[i]))
+            if (state.bodyParts[i].afflictions.Count == 0 || IsSubPartDestroyed(state, state.bodyParts[i]))
             {
                 continue;
             }
 
-            afflictionList = new(bodyParts[i].afflictions);
+            afflictionList = new(state.bodyParts[i].afflictions);
 
             for (int j = 0; j < afflictionList.Count; j++)
             {
@@ -495,7 +467,7 @@ public class RWPlayerHealthState : PlayerState
                 {
                     if (afflictionList[j] is RWDisease disease)
                     {
-                        Disease(disease, bodyParts[i]);
+                        Disease(disease, state.bodyParts[i]);
                     }
 
                     continue;
@@ -509,7 +481,7 @@ public class RWPlayerHealthState : PlayerState
                     {
                         float infectionChance = injury.healingDifficulty.infectionChance * (injury.isTended ? Mathf.Lerp(0.85f, 0.05f , injury.tendQuality) : 1);
 
-                        if (creature.Room != null && creature.Room.shelter)
+                        if (self.creature.Room != null && self.creature.Room.shelter)
                         {
                             infectionChance *= 0.5f;
                         }
@@ -518,7 +490,7 @@ public class RWPlayerHealthState : PlayerState
 
                         if (random < infectionChance)
                         {
-                            bodyParts[i].afflictions.Add(new RWInfection(this, bodyParts[i]));
+                            state.bodyParts[i].afflictions.Add(new RWInfection(self, state.bodyParts[i]));
                         }
                     }
                 }
@@ -530,7 +502,7 @@ public class RWPlayerHealthState : PlayerState
             }
         }
 
-        afflictionList = new(wholeBodyAfflictions);
+        afflictionList = new(state.wholeBodyAfflictions);
 
         for (int i = 0; i < afflictionList.Count; i++)
         {
@@ -568,40 +540,41 @@ public class RWPlayerHealthState : PlayerState
             else if (injury.damage <= 0)
             {
                 injury.healingDifficulty = null;
+                injury.part = null;
                 injury.part.afflictions.Remove(injury);
             }
 
-            updateCapacities = true;
+            state.updateCapacities = true;
         }
 
-        float prevbloodLoss = bloodLoss;
+        float prevbloodLoss = state.bloodLoss;
 
-        if (bloodLossPerCycle == 0 && bloodLoss > 0)
+        if (state.bloodLossPerCycle == 0 && state.bloodLoss > 0)
         {
-            bloodLoss -= 0.333f / (40 * 60 * cycleLength);
+            state.bloodLoss -= 0.333f / (40 * 60 * state.cycleLength);
 
             if (updateBloodLoss())
             {
-                updateCapacities = true;
+                state.updateCapacities = true;
             }
         } //Replenishes 33.3% of blood per cycle if not bleeding
-        else if (bloodLossPerCycle > 0)
+        else if (state.bloodLossPerCycle > 0)
         {
-            bloodLoss += bloodLossPerCycle / 100 / (40 * 60 * cycleLength);
+            state.bloodLoss += state.bloodLossPerCycle / 100 / (40 * 60 * state.cycleLength);
 
             if (updateBloodLoss())
             {
-                updateCapacities = true;
+                state.updateCapacities = true;
             }
         }
 
-        bloodLoss = Mathf.Clamp(bloodLoss, 0, 1);
+        state.bloodLoss = Mathf.Clamp(state.bloodLoss, 0, 1);
 
     dead:
 
-        if (updateCapacities)
+        if (state.updateCapacities)
         {
-            updateCapacities = false;
+            state.updateCapacities = false;
             UpdateCapacities();
         }
 
@@ -616,16 +589,16 @@ public class RWPlayerHealthState : PlayerState
 
             if (!disease.isImmune)
             {
-                disease.severity += disease.severityGain * disease.InfectionLuck / (40 * 60 * cycleLength);
+                disease.severity += disease.severityGain * disease.InfectionLuck / (40 * 60 * state.cycleLength);
 
                 if (disease.isTended)
                 {
-                    disease.severity -= disease.treatment * disease.tendQuality / (40 * 60 * cycleLength);
+                    disease.severity -= disease.treatment * disease.tendQuality / (40 * 60 * state.cycleLength);
                 }
 
-                disease.immunity += disease.immunityGain / (40 * 60 * cycleLength);
+                disease.immunity += disease.immunityGain / (40 * 60 * state.cycleLength);
 
-                disease.timeUntilTreatment -= 1 / (40 * 60 * cycleLength);
+                disease.timeUntilTreatment -= 1 / (40 * 60 * state.cycleLength);
 
                 if (disease.timeUntilTreatment <= -3)
                 {
@@ -634,20 +607,21 @@ public class RWPlayerHealthState : PlayerState
             }
             else
             {
-                disease.severity -= disease.severityLoss / (40 * 60 * cycleLength);
+                disease.severity -= disease.severityLoss / (40 * 60 * state.cycleLength);
             }
 
             if (disease.isImmune && disease.severity <= 0)
             {
                 if (part == null)
                 {
-                    wholeBodyAfflictions.Remove(disease);
-                    updateCapacities = true;
+                    state.wholeBodyAfflictions.Remove(disease);
+                    state.updateCapacities = true;
                 }
                 else
                 {
+                    disease.part = null;
                     part.afflictions.Remove(disease);
-                    updateCapacities = true;
+                    state.updateCapacities = true;
                 }
 
                 return;
@@ -659,11 +633,11 @@ public class RWPlayerHealthState : PlayerState
 
             if (disease is RWFlu && (disease.severity <= 0.665f && prevSeverity > 0.665f || disease.severity > 0.665f && prevSeverity <= 0.665f || disease.severity <= 0.832f && prevSeverity > 0.832f || disease.severity > 0.832f && prevSeverity <= 0.832f))
             {
-                updateCapacities = true;
+                state.updateCapacities = true;
             }
             else if (disease is RWInfection && (disease.severity <= 0.32f && prevSeverity > 0.32f || disease.severity > 0.32f && prevSeverity <= 0.32f || disease.severity <= 0.77f && prevSeverity > 0.77f || disease.severity > 0.77f && prevSeverity <= 0.77f || disease.severity <= 0.86f && prevSeverity > 0.86f || disease.severity > 0.86f && prevSeverity <= 0.86f))
             {
-                updateCapacities = true;
+                state.updateCapacities = true;
             }
         }
 
@@ -671,64 +645,64 @@ public class RWPlayerHealthState : PlayerState
         {
             Debug.Log("Capacities Update");
 
-            capacityAffectingAffliction.Clear();
+            state.capacityAffectingAffliction.Clear();
 
-            if (!dead)
+            if (!self.dead)
             {
-                bloodLossPerCycle = 0;
+                state.bloodLossPerCycle = 0;
 
-                pain = 0;
+                state.pain = 0;
 
-                consciousness = 0;
-                moving = 0;
-                manipulation = 0;
-                talking = 0;
-                eating = 0;
-                sight = 0;
-                hearing = 0;
-                breathing = 0;
-                bloodFiltration = 0;
-                bloodPumping = 0;
-                digestion = 0;
+                state.consciousness = 0;
+                state.moving = 0;
+                state.manipulation = 0;
+                state.talking = 0;
+                state.eating = 0;
+                state.sight = 0;
+                state.hearing = 0;
+                state.breathing = 0;
+                state.bloodFiltration = 0;
+                state.bloodPumping = 0;
+                state.digestion = 0;
             }
 
             List<RWAffliction> afflictionList;
 
-            for (int i = 0; i < bodyParts.Count; i++)
+            for (int i = 0; i < state.bodyParts.Count; i++)
             {
-                bodyParts[i].health = bodyParts[i].maxHealth;
+                state.bodyParts[i].health = state.bodyParts[i].maxHealth;
 
-                if (bodyParts[i].afflictions.Count == 0)
+                if (state.bodyParts[i].afflictions.Count == 0)
                 {
                     goto line1;
                 }
-                else if (IsSubPartDestroyed(this, bodyParts[i]))
+                else if (IsSubPartDestroyed(state, state.bodyParts[i]))
                 {
-                    bodyParts[i].health = 0;
+                    state.bodyParts[i].health = 0;
 
-                    bodyParts[i].efficiency = 0;
+                    state.bodyParts[i].efficiency = 0;
 
                     goto line1;
                 }
 
-                afflictionList = new(bodyParts[i].afflictions);
+                afflictionList = new(state.bodyParts[i].afflictions);
 
                 for (int j = 0; j < afflictionList.Count; j++)
                 {
                     if (afflictionList[j] is RWDestroyed destroyed)
                     {
-                        bodyParts[i].health = 0;
+                        state.bodyParts[i].health = 0;
 
-                        bodyParts[i].efficiency = 0;
+                        state.bodyParts[i].efficiency = 0;
 
-                        bloodLossPerCycle += destroyed.isBleeding && !destroyed.isTended ? destroyed.healingDifficulty.bleeding * bodySizeFactor * BloodLossMultiplier(bodyParts[i]) : 0;
+                        state.bloodLossPerCycle += destroyed.isBleeding && !destroyed.isTended ? destroyed.healingDifficulty.bleeding * state.bodySizeFactor * BloodLossMultiplier(state.bodyParts[i]) : 0;
 
                         break;
                     }
 
                     if (afflictionList[j] is not RWInjury injury)
                     {
-                        if (!dead && afflictionList[j] is RWDisease disease)
+                        if (!self.dead && afflictionList[j] is RWDisease disease)
                         {
                             Disease(disease);
                         }
@@ -736,9 +710,9 @@ public class RWPlayerHealthState : PlayerState
                         continue;
                     }
 
-                    bodyParts[i].health -= injury.damage;
+                    state.bodyParts[i].health -= injury.damage;
 
-                    if (dead)
+                    if (self.dead)
                     {
                         continue;
                     }
@@ -747,54 +721,54 @@ public class RWPlayerHealthState : PlayerState
                     {
                         if (scar.painCategory == "painful")
                         {
-                            afflictionList[j].pain = scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / bodySizeFactor / 100;
+                            afflictionList[j].pain = scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
                         }
                         else if (scar.painCategory == "aching")
                         {
-                            afflictionList[j].pain = scar.scarDamage * injury.healingDifficulty.scarPain / bodySizeFactor / 100;
+                            afflictionList[j].pain = scar.scarDamage * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
                         }
                         else if (scar.painCategory == "itchy")
                         {
-                            afflictionList[j].pain = scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / bodySizeFactor / 100;
+                            afflictionList[j].pain = scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
                         }
                     }
                     else
                     {
-                        afflictionList[j].pain = injury.damage * injury.healingDifficulty.pain / bodySizeFactor / 100;
+                        afflictionList[j].pain = injury.damage * injury.healingDifficulty.pain / state.bodySizeFactor / 100;
                     }
 
-                    pain += afflictionList[j].pain;
+                    state.pain += afflictionList[j].pain;
 
-                    bloodLossPerCycle += injury.isBleeding && !injury.isTended ? injury.healingDifficulty.bleeding * injury.damage * bodySizeFactor * BloodLossMultiplier(bodyParts[i]) : 0;
+                    state.bloodLossPerCycle += injury.isBleeding && !injury.isTended ? injury.healingDifficulty.bleeding * injury.damage * state.bodySizeFactor * BloodLossMultiplier(state.bodyParts[i]) : 0;
                 }
 
             line1:
 
-                bodyParts[i].efficiency = Mathf.Max(0, bodyParts[i].health / bodyParts[i].maxHealth);
+                state.bodyParts[i].efficiency = Mathf.Max(0, state.bodyParts[i].health / state.bodyParts[i].maxHealth);
 
-                if ((bodyParts[i].health > 0 && bodyParts[i].health < 1) || bodyParts[i].deathEffect == "" && bodyParts[i].health < 1)
+                if ((state.bodyParts[i].health > 0 && state.bodyParts[i].health < 1) || state.bodyParts[i].deathEffect == "" && state.bodyParts[i].health < 1)
                 {
-                    bodyParts[i].health = 1;
-                    bodyParts[i].efficiency = 0;
+                    state.bodyParts[i].health = 1;
+                    state.bodyParts[i].efficiency = 0;
                 }
-                else if (bodyParts[i] is UpperTorso && bodyParts[i].health <= 0)
+                else if (state.bodyParts[i] is UpperTorso && state.bodyParts[i].health <= 0)
                 {
-                    bodyParts[i].health = 0;
-                    bodyParts[i].efficiency = 0;
+                    state.bodyParts[i].health = 0;
+                    state.bodyParts[i].efficiency = 0;
                 }
 
-                if (dead)
+                if (self.dead)
                 {
                     continue;
                 }
             }
 
-            if (dead)
+            if (self.dead)
             {
                 return;
             }
 
-            afflictionList = new(wholeBodyAfflictions);
+            afflictionList = new(state.wholeBodyAfflictions);
 
             for (int i = 0; i < afflictionList.Count; i++)
             {
@@ -804,320 +778,320 @@ public class RWPlayerHealthState : PlayerState
                 }
             }
 
-            pain = Mathf.Clamp(pain, 0, 1);
+            state.pain = Mathf.Clamp(state.pain, 0, 1);
 
-            if (bloodFiltrationBP.Count > 0)
+            if (state.bloodFiltrationBP.Count > 0)
             {
                 float baseEfficiency = 0;
-                float offsets = bloodFiltration;
+                float offsets = state.bloodFiltration;
                 float postFactors = 1;
 
-                for (int i = 0; i < bloodFiltrationBP.Count; i++)
+                for (int i = 0; i < state.bloodFiltrationBP.Count; i++)
                 {
-                    baseEfficiency += (bloodFiltrationBP[i] is Kidney ? (bloodFiltrationBP[i].efficiency / 2) : bloodFiltrationBP[i].efficiency) / (bloodFiltrationBP.Count != 1 ? bloodFiltrationBP.Count - 1 : bloodFiltrationBP.Count);
+                    baseEfficiency += (state.bloodFiltrationBP[i] is Kidney ? (state.bloodFiltrationBP[i].efficiency / 2) : state.bloodFiltrationBP[i].efficiency) / (state.bloodFiltrationBP.Count != 1 ? state.bloodFiltrationBP.Count - 1 : state.bloodFiltrationBP.Count);
                 }
 
-                bloodFiltration = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
+                state.bloodFiltration = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
             }
             else
             {
-                bloodFiltration = 0;
+                state.bloodFiltration = 0;
             }
 
-            if (bloodPumpingBP.Count > 0)
+            if (state.bloodPumpingBP.Count > 0)
             {
                 float baseEfficiency = 0;
-                float offsets = bloodPumping;
+                float offsets = state.bloodPumping;
                 float postFactors = 1;
 
-                for (int i = 0; i < bloodPumpingBP.Count; i++)
+                for (int i = 0; i < state.bloodPumpingBP.Count; i++)
                 {
-                    baseEfficiency += bloodPumpingBP[i].efficiency / bloodPumpingBP.Count;
+                    baseEfficiency += state.bloodPumpingBP[i].efficiency / state.bloodPumpingBP.Count;
                 }
 
-                bloodPumping = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
+                state.bloodPumping = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
             }
             else
             {
-                bloodPumping = 0;
+                state.bloodPumping = 0;
             }
 
-            if (breathingBP.Count > 0)
+            if (state.breathingBP.Count > 0)
             {
                 float baseEfficiency = 0;
-                float offsets = breathing;
+                float offsets = state.breathing;
                 float postFactors = 1;
 
-                for (int i = 0; i < breathingBP.Count; i++)
+                for (int i = 0; i < state.breathingBP.Count; i++)
                 {
-                    baseEfficiency += (breathingBP[i] is Lung ? (breathingBP[i].efficiency / 2) : breathingBP[i].efficiency) / (breathingBP.Count != 1 ? (breathingBP.Count - 1) : breathingBP.Count);
+                    baseEfficiency += (state.breathingBP[i] is Lung ? (state.breathingBP[i].efficiency / 2) : state.breathingBP[i].efficiency) / (state.breathingBP.Count != 1 ? (state.breathingBP.Count - 1) : state.breathingBP.Count);
                 }
 
-                breathing = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
+                state.breathing = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
             }
             else
             {
-                breathing = 0;
+                state.breathing = 0;
             }
 
-            float consciounessOffset = consciousness;
+            float consciounessOffset = state.consciousness;
 
-            consciousness = ((consciousnessSource == null ? 1 : consciousnessSource.efficiency) * (1 - Mathf.Clamp((pain - 0.1f) * 4 / 9, 0, 0.4f)) * (1 - 0.2f * (1 - bloodPumping)) * (1 - 0.2f * (1 - breathing)) * (1 - 0.1f * (1 - bloodFiltration))) + consciounessOffset;
+            state.consciousness = ((state.consciousnessSource == null ? 1 : state.consciousnessSource.efficiency) * (1 - Mathf.Clamp((state.pain - 0.1f) * 4 / 9, 0, 0.4f)) * (1 - 0.2f * (1 - state.bloodPumping)) * (1 - 0.2f * (1 - state.breathing)) * (1 - 0.1f * (1 - state.bloodFiltration))) + consciounessOffset;
 
-            if (bloodLoss >= 0.6f)
+            if (state.bloodLoss >= 0.6f)
             {
-                consciousness -= 0.4f;
+                state.consciousness -= 0.4f;
 
-                forceUnconsciousness = true;
+                state.forceUnconsciousness = true;
             }
-            else if (bloodLoss >= 0.45f)
+            else if (state.bloodLoss >= 0.45f)
             {
-                consciousness -= 0.4f;
+                state.consciousness -= 0.4f;
             }
-            else if (bloodLoss >= 0.3f)
+            else if (state.bloodLoss >= 0.3f)
             {
-                consciousness -= 0.2f;
+                state.consciousness -= 0.2f;
             }
-            else if (bloodLoss >= 0.15f)
+            else if (state.bloodLoss >= 0.15f)
             {
-                consciousness -= 0.1f;
-            }
-
-            if (forceUnconsciousness)
-            {
-                consciousness = Mathf.Min(consciousness, 0.1f);
+                state.consciousness -= 0.1f;
             }
 
-            consciousness = Mathf.Max(consciousness, 0);
+            if (state.forceUnconsciousness)
+            {
+                state.consciousness = Mathf.Min(state.consciousness, 0.1f);
+            }
 
-            if (digestionBP.Count > 0)
+            state.consciousness = Mathf.Max(state.consciousness, 0);
+
+            if (state.digestionBP.Count > 0)
             {
                 float baseEfficiency = 0;
-                float offsets = digestion;
+                float offsets = state.digestion;
                 float postFactors = 1;
 
-                for (int i = 0; i < digestionBP.Count; i++)
+                for (int i = 0; i < state.digestionBP.Count; i++)
                 {
-                    baseEfficiency += ((digestionBP[i] is Stomach || digestionBP[i] is Liver) ? digestionBP[i].efficiency / 2 : digestionBP[i].efficiency) / (digestionBP.Count != 1 ? digestionBP.Count - 1 : digestionBP.Count);
+                    baseEfficiency += ((state.digestionBP[i] is Stomach || state.digestionBP[i] is Liver) ? state.digestionBP[i].efficiency / 2 : state.digestionBP[i].efficiency) / (state.digestionBP.Count != 1 ? state.digestionBP.Count - 1 : state.digestionBP.Count);
                 }
 
-                digestion = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
+                state.digestion = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
             }
             else
             {
-                digestion = 0;
+                state.digestion = 0;
             }
 
-            if (eatingBP.Count > 0)
+            if (state.eatingBP.Count > 0)
             {
                 float baseEfficiency = 0;
-                float offsets = eating;
+                float offsets = state.eating;
                 float postFactors = 1;
 
-                for (int i = 0; i < eatingBP.Count; i++)
+                for (int i = 0; i < state.eatingBP.Count; i++)
                 {
-                    baseEfficiency += eatingBP[i].efficiency / eatingBP.Count;
+                    baseEfficiency += state.eatingBP[i].efficiency / state.eatingBP.Count;
                 }
 
-                eating = Mathf.Max(0.1f, (baseEfficiency + offsets) * postFactors * consciousness);
+                state.eating = Mathf.Max(0.1f, ((baseEfficiency * state.consciousness) + offsets) * postFactors);
             }
             else
             {
-                eating = 0;
+                state.eating = 0;
             }
 
-            if (hearingBP.Count > 0)
+            if (state.hearingBP.Count > 0)
             {
                 float baseEfficiency = 0;
-                float offsets = hearing;
+                float offsets = state.hearing;
                 float postFactors = 1;
 
-                if (hearingBP.Count == 1)
+                if (state.hearingBP.Count == 1)
                 {
-                    baseEfficiency = hearingBP[0].efficiency;
+                    baseEfficiency = state.hearingBP[0].efficiency;
 
-                    hearing = (baseEfficiency + offsets) * postFactors;
+                    state.hearing = (baseEfficiency + offsets) * postFactors;
                 }
                 else
                 {
                     float bestEfficiency = 0;
 
-                    for (int i = 0; i < hearingBP.Count; i++)
+                    for (int i = 0; i < state.hearingBP.Count; i++)
                     {
-                        baseEfficiency += hearingBP[i].efficiency / (hearingBP.Count * 2);
+                        baseEfficiency += state.hearingBP[i].efficiency / (state.hearingBP.Count * 2);
 
-                        if (hearingBP[i].efficiency > bestEfficiency)
+                        if (state.hearingBP[i].efficiency > bestEfficiency)
                         {
-                            bestEfficiency = hearingBP[i].efficiency;
+                            bestEfficiency = state.hearingBP[i].efficiency;
                         }
                     }
 
                     baseEfficiency += bestEfficiency / 2;
 
-                    hearing = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
+                    state.hearing = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
                 }
             }
             else
             {
-                hearing = 0;
+                state.hearing = 0;
             }
 
-            if ((armSetNames.Count + manipulationBP.Count) > 0)
+            if ((state.armSetNames.Count + state.manipulationBP.Count) > 0)
             {
                 float baseEfficiency = 0;
-                float offsets = manipulation;
+                float offsets = state.manipulation;
                 float postFactors = 1;
                 float otherEfficiency = 1;
 
-                for (int i = 0; i < manipulationBP.Count; i++)
+                for (int i = 0; i < state.manipulationBP.Count; i++)
                 {
-                    otherEfficiency *= manipulationBP[i].efficiency;
+                    otherEfficiency *= state.manipulationBP[i].efficiency;
                 }
 
-                for (int i = 0; i < armSetNames.Count; i++)
+                for (int i = 0; i < state.armSetNames.Count; i++)
                 {
-                    baseEfficiency += armSet[armSetNames[i]].Efficiency(this, offsets / armSetNames.Count, postFactors, otherEfficiency) / armSetNames.Count;
+                    baseEfficiency += state.armSet[state.armSetNames[i]].Efficiency(state, offsets / state.armSetNames.Count, postFactors, otherEfficiency) / state.armSetNames.Count;
                 }
 
-                manipulation = Mathf.Max(0, baseEfficiency);
+                state.manipulation = Mathf.Max(0, baseEfficiency);
             }
             else
             {
-                manipulation = 0;
+                state.manipulation = 0;
             }
 
-            if ((legSetNames.Count + movingBP.Count) > 0)
+            if ((state.legSetNames.Count + state.movingBP.Count) > 0)
             {
                 float baseEfficiency = 0;
-                float offsets = moving;
+                float offsets = state.moving;
                 float postFactors = 1;
                 float otherEfficiency = 1;
 
-                for (int i = 0; i < movingBP.Count; i++)
+                for (int i = 0; i < state.movingBP.Count; i++)
                 {
-                    otherEfficiency *= movingBP[i].efficiency;
+                    otherEfficiency *= state.movingBP[i].efficiency;
                 }
 
-                for (int i = 0; i < legSetNames.Count; i++)
+                for (int i = 0; i < state.legSetNames.Count; i++)
                 {
-                    baseEfficiency += legSet[legSetNames[i]].Efficiency(this, offsets / armSetNames.Count, postFactors, otherEfficiency) / legSetNames.Count;
+                    baseEfficiency += state.legSet[state.legSetNames[i]].Efficiency(state, offsets / state.armSetNames.Count, postFactors, otherEfficiency) / state.legSetNames.Count;
                 }
 
-                moving = moving = Mathf.Max(0, baseEfficiency);
+                state.moving = state.moving = Mathf.Max(0, baseEfficiency);
             }
             else
             {
-                moving = 0;
+                state.moving = 0;
             }
 
-            if (sightBP.Count > 0)
+            if (state.sightBP.Count > 0)
             {
                 float baseEfficiency = 0;
-                float offsets = sight;
+                float offsets = state.sight;
                 float postFactors = 1;
 
-                if (sightBP.Count == 1)
+                if (state.sightBP.Count == 1)
                 {
-                    baseEfficiency = sightBP[0].efficiency;
+                    baseEfficiency = state.sightBP[0].efficiency;
 
-                    sight = (baseEfficiency + offsets) * postFactors;
+                    state.sight = (baseEfficiency + offsets) * postFactors;
                 }
                 else
                 {
                     float bestEfficiency = 0;
 
-                    for (int i = 0; i < sightBP.Count; i++)
+                    for (int i = 0; i < state.sightBP.Count; i++)
                     {
-                        baseEfficiency += sightBP[i].efficiency / (sightBP.Count * 2);
+                        baseEfficiency += state.sightBP[i].efficiency / (state.sightBP.Count * 2);
 
-                        if (sightBP[i].efficiency > bestEfficiency)
+                        if (state.sightBP[i].efficiency > bestEfficiency)
                         {
-                            bestEfficiency = sightBP[i].efficiency;
+                            bestEfficiency = state.sightBP[i].efficiency;
                         }
                     }
 
                     baseEfficiency += bestEfficiency / 2;
 
-                    sight = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
+                    state.sight = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
                 }
             }
             else
             {
-                sight = 0;
+                state.sight = 0;
             }
 
-            if (talkingBP.Count > 0)
+            if (state.talkingBP.Count > 0)
             {
                 float baseEfficiency = 0;
-                float offsets = talking;
+                float offsets = state.talking;
                 float postFactors = 1;
 
-                for (int i = 0; i < talkingBP.Count; i++)
+                for (int i = 0; i < state.talkingBP.Count; i++)
                 {
-                    baseEfficiency += talkingBP[i].efficiency / talkingBP.Count;
+                    baseEfficiency += state.talkingBP[i].efficiency / state.talkingBP.Count;
                 }
 
-                talking = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
+                state.talking = Mathf.Max(0, ((baseEfficiency * state.consciousness) + offsets) * postFactors);
             }
             else
             {
-                talking = 0;
+                state.talking = 0;
             }
 
             void Disease(RWDisease disease)
             {
                 if (disease is RWFlu)
                 {
-                    capacityAffectingAffliction.Add(disease);
+                    state.capacityAffectingAffliction.Add(disease);
 
                     if (disease.severity <= 0.665f)
                     {
-                        consciousness -= 0.05f;
-                        manipulation -= 0.05f;
-                        breathing -= 0.1f;
+                        state.consciousness -= 0.05f;
+                        state.manipulation -= 0.05f;
+                        state.breathing -= 0.1f;
                     }
                     else if (disease.severity <= 0.832f)
                     {
-                        consciousness -= 0.1f;
-                        manipulation -= 0.1f;
-                        breathing -= 0.15f;
+                        state.consciousness -= 0.1f;
+                        state.manipulation -= 0.1f;
+                        state.breathing -= 0.15f;
                     }
                     else
                     {
-                        pain += 0.05f;
+                        state.pain += 0.05f;
 
-                        consciousness -= 0.15f;
-                        manipulation -= 0.2f;
-                        breathing -= 0.2f;
+                        state.consciousness -= 0.15f;
+                        state.manipulation -= 0.2f;
+                        state.breathing -= 0.2f;
                     }
                 }
                 else if (disease is RWInfection)
                 {
                     if (disease.severity <= 0.32f)
                     {
-                        pain += 0.05f;
+                        state.pain += 0.05f;
                     }
                     else if (disease.severity <= 0.77f)
                     {
-                        pain += 0.08f;
+                        state.pain += 0.08f;
                     }
                     else if (disease.severity <= 0.86f)
                     {
-                        pain += 0.12f;
+                        state.pain += 0.12f;
 
-                        consciousness -= 0.5f;
+                        state.consciousness -= 0.5f;
 
-                        capacityAffectingAffliction.Add(disease);
+                        state.capacityAffectingAffliction.Add(disease);
                     }
                     else
                     {
-                        forceUnconsciousness = true;
+                        state.forceUnconsciousness = true;
 
-                        pain += 0.85f;
+                        state.pain += 0.85f;
 
-                        breathing -= 0.5f;
+                        state.breathing -= 0.5f;
 
-                        capacityAffectingAffliction.Add(disease);
+                        state.capacityAffectingAffliction.Add(disease);
                     }
                 }
             }
@@ -1125,11 +1099,11 @@ public class RWPlayerHealthState : PlayerState
 
         bool updateBloodLoss()
         {
-            return bloodLoss >= 0.6f && prevbloodLoss < 0.6f || bloodLoss < 0.6f && prevbloodLoss >= 0.6f || bloodLoss >= 0.45f && prevbloodLoss < 0.45f || bloodLoss < 0.45f && prevbloodLoss >= 0.45f || bloodLoss >= 0.3f && prevbloodLoss < 0.3f || bloodLoss < 0.3f && prevbloodLoss >= 0.3f || bloodLoss >= 0.15f && prevbloodLoss < 0.15f || bloodLoss < 0.15f && prevbloodLoss >= 0.15f;
+            return state.bloodLoss >= 0.6f && prevbloodLoss < 0.6f || state.bloodLoss < 0.6f && prevbloodLoss >= 0.6f || state.bloodLoss >= 0.45f && prevbloodLoss < 0.45f || state.bloodLoss < 0.45f && prevbloodLoss >= 0.45f || state.bloodLoss >= 0.3f && prevbloodLoss < 0.3f || state.bloodLoss < 0.3f && prevbloodLoss >= 0.3f || state.bloodLoss >= 0.15f && prevbloodLoss < 0.15f || state.bloodLoss < 0.15f && prevbloodLoss >= 0.15f;
         }
     }
 
-    public void Damage(RWDamageType damageType, float damage, RWBodyPart bodyPart, string attackName = "", string attackerName = "")
+    public static void Damage(CreatureState self, RWState state, RWDamageType damageType, float damage, RWBodyPart bodyPart, string attackName = "", string attackerName = "")
     {
         RWBodyPart focusedBodyPart = bodyPart;
 
@@ -1160,7 +1134,7 @@ public class RWPlayerHealthState : PlayerState
             focusedBodyPart.health = health;
         }
 
-        updateCapacities = true;
+        state.updateCapacities = true;
 
         if (damageType.armourCategory == "Blunt")
         {
@@ -1173,11 +1147,11 @@ public class RWPlayerHealthState : PlayerState
 
             if (focusedBodyPart.isInternal && focusedBodyPart.subPartOf != "")
             {
-                for (int i = 0; i < bodyParts.Count; i++)
+                for (int i = 0; i < state.bodyParts.Count; i++)
                 {
-                    if (IsSubPartName(focusedBodyPart, bodyParts[i]))
+                    if (IsSubPartName(focusedBodyPart, state.bodyParts[i]))
                     {
-                        focusedBodyPart = bodyParts[i];
+                        focusedBodyPart = state.bodyParts[i];
 
                         health = focusedBodyPart.health;
                         health -= damage + extraDamage;
@@ -1202,7 +1176,7 @@ public class RWPlayerHealthState : PlayerState
                             focusedBodyPart.health = health;
                         }
 
-                        updateCapacities = true;
+                        state.updateCapacities = true;
 
                         bodypartHit = true;
 
@@ -1212,11 +1186,11 @@ public class RWPlayerHealthState : PlayerState
             }
             else if (extraDamage > 0 && damageType is RWBomb && BombDestroyBodyparts())
             {
-                for (int i = 0; i < bodyParts.Count; i++)
+                for (int i = 0; i < state.bodyParts.Count; i++)
                 {
-                    if (IsSubPartName(focusedBodyPart, bodyParts[i]))
+                    if (IsSubPartName(focusedBodyPart, state.bodyParts[i]))
                     {
-                        focusedBodyPart = bodyParts[i];
+                        focusedBodyPart = state.bodyParts[i];
 
                         health = focusedBodyPart.health;
                         health -= damage + extraDamage;
@@ -1241,7 +1215,7 @@ public class RWPlayerHealthState : PlayerState
                             focusedBodyPart.health = health;
                         }
 
-                        updateCapacities = true;
+                        state.updateCapacities = true;
 
                         bodypartHit = true;
 
@@ -1251,11 +1225,11 @@ public class RWPlayerHealthState : PlayerState
             }
             else if (extraDamage > 0 && damageType is RWSuperBomb)
             {
-                for (int i = 0; i < bodyParts.Count; i++)
+                for (int i = 0; i < state.bodyParts.Count; i++)
                 {
-                    if (IsSubPartName(focusedBodyPart, bodyParts[i]))
+                    if (IsSubPartName(focusedBodyPart, state.bodyParts[i]))
                     {
-                        focusedBodyPart = bodyParts[i];
+                        focusedBodyPart = state.bodyParts[i];
 
                         health = focusedBodyPart.health;
                         health -= damage + extraDamage;
@@ -1280,7 +1254,7 @@ public class RWPlayerHealthState : PlayerState
                             focusedBodyPart.health = health;
                         }
 
-                        updateCapacities = true;
+                        state.updateCapacities = true;
 
                         bodypartHit = true;
 
@@ -1319,20 +1293,20 @@ public class RWPlayerHealthState : PlayerState
                 {
                     bool newBodyParts = false;
 
-                    for (int i = 0; i < bodyParts.Count; i++)
+                    for (int i = 0; i < state.bodyParts.Count; i++)
                     {
                         for (int j = 0; j < subParts.Count; j++)
                         {
-                            if (!subParts.Contains(bodyParts[i]) && !subPartsRestricted.Contains(bodyParts[i]) && IsSubPartName(bodyParts[i], subParts[j]))
+                            if (!subParts.Contains(state.bodyParts[i]) && !subPartsRestricted.Contains(state.bodyParts[i]) && IsSubPartName(state.bodyParts[i], subParts[j]))
                             {
                                 if (subParts[j].afflictions.Count == 1 && subParts[j].afflictions[0] is RWDestroyed || subParts[j].deathEffect == "")
                                 {
-                                    subPartsRestricted.Add(bodyParts[i]);
+                                    subPartsRestricted.Add(state.bodyParts[i]);
                                     continue;
                                 }
 
                                 newBodyParts = true;
-                                subParts.Add(bodyParts[i]);
+                                subParts.Add(state.bodyParts[i]);
                             }
                         }
 
@@ -1347,7 +1321,7 @@ public class RWPlayerHealthState : PlayerState
                 for (int j = 0; j < subParts.Count; j++)
                 {
                     subParts[j].afflictions.Clear();
-                    subParts[j].afflictions.Add(new RWDestroyed(this, subParts[j], 0f, damageType, attackName, attackerName));
+                    subParts[j].afflictions.Add(new RWDestroyed(self, subParts[j], 0f, damageType, attackName, attackerName));
                 }
             }
         }
@@ -1374,7 +1348,7 @@ public class RWPlayerHealthState : PlayerState
         {
             if (damageType.headiffs.Count >= 2 && damageType.headiffs[2] == "Bruise" && !focusedBodyPart.isSolid && !focusedBodyPart.isInternal || damageType.armourCategory == "Blunt" && focusedBodyPart is RWOrgan && !focusedBodyPart.isDelicate)
             {
-                return new(this, focusedBodyPart, damage, damageType, attackName, attackerName);
+                return new(self, focusedBodyPart, damage, damageType, attackName, attackerName);
             } //bruises never scar
 
             float oddsOfScarring;
@@ -1387,26 +1361,17 @@ public class RWPlayerHealthState : PlayerState
             {
                 oddsOfScarring = 50f * Mathf.Clamp((damage - 1) / 5, 0, 1);
             }
-            else if(focusedBodyPart.isSolid)
-            {
-                oddsOfScarring = 1f * Mathf.Clamp((damage - 4) / 10, 0, 1);
-            }
             else
             {
-                oddsOfScarring = 2f * Mathf.Clamp((damage - 4) / 10, 0, 1);
+                oddsOfScarring = (focusedBodyPart.isSolid ? 1f : 2f) * Mathf.Clamp((damage - 4) / 10, 0, 1);
             }
 
             if ((Random.value * 100) >= oddsOfScarring)
             {
-                return new(this, focusedBodyPart, damage, damageType, attackName, attackerName);
+                return new(self, focusedBodyPart, damage, damageType, attackName, attackerName);
             }
 
-            if (damage < 1)
-            {
-                damage = 1;
-            }
-
-            RWScar scar = new(this, focusedBodyPart, damage, damageType, attackName, attackerName);
+            RWScar scar = new(self, focusedBodyPart, damage, damageType, attackName, attackerName);
 
             float pain = Random.value;
 
@@ -1455,7 +1420,7 @@ public class RWPlayerHealthState : PlayerState
         }
     }
 
-    public int BloodLossMultiplier(RWBodyPart part)
+    public static int BloodLossMultiplier(RWBodyPart part)
     {
         int multiplier = 1;
 
@@ -1470,58 +1435,4 @@ public class RWPlayerHealthState : PlayerState
 
         return multiplier;
     }
-
-    public List<RWBodyPart> bodyParts = new();
-
-    public List<RWAffliction> wholeBodyAfflictions = new();
-
-    public RWBodyPart consciousnessSource = null;
-
-    public readonly List<string> armSetNames = new();
-    public readonly Dictionary<string, ArmSet> armSet = new();
-    public readonly List<string> legSetNames = new();
-    public readonly Dictionary<string, LegSet> legSet = new();
-
-    public readonly List<RWBodyPart> bloodFiltrationBP = new();
-    public readonly List<RWBodyPart> bloodPumpingBP = new();
-    public readonly List<RWBodyPart> breathingBP = new();
-    public readonly List<RWBodyPart> digestionBP = new();
-    public readonly List<RWBodyPart> eatingBP = new();
-    public readonly List<RWBodyPart> hearingBP = new();
-    public readonly List<RWBodyPart> manipulationBP = new();
-    public readonly List<RWBodyPart> movingBP = new();
-    public readonly List<RWBodyPart> sightBP = new();
-    public readonly List<RWBodyPart> talkingBP = new();
-
-    public readonly List<RWAffliction> capacityAffectingAffliction = new();
-
-    public float maxHealth;
-
-    public float bodySizeFactor = 1;
-
-    public float bloodLoss = 0;
-    public float bloodLossPerCycle = 0;
-
-    public float pain = 0;
-
-    public float consciousness = 1;
-    public float moving = 1;
-    public float manipulation = 1;
-    public float talking = 1;
-    public float eating = 1;
-    public float sight = 1;
-    public float hearing = 1;
-    public float breathing = 1;
-    public float bloodFiltration = 1;
-    public float bloodPumping = 1;
-    public float digestion = 1;
-
-    public bool updateCapacities = false;
-
-    public float cycleLength = 13;
-
-    public bool forceUnconsciousness = false;
-
-    const int healingRateTics = 600;
-    int healingRate = healingRateTics;
 }

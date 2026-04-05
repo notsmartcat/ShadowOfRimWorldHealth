@@ -19,7 +19,7 @@ internal class SlugcatHooks
     {
         orig(self, sLeaser, rCam, timeStacker, camPos);
 
-        if (self.player.State is RWPlayerHealthState state && !ArmCheck(state) && JawCheck(state) && self.player.grasps[0] != null)
+        if (!healthState.TryGetValue(self.player.State, out RWState state) && !ArmCheck(state) && JawCheck(state) && self.player.grasps[0] != null)
         {
             sLeaser.sprites[5].isVisible = false;
         }
@@ -27,7 +27,7 @@ internal class SlugcatHooks
 
     static void PlayerUpdate(On.Player.orig_Update orig, Player self, bool eu)
     {
-        if (self.State is not RWPlayerHealthState state)
+        if (!healthState.TryGetValue(self.State, out RWState state))
         {
             orig(self, eu);
             return;
@@ -70,7 +70,7 @@ internal class SlugcatHooks
     {
         orig(self, actuallyViewed, eu);
 
-        if (self.State is not RWPlayerHealthState state || self.grasps[0] == null || ArmCheck(state) || !JawCheck(state))
+        if (!healthState.TryGetValue(self.State, out RWState state) || self.grasps[0] == null || ArmCheck(state) || !JawCheck(state))
         {
             return;
         }
@@ -103,7 +103,7 @@ internal class SlugcatHooks
         }
     }
 
-    static bool JawCheck(RWPlayerHealthState state)
+    static bool JawCheck(RWState state)
     {
         for (int i = 0; i < state.bodyParts.Count; i++)
         {

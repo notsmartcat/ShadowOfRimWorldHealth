@@ -2,7 +2,7 @@
 
 public class RWBone : RWBodyPart
 {
-    public RWBone(RWPlayerHealthState state) : base(state)
+    public RWBone(CreatureState state) : base(state)
     {
         isInternal = true;
         isSolid = true;
@@ -11,7 +11,7 @@ public class RWBone : RWBodyPart
 
 public class Skull : RWBone
 {
-    public Skull(RWPlayerHealthState state) : base(state)
+    public Skull(CreatureState state) : base(state)
     {
         name = "Skull";
 
@@ -32,7 +32,7 @@ public class Skull : RWBone
 
 public class Spine : RWBone
 {
-    public Spine(RWPlayerHealthState state) : base(state)
+    public Spine(CreatureState state) : base(state)
     {
         name = "Spine";
 
@@ -50,7 +50,7 @@ public class Spine : RWBone
 }
 public class Ribcage : RWBone
 {
-    public Ribcage(RWPlayerHealthState state) : base(state)
+    public Ribcage(CreatureState state) : base(state)
     {
         name = "Ribcage";
 
@@ -70,7 +70,7 @@ public class Ribcage : RWBone
 }
 public class Sternum : RWBone
 {
-    public Sternum(RWPlayerHealthState state) : base(state)
+    public Sternum(CreatureState state) : base(state)
     {
         name = "Sternum";
 
@@ -91,7 +91,7 @@ public class Sternum : RWBone
 
 public class Clavicle : RWBone
 {
-    public Clavicle(RWPlayerHealthState state) : base(state)
+    public Clavicle(CreatureState state) : base(state)
     {
         name = "Clavicle";
 
@@ -115,7 +115,7 @@ public class Clavicle : RWBone
 }
 public class Humerus : RWBone
 {
-    public Humerus(RWPlayerHealthState state) : base(state)
+    public Humerus(CreatureState state) : base(state)
     {
         name = "Humerus";
 
@@ -137,7 +137,7 @@ public class Humerus : RWBone
 }
 public class Radius : RWBone
 {
-    public Radius(RWPlayerHealthState state) : base(state)
+    public Radius(CreatureState state) : base(state)
     {
         name = "Radius";
 
@@ -160,7 +160,7 @@ public class Radius : RWBone
 
 public class Pelvis : RWBone
 {
-    public Pelvis(RWPlayerHealthState state) : base(state)
+    public Pelvis(CreatureState state) : base(state)
     {
         name = "Pelvis";
 
@@ -181,7 +181,7 @@ public class Pelvis : RWBone
 
 public class Femur : RWBone
 {
-    public Femur(RWPlayerHealthState state) : base(state)
+    public Femur(CreatureState state) : base(state)
     {
         name = "Femur";
 
@@ -203,7 +203,7 @@ public class Femur : RWBone
 }
 public class Tibia : RWBone
 {
-    public Tibia(RWPlayerHealthState state) : base(state)
+    public Tibia(CreatureState state) : base(state)
     {
         name = "Tibia";
 

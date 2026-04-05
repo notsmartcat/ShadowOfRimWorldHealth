@@ -4,12 +4,12 @@ namespace ShadowOfRimWorldHealth;
 
 public class RWBodyPart
 {
-    public RWBodyPart(RWPlayerHealthState state)
+    public RWBodyPart(CreatureState state)
     {
         this.state = state;
     }
 
-    public RWPlayerHealthState state;
+    public CreatureState state;
 
     //name is used for showing up in the Health Tab and for localization
     public string name = "Generic Body Part";
@@ -65,7 +65,7 @@ public class RWBodyPart
 
 public class UpperTorso : RWBodyPart
 {
-    public UpperTorso(RWPlayerHealthState state) : base(state)
+    public UpperTorso(CreatureState state) : base(state)
     {
         name = "Upper Torso";
 
@@ -81,7 +81,7 @@ public class UpperTorso : RWBodyPart
 }
 public class LowerTorso : RWBodyPart
 {
-    public LowerTorso(RWPlayerHealthState state) : base(state)
+    public LowerTorso(CreatureState state) : base(state)
     {
         name = "Lower Torso";
 
@@ -98,7 +98,7 @@ public class LowerTorso : RWBodyPart
 
 public class Neck : RWBodyPart
 {
-    public Neck(RWPlayerHealthState state) : base(state)
+    public Neck(CreatureState state) : base(state)
     {
         name = "Neck";
 
@@ -121,7 +121,7 @@ public class Neck : RWBodyPart
 }
 public class Head : RWBodyPart
 {
-    public Head(RWPlayerHealthState state) : base(state)
+    public Head(CreatureState state) : base(state)
     {
         name = "Head";
 
@@ -142,7 +142,7 @@ public class Head : RWBodyPart
 }
 public class Eye : RWBodyPart
 {
-    public Eye(RWPlayerHealthState state) : base(state)
+    public Eye(CreatureState state) : base(state)
     {
         name = "Eye";
 
@@ -167,7 +167,7 @@ public class Eye : RWBodyPart
 }
 public class Ear : RWBodyPart
 {
-    public Ear(RWPlayerHealthState state) : base(state)
+    public Ear(CreatureState state) : base(state)
     {
         name = "Ear";
 
@@ -190,7 +190,7 @@ public class Ear : RWBodyPart
 }
 public class Nose : RWBodyPart
 {
-    public Nose(RWPlayerHealthState state) : base(state)
+    public Nose(CreatureState state) : base(state)
     {
         name = "Nose";
 
@@ -208,7 +208,7 @@ public class Nose : RWBodyPart
 }
 public class Jaw : RWBodyPart
 {
-    public Jaw(RWPlayerHealthState state) : base(state)
+    public Jaw(CreatureState state) : base(state)
     {
         name = "Jaw";
 
@@ -230,7 +230,7 @@ public class Jaw : RWBodyPart
 }
 public class Tongue : RWBodyPart
 {
-    public Tongue(RWPlayerHealthState state) : base(state)
+    public Tongue(CreatureState state) : base(state)
     {
         name = "Jaw";
 
@@ -249,7 +249,7 @@ public class Tongue : RWBodyPart
 
 public class Shoulder : RWBodyPart
 {
-    public Shoulder(RWPlayerHealthState state) : base(state)
+    public Shoulder(CreatureState state) : base(state)
     {
         name = "Shoulder";
 
@@ -271,7 +271,7 @@ public class Shoulder : RWBodyPart
 }
 public class Arm : RWBodyPart
 {
-    public Arm(RWPlayerHealthState state) : base(state)
+    public Arm(CreatureState state) : base(state)
     {
         name = "Arm";
 
@@ -295,7 +295,7 @@ public class Arm : RWBodyPart
 }
 public class Hand : RWBodyPart
 {
-    public Hand(RWPlayerHealthState state) : base(state)
+    public Hand(CreatureState state) : base(state)
     {
         name = "Hand";
 
@@ -319,7 +319,7 @@ public class Hand : RWBodyPart
 }
 public class Finger : RWBodyPart
 {
-    public Finger(RWPlayerHealthState state) : base(state)
+    public Finger(CreatureState state) : base(state)
     {
         name = "Finger";
 
@@ -344,7 +344,7 @@ public class Finger : RWBodyPart
 
 public class Leg : RWBodyPart
 {
-    public Leg(RWPlayerHealthState state) : base(state)
+    public Leg(CreatureState state) : base(state)
     {
         name = "Leg";
 
@@ -366,7 +366,7 @@ public class Leg : RWBodyPart
 }
 public class Foot : RWBodyPart
 {
-    public Foot(RWPlayerHealthState state) : base(state)
+    public Foot(CreatureState state) : base(state)
     {
         name = "Foot";
 
@@ -390,7 +390,7 @@ public class Foot : RWBodyPart
 }
 public class Toe : RWBodyPart
 {
-    public Toe(RWPlayerHealthState state) : base(state)
+    public Toe(CreatureState state) : base(state)
     {
         name = "Toe";
 
@@ -415,7 +415,7 @@ public class Toe : RWBodyPart
 
 public class Tail : RWBodyPart
 {
-    public Tail(RWPlayerHealthState state) : base(state)
+    public Tail(CreatureState state) : base(state)
     {
         name = "Tail";
 

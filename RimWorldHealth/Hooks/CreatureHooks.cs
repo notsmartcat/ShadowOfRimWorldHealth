@@ -9,14 +9,61 @@ internal class CreatureHooks
 {
     public static void Apply()
     {
+        #region Saving and Loading
+        #region CreatureState
+        On.CreatureState.ctor += NewCreatureState;
+        On.CreatureState.LoadFromString += CreatureStateLoadFromString;
+        #endregion
+
+        #region SaveState
+        On.SaveState.AbstractCreatureToStringStoryWorld_AbstractCreature_WorldCoordinate += SaveStateSaveAbstractCreature;
+        #endregion
+        #endregion
+
         On.Creature.Violence += CreatureViolence;
     }
+
+    #region Saving and Loading
+    #region CreatureState
+    static void NewCreatureState(On.CreatureState.orig_ctor orig, CreatureState self, AbstractCreature creature)
+    {
+        orig(self, creature);
+
+        if (creature.creatureTemplate.type != CreatureTemplate.Type.Slugcat)
+        {
+            return;
+        }
+
+        if (!healthState.TryGetValue(self, out RWState state))
+        {
+            healthState.Add(self, new RWState());
+            healthState.TryGetValue(self, out state);
+        }
+
+        RWHealthState.NewRWHealthState(self, state);
+    }
+    static void CreatureStateLoadFromString(On.CreatureState.orig_LoadFromString orig, CreatureState self, string[] s)
+    {
+        orig(self, s);
+
+        if (!healthState.TryGetValue(self, out RWState _))
+        {
+            return;
+        }
+    }
+    #endregion
+
+    static string SaveStateSaveAbstractCreature(On.SaveState.orig_AbstractCreatureToStringStoryWorld_AbstractCreature_WorldCoordinate orig, AbstractCreature critter, WorldCoordinate pos)
+    {
+        return orig(critter, pos);
+    }
+    #endregion
 
     static void CreatureViolence(On.Creature.orig_Violence orig, Creature self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos hitAppendage, Creature.DamageType type, float damage, float stunBonus)
     {
         orig(self, source, directionAndMomentum, hitChunk, hitAppendage, type, damage, stunBonus);
 
-        if (type == Creature.DamageType.Explosion || self is not Player || hitChunk == null || self.State == null || self.State is not RWPlayerHealthState state)
+        if (type == Creature.DamageType.Explosion || self is not Player || hitChunk == null || self.State == null || !healthState.TryGetValue(self.State, out RWState state))
         {
             return;
         }
@@ -153,7 +200,7 @@ internal class CreatureHooks
                 damageType = new RWDamageType();
             }
 
-            state.Damage(damageType, damage, focusedBodyPart, attackName);
+            RWHealthState.Damage(self.State, state, damageType, damage, focusedBodyPart, attackName);
         }
 
         bool HitBodyPartCheck(RWBodyPart part)

@@ -2,14 +2,14 @@
 
 public class RWAffliction
 {
-    public RWAffliction(RWPlayerHealthState state,  RWBodyPart part)
+    public RWAffliction(CreatureState state,  RWBodyPart part)
     {
         this.state = state;
 
         this.part = part;
     }
 
-    public RWPlayerHealthState state;
+    public CreatureState state;
 
     public RWBodyPart part;
 
@@ -22,7 +22,7 @@ public class RWAffliction
 
 public class RWInjury : RWAffliction
 {
-    public RWInjury(RWPlayerHealthState state, RWBodyPart part, float damage, RWDamageType damageType, string attackName = "", string attackerName = "") : base(state, part)
+    public RWInjury(CreatureState state, RWBodyPart part, float damage, RWDamageType damageType, string attackName = "", string attackerName = "") : base(state, part)
     {
         this.damage = damage;
 
@@ -102,7 +102,7 @@ public class RWInjury : RWAffliction
 
 public class RWDisease : RWAffliction
 {
-    public RWDisease(RWPlayerHealthState state, RWBodyPart part) : base(state, part)
+    public RWDisease(CreatureState state, RWBodyPart part) : base(state, part)
     {
         InfectionLuck = UnityEngine.Random.Range(0.8f, 1.2f);
     }

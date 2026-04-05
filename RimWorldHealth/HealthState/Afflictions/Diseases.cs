@@ -2,7 +2,7 @@
 
 public class RWFlu : RWDisease
 {
-    public RWFlu(RWPlayerHealthState state, RWBodyPart part) : base(state, part)
+    public RWFlu(CreatureState state, RWBodyPart part) : base(state, part)
     {
         name = "Flu";
 
@@ -21,7 +21,7 @@ public class RWFlu : RWDisease
 
 public class RWInfection : RWDisease
 {
-    public RWInfection(RWPlayerHealthState state, RWBodyPart part) : base(state, part)
+    public RWInfection(CreatureState state, RWBodyPart part) : base(state, part)
     {
         name = "Infection";
 

@@ -2,7 +2,7 @@
 
 public class RWScar : RWInjury
 {
-    public RWScar(RWPlayerHealthState state, RWBodyPart part, float damage, RWDamageType damageType, string attackName = "", string attackerName = "") : base(state, part, damage, damageType, attackName, attackerName)
+    public RWScar(CreatureState state, RWBodyPart part, float damage, RWDamageType damageType, string attackName = "", string attackerName = "") : base(state, part, damage, damageType, attackName, attackerName)
     {
     }
 
@@ -16,7 +16,7 @@ public class RWScar : RWInjury
 }
 public class RWDestroyed : RWInjury
 {
-    public RWDestroyed(RWPlayerHealthState state, RWBodyPart part, float damage, RWDamageType damageType, string attackName = "", string attackerName = "") : base(state, part, damage, damageType, attackName, attackerName)
+    public RWDestroyed(CreatureState state, RWBodyPart part, float damage, RWDamageType damageType, string attackName = "", string attackerName = "") : base(state, part, damage, damageType, attackName, attackerName)
     {
         if (isBleeding && part is not RWOrgan && part is not RWBone)
         {
