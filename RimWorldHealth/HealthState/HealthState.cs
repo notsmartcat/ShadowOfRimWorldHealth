@@ -589,14 +589,14 @@ public class RWHealthState
 
             if (!disease.isImmune)
             {
-                disease.severity += disease.severityGain * disease.InfectionLuck / (40 * 60 * state.cycleLength);
+                disease.severity += disease.severityGain / (40 * 60 * state.cycleLength);
 
                 if (disease.isTended)
                 {
                     disease.severity -= disease.treatment * disease.tendQuality / (40 * 60 * state.cycleLength);
                 }
 
-                disease.immunity += disease.immunityGain / (40 * 60 * state.cycleLength);
+                disease.immunity += disease.immunityGain * disease.InfectionLuck * ImmunityGainSpeed(self, state) / (40 * 60 * state.cycleLength);
 
                 disease.timeUntilTreatment -= 1 / (40 * 60 * state.cycleLength);
 
@@ -1435,4 +1435,198 @@ public class RWHealthState
 
         return multiplier;
     }
+
+    #region Stats
+    static float ImmunityGainSpeed(CreatureState self, RWState state)
+    {
+        float value = (state.bloodFiltration / 2) + 0.5f;
+
+        float foodMultiplier;
+
+        if (self.creature.realizedCreature is Player player && player.Malnourished)
+        {
+            foodMultiplier = state.hasEaten ? 0.9f : 0.7f;
+        }
+        else
+        {
+            foodMultiplier = state.hasEaten ? 1f : 0.9f;
+        }
+
+        value *= foodMultiplier;
+
+        return value;
+    }
+
+    public static float EatingSpeed(RWState state)
+    {
+        float value = (1 + (state.eating - 1f) * 0.95f) * (1 + (state.manipulation - 1f) * 0.3f);
+
+        return Mathf.Max(0.15f, value);
+    }
+
+    #region Medical
+    public static float MedicalOperationSpeed(RWState state)
+    {
+        float value = (0.4f + (0.06f * state.medicalSkill)) * (1 + (state.manipulation - 1f)) * (1 + (state.sight - 1f) * 0.7f);
+
+        return value;
+    }
+    public static float MedicalSurgerySuccessChance(RWState state)
+    {
+        float value = 1;
+
+        switch (state.medicalSkill)
+        {
+            case 0:
+                value = 0.1f;
+                break;
+            case 1:
+                value = 0.2f;
+                break;
+            case 2:
+                value = 0.3f;
+                break;
+            case 3:
+                value = 0.4f;
+                break;
+            case 4:
+                value = 0.5f;
+                break;
+            case 5:
+                value = 0.6f;
+                break;
+            case 6:
+                value = 0.7f;
+                break;
+            case 7:
+                value = 0.75f;
+                break;
+            case 8:
+                value = 0.8f;
+                break;
+            case 9:
+                value = 0.85f;
+                break;
+            case 10:
+                value = 0.9f;
+                break;
+            case 11:
+                value = 0.92f;
+                break;
+            case 12:
+                value = 0.94f;
+                break;
+            case 13:
+                value = 0.96f;
+                break;
+            case 14:
+                value = 0.98f;
+                break;
+            case 15:
+                value = 1f;
+                break;
+            case 16:
+                value = 1.02f;
+                break;
+            case 17:
+                value = 1.04f;
+                break;
+            case 18:
+                value = 1.06f;
+                break;
+            case 19:
+                value = 1.08f;
+                break;
+            case 20:
+                value = 1.1f;
+                break;
+        }
+
+        value *= (1 + (state.manipulation - 1f)) * Mathf.Min(1, 1 + (state.sight - 1f) * 0.4f);
+
+        return value;
+    }
+    public static float MedicalTendQuality(RWState state)
+    {
+        float value = 1;
+
+        switch (state.medicalSkill)
+        {
+            case 0:
+                value = 0.2f;
+                break;
+            case 1:
+                value = 0.3f;
+                break;
+            case 2:
+                value = 0.4f;
+                break;
+            case 3:
+                value = 0.5f;
+                break;
+            case 4:
+                value = 0.6f;
+                break;
+            case 5:
+                value = 0.7f;
+                break;
+            case 6:
+                value = 0.8f;
+                break;
+            case 7:
+                value = 0.9f;
+                break;
+            case 8:
+                value = 1f;
+                break;
+            case 9:
+                value = 1.05f;
+                break;
+            case 10:
+                value = 1.1f;
+                break;
+            case 11:
+                value = 1.15f;
+                break;
+            case 12:
+                value = 1.2f;
+                break;
+            case 13:
+                value = 1.25f;
+                break;
+            case 14:
+                value = 1.3f;
+                break;
+            case 15:
+                value = 1.35f;
+                break;
+            case 16:
+                value = 1.4f;
+                break;
+            case 17:
+                value = 1.45f;
+                break;
+            case 18:
+                value = 1.5f;
+                break;
+            case 19:
+                value = 1.525f;
+                break;
+            case 20:
+                value = 1.55f;
+                break;
+        }
+
+        value *= Mathf.Min(1.4f, 1 + (state.manipulation - 1f)) * Mathf.Min(1.4f, 1 + (state.sight - 1f) * 0.7f);
+
+        return value;
+    }
+    public static float MedicalTendSpeed(RWState state)
+    {
+        float value = (0.4f + (0.06f * state.medicalSkill)) * (1 + (state.manipulation - 1f)) * Mathf.Min(1.3f, 1 + (state.sight - 1f) * 0.8f);
+
+        return value;
+    }
+    #endregion
+    #endregion
 }

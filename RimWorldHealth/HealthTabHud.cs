@@ -262,7 +262,7 @@ public class HealthTab : HudPart
             {
                 treatedAffliction.isTended = true;
                 treating = false;
-                treatedAffliction.tendQuality = Random.value;
+                treatedAffliction.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * (owner == creatureState.creature ? 0.7f : 1) * Random.Range(0.75f, 1.25f), 0, 0.7f);
 
                 if (treatedAffliction is RWInjury injury)
                 {
@@ -1480,7 +1480,7 @@ public class HealthTab : HudPart
                                 description += injury.healingDifficulty.treated;
                             }
 
-                            description += " (quality " + Mathf.Floor(injury.tendQuality) + "%)";
+                            description += " (quality " + Mathf.Floor(injury.tendQuality * 100) + "%)";
                         }
 
                         healthTabInfos[j].description.text = description;
@@ -1630,7 +1630,7 @@ public class HealthTab : HudPart
                                 description += injury.healingDifficulty.treated;
                             }
 
-                            description += " (quality " + Mathf.Floor(injury.tendQuality) + "%)";
+                            description += " (quality " + Mathf.Floor(injury.tendQuality * 100) + "%)";
                         }
 
                         healthTabInfos[1].description.text = description;

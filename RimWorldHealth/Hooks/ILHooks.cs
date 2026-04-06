@@ -14,7 +14,73 @@ internal class ILHooks
     public static void Apply()
     {
         IL.Explosion.Update += ILExplosionUpdate;
+
+        IL.Player.GrabUpdate += ILPlayerGrabUpdate;
     }
+
+    #region Player
+    static void ILPlayerGrabUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdcI4(15),
+                x => x.MatchStfld<Player>("eatCounter")
+            }))
+            {
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(GrabUpdateBite);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerGrabUpdate bite!");
+            }
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[2]
+            {
+                x => x.MatchLdfld<Player.InputPackage>("y"),
+                x => x.MatchBrtrue(out _)
+            }))
+            {
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit(OpCodes.Ldloc_0);
+                val.EmitDelegate(GrabUpdate);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerGrabUpdate!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+
+    public static void GrabUpdateBite(Player self)
+    {
+        if (!healthState.TryGetValue(self.State, out RWState state) || RWHealthState.EatingSpeed(state) >= 1)
+        {
+            return;
+        }
+
+        self.eatCounter = Mathf.FloorToInt(Mathf.Lerp(60, 15, RWHealthState.EatingSpeed(state)));
+    }
+
+    public static void GrabUpdate(Player self, bool flag2)
+    {
+        if (!healthState.TryGetValue(self.State, out RWState state) || RWHealthState.EatingSpeed(state) >= 1 || flag2 || self.eatCounter < 40)
+        {
+            return;
+        }
+
+        if (self.eatCounter < Mathf.FloorToInt(Mathf.Lerp(90, 40, RWHealthState.EatingSpeed(state))))
+        {
+            self.eatCounter++;
+        }
+    }
+    #endregion
 
     #region Explosion
     static void ILExplosionUpdate(ILContext il)

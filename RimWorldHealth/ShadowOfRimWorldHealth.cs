@@ -13,16 +13,39 @@ public class RimWorldHealth : BaseUnityPlugin
 {
     public class RWState
     {
+        public float maxHealth;
+        public float bodySizeFactor = 1;
+
         public List<RWBodyPart> bodyParts = new();
 
         public List<RWAffliction> wholeBodyAfflictions = new();
 
-        public RWBodyPart consciousnessSource = null;
+        public Brain consciousnessSource = null;
 
         public readonly List<string> armSetNames = new();
         public readonly Dictionary<string, ArmSet> armSet = new();
         public readonly List<string> legSetNames = new();
         public readonly Dictionary<string, LegSet> legSet = new();
+
+        public float bloodLoss = 0;
+        public float bloodLossPerCycle = 0;
+
+        public float pain = 0;
+
+        public bool forceUnconsciousness = false;
+
+        #region Capacities
+        public float consciousness = 1;
+        public float moving = 1;
+        public float manipulation = 1;
+        public float talking = 1;
+        public float eating = 1;
+        public float sight = 1;
+        public float hearing = 1;
+        public float breathing = 1;
+        public float bloodFiltration = 1;
+        public float bloodPumping = 1;
+        public float digestion = 1;
 
         public readonly List<RWBodyPart> bloodFiltrationBP = new();
         public readonly List<RWBodyPart> bloodPumpingBP = new();
@@ -37,35 +60,17 @@ public class RimWorldHealth : BaseUnityPlugin
 
         public readonly List<RWAffliction> capacityAffectingAffliction = new();
 
-        public float maxHealth;
-
-        public float bodySizeFactor = 1;
-
-        public float bloodLoss = 0;
-        public float bloodLossPerCycle = 0;
-
-        public float pain = 0;
-
-        public float consciousness = 1;
-        public float moving = 1;
-        public float manipulation = 1;
-        public float talking = 1;
-        public float eating = 1;
-        public float sight = 1;
-        public float hearing = 1;
-        public float breathing = 1;
-        public float bloodFiltration = 1;
-        public float bloodPumping = 1;
-        public float digestion = 1;
-
         public bool updateCapacities = false;
+        #endregion
 
         public float cycleLength = 13;
 
-        public bool forceUnconsciousness = false;
-
         public int healingRateTics = 600;
         public int healingRate = 600;
+
+        public bool hasEaten = false;
+
+        public int medicalSkill = 0;
     }
 
     public class OneTimeUseData
@@ -128,6 +133,11 @@ public class RimWorldHealth : BaseUnityPlugin
     {
         orig(self, hud, session, abstractPlayer);
 
+        if (!healthState.TryGetValue(abstractPlayer.state, out RWState state))
+        {
+            return;
+        }
+
         healthTab = new HealthTab(hud, abstractPlayer);
 
         self.hud.AddPart(healthTab);
@@ -136,6 +146,11 @@ public class RimWorldHealth : BaseUnityPlugin
     void HUDInitSinglePlayerHud(On.HUD.HUD.orig_InitSinglePlayerHud orig, HUD.HUD self, RoomCamera cam)
     {
         orig(self, cam);
+
+        if (!healthState.TryGetValue((self.owner as Creature).State, out RWState state))
+        {
+            return;
+        }
 
         healthTab = new HealthTab(self, (self.owner as Creature).abstractCreature);
 

@@ -9,10 +9,40 @@ internal class SlugcatHooks
 {
     public static void Apply()
     {
-        On.Player.Update += PlayerUpdate;
+        #region Player
+        On.Player.AddFood += PlayerAddFood;
+        On.Player.GrabUpdate += PlayerGrabUpdate;
         On.Player.GraphicsModuleUpdated += PlayerGraphicsModuleUpdated;
+        On.Player.Update += PlayerUpdate;
+        #endregion
 
+        #region PlayerGraphics
         On.PlayerGraphics.DrawSprites += PlayerGraphicsDrawSprites;
+        #endregion
+    }
+
+    static void PlayerGrabUpdate(On.Player.orig_GrabUpdate orig, Player self, bool eu)
+    {
+        orig(self, eu);
+
+        if (!healthState.TryGetValue(self.State, out RWState state))
+        {
+            return;
+        }
+
+        Debug.Log(self.eatCounter);
+    }
+
+    static void PlayerAddFood(On.Player.orig_AddFood orig, Player self, int add)
+    {
+        orig(self, add);
+
+        if (!healthState.TryGetValue(self.State, out RWState state))
+        {
+            return;
+        }
+
+        state.hasEaten = true;
     }
 
     static void PlayerGraphicsDrawSprites(On.PlayerGraphics.orig_DrawSprites orig, PlayerGraphics self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
