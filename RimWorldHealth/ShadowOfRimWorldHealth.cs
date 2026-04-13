@@ -1,5 +1,6 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
+using Mono.Cecil;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -13,7 +14,7 @@ public class RimWorldHealth : BaseUnityPlugin
 {
     public class RWState
     {
-        public float maxHealth;
+        public float maxHealth = 0;
         public float bodySizeFactor = 1;
 
         public List<RWBodyPart> bodyParts = new();
@@ -133,7 +134,7 @@ public class RimWorldHealth : BaseUnityPlugin
     {
         orig(self, hud, session, abstractPlayer);
 
-        if (!healthState.TryGetValue(abstractPlayer.state, out RWState state))
+        if (!healthState.TryGetValue(abstractPlayer.state, out RWState _))
         {
             return;
         }
@@ -147,7 +148,7 @@ public class RimWorldHealth : BaseUnityPlugin
     {
         orig(self, cam);
 
-        if (!healthState.TryGetValue((self.owner as Creature).State, out RWState state))
+        if (!healthState.TryGetValue((self.owner as Creature).State, out RWState _))
         {
             return;
         }
@@ -301,5 +302,357 @@ public class RimWorldHealth : BaseUnityPlugin
         }
 
         return workingArms > 0;
+    }
+
+    public static void BluntDamage(CreatureState self, RWState state, BodyChunk hitChunk, float damage, PhysicalObject source)
+    {
+        RWBodyPart focusedBodyPart = GetHitBodyPart(state, hitChunk, null, false, true);
+        RWBodyPart secondaryFocusedBodyPart = 0.4f < UnityEngine.Random.value ? GetHitBodyPart(state, hitChunk, focusedBodyPart) : null;
+
+        float extraDamage = 0;
+
+        if(damage < 0.8f)
+            damage = UnityEngine.Random.Range(0.8f, 1.2f);
+
+        if (focusedBodyPart != null)
+        {
+            float tempDamage = damage;
+            if (secondaryFocusedBodyPart != null)
+            {
+                tempDamage = damage * UnityEngine.Random.Range(0.8f, 0.9f);
+                extraDamage = damage - tempDamage;
+            }
+
+            Damage(focusedBodyPart, tempDamage);
+        }
+        if (secondaryFocusedBodyPart != null)
+        {
+            damage = (damage * UnityEngine.Random.Range(0.2f, 0.35f)) + extraDamage;
+
+            Damage(secondaryFocusedBodyPart, damage);
+        }
+
+        void Damage(RWBodyPart focusedBodyPart, float damage)
+        {
+            string attackName = "";
+
+            if (source != null)
+            {
+                attackName = source.ToString();
+            }
+
+            RWHealthState.Damage(self, state, new RWBlunt(), damage, focusedBodyPart, attackName);
+        }
+    }
+
+    public static void CutDamage(CreatureState self, RWState state, BodyChunk hitChunk, float damage, PhysicalObject source)
+    {
+        Debug.Log("CutDamage");
+
+        float additionalPartsRoll = UnityEngine.Random.value;
+        int additionalParts;
+
+        if (additionalPartsRoll <= 0.3f)
+        {
+            Debug.Log("CutDamage hit only 1 bodyPart");
+            Damage(GetHitBodyPart(state, hitChunk), damage);
+            return;
+        }
+        else if (additionalPartsRoll <= 0.75f)
+        {
+            Debug.Log("CutDamage hit 1 additional bodyPart");
+            additionalParts = 1;
+        }
+        else if (additionalPartsRoll <= 0.95f)
+        {
+            Debug.Log("CutDamage hit 2 additional bodyParts");
+            additionalParts = 2;
+        }
+        else
+        {
+            Debug.Log("CutDamage hit 3 additional bodyParts");
+            additionalParts = 3;
+        }
+
+        damage *= (1 + 1.4f) / (1 + additionalParts + 1.4f) * (1 + additionalPartsRoll);
+
+        RWBodyPart focusedBodyPart = GetHitBodyPart(state, hitChunk);
+        Debug.Log("CutDamage focusedBodyPart is " + focusedBodyPart);
+
+        List<RWBodyPart> list = new(1) { focusedBodyPart };
+
+        for (int i = 0; i < state.bodyParts.Count; i++)
+        {
+            if (IsDestroyed(state.bodyParts[i]) || list.Contains(state.bodyParts[i]))
+            {
+                continue;
+            }
+            else if (!IsSubPartName(state.bodyParts[i], focusedBodyPart))
+            {
+                continue;
+            }
+
+            Debug.Log("CutDamage focusedBodyParts subPart " + state.bodyParts[i] + " was added");
+            list.Add(state.bodyParts[i]);
+        } //Get all sub parts of the focusedBodypart
+
+        RWBodyPart tempFocusedpart = focusedBodyPart;
+
+        for (int i = 0; i < state.bodyParts.Count; i++)
+        {
+            if (IsDestroyed(state.bodyParts[i]) || list.Contains(state.bodyParts[i]))
+            {
+                continue;
+            }
+            else if (!IsSubPartName(focusedBodyPart, state.bodyParts[i]))
+            {
+                continue;
+            }
+
+            Debug.Log(focusedBodyPart + " parent is " + state.bodyParts[i]);
+
+            focusedBodyPart = state.bodyParts[i];
+            break;
+        } //get the focusedBodypart's parent
+
+        if (tempFocusedpart != focusedBodyPart)
+        {
+            for (int i = 0; i < state.bodyParts.Count; i++)
+            {
+                if (IsDestroyed(state.bodyParts[i]) || list.Contains(state.bodyParts[i]))
+                {
+                    continue;
+                }
+                else if (!IsSubPartName(state.bodyParts[i], focusedBodyPart))
+                {
+                    continue;
+                }
+
+                Debug.Log("CutDamage focusedBodyParts subPart " + state.bodyParts[i] + " was added");
+
+                list.Add(state.bodyParts[i]);
+            } //Get all sub parts of the focusedBodypart's parent
+
+            while (list.Count < 1 + additionalParts)
+            {
+                tempFocusedpart = focusedBodyPart;
+
+                for (int i = 0; i < state.bodyParts.Count; i++)
+                {
+                    if (IsDestroyed(state.bodyParts[i]) || list.Contains(state.bodyParts[i]))
+                    {
+                        continue;
+                    }
+                    else if (!IsSubPartName(focusedBodyPart, state.bodyParts[i]))
+                    {
+                        continue;
+                    }
+
+                    Debug.Log(focusedBodyPart + " parent is " + state.bodyParts[i]);
+
+                    focusedBodyPart = state.bodyParts[i];
+                    break;
+                } //get the focusedBodypart's parent
+
+                if (tempFocusedpart == focusedBodyPart)
+                {
+                    break;
+                }
+
+                for (int i = 0; i < state.bodyParts.Count; i++)
+                {
+                    if (IsDestroyed(state.bodyParts[i]) || list.Contains(state.bodyParts[i]))
+                    {
+                        continue;
+                    }
+                    else if (!IsSubPartName(state.bodyParts[i], focusedBodyPart))
+                    {
+                        continue;
+                    }
+
+                    Debug.Log("CutDamage focusedBodyParts subPart " + state.bodyParts[i] + " was added");
+
+                    list.Add(state.bodyParts[i]);
+                } //Get all sub parts of the focusedBodypart's parent
+            }
+        }
+
+        for (int i = 0; i < 1 + additionalParts; i++)
+        {
+            if (list.Count < i - 1 + additionalParts)
+            {
+                Debug.Log("CutDamage had less bodyparts stored then hit parts, list count = " + list.Count);
+                Damage(list[UnityEngine.Random.Range(0, list.Count)], damage / (1 + additionalParts));
+            }
+            else
+            {
+                int listInt = UnityEngine.Random.Range(0, list.Count);
+
+                Damage(list[listInt], damage / (1 + additionalParts));
+                Debug.Log("CutDamage hit part is " + list[listInt]);
+                list.RemoveAt(listInt);
+            }
+        }
+
+        void Damage(RWBodyPart focusedBodyPart, float damage)
+        {
+            string attackName = "";
+
+            if (source != null)
+            {
+                attackName = source.ToString();
+            }
+
+            RWHealthState.Damage(self, state, new RWCut(), damage, focusedBodyPart, attackName);
+        }
+    }
+
+    public static void ScratchDamage(CreatureState self, RWState state, BodyChunk hitChunk, float damage, PhysicalObject source)
+    {
+        RWBodyPart focusedBodyPart = GetHitBodyPart(state, hitChunk);
+        Debug.Log("ScratchDamage focusedBodyPart is " + focusedBodyPart);
+
+        List<RWBodyPart> list = new(1) { focusedBodyPart };
+
+        for (int i = 0; i < state.bodyParts.Count; i++)
+        {
+            if (IsDestroyed(state.bodyParts[i]) || list.Contains(state.bodyParts[i]))
+            {
+                continue;
+            }
+            else if (!IsSubPartName(state.bodyParts[i], focusedBodyPart))
+            {
+                continue;
+            }
+
+            Debug.Log("CutDamage focusedBodyParts subPart " + state.bodyParts[i] + " was added");
+            list.Add(state.bodyParts[i]);
+        } //Get all sub parts of the focusedBodypart
+
+        RWBodyPart tempFocusedpart = focusedBodyPart;
+
+        for (int i = 0; i < state.bodyParts.Count; i++)
+        {
+            if (IsDestroyed(state.bodyParts[i]) || list.Contains(state.bodyParts[i]))
+            {
+                continue;
+            }
+            else if (!IsSubPartName(focusedBodyPart, state.bodyParts[i]))
+            {
+                continue;
+            }
+
+            Debug.Log(focusedBodyPart + " parent is " + state.bodyParts[i]);
+
+            focusedBodyPart = state.bodyParts[i];
+            break;
+        } //get the focusedBodypart's parent
+
+        if (tempFocusedpart != focusedBodyPart)
+        {
+            for (int i = 0; i < state.bodyParts.Count; i++)
+            {
+                if (IsDestroyed(state.bodyParts[i]) || list.Contains(state.bodyParts[i]))
+                {
+                    continue;
+                }
+                else if (!IsSubPartName(state.bodyParts[i], focusedBodyPart))
+                {
+                    continue;
+                }
+
+                Debug.Log("CutDamage focusedBodyParts subPart " + state.bodyParts[i] + " was added");
+
+                list.Add(state.bodyParts[i]);
+            } //Get all sub parts of the focusedBodypart's parent
+        }
+
+        int listInt = UnityEngine.Random.Range(0, list.Count);
+
+        Damage(list[listInt], damage * 0.67f);
+        Debug.Log("CutDamage hit part is " + list[listInt]);
+
+        listInt = UnityEngine.Random.Range(0, list.Count);
+
+        Damage(list[listInt], damage * 0.67f);
+        Debug.Log("CutDamage second hit part is " + list[listInt]);
+
+        void Damage(RWBodyPart focusedBodyPart, float damage)
+        {
+            string attackName = "";
+
+            if (source != null)
+            {
+                attackName = source.ToString();
+            }
+
+            RWHealthState.Damage(self, state, new RWScratch(), damage, focusedBodyPart, attackName);
+        }
+    }
+
+    public static RWBodyPart GetHitBodyPart(RWState state, BodyChunk hitChunk = null, RWBodyPart subPartOf = null, bool canHitInternal = false, bool isBlunt = false)
+    {
+        List<RWBodyPart> list = new();
+        RWBodyPart focusedBodyPart = null;
+
+        for (int i = 0; i < state.bodyParts.Count; i++)
+        {
+            if (IsDestroyed(state.bodyParts[i]))
+            {
+                continue;
+            }
+            else if (subPartOf == null)
+            {
+                if (hitChunk != null && !state.bodyParts[i].connectedBodyChunks.Contains(hitChunk.index) || hitChunk == null && state.bodyParts[i].connectedBodyChunks.Count == 0)
+                {
+                    continue;
+                }
+                else if (state.bodyParts[i].isInternal && (isBlunt || !canHitInternal))
+                {
+                    continue;
+                }
+                else if (isBlunt && state.bodyParts[i] is Eye)
+                {
+                    continue;
+                }
+            }
+            else if (subPartOf != null && !IsSubPartName(state.bodyParts[i], subPartOf))
+            {
+                continue;
+            }
+
+            list.Add(state.bodyParts[i]);
+        }
+
+        if (list.Count > 1)
+        {
+            float chance = 0;
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                chance += list[i].coverage;
+            }
+
+            float roll = UnityEngine.Random.Range(0f, chance);
+
+            chance = 0;
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                chance += list[i].coverage;
+
+                if (roll <= chance)
+                {
+                    focusedBodyPart = list[i];
+                    break;
+                }
+            }
+        }
+        else if (list.Count == 1)
+        {
+            focusedBodyPart = list[0];
+        }
+
+        return focusedBodyPart;
     }
 }

@@ -539,9 +539,9 @@ public class RWHealthState
             }
             else if (injury.damage <= 0)
             {
-                injury.healingDifficulty = null;
-                injury.part = null;
                 injury.part.afflictions.Remove(injury);
+                injury.healingDifficulty = null;
+                injury.part = null;   
             }
 
             state.updateCapacities = true;
@@ -1136,7 +1136,7 @@ public class RWHealthState
 
         state.updateCapacities = true;
 
-        if (damageType.armourCategory == "Blunt")
+        if (damageType is RWBlunt)
         {
             damage = 0;
         }
@@ -1145,7 +1145,7 @@ public class RWHealthState
         {
             bool bodypartHit = false;
 
-            if (focusedBodyPart.isInternal && focusedBodyPart.subPartOf != "")
+            if (focusedBodyPart.isInternal && focusedBodyPart.subPartOf != "" && (damageType is not RWCut || !focusedBodyPart.isSolid))
             {
                 for (int i = 0; i < state.bodyParts.Count; i++)
                 {

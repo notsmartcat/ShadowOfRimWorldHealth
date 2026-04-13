@@ -25,12 +25,10 @@ internal class SlugcatHooks
     {
         orig(self, eu);
 
-        if (!healthState.TryGetValue(self.State, out RWState state))
+        if (!healthState.TryGetValue(self.State, out RWState _))
         {
             return;
         }
-
-        Debug.Log(self.eatCounter);
     }
 
     static void PlayerAddFood(On.Player.orig_AddFood orig, Player self, int add)

@@ -72,6 +72,7 @@ public class RWInjury : RWAffliction
                 "Burn" => new RWHDBurn(),
                 "Crush" => new RWHDCrush(),
                 "Crack" => new RWHDCrack(),
+                "Cut" => new RWHDCut(),
                 "Surgical cut" => new RWHDSurgicalCut(),
                 "Scratch" => new RWHDScratch(),
                 "Bite" => new RWHDBite(),
@@ -80,8 +81,12 @@ public class RWInjury : RWAffliction
                 "Shredded" => new RWHDShredded(),
                 "Bruise" => new RWHDBruise(),
                 "Frostbite" => new RWHDFrostbite(),
-                _ => new RWHealingDifficulty(),
+                _ => null,
             };
+
+            //Space to add custom HealingDifficulties
+
+            healingDifficulty ??= new();
 
             return healingDifficulty;
         }
