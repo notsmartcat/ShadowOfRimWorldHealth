@@ -208,7 +208,7 @@ public class HealthTab : HudPart
 
                 selectedVertical += input.y > 0 ? -1 : 1;
 
-                int maxVertical = selectedHorizontal == 0 ? 12 : -1;
+                int maxVertical = selectedHorizontal == 0 ? !creatureState.dead ? 12 : 1 : -1;
 
                 if (maxVertical == -1)
                 {
@@ -253,7 +253,7 @@ public class HealthTab : HudPart
         {
             treatTime--;
 
-            if (treatedAffliction == null || treatedAffliction.isTended)
+            if (treatedAffliction == null || treatedAffliction.isTended || treatedAffliction.part == null && treatedAffliction is not RWDisease)
             {
                 treating = false;
                 treatedAffliction = null;
@@ -1430,61 +1430,64 @@ public class HealthTab : HudPart
 
                         string description = "";
 
-                        float bleeding = Mathf.Max(1f, Mathf.Round(injury.healingDifficulty.bleeding * injury.damage * state.bodySizeFactor * RWHealthState.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
-
-                        if (injury.isBleeding)
+                        if (!creatureState.dead)
                         {
-                            description += "  - Bleeding: ";
-                            description += bleeding.ToString();
-                            description += "%/c";
-                        }
+                            float bleeding = Mathf.Max(1f, Mathf.Round(injury.healingDifficulty.bleeding * injury.damage * state.bodySizeFactor * RWHealthState.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
 
-                        float pain = Mathf.Round(injury.damage * injury.healingDifficulty.pain / state.bodySizeFactor);
-
-                        if (injury.healingDifficulty.pain > 0 && pain > 0f)
-                        {
-                            if (description != "")
+                            if (injury.isBleeding)
                             {
-                                description += "\n";
+                                description += "  - Bleeding: ";
+                                description += bleeding.ToString();
+                                description += "%/c";
                             }
 
-                            description += "  - Pain: +";
-                            description += pain.ToString();
-                            description += "%";
-                        }
+                            float pain = Mathf.Round(injury.damage * injury.healingDifficulty.pain / state.bodySizeFactor);
 
-                        if (!injury.isTended)
-                        {
-                            if (description != "")
+                            if (injury.healingDifficulty.pain > 0 && pain > 0f)
                             {
-                                description += "\n";
-                                description += "\n";
+                                if (description != "")
+                                {
+                                    description += "\n";
+                                }
+
+                                description += "  - Pain: +";
+                                description += pain.ToString();
+                                description += "%";
                             }
 
-                            description += "Needs tending now";
-                        }
-                        else
-                        {
-                            if (description != "")
+                            if (!injury.isTended)
                             {
-                                description += "\n";
-                                description += "\n";
-                            }
+                                if (description != "")
+                                {
+                                    description += "\n";
+                                    description += "\n";
+                                }
 
-                            if (healthTabBodyParts[selectedBodyPart].bodyPart.isSolid)
-                            {
-                                description += injury.healingDifficulty.solidTreated;
-                            }
-                            else if (healthTabBodyParts[selectedBodyPart].bodyPart.isInternal)
-                            {
-                                description += injury.healingDifficulty.innerTreated;
+                                description += "Needs tending now";
                             }
                             else
                             {
-                                description += injury.healingDifficulty.treated;
-                            }
+                                if (description != "")
+                                {
+                                    description += "\n";
+                                    description += "\n";
+                                }
 
-                            description += " (quality " + (Mathf.Round(injury.tendQuality * 1000) / 10) + "%)";
+                                if (healthTabBodyParts[selectedBodyPart].bodyPart.isSolid)
+                                {
+                                    description += injury.healingDifficulty.solidTreated;
+                                }
+                                else if (healthTabBodyParts[selectedBodyPart].bodyPart.isInternal)
+                                {
+                                    description += injury.healingDifficulty.innerTreated;
+                                }
+                                else
+                                {
+                                    description += injury.healingDifficulty.treated;
+                                }
+
+                                description += " (quality " + (Mathf.Round(injury.tendQuality * 1000) / 10) + "%)";
+                            }
                         }
 
                         healthTabInfos[j].description.text = description;
@@ -1528,11 +1531,11 @@ public class HealthTab : HudPart
 
                         string description = "A body part is entirely missing.";
 
-                        if (!injury.isTended)
+                        if (!creatureState.dead && !injury.isTended)
                         {
                             description += "\n\n";
 
-                            float bleeding = Mathf.Max(1f, Mathf.Round(injury.healingDifficulty.bleeding * injury.damage * state.bodySizeFactor * RWHealthState.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
+                            float bleeding = Mathf.Max(1f, Mathf.Round(injury.healingDifficulty.bleeding * injury.part.maxHealth * 2 * state.bodySizeFactor * RWHealthState.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
 
                             if (injury.isBleeding)
                             {
@@ -1543,7 +1546,7 @@ public class HealthTab : HudPart
                                 description += "%/c";
                             }
 
-                            float pain = Mathf.Round(injury.damage * injury.healingDifficulty.pain / state.bodySizeFactor);
+                            float pain = Mathf.Round(injury.part.maxHealth * 2 * injury.healingDifficulty.pain / state.bodySizeFactor);
 
                             if (injury.healingDifficulty.pain > 0 && pain > 0f)
                             {
@@ -1589,7 +1592,7 @@ public class HealthTab : HudPart
 
                         string description = "";
 
-                        if (scar.painCategory != "")
+                        if (!creatureState.dead && scar.painCategory != "")
                         {
                             description = "  - Pain: +";
 
@@ -1618,65 +1621,68 @@ public class HealthTab : HudPart
 
                         string description = "";
 
-                        float bleeding = Mathf.Max(1f, Mathf.Round(injury.healingDifficulty.bleeding * injury.damage * state.bodySizeFactor * RWHealthState.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
-
-                        if (injury.isBleeding)
+                        if (!creatureState.dead)
                         {
-                            description += "  - Bleeding: ";
+                            float bleeding = Mathf.Max(1f, Mathf.Round(injury.healingDifficulty.bleeding * injury.damage * state.bodySizeFactor * RWHealthState.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
 
-                            description += bleeding.ToString();
-
-                            description += "%/c";
-                        }
-
-                        float pain = Mathf.Round(injury.damage * injury.healingDifficulty.pain / state.bodySizeFactor);
-
-                        if (injury.healingDifficulty.pain > 0 && pain > 0f)
-                        {
-                            if (description != "")
+                            if (injury.isBleeding)
                             {
-                                description += "\n";
+                                description += "  - Bleeding: ";
+
+                                description += bleeding.ToString();
+
+                                description += "%/c";
                             }
 
-                            description += "  - Pain: +";
+                            float pain = Mathf.Round(injury.damage * injury.healingDifficulty.pain / state.bodySizeFactor);
 
-                            description += pain.ToString();
-
-                            description += "%";
-                        }
-
-                        if (!injury.isTended)
-                        {
-                            if (description != "")
+                            if (injury.healingDifficulty.pain > 0 && pain > 0f)
                             {
-                                description += "\n";
-                                description += "\n";
+                                if (description != "")
+                                {
+                                    description += "\n";
+                                }
+
+                                description += "  - Pain: +";
+
+                                description += pain.ToString();
+
+                                description += "%";
                             }
 
-                            description += "Needs tending now";
-                        }
-                        else
-                        {
-                            if (description != "")
+                            if (!injury.isTended)
                             {
-                                description += "\n";
-                                description += "\n";
-                            }
+                                if (description != "")
+                                {
+                                    description += "\n";
+                                    description += "\n";
+                                }
 
-                            if (healthTabBodyParts[selectedBodyPart].bodyPart.isSolid)
-                            {
-                                description += injury.healingDifficulty.solidTreated;
-                            }
-                            else if (healthTabBodyParts[selectedBodyPart].bodyPart.isInternal)
-                            {
-                                description += injury.healingDifficulty.innerTreated;
+                                description += "Needs tending now";
                             }
                             else
                             {
-                                description += injury.healingDifficulty.treated;
-                            }
+                                if (description != "")
+                                {
+                                    description += "\n";
+                                    description += "\n";
+                                }
 
-                            description += " (quality " + (Mathf.Round(injury.tendQuality * 1000) / 10) + "%)";
+                                if (healthTabBodyParts[selectedBodyPart].bodyPart.isSolid)
+                                {
+                                    description += injury.healingDifficulty.solidTreated;
+                                }
+                                else if (healthTabBodyParts[selectedBodyPart].bodyPart.isInternal)
+                                {
+                                    description += injury.healingDifficulty.innerTreated;
+                                }
+                                else
+                                {
+                                    description += injury.healingDifficulty.treated;
+                                }
+
+                                description += " (quality " + (Mathf.Round(injury.tendQuality * 1000) / 10) + "%)";
+                            }
                         }
 
                         healthTabInfos[1].description.text = description;

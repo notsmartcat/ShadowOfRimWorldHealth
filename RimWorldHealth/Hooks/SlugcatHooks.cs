@@ -130,6 +130,13 @@ internal class SlugcatHooks
         }
         else
         {
+            if (state.armSet[state.armSetNames[0]].efficiency <= 0 && state.armSet[state.armSetNames[1]].efficiency > 0 && self.grasps[1] == null)
+            {
+                self.SwitchGrasps(0, 1);
+
+                return;
+            }
+
             for (int i = 0; i < state.armSetNames.Count; i++)
             {
                 if (state.armSet[state.armSetNames[i]].efficiency <= 0)
@@ -178,7 +185,6 @@ internal class SlugcatHooks
         }
     }
     #endregion
-
 
     static bool JawCheck(RWState state)
     {

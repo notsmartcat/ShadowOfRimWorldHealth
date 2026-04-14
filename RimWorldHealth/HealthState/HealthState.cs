@@ -1,5 +1,4 @@
-﻿using Incapacitation;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 using static ShadowOfRimWorldHealth.RimWorldHealth;
@@ -719,9 +718,9 @@ public class RWHealthState
 
                         if (!destroyed.isTended)
                         {
-                            state.bloodLossPerCycle += destroyed.isBleeding ? destroyed.healingDifficulty.bleeding * destroyed.damage * state.bodySizeFactor * BloodLossMultiplier(state.bodyParts[i]) : 0;
+                            state.bloodLossPerCycle += destroyed.isBleeding ? destroyed.healingDifficulty.bleeding * destroyed.part.maxHealth * 2 * state.bodySizeFactor * BloodLossMultiplier(state.bodyParts[i]) : 0;
 
-                            afflictionList[j].pain = destroyed.damage * destroyed.healingDifficulty.pain / state.bodySizeFactor / 100;
+                            afflictionList[j].pain = destroyed.part.maxHealth * 2 * destroyed.healingDifficulty.pain / state.bodySizeFactor / 100;
                         }
 
                         break;

@@ -204,7 +204,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 
                 for (int i = 0; i < state.bodyParts.Count; i++)
                 {
-                    if (state.bodyParts[i] is Leg part)
+                    if (state.bodyParts[i] is Arm part && part.subName == "Right")
                     {
                         RWHealthState.Damage(self.State, state, new RWPoke(), 999999f, part, "oopsie");
 

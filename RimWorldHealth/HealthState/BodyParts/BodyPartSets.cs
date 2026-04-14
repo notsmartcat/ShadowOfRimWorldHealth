@@ -34,68 +34,64 @@ public class ArmSet
     {
         string description = "";
 
-        string name;
-
-        if (shoulder != null && shoulder.efficiency < 1)
+        if (shoulder != null && shoulder.health < shoulder.maxHealth)
         {
-            name = shoulder.name;
-            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
+            description += SetDescription(shoulder);
 
-            description += "  " + shoulder.subName + " " + name + ": " + Mathf.Round(shoulder.health) + " / " + shoulder.maxHealth + "\n";
+            if (IsDestroyed(shoulder))
+            {
+                return description;
+            }
+        }
+        if (clavicle != null && clavicle.health < clavicle.maxHealth)
+        {
+            description += SetDescription(clavicle);
         }
 
-        if (clavicle != null && clavicle.efficiency < 1)
+        if (arm != null && arm.health < arm.maxHealth)
         {
-            name = clavicle.name;
-            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
+            description += SetDescription(arm);
 
-            description += "  " + clavicle.subName + " " + name + ": " + Mathf.Round(clavicle.health) + " / " + clavicle.maxHealth + "\n";
+            if (IsDestroyed(arm))
+            {
+                return description;
+            }
+        }
+        if (humerus != null && humerus.health < humerus.maxHealth)
+        {
+            description += SetDescription(humerus);
+        }
+        if (radius != null && radius.health < radius.maxHealth)
+        {
+            description += SetDescription(radius);
         }
 
-        if (arm != null && arm.efficiency < 1)
+        if (hand != null && hand.health < hand.maxHealth)
         {
-            name = arm.name;
-            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
+            description += SetDescription(hand);
 
-            description += "  " + arm.subName + " " + name + ": " + Mathf.Round(arm.health) + " / " + arm.maxHealth + "\n";
+            if (IsDestroyed(hand))
+            {
+                return description;
+            }
         }
-
-        if (humerus != null && humerus.efficiency < 1)
-        {
-            name = humerus.name;
-            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
-
-            description += "  " + humerus.subName + " " + name + ": " + Mathf.Round(humerus.health) + " / " + humerus.maxHealth + "\n";
-        }
-
-        if (hand != null && hand.efficiency < 1)
-        {
-            name = hand.name;
-            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
-
-            description += "  " + hand.subName + " " + name + ": " + Mathf.Round(hand.health) + " / " + hand.maxHealth + "\n";
-        }
-
-        if (radius != null && radius.efficiency < 1)
-        {
-            name = radius.name;
-            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
-
-            description += "  " + radius.subName + " " + name + ": " + Mathf.Round(radius.health) + " / " + radius.maxHealth + "\n";
-        }
-
         for (int i = 0; i < fingers.Count; i++)
         {
-            if (fingers[i].efficiency < 1)
+            if (fingers[i].health < fingers[i].maxHealth)
             {
-                name = fingers[i].name;
-                name = char.ToLowerInvariant(name[0]) + name.Substring(1);
-
-                description += "  " + fingers[i].subName + " " + name + ": " + Mathf.Round(fingers[i].health) + " / " + fingers[i].maxHealth + "\n";
+                description += SetDescription(fingers[i]);
             }
         }
 
         return description;
+
+        static string SetDescription(RWBodyPart part)
+        {
+            string name = part.name;
+            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
+
+            return "  " + part.subName + " " + name + ": " + Mathf.Round(part.health) + " / " + part.maxHealth + "\n";
+        }
     }
 
     public Shoulder shoulder;
@@ -139,52 +135,48 @@ public class LegSet
     {
         string description = "";
 
-        string name;
-
-        if (leg != null && leg.efficiency < 1)
+        if (leg != null && leg.health < leg.maxHealth)
         {
-            name = leg.name;
-            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
+            description += SetDescription(leg);
 
-            description += "  " + leg.subName + " " + name + ": " + Mathf.Round(leg.health) + " / " + leg.maxHealth + "\n";
+            if (IsDestroyed(leg))
+            {
+                return description;
+            }
+        }
+        if (femur != null && femur.health < femur.maxHealth)
+        {
+            description += SetDescription(femur);
+        }
+        if (tibia != null && tibia.health < tibia.maxHealth)
+        {
+            description += SetDescription(tibia);
         }
 
-        if (femur != null && femur.efficiency < 1)
+        if (foot != null && foot.health < foot.maxHealth)
         {
-            name = femur.name;
-            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
-
-            description += "  " + femur.subName + " " + name + ": " + Mathf.Round(femur.health) + " / " + femur.maxHealth + "\n";
+            if (IsDestroyed(foot))
+            {
+                return description;
+            }
         }
-
-        if (foot != null && foot.efficiency < 1)
-        {
-            name = foot.name;
-            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
-
-            description += "  " + foot.subName + " " + name + ": " + Mathf.Round(foot.health) + " / " + foot.maxHealth + "\n";
-        }
-
-        if (tibia != null && tibia.efficiency < 1)
-        {
-            name = tibia.name;
-            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
-
-            description += "  " + tibia.subName + " " + name + ": " + Mathf.Round(tibia.health) + " / " + tibia.maxHealth + "\n";
-        }
-
         for (int i = 0; i < toes.Count; i++)
         {
-            if (toes[i].efficiency < 1)
+            if (toes[i].health < toes[i].maxHealth)
             {
-                name = toes[i].name;
-                name = char.ToLowerInvariant(name[0]) + name.Substring(1);
-
-                description += "  " + toes[i].subName + " " + name + ": " + Mathf.Round(toes[i].health) + " / " + toes[i].maxHealth + "\n";
+                description += SetDescription(toes[i]);
             }
         }
 
         return description;
+
+        static string SetDescription(RWBodyPart part)
+        {
+            string name = part.name;
+            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
+
+            return "  " + part.subName + " " + name + ": " + Mathf.Round(part.health) + " / " + part.maxHealth + "\n";
+        }
     }
 
     public Leg leg;
