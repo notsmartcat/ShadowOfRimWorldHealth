@@ -133,3 +133,11 @@ public class RWDisease : RWAffliction
 
     public float InfectionLuck = 0; //Infection luck ranges from 0.8 to 1.2 and it multiplies the severity gained/lost
 }
+
+public class RWInformational : RWAffliction
+{
+    public RWInformational(CreatureState state, RWBodyPart part) : base(state, part)
+    {
+        isTended = true;
+    }
+} //Informational afflictions cannot be treated and serve simply to show information on the HealthTab, these affliction can affect capacities

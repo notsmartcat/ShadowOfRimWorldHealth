@@ -9,14 +9,21 @@ public class ArmSet
 {
     public float Efficiency(RWState state, float offsets = 0, float postFactors = 1, float otherEfficiency = 1)
     {
-        float fingerEfficiency = 0;
+        float fingerEfficiency = 1;
 
-        for (int i = 0; i < fingers.Count; i++)
+        if (fingers.Count != 0)
         {
-            fingerEfficiency += fingers[i].efficiency;
+            fingerEfficiency = 0;
+
+            for (int i = 0; i < fingers.Count; i++)
+            {
+                fingerEfficiency += fingers[i].efficiency;
+            }
+
+            fingerEfficiency = (fingerEfficiency * (0.8f / fingers.Count)) + 0.2f;
         }
 
-        efficiency = (arm != null ? arm.efficiency : 0) * (shoulder != null ? shoulder.efficiency : 0) * (clavicle != null ? clavicle.efficiency : 0) * (humerus != null ? humerus.efficiency : 0) * (radius != null ? radius.efficiency : 0) * (hand != null ? hand.efficiency : 0) * ((fingerEfficiency * (0.8f / fingers.Count)) + 0.2f) * otherEfficiency;
+        efficiency = (arm != null ? arm.efficiency : 1) * (shoulder != null ? shoulder.efficiency : 1) * (clavicle != null ? clavicle.efficiency : 1) * (humerus != null ? humerus.efficiency : 1) * (radius != null ? radius.efficiency : 1) * (hand != null ? hand.efficiency : 1) * fingerEfficiency * otherEfficiency;
 
         efficiency = ((state.consciousness * efficiency) + offsets) * postFactors;
 
@@ -34,7 +41,7 @@ public class ArmSet
             name = shoulder.name;
             name = char.ToLowerInvariant(name[0]) + name.Substring(1);
 
-            description += "  " + shoulder.subName + " " + name + ": " + Mathf.Floor(shoulder.health) + " / " + shoulder.maxHealth + "\n";
+            description += "  " + shoulder.subName + " " + name + ": " + Mathf.Round(shoulder.health) + " / " + shoulder.maxHealth + "\n";
         }
 
         if (clavicle != null && clavicle.efficiency < 1)
@@ -42,7 +49,7 @@ public class ArmSet
             name = clavicle.name;
             name = char.ToLowerInvariant(name[0]) + name.Substring(1);
 
-            description += "  " + clavicle.subName + " " + name + ": " + Mathf.Floor(clavicle.health) + " / " + clavicle.maxHealth + "\n";
+            description += "  " + clavicle.subName + " " + name + ": " + Mathf.Round(clavicle.health) + " / " + clavicle.maxHealth + "\n";
         }
 
         if (arm != null && arm.efficiency < 1)
@@ -50,7 +57,7 @@ public class ArmSet
             name = arm.name;
             name = char.ToLowerInvariant(name[0]) + name.Substring(1);
 
-            description += "  " + arm.subName + " " + name + ": " + Mathf.Floor(arm.health) + " / " + arm.maxHealth + "\n";
+            description += "  " + arm.subName + " " + name + ": " + Mathf.Round(arm.health) + " / " + arm.maxHealth + "\n";
         }
 
         if (humerus != null && humerus.efficiency < 1)
@@ -58,7 +65,7 @@ public class ArmSet
             name = humerus.name;
             name = char.ToLowerInvariant(name[0]) + name.Substring(1);
 
-            description += "  " + humerus.subName + " " + name + ": " + Mathf.Floor(humerus.health) + " / " + humerus.maxHealth + "\n";
+            description += "  " + humerus.subName + " " + name + ": " + Mathf.Round(humerus.health) + " / " + humerus.maxHealth + "\n";
         }
 
         if (hand != null && hand.efficiency < 1)
@@ -66,7 +73,7 @@ public class ArmSet
             name = hand.name;
             name = char.ToLowerInvariant(name[0]) + name.Substring(1);
 
-            description += "  " + hand.subName + " " + name + ": " + Mathf.Floor(hand.health) + " / " + hand.maxHealth + "\n";
+            description += "  " + hand.subName + " " + name + ": " + Mathf.Round(hand.health) + " / " + hand.maxHealth + "\n";
         }
 
         if (radius != null && radius.efficiency < 1)
@@ -74,7 +81,7 @@ public class ArmSet
             name = radius.name;
             name = char.ToLowerInvariant(name[0]) + name.Substring(1);
 
-            description += "  " + radius.subName + " " + name + ": " + Mathf.Floor(radius.health) + " / " + radius.maxHealth + "\n";
+            description += "  " + radius.subName + " " + name + ": " + Mathf.Round(radius.health) + " / " + radius.maxHealth + "\n";
         }
 
         for (int i = 0; i < fingers.Count; i++)
@@ -84,7 +91,7 @@ public class ArmSet
                 name = fingers[i].name;
                 name = char.ToLowerInvariant(name[0]) + name.Substring(1);
 
-                description += "  " + fingers[i].subName + " " + name + ": " + Mathf.Floor(fingers[i].health) + " / " + fingers[i].maxHealth + "\n";
+                description += "  " + fingers[i].subName + " " + name + ": " + Mathf.Round(fingers[i].health) + " / " + fingers[i].maxHealth + "\n";
             }
         }
 
@@ -107,14 +114,21 @@ public class LegSet
 {
     public float Efficiency(RWState state, float offsets = 0, float postFactors = 1, float otherEfficiency = 1)
     {
-        float toeEfficiency = 0;
+        float toeEfficiency = 1;
 
-        for (int i = 0; i < toes.Count; i++)
+        if (toes.Count != 0)
         {
-            toeEfficiency += toes[i].efficiency;
+            toeEfficiency = 0;
+
+            for (int i = 0; i < toes.Count; i++)
+            {
+                toeEfficiency += toes[i].efficiency;
+            }
+
+            toeEfficiency = (toeEfficiency * (0.4f / toes.Count)) + 0.6f;
         }
 
-        efficiency = (leg != null ? leg.efficiency : 0) * (tibia != null ? tibia.efficiency : 0) * (femur != null ? femur.efficiency : 0) * (foot != null ? foot.efficiency : 0) * ((toeEfficiency * (0.4f / toes.Count)) + 0.6f) * otherEfficiency;
+        efficiency = (leg != null ? leg.efficiency : 1) * (tibia != null ? tibia.efficiency : 1) * (femur != null ? femur.efficiency : 1) * (foot != null ? foot.efficiency : 1) * toeEfficiency * otherEfficiency;
 
         efficiency = ((Mathf.Min(1, state.consciousness) * (1 + (state.bloodPumping - 1f) * 0.2f) * (1f + (state.breathing - 1) * 0.2f) * efficiency) + offsets) * postFactors;
 
@@ -132,7 +146,7 @@ public class LegSet
             name = leg.name;
             name = char.ToLowerInvariant(name[0]) + name.Substring(1);
 
-            description += "  " + leg.subName + " " + name + ": " + Mathf.Floor(leg.health) + " / " + leg.maxHealth + "\n";
+            description += "  " + leg.subName + " " + name + ": " + Mathf.Round(leg.health) + " / " + leg.maxHealth + "\n";
         }
 
         if (femur != null && femur.efficiency < 1)
@@ -140,7 +154,7 @@ public class LegSet
             name = femur.name;
             name = char.ToLowerInvariant(name[0]) + name.Substring(1);
 
-            description += "  " + femur.subName + " " + name + ": " + Mathf.Floor(femur.health) + " / " + femur.maxHealth + "\n";
+            description += "  " + femur.subName + " " + name + ": " + Mathf.Round(femur.health) + " / " + femur.maxHealth + "\n";
         }
 
         if (foot != null && foot.efficiency < 1)
@@ -148,7 +162,7 @@ public class LegSet
             name = foot.name;
             name = char.ToLowerInvariant(name[0]) + name.Substring(1);
 
-            description += "  " + foot.subName + " " + name + ": " + Mathf.Floor(foot.health) + " / " + foot.maxHealth + "\n";
+            description += "  " + foot.subName + " " + name + ": " + Mathf.Round(foot.health) + " / " + foot.maxHealth + "\n";
         }
 
         if (tibia != null && tibia.efficiency < 1)
@@ -156,7 +170,7 @@ public class LegSet
             name = tibia.name;
             name = char.ToLowerInvariant(name[0]) + name.Substring(1);
 
-            description += "  " + tibia.subName + " " + name + ": " + Mathf.Floor(tibia.health) + " / " + tibia.maxHealth + "\n";
+            description += "  " + tibia.subName + " " + name + ": " + Mathf.Round(tibia.health) + " / " + tibia.maxHealth + "\n";
         }
 
         for (int i = 0; i < toes.Count; i++)
@@ -166,7 +180,7 @@ public class LegSet
                 name = toes[i].name;
                 name = char.ToLowerInvariant(name[0]) + name.Substring(1);
 
-                description += "  " + toes[i].subName + " " + name + ": " + Mathf.Floor(toes[i].health) + " / " + toes[i].maxHealth + "\n";
+                description += "  " + toes[i].subName + " " + name + ": " + Mathf.Round(toes[i].health) + " / " + toes[i].maxHealth + "\n";
             }
         }
 

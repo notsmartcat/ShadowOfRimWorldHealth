@@ -317,6 +317,7 @@ public class Hand : RWBodyPart
         capacity.Add("Manipulation");
     }
 }
+
 public class Finger : RWBodyPart
 {
     public Finger(CreatureState state) : base(state)

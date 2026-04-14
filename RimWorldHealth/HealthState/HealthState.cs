@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Incapacitation;
+using System.Collections.Generic;
 using UnityEngine;
 
 using static ShadowOfRimWorldHealth.RimWorldHealth;
@@ -11,52 +12,7 @@ public class RWHealthState
     {
         state.bodySizeFactor = 1;
 
-        List<RWBodyPart> bodyParts = new(33) {
-                new UpperTorso(self),
-                new LowerTorso(self),
-
-                new Neck(self),
-                new Head(self),
-                new Eye(self),
-                new Ear(self),
-                new Nose(self),
-                new Jaw(self),
-                new Tongue(self),
-
-                new Shoulder(self),
-                new Arm(self),
-                new Hand(self),
-                new Finger(self),
-
-                new Leg(self),
-                new Foot(self),
-                new Toe(self),
-
-                new Tail(self),
-
-                new Skull(self),
-
-                new Spine(self),
-                new Ribcage(self),
-                new Sternum(self),
-
-                new Clavicle(self),
-                new Humerus(self),
-                new Radius(self),
-
-                new Pelvis(self),
-
-                new Femur(self),
-                new Tibia(self),
-
-                new Brain(self),
-
-                new Stomach(self),
-                new Heart(self),
-                new Lung(self),
-                new Kidney(self),
-                new Liver(self),
-            };
+        List<RWBodyPart> bodyParts = BodyPartSet(self);
 
         for (int i = 0; i < bodyParts.Count; i++)
         {
@@ -163,7 +119,7 @@ public class RWHealthState
                 }
                 else if (bodyParts[i] is Foot)
                 {
-                    bodyPart = new Foot(self);
+                    bodyPart = BodyPartType(bodyParts[i]);
 
                     if (state.legSet.TryGetValue("Right", out LegSet rightSet))
                     {
@@ -265,39 +221,57 @@ public class RWHealthState
             {
                 for (int k = 0; k < state.armSetNames.Count; k++)
                 {
-                    for (int j = 0; j < bodyParts[i].quantity / state.armSetNames.Count; j++)
+                    for (int fingerNumber = 0; fingerNumber < bodyParts[i].quantity / state.armSetNames.Count; fingerNumber++)
                     {
-                        finger ??= new Finger(self);
+                        finger ??= BodyPartType(bodyParts[i]) as Finger;
 
-                        if (j == 0)
+                        if (bodyParts[i].quantity == 10)
                         {
-                            finger.name = "Pinky";
-
-                            finger.coverage = 6f;
+                            switch (fingerNumber)
+                            {
+                                case 0:
+                                    finger.name = "Pinky";
+                                    finger.coverage = 6f;
+                                    break;
+                                case 1:
+                                    finger.name = "Ring Finger";
+                                    finger.coverage = 7f;
+                                    break;
+                                case 2:
+                                    finger.name = "Middle Finger";
+                                    finger.coverage = 8f;
+                                    break;
+                                case 3:
+                                    finger.name = "Index Finger";
+                                    finger.coverage = 7f;
+                                    break;
+                                case 4:
+                                    finger.name = "Thumb";
+                                    finger.coverage = 8f;
+                                    break;
+                            }
                         }
-                        else if (j == 1)
+                        else if (bodyParts[i].quantity == 6)
                         {
-                            finger.name = "Ring Finger";
-
-                            finger.coverage = 7f;
+                            switch (fingerNumber)
+                            {
+                                case 0:
+                                    finger.name = "Pinky";
+                                    finger.coverage = 6f;
+                                    break;
+                                case 1:
+                                    finger.name = "Middle Finger";
+                                    finger.coverage = 8f;
+                                    break;
+                                case 2:
+                                    finger.name = "Thumb";
+                                    finger.coverage = 8f;
+                                    break;
+                            }
                         }
-                        else if (j == 2)
+                        else
                         {
-                            finger.name = "Middle Finger";
-
-                            finger.coverage = 8f;
-                        }
-                        else if (j == 3)
-                        {
-                            finger.name = "Index Finger";
-
-                            finger.coverage = 7f;
-                        }
-                        else if (j == 4)
-                        {
-                            finger.name = "Thumb";
-
-                            finger.coverage = 8f;
+                            finger.name = "Finger " + fingerNumber;
                         }
 
                         finger.subName = state.armSetNames[k];
@@ -318,39 +292,51 @@ public class RWHealthState
             {
                 for (int k = 0; k < state.legSetNames.Count; k++)
                 {
-                    for (int j = 0; j < bodyParts[i].quantity / state.legSetNames.Count; j++)
+                    for (int toeNumber = 0; toeNumber < bodyParts[i].quantity / state.legSetNames.Count; toeNumber++)
                     {
-                        toe ??= new Toe(self);
+                        toe ??= BodyPartType(bodyParts[i]) as Toe;
 
-                        if (j == 0)
+                        if (bodyParts[i].quantity == 10)
                         {
-                            toe.name = "Little Toe";
-
-                            toe.coverage = 6f;
+                            switch (toeNumber)
+                            {
+                                case 0:
+                                    toe.name = "Little Toe";
+                                    toe.coverage = 6f;
+                                    break;
+                                case 1:
+                                    toe.name = "Fourth Toe";
+                                    toe.coverage = 7f;
+                                    break;
+                                case 2:
+                                    toe.name = "Middle Toe";
+                                    toe.coverage = 8f;
+                                    break;
+                                case 3:
+                                    toe.name = "Second Toe";
+                                    toe.coverage = 9f;
+                                    break;
+                                case 4:
+                                    toe.name = "Big Toe";
+                                    toe.coverage = 9f;
+                                    break;
+                            }
                         }
-                        else if (j == 1)
+                        else if (bodyParts[i].quantity == 4)
                         {
-                            toe.name = "Fourth Toe";
-
-                            toe.coverage = 7f;
+                            switch (toeNumber)
+                            {
+                                case 0:
+                                    toe.name = "Right Toe";
+                                    break;
+                                case 1:
+                                    toe.name = "Left Toe";
+                                    break;
+                            }
                         }
-                        else if (j == 2)
+                        else
                         {
-                            toe.name = "Middle Toe";
-
-                            toe.coverage = 8f;
-                        }
-                        else if (j == 3)
-                        {
-                            toe.name = "Second Toe";
-
-                            toe.coverage = 9f;
-                        }
-                        else if (j == 4)
-                        {
-                            toe.name = "Big Toe";
-
-                            toe.coverage = 9f;
+                            toe.name = "Toe " + toeNumber;
                         }
 
                         toe.subName = state.legSetNames[k];
@@ -426,6 +412,44 @@ public class RWHealthState
             {
                 state.talkingBP.Add(state.bodyParts[i]);
             }
+        }
+
+        RWBodyPart BodyPartType(RWBodyPart part)
+        {
+            if (part is Finger)
+            {
+                part = part switch
+                {
+                    SlugcatFinger => new SlugcatFinger(self),
+                    _ => new Finger(self),
+                };
+
+                return part;
+            }
+            else if (part is Toe)
+            {
+                part = part switch
+                {
+                    SlugcatToe => new SlugcatToe(self),
+                    _ => new Toe(self),
+                };
+
+                return part;
+            }
+            else if (part is Foot)
+            {
+                part = part switch
+                {
+                    SlugcatPaw => new SlugcatPaw(self),
+                    _ => new Foot(self),
+                };
+
+                return part;
+            }
+
+            Debug.Log("BodyPartType failed to get a new bodypart from " + part);
+
+            return new RWBodyPart(self);
         }
     }
 
@@ -522,7 +546,7 @@ public class RWHealthState
             {
                 healRate += 4;
 
-                healRate += Mathf.Floor(injury.tendQuality) * 0.08f;
+                healRate += Mathf.Round(injury.tendQuality) * 0.08f;
             }
 
             injury.damage -= healRate * 0.1f;
@@ -619,8 +643,8 @@ public class RWHealthState
                 }
                 else
                 {
-                    disease.part = null;
                     part.afflictions.Remove(disease);
+                    disease.part = null;
                     state.updateCapacities = true;
                 }
 
@@ -643,8 +667,6 @@ public class RWHealthState
 
         void UpdateCapacities()
         {
-            Debug.Log("Capacities Update");
-
             state.capacityAffectingAffliction.Clear();
 
             if (!self.dead)
@@ -695,7 +717,12 @@ public class RWHealthState
 
                         state.bodyParts[i].efficiency = 0;
 
-                        state.bloodLossPerCycle += destroyed.isBleeding && !destroyed.isTended ? destroyed.healingDifficulty.bleeding * state.bodySizeFactor * BloodLossMultiplier(state.bodyParts[i]) : 0;
+                        if (!destroyed.isTended)
+                        {
+                            state.bloodLossPerCycle += destroyed.isBleeding ? destroyed.healingDifficulty.bleeding * destroyed.damage * state.bodySizeFactor * BloodLossMultiplier(state.bodyParts[i]) : 0;
+
+                            afflictionList[j].pain = destroyed.damage * destroyed.healingDifficulty.pain / state.bodySizeFactor / 100;
+                        }
 
                         break;
                     }
@@ -1321,7 +1348,7 @@ public class RWHealthState
                 for (int j = 0; j < subParts.Count; j++)
                 {
                     subParts[j].afflictions.Clear();
-                    subParts[j].afflictions.Add(new RWDestroyed(self, subParts[j], 0f, damageType, attackName, attackerName));
+                    subParts[j].afflictions.Add(new RWDestroyed(self, subParts[j], j == 0 ? damage : 0f, damageType, attackName, attackerName));
                 }
             }
         }
@@ -1623,10 +1650,116 @@ public class RWHealthState
     }
     public static float MedicalTendSpeed(RWState state)
     {
-        float value = (0.4f + (0.06f * state.medicalSkill)) * (1 + (state.manipulation - 1f)) * Mathf.Min(1.3f, 1 + (state.sight - 1f) * 0.8f);
+        float value = Mathf.Max(0.1f, (0.4f + (0.06f * state.medicalSkill)) * state.manipulation * Mathf.Min(1.3f, 1 + (state.sight - 1f) * 0.8f));
 
         return value;
     }
     #endregion
     #endregion
+
+    public static List<RWBodyPart> BodyPartSet(CreatureState self)
+    {
+        List<RWBodyPart> bodyParts;
+
+        CreatureTemplate.Type template = self.creature.creatureTemplate.type;
+
+        if (template == CreatureTemplate.Type.Slugcat || (ModManager.MSC && template == MoreSlugcats.MoreSlugcatsEnums.CreatureTemplateType.SlugNPC))
+        {
+            bodyParts = new(33) {
+                new UpperTorso(self),
+                new LowerTorso(self),
+
+                new Neck(self),
+                new Head(self),
+                new Eye(self),
+                new Ear(self),
+                new Nose(self),
+                new Jaw(self),
+                new Tongue(self),
+
+                new Shoulder(self),
+                new Arm(self),
+                new Hand(self),
+                new SlugcatFinger(self),
+
+                new Leg(self),
+                new SlugcatPaw(self),
+                new SlugcatToe(self),
+
+                new Tail(self),
+
+                new Skull(self),
+
+                new Spine(self),
+                new Ribcage(self),
+                new Sternum(self),
+
+                new Clavicle(self),
+                new Humerus(self),
+                new Radius(self),
+
+                new Pelvis(self),
+
+                new Femur(self),
+                new Tibia(self),
+
+                new Brain(self),
+
+                new Stomach(self),
+                new Heart(self),
+                new Lung(self),
+                new Kidney(self),
+                new Liver(self),
+            };
+        }
+        else
+        {
+            bodyParts = new(32) {
+                new UpperTorso(self),
+                new LowerTorso(self),
+
+                new Neck(self),
+                new Head(self),
+                new Eye(self),
+                new Ear(self),
+                new Nose(self),
+                new Jaw(self),
+                new Tongue(self),
+
+                new Shoulder(self),
+                new Arm(self),
+                new Hand(self),
+                new Finger(self),
+
+                new Leg(self),
+                new Foot(self),
+                new Toe(self),
+
+                new Skull(self),
+
+                new Spine(self),
+                new Ribcage(self),
+                new Sternum(self),
+
+                new Clavicle(self),
+                new Humerus(self),
+                new Radius(self),
+
+                new Pelvis(self),
+
+                new Femur(self),
+                new Tibia(self),
+
+                new Brain(self),
+
+                new Stomach(self),
+                new Heart(self),
+                new Lung(self),
+                new Kidney(self),
+                new Liver(self),
+            };
+        }
+
+        return bodyParts;
+    }
 }

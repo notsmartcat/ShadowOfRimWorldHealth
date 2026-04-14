@@ -13,6 +13,7 @@ internal class SlugcatHooks
         On.Player.AddFood += PlayerAddFood;
         On.Player.GrabUpdate += PlayerGrabUpdate;
         On.Player.GraphicsModuleUpdated += PlayerGraphicsModuleUpdated;
+        On.Player.LungUpdate += PlayerLungUpdate;
         On.Player.Update += PlayerUpdate;
         #endregion
 
@@ -47,9 +48,54 @@ internal class SlugcatHooks
     {
         orig(self, sLeaser, rCam, timeStacker, camPos);
 
-        if (!healthState.TryGetValue(self.player.State, out RWState state) && !ArmCheck(state) && JawCheck(state) && self.player.grasps[0] != null)
+        if (!healthState.TryGetValue(self.player.State, out RWState state))
+        {
+            return;
+        }
+
+        if (!ArmCheck(state) && JawCheck(state) && self.player.grasps[0] != null)
         {
             sLeaser.sprites[5].isVisible = false;
+        }
+    }
+
+    static void PlayerLungUpdate(On.Player.orig_LungUpdate orig, Player self)
+    {
+        orig(self);
+
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        {
+            return;
+        }
+
+        RWAirInLungs airInLungs = null;
+
+        for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
+        {
+            if (state.wholeBodyAfflictions[i] is RWAirInLungs tempAirInLungs)
+            {
+                airInLungs = tempAirInLungs;
+                break;
+            }
+        }
+
+        if (self.airInLungs >= 1)
+        {
+            if (airInLungs != null)
+            {
+                state.wholeBodyAfflictions.Remove(airInLungs);
+            }
+        }
+        else
+        {
+            if (airInLungs != null)
+            {
+                airInLungs.tendQuality = self.airInLungs;
+            }
+            else
+            {
+                state.wholeBodyAfflictions.Add(new RWAirInLungs(self.State, null, self.airInLungs));
+            }
         }
     }
 
@@ -94,6 +140,7 @@ internal class SlugcatHooks
         }
     }
 
+    #region PlayerGraphics
     static void PlayerGraphicsModuleUpdated(On.Player.orig_GraphicsModuleUpdated orig, Player self, bool actuallyViewed, bool eu)
     {
         orig(self, actuallyViewed, eu);
@@ -130,6 +177,8 @@ internal class SlugcatHooks
             }
         }
     }
+    #endregion
+
 
     static bool JawCheck(RWState state)
     {

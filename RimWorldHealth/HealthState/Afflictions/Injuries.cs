@@ -1,4 +1,6 @@
-﻿namespace ShadowOfRimWorldHealth;
+﻿using UnityEngine;
+
+namespace ShadowOfRimWorldHealth;
 
 public class RWScar : RWInjury
 {
@@ -18,14 +20,17 @@ public class RWDestroyed : RWInjury
 {
     public RWDestroyed(CreatureState state, RWBodyPart part, float damage, RWDamageType damageType, string attackName = "", string attackerName = "") : base(state, part, damage, damageType, attackName, attackerName)
     {
-        if (isBleeding && part is not RWOrgan && part is not RWBone)
-        {
-            healingDifficulty.bleeding = 12;
-        }
-        else
+        healingDifficulty.bleeding = Mathf.Max(12, healingDifficulty.bleeding);
+
+        if (damage == 0 || part is RWBone)
         {
             isTended = true;
             isBleeding = false;
+        }
+        else
+        {
+            isTended = false;
+            isBleeding = true;
         }
     }
 }

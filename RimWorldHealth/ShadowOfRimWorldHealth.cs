@@ -189,6 +189,7 @@ public class RimWorldHealth : BaseUnityPlugin
                             RWHealthState.Damage(self.State, state, new RWBomb(), 0.5f, head, "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
                         }
 
+                        state.updateCapacities = true;
                         break;
                     }
                 }
@@ -200,17 +201,19 @@ public class RimWorldHealth : BaseUnityPlugin
                     state.wholeBodyAfflictions.Add(new RWFlu(self.State, null));
                 }
 
-                /*
+                
                 for (int i = 0; i < state.bodyParts.Count; i++)
                 {
                     if (state.bodyParts[i] is Leg part)
                     {
-                        state.Damage(new RWPoke(), 999999f, part, "opsie");
+                        RWHealthState.Damage(self.State, state, new RWPoke(), 999999f, part, "oopsie");
 
                         break;
                     }
                 }
-                */
+                
+
+                state.updateCapacities = true;
             }
         }
 
@@ -224,7 +227,21 @@ public class RimWorldHealth : BaseUnityPlugin
             if (buttonHeld == false)
             {
                 buttonHeld = true;
-                healthTab.ToggleVisibility(self.State, state);
+
+                CreatureState healthTabCreatureState = self.State;
+                RWState healthTabState = state;
+
+                for (int i = 0; i < self.grasps.Length; i++)
+                {
+                    if (self.grasps[i] != null && self.grasps[i].grabbedChunk != null && self.grasps[i].grabbedChunk.owner != null && self.grasps[i].grabbedChunk.owner is Creature crit && crit.State != null && healthState.TryGetValue(crit.State, out RWState tempHealthTabState))
+                    {
+                        healthTabState = tempHealthTabState;
+                        healthTabCreatureState = crit.State;
+                        break;
+                    }
+                }
+
+                healthTab.ToggleVisibility(healthTabCreatureState, healthTabState);
             }
         }
         else
@@ -244,7 +261,7 @@ public class RimWorldHealth : BaseUnityPlugin
         {
             for (int i = 0; i < state.bodyParts.Count; i++)
             {
-                if (state.bodyParts[i].name == self.subPartOf && state.bodyParts[i] is not UpperTorso && state.bodyParts[i] is not LowerTorso && state.bodyParts[i].afflictions.Count == 1 && state.bodyParts[i].afflictions[0] is RWDestroyed)
+                if (state.bodyParts[i].name == self.subPartOf && state.bodyParts[i] is not UpperTorso && state.bodyParts[i].afflictions.Count == 1 && state.bodyParts[i].afflictions[0] is RWDestroyed)
                 {
                     return true;
                 }

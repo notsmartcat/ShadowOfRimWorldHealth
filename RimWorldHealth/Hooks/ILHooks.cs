@@ -13,72 +13,195 @@ internal class ILHooks
 {
     public static void Apply()
     {
-        IL.Explosion.Update += ILExplosionUpdate;
+        #region AbstractCreature
+        IL.AbstractCreature.IsEnteringDen += ILAbstractCreatureIsEnteringDen;
+        #endregion
 
+        #region Lungs
+        #region AirBreatherCreature
+        IL.AirBreatherCreature.Update += ILAirBreatherCreatureUpdate;
+        #endregion
+        IL.Player.LungUpdate += ILPlayerLungUpdate;
+        #endregion
+
+        #region Explosion
+        IL.Explosion.Update += ILExplosionUpdate;
+        #endregion
+
+        #region Player
         IL.Player.GrabUpdate += ILPlayerGrabUpdate;
+        #endregion
     }
 
-    #region Player
-    static void ILPlayerGrabUpdate(ILContext il)
+    #region AbstractCreature
+    static void ILAbstractCreatureIsEnteringDen(ILContext il)
     {
         try
         {
             ILCursor val = new(il);
 
-            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[3]
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[2]
             {
-                x => x.MatchLdarg(0),
-                x => x.MatchLdcI4(15),
-                x => x.MatchStfld<Player>("eatCounter")
+                x => x.MatchIsinst(typeof(AbstractCreature)),
+                x => x.MatchCallvirt<AbstractCreature>("Die")
             }))
             {
+                val.MoveBeforeLabels();
+
                 val.Emit(OpCodes.Ldarg_0);
-                val.EmitDelegate(GrabUpdateBite);
+                val.EmitDelegate(AbstractCreatureIsEnteringDenFeed);
             }
             else
             {
-                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerGrabUpdate bite!");
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILAbstractCreatureIsEnteringDen feed!");
             }
 
             if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[2]
             {
-                x => x.MatchLdfld<Player.InputPackage>("y"),
-                x => x.MatchBrtrue(out _)
+                x => x.MatchLdcI4(200),
+                x => x.MatchStfld<AbstractCreature>("remainInDenCounter")
             }))
             {
+                val.MoveBeforeLabels();
+
                 val.Emit(OpCodes.Ldarg_0);
-                val.Emit(OpCodes.Ldloc_0);
-                val.EmitDelegate(GrabUpdate);
+                val.EmitDelegate(AbstractCreatureIsEnteringDenEat);
             }
             else
             {
-                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerGrabUpdate!");
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILAbstractCreatureIsEnteringDen!");
             }
         }
         catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
     }
 
-    public static void GrabUpdateBite(Player self)
+    public static void AbstractCreatureIsEnteringDenFeed(AbstractCreature self)
     {
-        if (!healthState.TryGetValue(self.State, out RWState state) || RWHealthState.EatingSpeed(state) >= 1)
+        if (self.state == null || !healthState.TryGetValue(self.state, out RWState state))
         {
             return;
         }
 
-        self.eatCounter = Mathf.FloorToInt(Mathf.Lerp(60, 15, RWHealthState.EatingSpeed(state)));
+        state.hasEaten = true;
     }
 
-    public static void GrabUpdate(Player self, bool flag2)
+    public static void AbstractCreatureIsEnteringDenEat(AbstractCreature self)
     {
-        if (!healthState.TryGetValue(self.State, out RWState state) || RWHealthState.EatingSpeed(state) >= 1 || flag2 || self.eatCounter < 40)
+        if (self.state == null || !healthState.TryGetValue(self.state, out RWState state))
         {
             return;
         }
 
-        if (self.eatCounter < Mathf.FloorToInt(Mathf.Lerp(90, 40, RWHealthState.EatingSpeed(state))))
+        self.remainInDenCounter = Mathf.Max(10, Mathf.RoundToInt(200 * (2 - state.eating)));
+    }
+    #endregion
+
+    #region Lungs
+    #region AirBreatherCreature
+    static void ILAirBreatherCreatureUpdate(ILContext il)
+    {
+        try
         {
-            self.eatCounter++;
+            ILCursor val = new(il);
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[2]
+            {
+                x => x.MatchLdfld<AirBreatherCreature>("lungs"),
+                x => x.MatchLdcR4(0.033333335f)
+            }))
+            {
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit<Creature>(OpCodes.Call, "get_abstractCreature");
+                val.EmitDelegate(LungsGainMultiplier);
+                val.Emit(OpCodes.Mul);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILAirBreatherCreatureUpdate!");
+            }
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[2]
+            {
+                x => x.MatchLdfld<CreatureTemplate>("lungCapacity"),
+                x => x.MatchDiv()
+            }))
+            {
+                val.MoveBeforeLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit<Creature>(OpCodes.Call, "get_abstractCreature");
+                val.EmitDelegate(LungsLossMultiplier);
+                val.Emit(OpCodes.Mul);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILAirBreatherCreatureUpdate!");
+            }
         }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    #endregion
+
+    static void ILPlayerLungUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[2]
+            {
+                x => x.MatchLdfld<SlugcatStats>("lungsFac"),
+                x => x.MatchMul()
+            }))
+            {
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit<Creature>(OpCodes.Call, "get_abstractCreature");
+                val.EmitDelegate(LungsLossMultiplier);
+                val.Emit(OpCodes.Mul);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerLungUpdate subtract!");
+            }
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdcI4(240),
+                x => x.MatchConvR4(),
+                x => x.MatchDiv()
+            }))
+            {
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit<Creature>(OpCodes.Call, "get_abstractCreature");
+                val.EmitDelegate(LungsGainMultiplier);
+                val.Emit(OpCodes.Mul);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerLungUpdate add!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+
+    public static float LungsGainMultiplier(AbstractCreature self)
+    {
+        if (self.state == null || !healthState.TryGetValue(self.state, out RWState state))
+        {
+            return 1;
+        }
+
+        return Mathf.Max(0.1f, state.breathing);
+    }
+
+    public static float LungsLossMultiplier(AbstractCreature self)
+    {
+        if (self.state == null || !healthState.TryGetValue(self.state, out RWState state))
+        {
+            return 1;
+        }
+
+        return Mathf.Max(0.1f, 2 - state.breathing);
     }
     #endregion
 
@@ -144,7 +267,7 @@ internal class ILHooks
 
         data.creatures.Add(self);
 
-        if(obj.sourceObject != null && obj.sourceObject is not FirecrackerPlant)
+        if (obj.sourceObject != null && obj.sourceObject is not FirecrackerPlant)
             damage *= 200;
 
         int amount = UnityEngine.Random.Range(1, 5);
@@ -331,6 +454,72 @@ internal class ILHooks
         }
     }
     #endregion
+
+    #region Player
+    static void ILPlayerGrabUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdcI4(15),
+                x => x.MatchStfld<Player>("eatCounter")
+            }))
+            {
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(GrabUpdateBite);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerGrabUpdate bite!");
+            }
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[2]
+            {
+                x => x.MatchLdfld<Player.InputPackage>("y"),
+                x => x.MatchBrtrue(out _)
+            }))
+            {
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit(OpCodes.Ldloc_0);
+                val.EmitDelegate(GrabUpdate);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerGrabUpdate!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+
+    public static void GrabUpdateBite(Player self)
+    {
+        if (!healthState.TryGetValue(self.State, out RWState state) || RWHealthState.EatingSpeed(state) >= 1)
+        {
+            return;
+        }
+
+        self.eatCounter = Mathf.RoundToInt(Mathf.Lerp(60, 15, RWHealthState.EatingSpeed(state)));
+    }
+
+    public static void GrabUpdate(Player self, bool flag2)
+    {
+        if (!healthState.TryGetValue(self.State, out RWState state) || RWHealthState.EatingSpeed(state) >= 1 || flag2 || self.eatCounter < 40)
+        {
+            return;
+        }
+
+        if (self.eatCounter < Mathf.RoundToInt(Mathf.Lerp(90, 40, RWHealthState.EatingSpeed(state))))
+        {
+            self.eatCounter++;
+        }
+    }
+    #endregion
+
+
 }
 /*
 class ILHooks
