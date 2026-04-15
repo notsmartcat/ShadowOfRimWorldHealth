@@ -1301,53 +1301,81 @@ public class RWHealthState
 
         void DestroyBodyPart()
         {
-            if (focusedBodyPart == null || focusedBodyPart.deathEffect == "" || focusedBodyPart is UpperTorso)
+            if (focusedBodyPart == null || focusedBodyPart.deathEffect == "")
             {
                 return;
             }
-
-            if (true || focusedBodyPart.deathEffect == "Destroy" || focusedBodyPart.deathEffect == "Death" || focusedBodyPart.deathEffect == "CutInHalf" || focusedBodyPart.deathEffect == "Decapitation")
+            else if (focusedBodyPart is UpperTorso)
             {
-                List<RWBodyPart> subParts = new()
+                Kill();
+                return;
+            }
+
+            List<RWBodyPart> subParts = new()
                 {
                     focusedBodyPart
                 };
 
-                List<RWBodyPart> subPartsRestricted = new();
+            List<RWBodyPart> subPartsRestricted = new();
 
-                while (true)
+            while (true)
+            {
+                bool newBodyParts = false;
+
+                for (int i = 0; i < state.bodyParts.Count; i++)
                 {
-                    bool newBodyParts = false;
-
-                    for (int i = 0; i < state.bodyParts.Count; i++)
+                    for (int j = 0; j < subParts.Count; j++)
                     {
-                        for (int j = 0; j < subParts.Count; j++)
+                        if (!subParts.Contains(state.bodyParts[i]) && !subPartsRestricted.Contains(state.bodyParts[i]) && IsSubPartName(state.bodyParts[i], subParts[j]))
                         {
-                            if (!subParts.Contains(state.bodyParts[i]) && !subPartsRestricted.Contains(state.bodyParts[i]) && IsSubPartName(state.bodyParts[i], subParts[j]))
+                            if (subParts[j].afflictions.Count == 1 && subParts[j].afflictions[0] is RWDestroyed || subParts[j].deathEffect == "")
                             {
-                                if (subParts[j].afflictions.Count == 1 && subParts[j].afflictions[0] is RWDestroyed || subParts[j].deathEffect == "")
-                                {
-                                    subPartsRestricted.Add(state.bodyParts[i]);
-                                    continue;
-                                }
-
-                                newBodyParts = true;
-                                subParts.Add(state.bodyParts[i]);
+                                subPartsRestricted.Add(state.bodyParts[i]);
+                                continue;
                             }
+
+                            newBodyParts = true;
+                            subParts.Add(state.bodyParts[i]);
                         }
-
                     }
 
-                    if (!newBodyParts)
-                    {
-                        break;
-                    }
                 }
 
-                for (int j = 0; j < subParts.Count; j++)
+                if (!newBodyParts)
                 {
-                    subParts[j].afflictions.Clear();
-                    subParts[j].afflictions.Add(new RWDestroyed(self, subParts[j], j == 0 ? damage : 0f, damageType, attackName, attackerName));
+                    break;
+                }
+            }
+
+            for (int j = 0; j < subParts.Count; j++)
+            {
+                subParts[j].afflictions.Clear();
+                subParts[j].afflictions.Add(new RWDestroyed(self, subParts[j], j == 0 ? 1f : 0f, damageType, attackName, attackerName));
+
+                if (subParts[j].deathEffect == "Death" || subParts[j].deathEffect == "Decapitation")
+                {
+                    Kill();
+                }
+            }
+
+            if (focusedBodyPart.deathEffect == "Death" || focusedBodyPart.deathEffect == "Decapitation")
+            {
+                Kill();
+            }
+
+            void Kill()
+            {
+                if (self.creature == null)
+                {
+                    self.Die();
+                }
+                else if (self.creature.realizedCreature == null)
+                {
+                    self.creature.Die();
+                }
+                else
+                {
+                    self.creature.realizedCreature.Die();
                 }
             }
         }

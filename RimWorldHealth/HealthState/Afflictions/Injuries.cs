@@ -20,9 +20,7 @@ public class RWDestroyed : RWInjury
 {
     public RWDestroyed(CreatureState state, RWBodyPart part, float damage, RWDamageType damageType, string attackName = "", string attackerName = "") : base(state, part, damage, damageType, attackName, attackerName)
     {
-        healingDifficulty.bleeding = Mathf.Max(12, healingDifficulty.bleeding);
-
-        if (damage == 0 || part is RWBone)
+        if (healingDifficulty.bleeding == 0 || damage == 0 || part.isSolid)
         {
             isTended = true;
             isBleeding = false;
@@ -33,4 +31,6 @@ public class RWDestroyed : RWInjury
             isBleeding = true;
         }
     }
+
+    public bool isFresh = true;
 }

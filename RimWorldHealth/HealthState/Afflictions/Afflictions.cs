@@ -45,7 +45,7 @@ public class RWInjury : RWAffliction
             isBleeding = false;
         }
 
-        if (isBleeding && healingDifficulty.infectionChance > 0)
+        if (healingDifficulty.infectionChance > 0)
         {
             infectionTimer = UnityEngine.Random.Range(15000, 45001);
         }

@@ -24,6 +24,17 @@ internal class ILHooks
         IL.Player.LungUpdate += ILPlayerLungUpdate;
         #endregion
 
+        #region BigSpider
+        IL.BigSpider.Act += ILBigSpiderAct;
+
+        IL.BigSpider.Update += ILBigSpiderUpdate;
+        #endregion
+
+        #region Centipede
+        IL.Centipede.BitByPlayer += ILCentipedeBitByPlayer;
+        IL.Centipede.Shock += ILCentipedeShock;
+        #endregion
+
         #region Explosion
         IL.Explosion.Update += ILExplosionUpdate;
         #endregion
@@ -84,7 +95,6 @@ internal class ILHooks
 
         state.hasEaten = true;
     }
-
     public static void AbstractCreatureIsEnteringDenEat(AbstractCreature self)
     {
         if (self.state == null || !healthState.TryGetValue(self.state, out RWState state))
@@ -205,29 +215,490 @@ internal class ILHooks
     }
     #endregion
 
+    #region BigSpider
+    static void ILBigSpiderAct(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[1]
+            {
+                x => x.MatchCallvirt<Creature>("Die")
+            }))
+            {
+                val.MoveBeforeLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(BigSpiderAct);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILBigSpiderAct!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    public static void BigSpiderAct(BigSpider self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        {
+            return;
+        }
+
+        RWBodyPart mainPart = null;
+
+        for (int i = 0; i < state.bodyParts.Count; i++)
+        {
+            if (state.bodyParts[i] is UpperTorso)
+            {
+                mainPart = state.bodyParts[i];
+                break;
+            }
+        }
+
+        if (mainPart == null)
+        {
+            return;
+        }
+
+        RWHealthState.Damage(self.State, state, new RWCut(), mainPart.maxHealth, mainPart, "Big Spider - Spew Babies");
+    }
+
+    static void ILBigSpiderUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+            ILLabel target = null;
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Creature>("get_dead"),
+                x => x.MatchBrtrue(out target)
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit(OpCodes.Isinst, typeof(Creature));
+                val.EmitDelegate(CreatureHasState);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILBigSpiderAct!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    #endregion
+
+    #region Centipede
+    static void ILCentipedeBitByPlayer(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+            ILLabel target = null;
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<UpdatableAndDeletable>("room"),
+                x => x.MatchLdarg(0)
+            }))
+            {
+                val.MoveAfterLabels();
+
+                target = val.MarkLabel();
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCentipedeBitByPlayer target!");
+            }
+
+            if (val.TryGotoPrev(MoveType.Before, new Func<Instruction, bool>[2]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCallvirt<Creature>("Die"),
+            }))
+            {
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit(OpCodes.Isinst, typeof(Creature));
+                val.EmitDelegate(CreatureHasState);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCentipedeBitByPlayer!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+
+    static void ILCentipedeShock(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+            ILLabel target = null;
+
+            #region AquaPyro
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(1),
+                x => x.MatchIsinst<Creature>(),
+                x => x.MatchBrfalse(out target)
+            })) {}
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCentipedeShock AquaPyro target!");
+            }
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(1),
+                x => x.MatchIsinst<Player>(),
+                x => x.MatchCallvirt<Player>("PyroDeath"),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit(OpCodes.Ldarg_1);
+                val.Emit(OpCodes.Isinst, typeof(Creature));
+                val.EmitDelegate(CentipedeShockAquaPyroDeath);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCentipedeShock AquaPyro!");
+            }
+            #endregion
+
+            #region Aqua
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[2]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<UpdatableAndDeletable>("room")
+            })) 
+            {
+                val = val.MoveAfterLabels();
+
+                target = val.MarkLabel();
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCentipedeShock Aqua target!");
+            }
+
+            if (val.TryGotoPrev(MoveType.Before, new Func<Instruction, bool>[4]
+            {
+                x => x.MatchLdarg(1),
+                x => x.MatchIsinst<Creature>(),
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Creature>("get_mainBodyChunk"),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit(OpCodes.Ldarg_1);
+                val.Emit(OpCodes.Isinst, typeof(Creature));
+                val.EmitDelegate(CentipedeShockAqua);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCentipedeShock Aqua!");
+            }
+            #endregion
+
+            #region Small
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[4]
+            {
+                x => x.MatchLdarg(1),
+                x => x.MatchIsinst<Creature>(),
+                x => x.MatchLdcI4(120),
+                x => x.MatchCallvirt<Creature>("Stun"),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit(OpCodes.Ldarg_1);
+                val.Emit(OpCodes.Isinst, typeof(Creature));
+                val.EmitDelegate(CentipedeShockSmall);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCentipedeShock Small!");
+            }
+            #endregion
+
+            #region Pyro
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[1]
+            {
+                x => x.MatchBr(out target),
+            })) { }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCentipedeShock Pyro target!");
+            }
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(1),
+                x => x.MatchIsinst<Player>(),
+                x => x.MatchCallvirt<Player>("PyroDeath"),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit(OpCodes.Ldarg_1);
+                val.Emit(OpCodes.Isinst, typeof(Creature));
+                val.EmitDelegate(CentipedeShockPyroDeath);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCentipedeShock Pyro!");
+            }
+            #endregion
+
+            #region Mass
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(1),
+                x => x.MatchIsinst<Creature>(),
+                x => x.MatchCallvirt<Creature>("Die"),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit(OpCodes.Ldarg_1);
+                val.Emit(OpCodes.Isinst, typeof(Creature));
+                val.EmitDelegate(CentipedeShock);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCentipedeShock Mass!");
+            }
+            #endregion
+
+            #region LessMass
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[4]
+            {
+                x => x.MatchLdarg(1),
+                x => x.MatchIsinst<Creature>(),
+                x => x.MatchLdarg(1),
+                x => x.MatchCallvirt<PhysicalObject>("get_TotalMass"),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit(OpCodes.Ldarg_1);
+                val.Emit(OpCodes.Isinst, typeof(Creature));
+                val.EmitDelegate(CentipedeShockLessMass);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCentipedeShock LessMass!");
+            }
+            #endregion
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    public static bool CentipedeShockAquaPyroDeath(Centipede self, Creature shockObj)
+    {
+        if (shockObj.State == null || !healthState.TryGetValue(shockObj.State, out RWState state))
+        {
+            return true;
+        }
+
+        CentipedeShockDamage(shockObj.State, state, self, shockObj.Submersion > 0f);
+
+        float stun = 200;
+
+        if (!shockObj.dead)
+        {
+            stun = StunMath(stun, shockObj, Creature.DamageType.Electric);
+        }
+        else
+        {
+            ((Player)shockObj).PyroDeath();
+        }
+
+        Debug.Log(stun + " stun");
+
+        shockObj.Stun((int)stun);
+        self.room.AddObject(new CreatureSpasmer(shockObj, true, shockObj.stun));
+        shockObj.LoseAllGrasps();
+        if (!shockObj.dead)
+        {
+            self.Stun(6);
+            self.shockGiveUpCounter = Math.Max(self.shockGiveUpCounter, 30);
+            self.AI.annoyingCollisions = Math.Min(self.AI.annoyingCollisions / 2, 150);
+        }
+
+        return false;
+    }
+    public static bool CentipedeShockAqua(Centipede self, Creature shockObj)
+    {
+        if (shockObj.State == null || !healthState.TryGetValue(shockObj.State, out RWState state))
+        {
+            return true;
+        }
+
+        CentipedeShockDamage(shockObj.State, state, self, shockObj.Submersion > 0f);
+
+        float stun = 200;
+
+        if (!shockObj.dead)
+        {
+            stun = StunMath(stun, shockObj, Creature.DamageType.Electric);
+        }
+
+        Debug.Log(stun + " stun");
+
+        shockObj.Stun((int)stun);
+        if (!shockObj.dead)
+        {
+            self.Stun(6);
+            self.shockGiveUpCounter = Math.Max(self.shockGiveUpCounter, 30);
+            self.AI.annoyingCollisions = Math.Min(self.AI.annoyingCollisions / 2, 150);
+        }
+
+        return false;
+    }
+    public static void CentipedeShockSmall(Centipede self, Creature shockObj)
+    {
+        if (shockObj.State == null || !healthState.TryGetValue(shockObj.State, out RWState state))
+        {
+            return;
+        }
+
+        CentipedeShockDamage(shockObj.State, state, self, shockObj.Submersion > 0f);
+    }
+    public static bool CentipedeShockPyroDeath(Centipede self, Creature shockObj)
+    {
+        if (shockObj.State == null || !healthState.TryGetValue(shockObj.State, out RWState state))
+        {
+            return true;
+        }
+
+        CentipedeShockDamage(shockObj.State, state, self, shockObj.Submersion > 0f);
+
+        float stun = (int)Mathf.Lerp(70f, 120f, self.size);
+
+        if (!shockObj.dead)
+        {
+            stun = StunMath(stun, shockObj, Creature.DamageType.Electric);
+        }
+        else
+        {
+            ((Player)shockObj).PyroDeath();
+        }
+
+        Debug.Log(stun + " stun");
+
+        shockObj.Stun((int)stun);
+        self.room.AddObject(new CreatureSpasmer(shockObj, true, shockObj.stun));
+        shockObj.LoseAllGrasps();
+        if (!shockObj.dead)
+        {
+            self.Stun(6);
+            self.shockGiveUpCounter = Math.Max(self.shockGiveUpCounter, 30);
+            self.AI.annoyingCollisions = Math.Min(self.AI.annoyingCollisions / 2, 150);
+        }
+
+        return false;
+    }
+    public static bool CentipedeShock(Centipede self, Creature shockObj)
+    {
+        if (shockObj.State == null || !healthState.TryGetValue(shockObj.State, out RWState state))
+        {
+            return true;
+        }
+
+        CentipedeShockDamage(shockObj.State, state, self, shockObj.Submersion > 0f);
+
+        float stun = (int)Mathf.Lerp(70f, 120f, self.size);
+
+        if (!shockObj.dead)
+        {
+            stun = StunMath(stun, shockObj, Creature.DamageType.Electric);
+        }
+
+        Debug.Log(stun + " stun");
+
+        shockObj.Stun((int)stun);
+        self.room.AddObject(new CreatureSpasmer(shockObj, true, shockObj.stun));
+        shockObj.LoseAllGrasps();
+        if (!shockObj.dead)
+        {
+            self.Stun(6);
+            self.shockGiveUpCounter = Math.Max(self.shockGiveUpCounter, 30);
+            self.AI.annoyingCollisions = Math.Min(self.AI.annoyingCollisions / 2, 150);
+        }
+
+        return false;
+    }
+    public static void CentipedeShockLessMass(Centipede self, Creature shockObj)
+    {
+        if (shockObj.State == null || !healthState.TryGetValue(shockObj.State, out RWState state))
+        {
+            return;
+        }
+
+        CentipedeShockDamage(shockObj.State, state, self, shockObj.Submersion > 0f);
+
+        return;
+    }
+    #endregion
+
     #region Explosion
     static void ILExplosionUpdate(ILContext il)
     {
         try
         {
             ILCursor val = new(il);
+            ILLabel target = null;
 
-            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[2]
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[4]
             {
-                x => x.MatchIsinst(typeof(Creature)),
-                x => x.MatchLdnull()
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Explosion>("minStun"),
+                x => x.MatchLdcR4(0.0f),
+                x => x.MatchBleUn(out _)
             }))
             {
+                val.MoveAfterLabels();
+
+                target = val.MarkLabel();
             }
             else
             {
-                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILExplosionUpdate skip2!");
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILExplosionUpdate target!");
             }
 
-            if (val.TryGotoPrev(MoveType.Before, new Func<Instruction, bool>[2]
+            if (val.TryGotoPrev(MoveType.Before, new Func<Instruction, bool>[9]
             {
                 x => x.MatchLdarg(0),
-                x => x.MatchLdfld<UpdatableAndDeletable>("room")
+                x => x.MatchLdfld<UpdatableAndDeletable>("room"),
+                x => x.MatchLdfld<Room>("physicalObjects"),
+                x => x.MatchLdloc(2),
+                x => x.MatchLdelemRef(),
+                x => x.MatchLdloc(3),
+                x => x.MatchCallvirt(typeof(List<PhysicalObject>).GetMethod("get_Item")),
+                x => x.MatchIsinst(typeof(Creature)),
+                x => x.MatchLdnull()
             }))
             {
                 val.MoveAfterLabels();
@@ -249,6 +720,7 @@ internal class ILHooks
                 val.Emit(OpCodes.Conv_R4);
                 val.Emit(OpCodes.Div);
                 val.EmitDelegate(ExplosionUpdate);
+                val.Emit(OpCodes.Brfalse, target);
             }
             else
             {
@@ -257,18 +729,18 @@ internal class ILHooks
         }
         catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
     }
-
-    public static void ExplosionUpdate(Explosion obj, Creature self, float damage)
+    public static bool ExplosionUpdate(Explosion obj, Creature self, float damage)
     {
-        if (obj.sourceObject != null && obj.sourceObject is Snail || !singleExplosion.TryGetValue(obj, out OneTimeUseData data) || data.creatures.Contains(self) || damage <= 0 || self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || !singleExplosion.TryGetValue(obj, out OneTimeUseData data) || data.creatures.Contains(self) || damage <= 0)
         {
-            return;
+            return true;
         }
 
         data.creatures.Add(self);
 
-        if (obj.sourceObject != null && obj.sourceObject is not FirecrackerPlant)
-            damage *= 200;
+        bool isSuper = ModManager.MSC && obj.sourceObject != null && (obj.sourceObject is MoreSlugcats.EnergyCell || obj.sourceObject is MoreSlugcats.SingularityBomb);
+
+        damage *= BombDamageMultiplier(true, isSuper);
 
         int amount = UnityEngine.Random.Range(1, 5);
 
@@ -452,6 +924,8 @@ internal class ILHooks
                 RWHealthState.Damage(self.State, state, damageType, tempDamage / amount, focusedBodyPart, attackName, attackerName);
             }
         }
+
+        return false;
     }
     #endregion
 
@@ -519,7 +993,30 @@ internal class ILHooks
     }
     #endregion
 
+    public static bool CreatureHasState(Creature self)
+    {
+        return self.State == null || !healthState.TryGetValue(self.State, out _);
+    }
 
+    public static int StunMath(float stun, Creature self, Creature.DamageType type)
+    {
+        Debug.Log("Pre-Stun " + stun);
+
+        stun = (2 * 30f + stun) / self.Template.baseStunResistance;
+
+        if (self.State is HealthState)
+        {
+            stun *= 1.5f;
+        }
+        if (type.Index != -1 && self.Template.damageRestistances[type.Index, 1] > 0f)
+        {
+            stun /= self.Template.damageRestistances[type.Index, 1];
+        }
+
+        Debug.Log("Post-Stun " + stun);
+
+        return (int)stun;
+    }
 }
 /*
 class ILHooks

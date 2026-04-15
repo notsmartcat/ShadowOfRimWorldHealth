@@ -267,6 +267,11 @@ public class HealthTab : HudPart
                 if (treatedAffliction is RWInjury injury)
                 {
                     injury.isBleeding = false;
+
+                    if (injury is RWDestroyed destroyed)
+                    {
+                        destroyed.isFresh = false;
+                    }
                 }
                 else if (treatedAffliction is RWDisease disease)
                 {
@@ -2053,9 +2058,9 @@ public class HealthTabBodyPart
                     {
                         string text;
 
-                        if (injury is RWDestroyed)
+                        if (injury is RWDestroyed destroyed)
                         {
-                            text = (bodyPart.isInternal ? bodyPart.isSolid ? "Shattered" : injury.healingDifficulty.destroyedOut : injury.healingDifficulty.destroyed) + (injury.isBleeding && !injury.isTended ? " (fresh)" : "");
+                            text = (bodyPart.isInternal ? bodyPart.isSolid ? "Shattered" : destroyed.healingDifficulty.destroyedOut : destroyed.healingDifficulty.destroyed) + (destroyed.isFresh ? " (fresh)" : "");
                         }
                         else if (injury is RWScar scar && scar.isRevealed)
                         {

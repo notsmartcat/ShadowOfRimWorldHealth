@@ -84,14 +84,6 @@ public class ArmSet
         }
 
         return description;
-
-        static string SetDescription(RWBodyPart part)
-        {
-            string name = part.name;
-            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
-
-            return "  " + part.subName + " " + name + ": " + Mathf.Round(part.health) + " / " + part.maxHealth + "\n";
-        }
     }
 
     public Shoulder shoulder;
@@ -104,6 +96,14 @@ public class ArmSet
     public Radius radius;
 
     public float efficiency = 1;
+
+    public static string SetDescription(RWBodyPart part)
+    {
+        string name = part.name;
+        name = char.ToLowerInvariant(name[0]) + name.Substring(1);
+
+        return "  " + part.subName + " " + name + ": " + Mathf.Round(part.health) + " / " + part.maxHealth + "\n";
+    }
 }
 
 public class LegSet
@@ -137,7 +137,7 @@ public class LegSet
 
         if (leg != null && leg.health < leg.maxHealth)
         {
-            description += SetDescription(leg);
+            description += ArmSet.SetDescription(leg);
 
             if (IsDestroyed(leg))
             {
@@ -146,11 +146,11 @@ public class LegSet
         }
         if (femur != null && femur.health < femur.maxHealth)
         {
-            description += SetDescription(femur);
+            description += ArmSet.SetDescription(femur);
         }
         if (tibia != null && tibia.health < tibia.maxHealth)
         {
-            description += SetDescription(tibia);
+            description += ArmSet.SetDescription(tibia);
         }
 
         if (foot != null && foot.health < foot.maxHealth)
@@ -164,19 +164,11 @@ public class LegSet
         {
             if (toes[i].health < toes[i].maxHealth)
             {
-                description += SetDescription(toes[i]);
+                description += ArmSet.SetDescription(toes[i]);
             }
         }
 
         return description;
-
-        static string SetDescription(RWBodyPart part)
-        {
-            string name = part.name;
-            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
-
-            return "  " + part.subName + " " + name + ": " + Mathf.Round(part.health) + " / " + part.maxHealth + "\n";
-        }
     }
 
     public Leg leg;

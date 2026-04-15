@@ -607,6 +607,51 @@ public class RimWorldHealth : BaseUnityPlugin
         }
     }
 
+    public static void CentipedeShockDamage(CreatureState self, RWState state, Centipede source, bool underwater)
+    {
+        RWBodyPart focusedBodyPart = GetHitBodyPart(state);
+        Debug.Log("CentipedeShockDamage focusedBodyPart is " + focusedBodyPart);
+
+        string attackerName;
+        float damage;
+
+        if (source.abstractCreature.creatureTemplate.type == CreatureTemplate.Type.SmallCentipede)
+        {
+            attackerName = "Baby centipede";
+            damage = UnityEngine.Random.Range(0.8f, 1.2f);
+        }
+        else if (source.abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Centiwing)
+        {
+            attackerName = "Centiwing";
+            damage = UnityEngine.Random.Range(4.8f, 8.2f);
+        }
+        else if (ModManager.DLCShared && source.abstractCreature.creatureTemplate.type == DLCSharedEnums.CreatureTemplateType.AquaCenti)
+        {
+            attackerName = "AquaCenti";
+            damage = UnityEngine.Random.Range(4.8f, 8.2f);
+        }
+        else if (source.abstractCreature.creatureTemplate.type == CreatureTemplate.Type.RedCentipede)
+        {
+            attackerName = "Red centipede";
+            damage = UnityEngine.Random.Range(8.8f, 12.2f);
+        }
+        else
+        {
+            attackerName = "Centipede";
+            damage = UnityEngine.Random.Range(4.8f, 8.2f);
+        }
+
+        if (underwater)
+        {
+            damage *= 1.2f;
+        }
+
+        string attackName = attackerName + (source.Submersion > 0f ? " - Underwater shock" : " - Shock");
+
+        RWHealthState.Damage(self, state, new RWBurn(), damage, focusedBodyPart, attackName, attackerName);
+    }
+
+
     public static RWBodyPart GetHitBodyPart(RWState state, BodyChunk hitChunk = null, RWBodyPart subPartOf = null, bool canHitInternal = false, bool isBlunt = false)
     {
         List<RWBodyPart> list = new();
@@ -671,5 +716,15 @@ public class RimWorldHealth : BaseUnityPlugin
         }
 
         return focusedBodyPart;
+    }
+
+    public static float BombDamageMultiplier(bool hasHealthState, bool isSuper)
+    {
+        if (isSuper)
+        {
+            return hasHealthState ? 550 : 78.57142857142857f;
+        }
+
+        return hasHealthState ? 250 : 35.71428571428571f;
     }
 }
