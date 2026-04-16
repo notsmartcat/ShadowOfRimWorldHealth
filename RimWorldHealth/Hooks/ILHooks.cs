@@ -33,6 +33,15 @@ internal class ILHooks
         #region Centipede
         IL.Centipede.BitByPlayer += ILCentipedeBitByPlayer;
         IL.Centipede.Shock += ILCentipedeShock;
+        IL.Centipede.Update += ILCentipedeUpdate;
+        #endregion
+
+        #region Cicada
+        IL.Cicada.Update += ILCicadaUpdate;
+        #endregion
+
+        #region Creature
+        IL.Creature.HypothermiaUpdate += ILCreatureHypothermiaUpdate;
         #endregion
 
         #region Explosion
@@ -272,17 +281,18 @@ internal class ILHooks
             ILCursor val = new(il);
             ILLabel target = null;
 
-            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[3]
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[5]
             {
                 x => x.MatchLdarg(0),
-                x => x.MatchCall<Creature>("get_dead"),
-                x => x.MatchBrtrue(out target)
+                x => x.MatchCall<BigSpider>("get_State"),
+                x => x.MatchCallvirt<HealthState>("get_health"),
+                x => x.MatchLdcR4(0.0f),
+                x => x.MatchBgeUn(out target)
             }))
             {
                 val.MoveAfterLabels();
 
                 val.Emit(OpCodes.Ldarg_0);
-                val.Emit(OpCodes.Isinst, typeof(Creature));
                 val.EmitDelegate(CreatureHasState);
                 val.Emit(OpCodes.Brfalse, target);
             }
@@ -660,6 +670,156 @@ internal class ILHooks
         CentipedeShockDamage(shockObj.State, state, self, shockObj.Submersion > 0f);
 
         return;
+    }
+
+    static void ILCentipedeUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+            ILLabel target = null;
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[6]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Creature>("get_State"),
+                x => x.MatchIsinst(typeof(HealthState)),
+                x => x.MatchCallvirt<HealthState>("get_health"),
+                x => x.MatchLdcR4(0.0f),
+                x => x.MatchBgtUn(out target),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(CreatureHasState);
+                val.Emit(OpCodes.Brfalse_S, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCentipedeShock AquaPyro!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    #endregion
+
+    #region Cicada
+    static void ILCicadaUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+            ILLabel target = null;
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[6]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Creature>("get_State"),
+                x => x.MatchIsinst(typeof(HealthState)),
+                x => x.MatchCallvirt<HealthState>("get_health"),
+                x => x.MatchLdcR4(0.0f),
+                x => x.MatchBgtUn(out target),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(CreatureHasState);
+                val.Emit(OpCodes.Brfalse_S, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCicadaUpdate!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    #endregion
+
+    #region Creature
+    static void ILCreatureHypothermiaUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+            ILLabel target = null;
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[4]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Creature>("get_Hypothermia"),
+                x => x.MatchLdcR4(1f),
+                x => x.MatchBltUn(out target),
+            })) {}
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCreatureHypothermiaUpdate target!");
+            }
+
+            if (val.TryGotoPrev(MoveType.Before, new Func<Instruction, bool>[4]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Creature>("get_Hypothermia"),
+                x => x.MatchLdcR4(0.8f),
+                x => x.MatchBltUn(out target),
+            }))
+            {
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(CreatureHypothermiaUpdate);
+
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(CreatureHasState);
+                val.Emit(OpCodes.Brfalse_S, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCreatureHypothermiaUpdate!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+
+    public static void CreatureHypothermiaUpdate(Creature self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        {
+            return;
+        }
+
+        RWHypothermia hypothermia = null;
+
+        for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
+        {
+            if (state.wholeBodyAfflictions[i] is RWHypothermia tempHypothermia)
+            {
+                hypothermia = tempHypothermia;
+                break;
+            }
+        }
+
+        if (self.Hypothermia < 0.04f)
+        {
+            if (hypothermia != null)
+            {
+                state.wholeBodyAfflictions.Remove(hypothermia);
+                state.updateCapacities = true;
+            }
+        }
+        else
+        {
+            if (hypothermia != null)
+            {
+                hypothermia.tendQuality = Math.Min(1, self.Hypothermia);
+            }
+            else
+            {
+                state.wholeBodyAfflictions.Add(new RWHypothermia(self.State, null, Math.Min(1, self.Hypothermia)));
+                state.updateCapacities = true;
+            }
+        }
     }
     #endregion
 

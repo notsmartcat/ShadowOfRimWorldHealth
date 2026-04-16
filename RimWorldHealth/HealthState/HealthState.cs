@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Runtime.Remoting.Lifetime;
 using UnityEngine;
 
 using static ShadowOfRimWorldHealth.RimWorldHealth;
@@ -473,7 +474,19 @@ public class RWHealthState
 
         List<RWInjury> healList = new();
 
-        List<RWAffliction> afflictionList;
+        List<RWAffliction> afflictionList = new(state.wholeBodyAfflictions);
+
+        for (int i = 0; i < afflictionList.Count; i++)
+        {
+            if (afflictionList[i] is RWDisease disease)
+            {
+                Disease(disease);
+            }
+            else if (afflictionList[i] is RWInformational informational)
+            {
+                Informational(informational);
+            }
+        }
 
         for (int i = 0; i < state.bodyParts.Count; i++)
         {
@@ -522,16 +535,6 @@ public class RWHealthState
                 {
                     healList.Add(injury);
                 }
-            }
-        }
-
-        afflictionList = new(state.wholeBodyAfflictions);
-
-        for (int i = 0; i < afflictionList.Count; i++)
-        {
-            if (afflictionList[i] is RWDisease disease)
-            {
-                Disease(disease);
             }
         }
 
@@ -654,26 +657,168 @@ public class RWHealthState
                 return;
             }
 
-            if (disease is RWFlu && (disease.severity <= 0.665f && prevSeverity > 0.665f || disease.severity > 0.665f && prevSeverity <= 0.665f || disease.severity <= 0.832f && prevSeverity > 0.832f || disease.severity > 0.832f && prevSeverity <= 0.832f))
+            if (disease is RWFlu && (LessOrGreater(disease.severity, prevSeverity, 0.665f) || LessOrGreater(disease.severity, prevSeverity, 0.832f)))
             {
                 state.updateCapacities = true;
             }
-            else if (disease is RWInfection && (disease.severity <= 0.32f && prevSeverity > 0.32f || disease.severity > 0.32f && prevSeverity <= 0.32f || disease.severity <= 0.77f && prevSeverity > 0.77f || disease.severity > 0.77f && prevSeverity <= 0.77f || disease.severity <= 0.86f && prevSeverity > 0.86f || disease.severity > 0.86f && prevSeverity <= 0.86f))
+            else if (disease is RWInfection && (LessOrGreater(disease.severity, prevSeverity, 0.32f) || LessOrGreater(disease.severity, prevSeverity, 0.77f) || LessOrGreater(disease.severity, prevSeverity, 0.86f)))
             {
                 state.updateCapacities = true;
             }
         }
 
+        void Informational(RWInformational informational)
+        {
+            if (informational is RWAirInLungs)
+            {
+                return;
+            }
+            else if (informational is RWHypothermia hypothermia)
+            {
+                if (hypothermia.tendQuality >= 1 || hypothermia.lastHypothermia == hypothermia.tendQuality)
+                {
+                    return;
+                }
+
+                if (state.healingRate % 15 == 0 && hypothermia.tendQuality > 0.37f && Random.value < (0.025f * hypothermia.tendQuality))
+                {
+                    RWBodyPart part = GetFrostbiteHitBodyPart(state);
+
+                    int damage = Mathf.CeilToInt(part.maxHealth * 0.5f);
+                    Damage(self, state, new RWFrostbite(), damage, part);
+                    state.updateCapacities = true;
+                }
+
+                if (LessOrGreater(hypothermia.tendQuality, hypothermia.lastHypothermia, 0.04f) || LessOrGreater(hypothermia.tendQuality, hypothermia.lastHypothermia, 0.2f) || LessOrGreater(hypothermia.tendQuality, hypothermia.lastHypothermia, 0.35f) || LessOrGreater(hypothermia.tendQuality, hypothermia.lastHypothermia, 0.62f))
+                {
+                    state.updateCapacities = true;
+                }
+
+                hypothermia.lastHypothermia = hypothermia.tendQuality;
+            }
+
+            RWBodyPart GetFrostbiteHitBodyPart(RWState state)
+            {
+                List<RWBodyPart> list = new();
+                RWBodyPart focusedBodyPart = null;
+
+                for (int i = 0; i < state.bodyParts.Count; i++)
+                {
+                    if (IsDestroyed(state.bodyParts[i]) || !ValidBodyPart(state.bodyParts[i]))
+                    {
+                        continue;
+                    }
+
+                    list.Add(state.bodyParts[i]);
+                }
+
+                if (list.Count > 1)
+                {
+                    float chance = 0;
+
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        chance += list[i].coverage;
+                    }
+
+                    float roll = Random.Range(0f, chance);
+
+                    chance = 0;
+
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        chance += list[i].coverage;
+
+                        if (roll <= chance)
+                        {
+                            focusedBodyPart = list[i];
+                            break;
+                        }
+                    }
+                }
+                else if (list.Count == 1)
+                {
+                    focusedBodyPart = list[0];
+                }
+
+                return focusedBodyPart;
+
+                bool ValidBodyPart(RWBodyPart part)
+                {
+                    if (part is Ear || part is Nose || part is Finger || part is Toe || part is Jaw)
+                    {
+                        return true;
+                    }
+                    else if (part is Hand)
+                    {
+                        for (int i = 0; i < state.armSetNames.Count; i++)
+                        {
+                            if (state.armSet[state.armSetNames[i]].hand == part)
+                            {
+                                float fingerEfficiency = 0;
+
+                                if (state.armSet[state.armSetNames[i]].fingers.Count != 0)
+                                {
+                                    for (int j = 0; j < state.armSet[state.armSetNames[i]].fingers.Count; j++)
+                                    {
+                                        fingerEfficiency += state.armSet[state.armSetNames[i]].fingers[j].efficiency;
+                                    }
+
+                                    fingerEfficiency = (fingerEfficiency * (0.8f / state.armSet[state.armSetNames[i]].fingers.Count)) + 0.2f;
+                                }
+
+                                if (1 - fingerEfficiency > Random.value)
+                                {
+                                    return true;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    else if (part is Foot)
+                    {
+                        for (int i = 0; i < state.legSetNames.Count; i++)
+                        {
+                            if (state.legSet[state.legSetNames[i]].foot == part)
+                            {
+                                float toeEfficiency = 0;
+
+                                if (state.legSet[state.legSetNames[i]].toes.Count != 0)
+                                {
+                                    for (int j = 0; j < state.legSet[state.legSetNames[i]].toes.Count; j++)
+                                    {
+                                        toeEfficiency += state.legSet[state.legSetNames[i]].toes[j].efficiency;
+                                    }
+
+                                    toeEfficiency = (toeEfficiency * (0.8f / state.legSet[state.legSetNames[i]].toes.Count)) + 0.2f;
+                                }
+
+                                if (1 - toeEfficiency > Random.value)
+                                {
+                                    return true;
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    return false;
+                }
+            }
+        }
+
+        bool LessOrGreater(float severity, float prevSeverity, float value)
+        {
+            return severity <= value && prevSeverity > value || severity > value && prevSeverity <= value;
+        }
+
         void UpdateCapacities()
         {
             state.capacityAffectingAffliction.Clear();
-
             if (!self.dead)
             {
                 state.bloodLossPerCycle = 0;
-
                 state.pain = 0;
-
                 state.consciousness = 0;
                 state.moving = 0;
                 state.manipulation = 0;
@@ -686,13 +831,10 @@ public class RWHealthState
                 state.bloodPumping = 0;
                 state.digestion = 0;
             }
-
             List<RWAffliction> afflictionList;
-
             for (int i = 0; i < state.bodyParts.Count; i++)
             {
                 state.bodyParts[i].health = state.bodyParts[i].maxHealth;
-
                 if (state.bodyParts[i].afflictions.Count == 0)
                 {
                     goto line1;
@@ -700,22 +842,16 @@ public class RWHealthState
                 else if (IsSubPartDestroyed(state, state.bodyParts[i]))
                 {
                     state.bodyParts[i].health = 0;
-
                     state.bodyParts[i].efficiency = 0;
-
                     goto line1;
                 }
-
                 afflictionList = new(state.bodyParts[i].afflictions);
-
                 for (int j = 0; j < afflictionList.Count; j++)
                 {
                     if (afflictionList[j] is RWDestroyed destroyed)
                     {
                         state.bodyParts[i].health = 0;
-
                         state.bodyParts[i].efficiency = 0;
-
                         if (!destroyed.isTended)
                         {
                             state.bloodLossPerCycle += destroyed.isBleeding ? destroyed.healingDifficulty.bleeding * destroyed.part.maxHealth * 2 * state.bodySizeFactor * BloodLossMultiplier(state.bodyParts[i]) : 0;
@@ -794,6 +930,15 @@ public class RWHealthState
                 return;
             }
 
+            if (self is HealthState healthState)
+            {
+                healthState.health = state.consciousnessSource.efficiency;
+            }
+            else if (self is PlayerState playerState)
+            {
+                playerState.permanentDamageTracking = Mathf.Max(0, 1 - state.consciousnessSource.efficiency);
+            }
+
             afflictionList = new(state.wholeBodyAfflictions);
 
             for (int i = 0; i < afflictionList.Count; i++)
@@ -801,6 +946,10 @@ public class RWHealthState
                 if (afflictionList[i] is RWDisease disease)
                 {
                     Disease(disease);
+                }
+                else if (afflictionList[i] is RWInformational informational)
+                {
+                    Informational(informational);
                 }
             }
 
@@ -1070,54 +1219,86 @@ public class RWHealthState
                 {
                     state.capacityAffectingAffliction.Add(disease);
 
-                    if (disease.severity <= 0.665f)
+                    switch (disease.severity)
                     {
-                        state.consciousness -= 0.05f;
-                        state.manipulation -= 0.05f;
-                        state.breathing -= 0.1f;
-                    }
-                    else if (disease.severity <= 0.832f)
-                    {
-                        state.consciousness -= 0.1f;
-                        state.manipulation -= 0.1f;
-                        state.breathing -= 0.15f;
-                    }
-                    else
-                    {
-                        state.pain += 0.05f;
+                        case <= 0.665f:
+                            state.consciousness -= 0.05f;
+                            state.manipulation -= 0.05f;
+                            state.breathing -= 0.1f;
+                            break;
+                        case <= 0.832f:
+                            state.consciousness -= 0.1f;
+                            state.manipulation -= 0.1f;
+                            state.breathing -= 0.15f;
+                            break;
+                        default:
+                            state.pain += 0.05f;
 
-                        state.consciousness -= 0.15f;
-                        state.manipulation -= 0.2f;
-                        state.breathing -= 0.2f;
+                            state.consciousness -= 0.15f;
+                            state.manipulation -= 0.2f;
+                            state.breathing -= 0.2f;
+                            break;
                     }
                 }
                 else if (disease is RWInfection)
                 {
-                    if (disease.severity <= 0.32f)
+                    switch (disease.severity)
                     {
-                        state.pain += 0.05f;
+                        case <= 0.32f:
+                            state.pain += 0.05f;
+                            break;
+                        case <= 0.77f:
+                            state.pain += 0.08f;
+                            break;
+                        case <= 0.86f:
+                            state.pain += 0.12f;
+
+                            state.consciousness -= 0.5f;
+
+                            state.capacityAffectingAffliction.Add(disease);
+                            break;
+                        default:
+                            state.forceUnconsciousness = true;
+
+                            state.pain += 0.85f;
+
+                            state.breathing -= 0.5f;
+
+                            state.capacityAffectingAffliction.Add(disease);
+                            break;
                     }
-                    else if (disease.severity <= 0.77f)
+                }
+            }
+
+            void Informational(RWInformational informational)
+            {
+                if (informational is RWHypothermia)
+                {
+                    state.capacityAffectingAffliction.Add(informational);
+
+                    switch (informational.tendQuality)
                     {
-                        state.pain += 0.08f;
-                    }
-                    else if (disease.severity <= 0.86f)
-                    {
-                        state.pain += 0.12f;
+                        case <= 0.2f:
+                            state.consciousness -= 0.05f;
+                            state.manipulation -= 0.08f;
+                            break;
+                        case <= 0.35f:
+                            state.consciousness -= 0.1f;
+                            state.manipulation -= 0.2f;
+                            state.moving -= 0.1f;
+                            break;
+                        case <= 0.62f:
+                            state.consciousness -= 0.2f;
+                            state.manipulation -= 0.5f;
+                            state.moving -= 0.3f;
 
-                        state.consciousness -= 0.5f;
+                            state.pain += 0.15f;
+                            break;
+                        default:
+                            state.forceUnconsciousness = true;
 
-                        state.capacityAffectingAffliction.Add(disease);
-                    }
-                    else
-                    {
-                        state.forceUnconsciousness = true;
-
-                        state.pain += 0.85f;
-
-                        state.breathing -= 0.5f;
-
-                        state.capacityAffectingAffliction.Add(disease);
+                            state.pain += 0.3f;
+                            break;
                     }
                 }
             }
@@ -1303,10 +1484,12 @@ public class RWHealthState
         {
             if (focusedBodyPart == null || focusedBodyPart.deathEffect == "")
             {
+                focusedBodyPart.afflictions.Add(Scar(damage));
                 return;
             }
             else if (focusedBodyPart is UpperTorso)
             {
+                focusedBodyPart.afflictions.Add(Scar(damage));
                 Kill();
                 return;
             }

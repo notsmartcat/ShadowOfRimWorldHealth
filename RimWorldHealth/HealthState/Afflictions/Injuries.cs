@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-
-namespace ShadowOfRimWorldHealth;
+﻿namespace ShadowOfRimWorldHealth;
 
 public class RWScar : RWInjury
 {
@@ -20,6 +18,11 @@ public class RWDestroyed : RWInjury
 {
     public RWDestroyed(CreatureState state, RWBodyPart part, float damage, RWDamageType damageType, string attackName = "", string attackerName = "") : base(state, part, damage, damageType, attackName, attackerName)
     {
+        if (damageType is RWFrostbite)
+        {
+            healingDifficulty.bleeding = 1;
+        }
+
         if (healingDifficulty.bleeding == 0 || damage == 0 || part.isSolid)
         {
             isTended = true;

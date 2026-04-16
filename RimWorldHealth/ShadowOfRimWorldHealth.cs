@@ -651,7 +651,6 @@ public class RimWorldHealth : BaseUnityPlugin
         RWHealthState.Damage(self, state, new RWBurn(), damage, focusedBodyPart, attackName, attackerName);
     }
 
-
     public static RWBodyPart GetHitBodyPart(RWState state, BodyChunk hitChunk = null, RWBodyPart subPartOf = null, bool canHitInternal = false, bool isBlunt = false)
     {
         List<RWBodyPart> list = new();
