@@ -46,6 +46,27 @@ internal class ILHooks
         IL.Creature.Update += ILCreatureUpdate;
         #endregion
 
+        #region DropBug
+        IL.DropBug.Update += ILDropBugUpdate;
+        #endregion
+
+        #region EggBug
+        IL.EggBug.Update += ILEggBugUpdate;
+        #endregion
+
+        #region FlareBomb
+        IL.FlareBomb.Update += ILFlareBombUpdate;
+        #endregion
+
+        #region Fly
+        IL.Fly.BitByPlayer += ILFlyBitByPlayer;
+        IL.Fly.Update += ILFlyUpdate;
+        #endregion
+
+        #region Hazer
+
+        #endregion
+
         #region Explosion
         IL.Explosion.Update += ILExplosionUpdate;
         #endregion
@@ -989,6 +1010,283 @@ internal class ILHooks
     }
     #endregion
 
+    #region DropBug
+    static void ILDropBugUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+            ILLabel target = null;
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[5]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<DropBug>("get_State"),
+                x => x.MatchCallvirt<HealthState>("get_health"),
+                x => x.MatchLdcR4(0.0f),
+                x => x.MatchBgeUn(out target),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(CreatureHasState);
+                val.Emit(OpCodes.Brfalse_S, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILDropBugUpdate Bleed!");
+            }
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[5]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<DropBug>("get_State"),
+                x => x.MatchCallvirt<HealthState>("get_health"),
+                x => x.MatchLdcR4(0.0f),
+                x => x.MatchBleUn(out target),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(CreatureHasState);
+                val.Emit(OpCodes.Brfalse_S, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILDropBugUpdate Heal!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    #endregion
+
+    #region EggBug
+    static void ILEggBugUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+            ILLabel target = null;
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Creature>("get_dead"),
+                x => x.MatchBrtrue(out target),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(CreatureHasState);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILEggBugUpdate Bleed!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    #endregion
+
+    #region FlareBomb
+    static void ILFlareBombUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+            ILLabel target = null;
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[1]
+            {
+                x => x.MatchCallvirt<Creature>("Stun"),
+            })) {}
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILFlareBombUpdate skip!");
+            }
+
+            if (val.TryGotoPrev(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<UpdatableAndDeletable>("room"),
+                x => x.MatchCallvirt<Room>("get_abstractRoom"),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                target = val.MarkLabel();
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILFlareBombUpdate target!");
+            }
+
+            if (val.TryGotoPrev(MoveType.Before, new Func<Instruction, bool>[1]
+            {
+                x => x.MatchStfld<InsectoidCreature>("poison"),
+            })) { }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILFlareBombUpdate skip2!");
+            }
+
+            if (val.TryGotoPrev(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<UpdatableAndDeletable>("room"),
+                x => x.MatchCallvirt<Room>("get_abstractRoom"),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit<UpdatableAndDeletable>(OpCodes.Ldfld, "room");
+                val.Emit<Room>(OpCodes.Callvirt, "get_abstractRoom");
+                val.Emit<AbstractRoom>(OpCodes.Ldfld, "creatures");
+                val.Emit(OpCodes.Ldloc_0);
+                val.Emit(OpCodes.Callvirt, typeof(List<AbstractCreature>).GetMethod("get_Item"));
+                val.Emit<AbstractCreature>(OpCodes.Callvirt, "get_realizedCreature");
+                val.EmitDelegate(FlareBombUpdate);
+                val.Emit(OpCodes.Brfalse_S, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILFlareBombUpdate!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    public static bool FlareBombUpdate(Creature self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out _))
+        {
+            return true;
+        }
+
+        (self as BigSpider).poison = UnityEngine.Random.value + 0.5f;
+
+        return false;
+    }
+    #endregion
+
+    #region Fly
+    static void ILFlyBitByPlayer(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+            ILLabel target = null;
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Creature>("get_dead"),
+                x => x.MatchBrtrue(out target),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(CreatureHasState);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILFlyBitByPlayer!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+
+    static void ILFlyUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+            ILLabel target = null;
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[4]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Fly>("drown"),
+                x => x.MatchLdcR4(1),
+                x => x.MatchBneUn(out _),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(FlyUpdateDrown);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILFlyUpdate Drown!");
+            }
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[1]
+            {
+                x => x.MatchBle(out target)
+            }))
+            {
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(CreatureHasState);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILFlyUpdate Crush!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    public static void FlyUpdateDrown(Creature self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        {
+            return;
+        }
+
+        RWAirInLungs airInLungs = null;
+        float lungs = 1 - ((Fly)self).drown;
+
+        for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
+        {
+            if (state.wholeBodyAfflictions[i] is RWAirInLungs tempAirInLungs)
+            {
+                airInLungs = tempAirInLungs;
+                break;
+            }
+        }
+
+        if (lungs >= 1)
+        {
+            if (airInLungs != null)
+            {
+                state.wholeBodyAfflictions.Remove(airInLungs);
+            }
+        }
+        else
+        {
+            if (airInLungs != null)
+            {
+                airInLungs.tendQuality = lungs;
+            }
+            else
+            {
+                state.wholeBodyAfflictions.Add(new RWAirInLungs(self.State, null, lungs));
+            }
+        }
+    }
+    #endregion
+
+    #region Hazer
+
+    #endregion
+
     #region Explosion
     static void ILExplosionUpdate(ILContext il)
     {
@@ -1353,7 +1651,7 @@ class ILHooks
     }
 	public static void ShadowOfLizard(Creature self)
     {
-        return true;
+
     }
 }
 */
