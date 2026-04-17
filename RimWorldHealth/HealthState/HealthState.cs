@@ -669,14 +669,16 @@ public class RWHealthState
 
         void Informational(RWInformational informational)
         {
-            if (informational is RWAirInLungs)
+            if (informational is RWHypothermia hypothermia)
             {
-                return;
-            }
-            else if (informational is RWHypothermia hypothermia)
-            {
-                if (hypothermia.tendQuality >= 1 || hypothermia.lastHypothermia == hypothermia.tendQuality)
+                if (hypothermia.lastHypothermia == hypothermia.tendQuality)
                 {
+                    return;
+                }
+                else if (hypothermia.tendQuality >= 1)
+                {
+                    if(!self.dead)
+                        Kill(self);
                     return;
                 }
 
@@ -689,121 +691,141 @@ public class RWHealthState
                     state.updateCapacities = true;
                 }
 
-                if (LessOrGreater(hypothermia.tendQuality, hypothermia.lastHypothermia, 0.04f) || LessOrGreater(hypothermia.tendQuality, hypothermia.lastHypothermia, 0.2f) || LessOrGreater(hypothermia.tendQuality, hypothermia.lastHypothermia, 0.35f) || LessOrGreater(hypothermia.tendQuality, hypothermia.lastHypothermia, 0.62f))
+                if (LessOrGreater(hypothermia.tendQuality, hypothermia.lastHypothermia, 0.2f) || LessOrGreater(hypothermia.tendQuality, hypothermia.lastHypothermia, 0.35f) || LessOrGreater(hypothermia.tendQuality, hypothermia.lastHypothermia, 0.62f))
                 {
                     state.updateCapacities = true;
                 }
 
                 hypothermia.lastHypothermia = hypothermia.tendQuality;
+
+                RWBodyPart GetFrostbiteHitBodyPart(RWState state)
+                {
+                    List<RWBodyPart> list = new();
+                    RWBodyPart focusedBodyPart = null;
+
+                    for (int i = 0; i < state.bodyParts.Count; i++)
+                    {
+                        if (IsDestroyed(state.bodyParts[i]) || !ValidBodyPart(state.bodyParts[i]))
+                        {
+                            continue;
+                        }
+
+                        list.Add(state.bodyParts[i]);
+                    }
+
+                    if (list.Count > 1)
+                    {
+                        float chance = 0;
+
+                        for (int i = 0; i < list.Count; i++)
+                        {
+                            chance += list[i].coverage;
+                        }
+
+                        float roll = Random.Range(0f, chance);
+
+                        chance = 0;
+
+                        for (int i = 0; i < list.Count; i++)
+                        {
+                            chance += list[i].coverage;
+
+                            if (roll <= chance)
+                            {
+                                focusedBodyPart = list[i];
+                                break;
+                            }
+                        }
+                    }
+                    else if (list.Count == 1)
+                    {
+                        focusedBodyPart = list[0];
+                    }
+
+                    return focusedBodyPart;
+
+                    bool ValidBodyPart(RWBodyPart part)
+                    {
+                        if (part is Ear || part is Nose || part is Finger || part is Toe || part is Jaw)
+                        {
+                            return true;
+                        }
+                        else if (part is Hand)
+                        {
+                            for (int i = 0; i < state.armSetNames.Count; i++)
+                            {
+                                if (state.armSet[state.armSetNames[i]].hand == part)
+                                {
+                                    float fingerEfficiency = 0;
+
+                                    if (state.armSet[state.armSetNames[i]].fingers.Count != 0)
+                                    {
+                                        for (int j = 0; j < state.armSet[state.armSetNames[i]].fingers.Count; j++)
+                                        {
+                                            fingerEfficiency += state.armSet[state.armSetNames[i]].fingers[j].efficiency;
+                                        }
+
+                                        fingerEfficiency = (fingerEfficiency * (0.8f / state.armSet[state.armSetNames[i]].fingers.Count)) + 0.2f;
+                                    }
+
+                                    if (1 - fingerEfficiency > Random.value)
+                                    {
+                                        return true;
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                        else if (part is Foot)
+                        {
+                            for (int i = 0; i < state.legSetNames.Count; i++)
+                            {
+                                if (state.legSet[state.legSetNames[i]].foot == part)
+                                {
+                                    float toeEfficiency = 0;
+
+                                    if (state.legSet[state.legSetNames[i]].toes.Count != 0)
+                                    {
+                                        for (int j = 0; j < state.legSet[state.legSetNames[i]].toes.Count; j++)
+                                        {
+                                            toeEfficiency += state.legSet[state.legSetNames[i]].toes[j].efficiency;
+                                        }
+
+                                        toeEfficiency = (toeEfficiency * (0.8f / state.legSet[state.legSetNames[i]].toes.Count)) + 0.2f;
+                                    }
+
+                                    if (1 - toeEfficiency > Random.value)
+                                    {
+                                        return true;
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+
+                        return false;
+                    }
+                }
             }
-
-            RWBodyPart GetFrostbiteHitBodyPart(RWState state)
+            else if (informational is RWToxicBuildup toxicBuildup)
             {
-                List<RWBodyPart> list = new();
-                RWBodyPart focusedBodyPart = null;
-
-                for (int i = 0; i < state.bodyParts.Count; i++)
+                if (toxicBuildup.lastToxicBuildup == toxicBuildup.tendQuality)
                 {
-                    if (IsDestroyed(state.bodyParts[i]) || !ValidBodyPart(state.bodyParts[i]))
-                    {
-                        continue;
-                    }
-
-                    list.Add(state.bodyParts[i]);
+                    return;
+                }
+                else if(toxicBuildup.tendQuality >= 1)
+                {
+                    if (!self.dead)
+                        Kill(self);
+                    return;
                 }
 
-                if (list.Count > 1)
+                if (LessOrGreater(toxicBuildup.tendQuality, toxicBuildup.lastToxicBuildup, 0.2f) || LessOrGreater(toxicBuildup.tendQuality, toxicBuildup.lastToxicBuildup, 0.4f) || LessOrGreater(toxicBuildup.tendQuality, toxicBuildup.lastToxicBuildup, 0.6f) || LessOrGreater(toxicBuildup.tendQuality, toxicBuildup.lastToxicBuildup, 0.8f))
                 {
-                    float chance = 0;
-
-                    for (int i = 0; i < list.Count; i++)
-                    {
-                        chance += list[i].coverage;
-                    }
-
-                    float roll = Random.Range(0f, chance);
-
-                    chance = 0;
-
-                    for (int i = 0; i < list.Count; i++)
-                    {
-                        chance += list[i].coverage;
-
-                        if (roll <= chance)
-                        {
-                            focusedBodyPart = list[i];
-                            break;
-                        }
-                    }
-                }
-                else if (list.Count == 1)
-                {
-                    focusedBodyPart = list[0];
+                    state.updateCapacities = true;
                 }
 
-                return focusedBodyPart;
-
-                bool ValidBodyPart(RWBodyPart part)
-                {
-                    if (part is Ear || part is Nose || part is Finger || part is Toe || part is Jaw)
-                    {
-                        return true;
-                    }
-                    else if (part is Hand)
-                    {
-                        for (int i = 0; i < state.armSetNames.Count; i++)
-                        {
-                            if (state.armSet[state.armSetNames[i]].hand == part)
-                            {
-                                float fingerEfficiency = 0;
-
-                                if (state.armSet[state.armSetNames[i]].fingers.Count != 0)
-                                {
-                                    for (int j = 0; j < state.armSet[state.armSetNames[i]].fingers.Count; j++)
-                                    {
-                                        fingerEfficiency += state.armSet[state.armSetNames[i]].fingers[j].efficiency;
-                                    }
-
-                                    fingerEfficiency = (fingerEfficiency * (0.8f / state.armSet[state.armSetNames[i]].fingers.Count)) + 0.2f;
-                                }
-
-                                if (1 - fingerEfficiency > Random.value)
-                                {
-                                    return true;
-                                }
-                                break;
-                            }
-                        }
-                    }
-                    else if (part is Foot)
-                    {
-                        for (int i = 0; i < state.legSetNames.Count; i++)
-                        {
-                            if (state.legSet[state.legSetNames[i]].foot == part)
-                            {
-                                float toeEfficiency = 0;
-
-                                if (state.legSet[state.legSetNames[i]].toes.Count != 0)
-                                {
-                                    for (int j = 0; j < state.legSet[state.legSetNames[i]].toes.Count; j++)
-                                    {
-                                        toeEfficiency += state.legSet[state.legSetNames[i]].toes[j].efficiency;
-                                    }
-
-                                    toeEfficiency = (toeEfficiency * (0.8f / state.legSet[state.legSetNames[i]].toes.Count)) + 0.2f;
-                                }
-
-                                if (1 - toeEfficiency > Random.value)
-                                {
-                                    return true;
-                                }
-                                break;
-                            }
-                        }
-                    }
-
-                    return false;
-                }
+                toxicBuildup.lastToxicBuildup = toxicBuildup.tendQuality;
             }
         }
 
@@ -1038,6 +1060,12 @@ public class RWHealthState
             }
 
             state.consciousness = Mathf.Max(state.consciousness, 0);
+
+            if (state.consciousness <= 0)
+            {
+                Kill(self);
+                return;
+            }
 
             if (state.digestionBP.Count > 0)
             {
@@ -1282,12 +1310,12 @@ public class RWHealthState
                             state.consciousness -= 0.05f;
                             state.manipulation -= 0.08f;
                             break;
-                        case <= 0.35f:
+                        case <= 0.4f:
                             state.consciousness -= 0.1f;
                             state.manipulation -= 0.2f;
                             state.moving -= 0.1f;
                             break;
-                        case <= 0.62f:
+                        case <= 0.6f:
                             state.consciousness -= 0.2f;
                             state.manipulation -= 0.5f;
                             state.moving -= 0.3f;
@@ -1298,6 +1326,31 @@ public class RWHealthState
                             state.forceUnconsciousness = true;
 
                             state.pain += 0.3f;
+                            break;
+                    }
+                }
+                else if (informational is RWToxicBuildup)
+                {
+                    state.capacityAffectingAffliction.Add(informational);
+
+                    switch (informational.tendQuality)
+                    {
+                        case <= 0.2f:
+                            state.consciousness -= 0.05f;
+                            break;
+                        case <= 0.4f:
+                            state.consciousness -= 0.1f;
+                            break;
+                        case <= 0.6f:
+                            state.consciousness -= 0.15f;
+                            break;
+                        case <= 0.8f:
+                            state.consciousness -= 0.25f;
+                            break;
+                        default:
+                            state.forceUnconsciousness = true;
+
+                            state.consciousness -= 0.25f;
                             break;
                     }
                 }
@@ -1490,7 +1543,7 @@ public class RWHealthState
             else if (focusedBodyPart is UpperTorso)
             {
                 focusedBodyPart.afflictions.Add(Scar(damage));
-                Kill();
+                Kill(self);
                 return;
             }
 
@@ -1511,7 +1564,7 @@ public class RWHealthState
                     {
                         if (!subParts.Contains(state.bodyParts[i]) && !subPartsRestricted.Contains(state.bodyParts[i]) && IsSubPartName(state.bodyParts[i], subParts[j]))
                         {
-                            if (subParts[j].afflictions.Count == 1 && subParts[j].afflictions[0] is RWDestroyed || subParts[j].deathEffect == "")
+                            if (subParts[j].afflictions.Count == 1 && subParts[j].afflictions[0] is RWDestroyed)
                             {
                                 subPartsRestricted.Add(state.bodyParts[i]);
                                 continue;
@@ -1532,34 +1585,25 @@ public class RWHealthState
 
             for (int j = 0; j < subParts.Count; j++)
             {
-                subParts[j].afflictions.Clear();
-                subParts[j].afflictions.Add(new RWDestroyed(self, subParts[j], j == 0 ? 1f : 0f, damageType, attackName, attackerName));
+                if (subParts[j].deathEffect == "")
+                {
+                    subParts[j].afflictions.Add(Scar(Mathf.Max(1, subParts[j].maxHealth - subParts[j].health)));
+                }
+                else
+                {
+                    subParts[j].afflictions.Clear();
+                    subParts[j].afflictions.Add(new RWDestroyed(self, subParts[j], j == 0 ? 1f : 0f, damageType, attackName, attackerName));
+                }
 
                 if (subParts[j].deathEffect == "Death" || subParts[j].deathEffect == "Decapitation")
                 {
-                    Kill();
+                    Kill(self);
                 }
             }
 
             if (focusedBodyPart.deathEffect == "Death" || focusedBodyPart.deathEffect == "Decapitation")
             {
-                Kill();
-            }
-
-            void Kill()
-            {
-                if (self.creature == null)
-                {
-                    self.Die();
-                }
-                else if (self.creature.realizedCreature == null)
-                {
-                    self.creature.Die();
-                }
-                else
-                {
-                    self.creature.realizedCreature.Die();
-                }
+                Kill(self);
             }
         }
 
@@ -1654,6 +1698,22 @@ public class RWHealthState
             }
 
             return false;
+        }
+    }
+
+    static void Kill(CreatureState self)
+    {
+        if (self.creature == null)
+        {
+            self.Die();
+        }
+        else if (self.creature.realizedCreature == null)
+        {
+            self.creature.Die();
+        }
+        else
+        {
+            self.creature.realizedCreature.Die();
         }
     }
 

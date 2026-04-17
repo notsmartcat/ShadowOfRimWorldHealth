@@ -607,7 +607,7 @@ public class RimWorldHealth : BaseUnityPlugin
         }
     }
 
-    public static void CentipedeShockDamage(CreatureState self, RWState state, Centipede source, bool underwater)
+    public static void CentipedeShockDamage(CreatureState self, RWState state, Centipede source, bool underwater, bool shockGiveUp)
     {
         RWBodyPart focusedBodyPart = GetHitBodyPart(state);
         Debug.Log("CentipedeShockDamage focusedBodyPart is " + focusedBodyPart);
@@ -648,7 +648,14 @@ public class RimWorldHealth : BaseUnityPlugin
 
         string attackName = attackerName + (source.Submersion > 0f ? " - Underwater shock" : " - Shock");
 
-        RWHealthState.Damage(self, state, new RWBurn(), damage, focusedBodyPart, attackName, attackerName);
+        RWHealthState.Damage(self, state, new RWElectricBurn(), damage, focusedBodyPart, attackName, attackerName);
+
+        if (shockGiveUp && !self.dead)
+        {
+            source.Stun(6);
+            source.shockGiveUpCounter = Math.Max(source.shockGiveUpCounter, 30);
+            source.AI.annoyingCollisions = Math.Min(source.AI.annoyingCollisions * 2, 150);
+        }
     }
 
     public static RWBodyPart GetHitBodyPart(RWState state, BodyChunk hitChunk = null, RWBodyPart subPartOf = null, bool canHitInternal = false, bool isBlunt = false)

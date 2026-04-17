@@ -7,7 +7,6 @@ internal class RWAirInLungs : RWInformational
         tendQuality = airInLungs; //TendQuality is used for determining how much oxygen is in the lungs, 1 being full and 0 being empty
     }
 }
-
 internal class RWHypothermia : RWInformational
 {
     public RWHypothermia(CreatureState state, RWBodyPart part, float hypothermia) : base(state, part)
@@ -17,4 +16,14 @@ internal class RWHypothermia : RWInformational
     }
 
     public float lastHypothermia;
+}
+internal class RWToxicBuildup : RWInformational
+{
+    public RWToxicBuildup(CreatureState state, RWBodyPart part, float poison) : base(state, part)
+    {
+        tendQuality = poison; //TendQuality is used for determining how Toxic Buildup there is
+        lastToxicBuildup = poison;
+    }
+
+    public float lastToxicBuildup;
 }

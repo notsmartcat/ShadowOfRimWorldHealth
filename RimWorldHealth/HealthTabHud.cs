@@ -1110,11 +1110,11 @@ public class HealthTab : HudPart
 
                                 isCapacityAffected = true;
 
-                                if (disease.severity <= 0.665f)
+                                if (disease.severity < 0.665f)
                                 {
                                     description += "  " + disease.name + " (minor)" + "\n";
                                 }
-                                else if (disease.severity <= 0.832f)
+                                else if (disease.severity < 0.832f)
                                 {
                                     description += "  " + disease.name + " (major)" + "\n";
                                 }
@@ -1130,7 +1130,7 @@ public class HealthTab : HudPart
                                     continue;
                                 }
 
-                                if (disease.severity > 0.77f && disease.severity <= 0.86f)
+                                if (disease.severity >= 0.77f && disease.severity < 0.86f)
                                 {
                                     if (stringValue == "Breathing")
                                     {
@@ -1160,7 +1160,7 @@ public class HealthTab : HudPart
                                     continue;
                                 }
 
-                                if (informational.tendQuality <= 0.2f)
+                                if (informational.tendQuality < 0.2f)
                                 {
                                     if (stringValue == "Moving")
                                     {
@@ -1170,7 +1170,7 @@ public class HealthTab : HudPart
                                     isCapacityAffected = true;
                                     description += "  Hypothermia (shivering)\n";
                                 }
-                                else if (informational.tendQuality > 0.86f)
+                                else if (informational.tendQuality < 0.35f)
                                 {
                                     if (stringValue == "Moving")
                                     {
@@ -1180,7 +1180,7 @@ public class HealthTab : HudPart
                                     isCapacityAffected = true;
                                     description += "  Hypothermia (minor)\n";
                                 }
-                                else if (informational.tendQuality > 0.86f)
+                                else if (informational.tendQuality < 0.62f)
                                 {
                                     isCapacityAffected = true;
                                     description += "  Hypothermia (serious)\n";
@@ -1194,6 +1194,39 @@ public class HealthTab : HudPart
 
                                     isCapacityAffected = true;
                                     description += "  Hypothermia (extreme)\n";
+                                }
+                            }
+                            else if (informational is RWToxicBuildup)
+                            {
+                                if (stringValue != "Consiousness")
+                                {
+                                    continue;
+                                }
+
+                                if (informational.tendQuality < 0.2f)
+                                {
+                                    isCapacityAffected = true;
+                                    description += "  Toxic buildup (initial)\n";
+                                }
+                                else if (informational.tendQuality < 0.4f)
+                                {
+                                    isCapacityAffected = true;
+                                    description += "  Toxic buildup (minor)\n";
+                                }
+                                else if (informational.tendQuality < 0.6f)
+                                {
+                                    isCapacityAffected = true;
+                                    description += "  Toxic buildup (moderate)\n";
+                                }
+                                else if (informational.tendQuality < 0.8f)
+                                {
+                                    isCapacityAffected = true;
+                                    description += "  Toxic buildup (serious)\n";
+                                }
+                                else
+                                {
+                                    isCapacityAffected = true;
+                                    description += "  Toxic buildup (extreme)\n";
                                 }
                             }
                         }
@@ -1283,7 +1316,7 @@ public class HealthTab : HudPart
                     {
                         healthTabInfos[0].description.text = "An infectious disease.";
 
-                        if (disease.severity <= 0.665f)
+                        if (disease.severity < 0.665f)
                         {
                             healthTabInfos[0].description.text += "\n" +
                                 "\n" +
@@ -1291,7 +1324,7 @@ public class HealthTab : HudPart
                                 "  - Manipulation: -5%\n" +
                                 "  - Breathing: -10%\n";
                         }
-                        else if (disease.severity <= 0.832f)
+                        else if (disease.severity < 0.832f)
                         {
                             healthTabInfos[0].description.text += "\n" +
                                 "\n" +
@@ -1351,14 +1384,14 @@ public class HealthTab : HudPart
                             "worse and ends in death. Recovery is\n" +
                             "quick once the victim is re-warmed.";
 
-                        if (informational.tendQuality <= 0.2f)
+                        if (informational.tendQuality < 0.2f)
                         {
                             healthTabInfos[0].description.text += "\n" +
                                 "\n" +
                                 "  - Consciousness: -5%\n" +
                                 "  - Manipulation: -8%\n";
                         }
-                        else if (informational.tendQuality <= 0.35f)
+                        else if (informational.tendQuality < 0.35f)
                         {
                             healthTabInfos[0].description.text += "\n" +
                                 "\n" +
@@ -1366,7 +1399,7 @@ public class HealthTab : HudPart
                                 "  - Manipulation: -20%\n" +
                                 "  - Moving: -10%\n";
                         }
-                        else if (informational.tendQuality <= 0.62f)
+                        else if (informational.tendQuality < 0.62f)
                         {
                             healthTabInfos[0].description.text += "\n" +
                                 "\n" +
@@ -1382,6 +1415,58 @@ public class HealthTab : HudPart
                                 "  - Consciousness: Max 10%\n" +
                                 "  - Pain: +30%";
                         }
+
+                        healthTabInfos[0].nameStatus.text = ": " + Mathf.Round(informational.tendQuality * 100) + "%";
+                    }
+                    else if (informational is RWToxicBuildup)
+                    {
+                        healthTabInfos[0].description.text = "Poison in the bloodstream. This can\n" +
+                            "come from various sources, incluidng\n" +
+                            "environmental toxins, venomous bites,\n" +
+                            "or poisoned weapons.\n" +
+                            "\n" +
+                            "At high doses, toxic buildup is lethal.\n" +
+                            "Even at low doses, it can generate\n" +
+                            "cancers.\n" +
+                            "\n" +
+                            "If a creature dies with toxic buildup,\n" +
+                            "there's a chance that they cannot be\n" +
+                            "eaten. The higher the toxic buildup, the\n" +
+                            "higher the chance.";
+
+                        if (informational.tendQuality < 0.2f)
+                        {
+                            healthTabInfos[0].description.text += "\n" +
+                                "\n" +
+                                "  - Consciousness: -5%\n";
+                        }
+                        else if (informational.tendQuality < 0.4f)
+                        {
+                            healthTabInfos[0].description.text += "\n" +
+                                "\n" +
+                                "  - Consciousness: -10%\n";
+                        }
+                        else if (informational.tendQuality < 0.6f)
+                        {
+                            healthTabInfos[0].description.text += "\n" +
+                                "\n" +
+                                "  - Consciousness: -15%\n";
+                        }
+                        else if (informational.tendQuality < 0.8f)
+                        {
+                            healthTabInfos[0].description.text += "\n" +
+                                "\n" +
+                                "  - Consciousness: -25%";
+                        }
+                        else
+                        {
+                            healthTabInfos[0].description.text += "\n" +
+                                "\n" +
+                                "  - Consciousness: Max 10%\n" +
+                                "  - Consciousness: -25%";
+                        }
+
+
 
                         healthTabInfos[0].nameStatus.text = ": " + Mathf.Round(informational.tendQuality * 100) + "%";
                     }
@@ -1732,19 +1817,19 @@ public class HealthTab : HudPart
                             "killing local tissue, and eventually\n" +
                             "causing blood poisoning and death.";
 
-                        if (disease.severity <= 0.32f)
+                        if (disease.severity < 0.32f)
                         {
                             healthTabInfos[1].description.text += "\n" +
                                 "\n" +
                                 "  - Pain: +5%\n";
                         }
-                        else if (disease.severity <= 0.77f)
+                        else if (disease.severity < 0.77f)
                         {
                             healthTabInfos[1].description.text += "\n" +
                                 "\n" +
                                 "  - Pain: +8%\n";
                         }
-                        else if (disease.severity <= 0.86f)
+                        else if (disease.severity < 0.86f)
                         {
                             healthTabInfos[1].description.text += "\n" +
                                 "\n" +
@@ -2120,11 +2205,11 @@ public class HealthTabBodyPart
 
                         if (disease is RWInfection && disease.severity > 0)
                         {
-                            if (disease.severity <= 0.32f)
+                            if (disease.severity < 0.32f)
                             {
                                 text += " (minor)";
                             }
-                            else if (disease.severity <= 0.77f)
+                            else if (disease.severity < 0.77f)
                             {
                                 text += " (major)";
                             }
@@ -2379,11 +2464,11 @@ public class HealthTabWholeBody
 
                 if (disease is RWFlu && disease.severity > 0)
                 {
-                    if (disease.severity <= 0.665f)
+                    if (disease.severity < 0.665f)
                     {
                         text += " (minor)";
                     }
-                    else if (disease.severity <= 0.832f)
+                    else if (disease.severity < 0.832f)
                     {
                         text += " (major)";
                     }
@@ -2440,13 +2525,38 @@ public class HealthTabWholeBody
                     {
                         text += " (serious)";
                     }
-                    else if (informational.tendQuality > 0.2f)
+                    else if (informational.tendQuality >= 0.2f)
                     {
                         text += " (minor)";
                     }
                     else
                     {
                         text += " (shivering)";
+                    }
+                }
+                else if (informational is RWToxicBuildup)
+                {
+                    text = "Toxic buildup";
+
+                    if (informational.tendQuality >= 0.8f)
+                    {
+                        text += " (extreme)";
+                    }
+                    else if (informational.tendQuality >= 0.6f)
+                    {
+                        text += " (serious)";
+                    }
+                    else if (informational.tendQuality >= 0.4f)
+                    {
+                        text += " (moderate)";
+                    }
+                    else if (informational.tendQuality >= 0.2f)
+                    {
+                        text += " (minor)";
+                    }
+                    else
+                    {
+                        text += " (initial)";
                     }
                 }
 

@@ -305,6 +305,22 @@ public class RWElectricBurn : RWDamageType
         headiffs.Add("Electrical burn");
     }
 }
+public class RWAcidBurn : RWDamageType
+{
+    public RWAcidBurn() : base()
+    {
+        name = "Acid burn";
+
+        category = "Misc";
+
+        armourCategory = "Sharp";
+
+        overkillMin = 0;
+        overkillMax = 0;
+
+        headiffs.Add("Acid burn");
+    }
+}
 
 public class RWSurgicalCut : RWDamageType
 {

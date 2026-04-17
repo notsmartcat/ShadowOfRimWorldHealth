@@ -279,3 +279,17 @@ public class RWHDFrostbite : RWHealingDifficulty
         description = "Frozen tissue caused by exposure to cold. Frostbite is very painful, and frostbitten body parts are often lost.";
     }
 }
+public class RWHDAcidBurn : RWHDBurnBase
+{
+    public RWHDAcidBurn() : base()
+    {
+        name = "Acid burn";
+
+        scar = "Acid burn scar";
+
+        destroyed = "Dissolved off";
+        destroyedOut = "Dissolved out";
+
+        description = "An acid burn.";
+    }
+}

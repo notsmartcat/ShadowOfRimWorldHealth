@@ -1,4 +1,5 @@
-﻿using Mono.Cecil.Cil;
+﻿using Mono.Cecil;
+using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using System;
 using System.Collections.Generic;
@@ -533,7 +534,7 @@ internal class ILHooks
             return true;
         }
 
-        CentipedeShockDamage(shockObj.State, state, self, shockObj.Submersion > 0f);
+        CentipedeShockDamage(shockObj.State, state, self, shockObj.Submersion > 0f, true);
 
         float stun = 200;
 
@@ -551,12 +552,6 @@ internal class ILHooks
         shockObj.Stun((int)stun);
         self.room.AddObject(new CreatureSpasmer(shockObj, true, shockObj.stun));
         shockObj.LoseAllGrasps();
-        if (!shockObj.dead)
-        {
-            self.Stun(6);
-            self.shockGiveUpCounter = Math.Max(self.shockGiveUpCounter, 30);
-            self.AI.annoyingCollisions = Math.Min(self.AI.annoyingCollisions / 2, 150);
-        }
 
         return false;
     }
@@ -567,7 +562,7 @@ internal class ILHooks
             return true;
         }
 
-        CentipedeShockDamage(shockObj.State, state, self, shockObj.Submersion > 0f);
+        CentipedeShockDamage(shockObj.State, state, self, shockObj.Submersion > 0f, true);
 
         float stun = 200;
 
@@ -579,12 +574,6 @@ internal class ILHooks
         Debug.Log(stun + " stun");
 
         shockObj.Stun((int)stun);
-        if (!shockObj.dead)
-        {
-            self.Stun(6);
-            self.shockGiveUpCounter = Math.Max(self.shockGiveUpCounter, 30);
-            self.AI.annoyingCollisions = Math.Min(self.AI.annoyingCollisions / 2, 150);
-        }
 
         return false;
     }
@@ -595,7 +584,7 @@ internal class ILHooks
             return;
         }
 
-        CentipedeShockDamage(shockObj.State, state, self, shockObj.Submersion > 0f);
+        CentipedeShockDamage(shockObj.State, state, self, shockObj.Submersion > 0f, false);
     }
     public static bool CentipedeShockPyroDeath(Centipede self, Creature shockObj)
     {
@@ -604,7 +593,7 @@ internal class ILHooks
             return true;
         }
 
-        CentipedeShockDamage(shockObj.State, state, self, shockObj.Submersion > 0f);
+        CentipedeShockDamage(shockObj.State, state, self, shockObj.Submersion > 0f, true);
 
         float stun = (int)Mathf.Lerp(70f, 120f, self.size);
 
@@ -622,12 +611,6 @@ internal class ILHooks
         shockObj.Stun((int)stun);
         self.room.AddObject(new CreatureSpasmer(shockObj, true, shockObj.stun));
         shockObj.LoseAllGrasps();
-        if (!shockObj.dead)
-        {
-            self.Stun(6);
-            self.shockGiveUpCounter = Math.Max(self.shockGiveUpCounter, 30);
-            self.AI.annoyingCollisions = Math.Min(self.AI.annoyingCollisions / 2, 150);
-        }
 
         return false;
     }
@@ -638,7 +621,7 @@ internal class ILHooks
             return true;
         }
 
-        CentipedeShockDamage(shockObj.State, state, self, shockObj.Submersion > 0f);
+        CentipedeShockDamage(shockObj.State, state, self, shockObj.Submersion > 0f, true);
 
         float stun = (int)Mathf.Lerp(70f, 120f, self.size);
 
@@ -652,12 +635,6 @@ internal class ILHooks
         shockObj.Stun((int)stun);
         self.room.AddObject(new CreatureSpasmer(shockObj, true, shockObj.stun));
         shockObj.LoseAllGrasps();
-        if (!shockObj.dead)
-        {
-            self.Stun(6);
-            self.shockGiveUpCounter = Math.Max(self.shockGiveUpCounter, 30);
-            self.AI.annoyingCollisions = Math.Min(self.AI.annoyingCollisions / 2, 150);
-        }
 
         return false;
     }
@@ -668,7 +645,7 @@ internal class ILHooks
             return;
         }
 
-        CentipedeShockDamage(shockObj.State, state, self, shockObj.Submersion > 0f);
+        CentipedeShockDamage(shockObj.State, state, self, shockObj.Submersion > 0f, false);
 
         return;
     }
@@ -843,7 +820,7 @@ internal class ILHooks
                 val.MoveBeforeLabels();
 
                 val.Emit(OpCodes.Ldarg_0);
-                val.EmitDelegate(CreatureHasState);
+                val.EmitDelegate(CreatureUpdateLethalWater);
                 val.Emit(OpCodes.Brfalse, target);
             }
             else
@@ -861,7 +838,7 @@ internal class ILHooks
                 val.MoveAfterLabels();
 
                 val.Emit(OpCodes.Ldarg_0);
-                val.EmitDelegate(CreatureHasState);
+                val.EmitDelegate(CreatureUpdateLethalWater);
                 val.Emit(OpCodes.Brfalse_S, target);
             }
             else
@@ -879,7 +856,7 @@ internal class ILHooks
                 val.MoveBeforeLabels();
 
                 val.Emit(OpCodes.Ldarg_0);
-                val.EmitDelegate(CreatureHasState);
+                val.EmitDelegate(CreatureUpdateLethalWater);
                 val.Emit(OpCodes.Brfalse_S, target);
             }
             else
@@ -896,7 +873,7 @@ internal class ILHooks
                 val.MoveAfterLabels();
 
                 val.Emit(OpCodes.Ldarg_0);
-                val.EmitDelegate(CreatureHasState);
+                val.EmitDelegate(CreatureUpdateLethalWater);
                 val.Emit(OpCodes.Brfalse_S, target);
             }
             else
@@ -905,7 +882,7 @@ internal class ILHooks
             }
             #endregion
 
-            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[6]
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[6]
             {
                 x => x.MatchLdloc(10),
                 x => x.MatchLdcR4(1),
@@ -915,10 +892,10 @@ internal class ILHooks
                 x => x.MatchBrtrue(out _)
             }))
             {
-                val.MoveBeforeLabels();
+                val.MoveAfterLabels();
 
                 val.Emit(OpCodes.Ldarg_0);
-                val.EmitDelegate(CreatureHasState);
+                val.EmitDelegate(CreatureUpdatePoison);
                 val.Emit(OpCodes.Brfalse_S, target);
             }
             else
@@ -945,6 +922,70 @@ internal class ILHooks
             }
         }
         catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    public static bool CreatureUpdateLethalWater(Creature self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        {
+            return true;
+        }
+
+        RWBodyPart focusedBodyPart = GetHitBodyPart(state);
+        Debug.Log("CentipedeShockDamage focusedBodyPart is " + focusedBodyPart);
+
+        RWHealthState.Damage(self.State, state, new RWAcidBurn(), UnityEngine.Random.Range(8.2f, 18.8f), focusedBodyPart, "Acidic water");
+
+        self.firstChunk.vel += Vector2.ClampMagnitude(new Vector2(0f, 5f) / self.firstChunk.mass, 10f);
+
+        self.Stun(StunMath(0.1f, self, Creature.DamageType.Explosion));
+
+        return false;
+    }
+
+    public static bool CreatureUpdatePoison(Creature self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        {
+            return true;
+        }
+
+        RWToxicBuildup toxicBuildup = null;
+
+        for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
+        {
+            if (state.wholeBodyAfflictions[i] is RWToxicBuildup tempToxicBuildup)
+            {
+                toxicBuildup = tempToxicBuildup;
+                break;
+            }
+        }
+
+        float poison = self.injectedPoison / self.Template.instantDeathDamageLimit;
+
+        Debug.Log(poison);
+
+        if (poison < 0.04f)
+        {
+            if (toxicBuildup != null)
+            {
+                state.wholeBodyAfflictions.Remove(toxicBuildup);
+                state.updateCapacities = true;
+            }
+        }
+        else
+        {
+            if (toxicBuildup != null)
+            {
+                toxicBuildup.tendQuality = Math.Min(1, poison);
+            }
+            else
+            {
+                state.wholeBodyAfflictions.Add(new RWToxicBuildup(self.State, null, Math.Min(1, poison)));
+                state.updateCapacities = true;
+            }
+        }
+
+        return false;
     }
     #endregion
 

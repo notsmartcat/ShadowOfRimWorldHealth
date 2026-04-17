@@ -82,6 +82,7 @@ public class RWInjury : RWAffliction
                 "Shredded" => new RWHDShredded(),
                 "Bruise" => new RWHDBruise(),
                 "Frostbite" => new RWHDFrostbite(),
+                "Acid burn" => new RWHDAcidBurn(),
                 _ => null,
             };
 
