@@ -289,6 +289,22 @@ public class RWFrostbite : RWDamageType
         headiffs.Add("Frostbite");
     }
 }
+public class RWElectricBurn : RWDamageType
+{
+    public RWElectricBurn() : base()
+    {
+        name = "Electrical burn";
+
+        category = "Environmental";
+
+        armourCategory = "Heat";
+
+        overkillMin = 0;
+        overkillMax = 0;
+
+        headiffs.Add("Electrical burn");
+    }
+}
 
 public class RWSurgicalCut : RWDamageType
 {

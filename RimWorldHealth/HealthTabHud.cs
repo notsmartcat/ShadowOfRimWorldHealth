@@ -133,7 +133,7 @@ public class HealthTab : HudPart
 
                 if (!alreadyExists && !IsSubPartDestroyed(state, state.bodyParts[i]))
                 {
-                    HealthTabBodyPart part = new( this, state.bodyParts[i]);
+                    HealthTabBodyPart part = new(this, state.bodyParts[i]);
 
                     healthTabBodyParts.Add(part);
 
@@ -1619,18 +1619,7 @@ public class HealthTab : HudPart
                     }
                     else if (injury is RWScar scar && scar.isRevealed)
                     {
-                        if (scar.isPermanent)
-                        {
-                            name = injury.healingDifficulty.name;
-
-                            name = char.ToLowerInvariant(name[0]) + name.Substring(1);
-
-                            healthTabInfos[1].name.text = "Permanent " + name + ((injury.attackName != "" || scar.painCategory != "") ? " (" + (injury.attackName != "" ? injury.attackName + (scar.painCategory != "" ? ", " + scar.painCategory : "") : scar.painCategory) + ")" : "");
-                        }
-                        else
-                        {
-                            healthTabInfos[1].name.text = injury.healingDifficulty.name + " scar" + ((injury.attackName != "" || scar.painCategory != "") ? " (" + (injury.attackName != "" ? injury.attackName + (scar.painCategory != "" ? ", " + scar.painCategory : "") : scar.painCategory) + ")" : "");
-                        }
+                        healthTabInfos[1].name.text = ScarName(scar);
 
                         healthTabInfos[1].nameStatus.text = " : " + (Mathf.Round(scar.damage * 10) / 10).ToString();
 
@@ -1862,6 +1851,11 @@ public class HealthTab : HudPart
 
         treating = false;
         treatedAffliction = null;
+    }
+
+    public string ScarName(RWScar scar)
+    {
+        return (scar.isPermanent && scar.healingDifficulty.permanentScar != "" ? scar.healingDifficulty.permanentScar : scar.healingDifficulty.scar) + ((scar.attackName != "" || scar.painCategory != "") ? " (" + (scar.attackName != "" ? scar.attackName + (scar.painCategory != "" ? ", " + scar.painCategory : "") : scar.painCategory) + ")" : "");
     }
 
     #region Values
@@ -2103,18 +2097,7 @@ public class HealthTabBodyPart
                         }
                         else if (injury is RWScar scar && scar.isRevealed)
                         {
-                            if (scar.isPermanent)
-                            {
-                                string name = injury.healingDifficulty.name;
-
-                                name = char.ToLowerInvariant(name[0]) + name.Substring(1);
-
-                                text = "Permanent " + name + ((injury.attackName != "" || scar.painCategory != "") ? " (" + (injury.attackName != "" ? injury.attackName + (scar.painCategory != "" ? ", " + scar.painCategory : "") : scar.painCategory) + ") " : "");
-                            }
-                            else
-                            {
-                                text = injury.healingDifficulty.name + " scar" + ((injury.attackName != "" || scar.painCategory != "") ? " (" + (injury.attackName != "" ? injury.attackName + (scar.painCategory != "" ? ", " + scar.painCategory : "") : scar.painCategory) + ") " : "");
-                            }
+                            text = owner.ScarName(scar);
                         }
                         else
                         {

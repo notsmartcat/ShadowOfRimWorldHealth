@@ -70,6 +70,7 @@ public class RWInjury : RWAffliction
             RWHealingDifficulty healingDifficulty = RWHealingDifficultyName switch
             {
                 "Burn" => new RWHDBurn(),
+                "Electrical burn" => new RWHDElectricalBurn(),
                 "Crush" => new RWHDCrush(),
                 "Crack" => new RWHDCrack(),
                 "Cut" => new RWHDCut(),

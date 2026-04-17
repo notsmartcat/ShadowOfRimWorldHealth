@@ -42,6 +42,7 @@ internal class ILHooks
 
         #region Creature
         IL.Creature.HypothermiaUpdate += ILCreatureHypothermiaUpdate;
+        IL.Creature.Update += ILCreatureUpdate;
         #endregion
 
         #region Explosion
@@ -781,7 +782,6 @@ internal class ILHooks
         }
         catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
     }
-
     public static void CreatureHypothermiaUpdate(Creature self)
     {
         if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
@@ -820,6 +820,131 @@ internal class ILHooks
                 state.updateCapacities = true;
             }
         }
+    }
+
+    static void ILCreatureUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+            ILLabel target = null;
+
+            #region LethalWater
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[6]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchIsinst(typeof(Player)),
+                x => x.MatchLdfld<Player>("pyroJumpCounter"),
+                x => x.MatchLdsfld<MoreSlugcats.MoreSlugcats>("cfgArtificerExplosionCapacity"),
+                x => x.MatchCallvirt(typeof(Configurable<int>).GetProperty("Value").GetGetMethod()), //:monkcurious:
+                x => x.MatchBlt(out target)
+            })) 
+            {
+                val.MoveBeforeLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(CreatureHasState);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCreatureUpdate LethalArti!");
+            }
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchIsinst(typeof(Player)),
+                x => x.MatchCallvirt<Creature>("Die")
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(CreatureHasState);
+                val.Emit(OpCodes.Brfalse_S, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCreatureUpdate LethalPlayer!");
+            }
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Creature>("get_dead"),
+                x => x.MatchBrtrue(out _),
+            }))
+            {
+                val.MoveBeforeLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(CreatureHasState);
+                val.Emit(OpCodes.Brfalse_S, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCreatureUpdate Violence!");
+            }
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[2]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCallvirt<Creature>("Die")
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(CreatureHasState);
+                val.Emit(OpCodes.Brfalse_S, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCreatureUpdate Lethal!");
+            }
+            #endregion
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[6]
+            {
+                x => x.MatchLdloc(10),
+                x => x.MatchLdcR4(1),
+                x => x.MatchBltUn(out target),
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Creature>("get_dead"),
+                x => x.MatchBrtrue(out _)
+            }))
+            {
+                val.MoveBeforeLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(CreatureHasState);
+                val.Emit(OpCodes.Brfalse_S, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCreatureUpdate Poison!");
+            }
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Creature>("get_dead"),
+                x => x.MatchBrtrue(out target)
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(CreatureHasState);
+                val.Emit(OpCodes.Brfalse_S, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCreatureUpdate Bleed!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
     }
     #endregion
 
@@ -1181,7 +1306,11 @@ internal class ILHooks
 /*
 class ILHooks
 {
-	public static bool ShadowOfLizardUpdate(Lizard self)
+	public static bool ShadowOfLizardUpdate(Creature self)
+    {
+        return true;
+    }
+	public static void ShadowOfLizard(Creature self)
     {
         return true;
     }
