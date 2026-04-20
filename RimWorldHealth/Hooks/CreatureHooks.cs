@@ -26,6 +26,10 @@ internal class CreatureHooks
         #region Creature
         On.Creature.Violence += CreatureViolence;
         #endregion
+
+        #region InsectoidCreature
+        On.InsectoidCreature.Update += InsectoidCreatureUpdate;
+        #endregion
     }
 
     #region Saving and Loading
@@ -152,5 +156,19 @@ internal class CreatureHooks
             RWHealthState.Damage(self.State, state, new(), damage, focusedBodyPart, attackName);
         }
     } //This is a backup hook in case a attack causes Violence, all attacks will be hooked into where Violence is called so the right DamageType can be used, this will mean that Violence is never actually meant to be called
+    #endregion
+
+    #region InsectoidCreature
+    static void InsectoidCreatureUpdate(On.InsectoidCreature.orig_Update orig, InsectoidCreature self, bool eu)
+    {
+        orig(self, eu);
+
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        {
+            return;
+        }
+
+        SetToxicBuildup(state, self);
+    }
     #endregion
 }

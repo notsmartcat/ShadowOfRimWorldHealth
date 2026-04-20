@@ -1444,7 +1444,7 @@ public class RWHealthState
                     }
                 }
             }
-            else if (extraDamage > 0 && damageType is RWBomb && BombDestroyBodyparts())
+            else if (extraDamage > 0 && damageType is RWBomb && BombDestroyBodyparts() || attackName == "Big Jellyfish - Electricity")
             {
                 for (int i = 0; i < state.bodyParts.Count; i++)
                 {
@@ -1585,15 +1585,8 @@ public class RWHealthState
 
             for (int j = 0; j < subParts.Count; j++)
             {
-                if (subParts[j].deathEffect == "")
-                {
-                    subParts[j].afflictions.Add(Scar(Mathf.Max(1, subParts[j].maxHealth - subParts[j].health)));
-                }
-                else
-                {
-                    subParts[j].afflictions.Clear();
-                    subParts[j].afflictions.Add(new RWDestroyed(self, subParts[j], j == 0 ? 1f : 0f, damageType, attackName, attackerName));
-                }
+                subParts[j].afflictions.Clear();
+                subParts[j].afflictions.Add(new RWDestroyed(self, subParts[j], j == 0 ? 1f : 0f, damageType, attackName, attackerName));
 
                 if (subParts[j].deathEffect == "Death" || subParts[j].deathEffect == "Decapitation")
                 {

@@ -14,22 +14,14 @@ internal class SlugcatHooks
         On.Player.GrabUpdate += PlayerGrabUpdate;
         On.Player.GraphicsModuleUpdated += PlayerGraphicsModuleUpdated;
         On.Player.LungUpdate += PlayerLungUpdate;
+        On.Player.PyroDeath += PlayerPyroDeath;
+        On.Player.SubtractFood += PlayerSubtractFood;
         On.Player.Update += PlayerUpdate;
         #endregion
 
         #region PlayerGraphics
         On.PlayerGraphics.DrawSprites += PlayerGraphicsDrawSprites;
         #endregion
-    }
-
-    static void PlayerGrabUpdate(On.Player.orig_GrabUpdate orig, Player self, bool eu)
-    {
-        orig(self, eu);
-
-        if (!healthState.TryGetValue(self.State, out RWState _))
-        {
-            return;
-        }
     }
 
     static void PlayerAddFood(On.Player.orig_AddFood orig, Player self, int add)
@@ -42,6 +34,16 @@ internal class SlugcatHooks
         }
 
         state.hasEaten = true;
+    }
+
+    static void PlayerGrabUpdate(On.Player.orig_GrabUpdate orig, Player self, bool eu)
+    {
+        orig(self, eu);
+
+        if (!healthState.TryGetValue(self.State, out RWState _))
+        {
+            return;
+        }
     }
 
     static void PlayerGraphicsDrawSprites(On.PlayerGraphics.orig_DrawSprites orig, PlayerGraphics self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
@@ -97,6 +99,36 @@ internal class SlugcatHooks
                 state.wholeBodyAfflictions.Add(new RWAirInLungs(self.State, null, self.airInLungs));
             }
         }
+    }
+
+    static void PlayerPyroDeath(On.Player.orig_PyroDeath orig, Player self)
+    {
+        orig(self);
+
+        if (!healthState.TryGetValue(self.State, out RWState state))
+        {
+            return;
+        }
+
+        for (int i = 0; i < state.bodyParts.Count; i++)
+        {
+            if (state.bodyParts[i] is Lung part && !IsDestroyed(part))
+            {
+                RWHealthState.Damage(self.State, state, new RWBomb(), 999999f, part, "Artificer - Explosion", "Artificer");
+            }
+        }
+    }
+
+    static void PlayerSubtractFood(On.Player.orig_SubtractFood orig, Player self, int sub)
+    {
+        orig(self, sub);
+
+        if (!healthState.TryGetValue(self.State, out RWState state) || self.playerState.foodInStomach > 0)
+        {
+            return;
+        }
+
+        state.hasEaten = false;
     }
 
     static void PlayerUpdate(On.Player.orig_Update orig, Player self, bool eu)

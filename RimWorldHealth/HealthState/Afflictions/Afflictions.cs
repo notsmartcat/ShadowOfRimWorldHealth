@@ -34,6 +34,11 @@ public class RWInjury : RWAffliction
         if (damageType != null && damageType.headiffs.Count > 0 && damageType.headiffs[0] != "")
         {
             healingDifficulty = HealingDifficulty();
+
+            if (attackName == "Coalescipede - Fangs" || attackName == "Locust swarm - Mandibles")
+            {
+                healingDifficulty.combines = true;
+            }
         }
         else
         {

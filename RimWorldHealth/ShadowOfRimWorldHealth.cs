@@ -204,7 +204,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 
                 for (int i = 0; i < state.bodyParts.Count; i++)
                 {
-                    if (state.bodyParts[i] is Arm part && part.subName == "Right")
+                    if (state.bodyParts[i] is Arm part && !IsDestroyed(part) && part.subName == "Right")
                     {
                         RWHealthState.Damage(self.State, state, new RWPoke(), 999999f, part, "oopsie");
 
@@ -347,6 +347,77 @@ public class RimWorldHealth : BaseUnityPlugin
             damage = (damage * UnityEngine.Random.Range(0.2f, 0.35f)) + extraDamage;
 
             Damage(secondaryFocusedBodyPart, damage);
+
+            while (true)
+            {
+                focusedBodyPart = GetHitAnotherBodyPart(secondaryFocusedBodyPart);
+
+                if (focusedBodyPart == null || secondaryFocusedBodyPart == null || focusedBodyPart == secondaryFocusedBodyPart)
+                {
+                    break;
+                }
+
+                Damage(focusedBodyPart, damage);
+
+                secondaryFocusedBodyPart = focusedBodyPart;
+
+                RWBodyPart GetHitAnotherBodyPart(RWBodyPart subPartOf)
+                {
+                    if (subPartOf == null)
+                    {
+                        return null;
+                    }
+
+                    List<RWBodyPart> list = new(1) { subPartOf };
+                    RWBodyPart focusedBodyPart = null;
+
+                    for (int i = 0; i < state.bodyParts.Count; i++)
+                    {
+                        if (IsDestroyed(state.bodyParts[i]) || subPartOf == state.bodyParts[i])
+                        {
+                            continue;
+                        }
+                        else if (!IsSubPartName(state.bodyParts[i], subPartOf))
+                        {
+                            continue;
+                        }
+
+                        list.Add(state.bodyParts[i]);
+                    }
+
+                    if (list.Count > 1)
+                    {
+                        float chance = 0;
+
+                        for (int i = 0; i < list.Count; i++)
+                        {
+                            chance += list[i].coverage;
+                        }
+
+                        float roll = UnityEngine.Random.Range(0f, chance);
+
+                        chance = 0;
+
+                        for (int i = 0; i < list.Count; i++)
+                        {
+                            chance += list[i].coverage;
+
+                            if (roll <= chance)
+                            {
+                                focusedBodyPart = list[i];
+                                break;
+                            }
+                        }
+                    }
+                    else if (list.Count == 1)
+                    {
+                        return null;
+                    }
+
+                    return focusedBodyPart == subPartOf ? null : focusedBodyPart;
+                }
+            }
+
         }
 
         void Damage(RWBodyPart focusedBodyPart, float damage)
@@ -721,6 +792,12 @@ public class RimWorldHealth : BaseUnityPlugin
             focusedBodyPart = list[0];
         }
 
+        if (focusedBodyPart == null)
+        {
+            Debug.Log("Error, hit bodypart is null");
+            RimWorldHealth.Logger.LogInfo(all + "Error, hit bodypart is null");
+        }
+
         return focusedBodyPart;
     }
 
@@ -732,5 +809,49 @@ public class RimWorldHealth : BaseUnityPlugin
         }
 
         return hasHealthState ? 250 : 35.71428571428571f;
+    }
+
+    public static void SetToxicBuildup(RWState state, Creature self)
+    {
+        RWToxicBuildup toxicBuildup = null;
+
+        for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
+        {
+            if (state.wholeBodyAfflictions[i] is RWToxicBuildup tempToxicBuildup)
+            {
+                toxicBuildup = tempToxicBuildup;
+                break;
+            }
+        }
+
+        float poison = self.injectedPoison / self.Template.instantDeathDamageLimit;
+
+        if (self is InsectoidCreature insectoid && insectoid.poison > 0)
+        {
+            poison += insectoid.poison;
+        }
+
+        Debug.Log(poison);
+
+        if (poison < 0.04f)
+        {
+            if (toxicBuildup != null)
+            {
+                state.wholeBodyAfflictions.Remove(toxicBuildup);
+                state.updateCapacities = true;
+            }
+        }
+        else
+        {
+            if (toxicBuildup != null)
+            {
+                toxicBuildup.tendQuality = Math.Min(1, poison);
+            }
+            else
+            {
+                state.wholeBodyAfflictions.Add(new RWToxicBuildup(self.State, null, Math.Min(1, poison)));
+                state.updateCapacities = true;
+            }
+        }
     }
 }
