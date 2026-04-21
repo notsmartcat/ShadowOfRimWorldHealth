@@ -72,6 +72,9 @@ public class RimWorldHealth : BaseUnityPlugin
         public bool hasEaten = false;
 
         public int medicalSkill = 0;
+
+        public string violenceAttackOverride = "";
+        public string violenceAttackerOverride = "";
     }
 
     public class OneTimeUseData
@@ -321,7 +324,132 @@ public class RimWorldHealth : BaseUnityPlugin
         return workingArms > 0;
     }
 
-    public static void BluntDamage(CreatureState self, RWState state, BodyChunk hitChunk, float damage, PhysicalObject source)
+    #region Custom Damages
+    public static void BombDamage(CreatureState self, RWState state, float damage, string attackName = "", string attackerName = "")
+    {
+        int amount = UnityEngine.Random.Range(1, 5);
+
+        RWBodyPart focusedBodyPart;
+
+        List<RWBodyPart> list = new();
+
+        for (int p = 0; p < amount; p++)
+        {
+            focusedBodyPart = null;
+            list.Clear();
+
+            bool isSuper = attackerName == "Energy Cell" || attackerName == "Singularity Bomb";
+
+            for (int i = 0; i < state.bodyParts.Count; i++)
+            {
+                if (state.bodyParts[i].connectedBodyChunks.Count > 0 && !state.bodyParts[i].isInternal && !IsDestroyed(state.bodyParts[i]))
+                {
+                    list.Add(state.bodyParts[i]);
+                }
+            }
+
+            if (list.Count > 1)
+            {
+                float chance = 0;
+
+                for (int i = 0; i < list.Count; i++)
+                {
+                    chance += list[i].coverage;
+                }
+
+                float roll = UnityEngine.Random.Range(0f, chance);
+
+                chance = 0;
+
+                for (int i = 0; i < list.Count; i++)
+                {
+                    chance += list[i].coverage;
+
+                    if (roll <= chance)
+                    {
+                        focusedBodyPart = list[i];
+                        break;
+                    }
+                }
+            }
+            else if (list.Count == 1)
+            {
+                focusedBodyPart = list[0];
+            }
+
+            list.Clear();
+
+            list.Add(focusedBodyPart);
+
+            while (focusedBodyPart != null && focusedBodyPart is not Neck)
+            {
+                for (int i = 0; i < state.bodyParts.Count; i++)
+                {
+                    if (!IsDestroyed(state.bodyParts[i]) && state.bodyParts[i].isInternal && IsSubPartName(state.bodyParts[i], list[0]))
+                    {
+                        //Debug.Log("Adding Subpart of " + focusedBodyPart.name + " with the name " + state.bodyParts[i].name);
+                        list.Add(state.bodyParts[i]);
+                    }
+                }
+
+                if (list.Count == 0)
+                {
+                    break;
+                }
+                else if (list.Count == 1)
+                {
+                    focusedBodyPart = list[0];
+                    break;
+                }
+
+                float chance = 0;
+
+                for (int i = 0; i < list.Count; i++)
+                {
+                    chance += list[i].coverage;
+                }
+
+                float roll = UnityEngine.Random.Range(0f, chance);
+
+                chance = 0;
+
+                RWBodyPart tempFocusedBodyPart = null;
+
+                for (int i = 0; i < list.Count; i++)
+                {
+                    chance += list[i].coverage;
+
+                    //Debug.Log("Roll = " + roll + "/" + chance + " for " + list[i].name);
+
+                    if (roll <= chance)
+                    {
+                        tempFocusedBodyPart = list[i];
+
+                        //Debug.Log("Bodypart out all subparts that was hit is " + tempFocusedBodyPart.name);
+                        break;
+                    }
+                }
+
+                if (tempFocusedBodyPart == null || tempFocusedBodyPart == focusedBodyPart)
+                {
+                    break;
+                }
+                else
+                {
+                    list.Clear();
+                    list.Add(tempFocusedBodyPart);
+                }
+            }
+
+            if (focusedBodyPart != null)
+            {
+                RWDamageType damageType = isSuper ? new RWSuperBomb() : new RWBomb();
+
+                RWHealthState.Damage(self, state, damageType, damage / amount, focusedBodyPart, attackName, attackerName);
+            }
+        }
+    }
+    public static void BluntDamage(CreatureState self, RWState state, BodyChunk hitChunk, float damage, string attackName = "", string attackerName = "")
     {
         RWBodyPart focusedBodyPart = GetHitBodyPart(state, hitChunk, null, false, true);
         RWBodyPart secondaryFocusedBodyPart = 0.4f < UnityEngine.Random.value ? GetHitBodyPart(state, hitChunk, focusedBodyPart) : null;
@@ -340,6 +468,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 extraDamage = damage - tempDamage;
             }
 
+            //Debug.Log("Primary Blunt Damage " + tempDamage + " to " + focusedBodyPart);
             Damage(focusedBodyPart, tempDamage);
         }
         if (secondaryFocusedBodyPart != null)
@@ -357,6 +486,7 @@ public class RimWorldHealth : BaseUnityPlugin
                     break;
                 }
 
+                //Debug.Log("Secondary Blunt Damage " + damage + " to " + focusedBodyPart);
                 Damage(focusedBodyPart, damage);
 
                 secondaryFocusedBodyPart = focusedBodyPart;
@@ -417,55 +547,47 @@ public class RimWorldHealth : BaseUnityPlugin
                     return focusedBodyPart == subPartOf ? null : focusedBodyPart;
                 }
             }
-
         }
 
         void Damage(RWBodyPart focusedBodyPart, float damage)
         {
-            string attackName = "";
-
-            if (source != null)
-            {
-                attackName = source.ToString();
-            }
-
-            RWHealthState.Damage(self, state, new RWBlunt(), damage, focusedBodyPart, attackName);
+            RWHealthState.Damage(self, state, new RWBlunt(), damage, focusedBodyPart, attackName, attackerName);
         }
     }
 
-    public static void CutDamage(CreatureState self, RWState state, BodyChunk hitChunk, float damage, PhysicalObject source)
+    public static void CutDamage(CreatureState self, RWState state, BodyChunk hitChunk, float damage, string attackName = "", string attackerName = "")
     {
-        Debug.Log("CutDamage");
+        //Debug.Log("CutDamage");
 
         float additionalPartsRoll = UnityEngine.Random.value;
         int additionalParts;
 
         if (additionalPartsRoll <= 0.3f)
         {
-            Debug.Log("CutDamage hit only 1 bodyPart");
+            //Debug.Log("CutDamage hit only 1 bodyPart");
             Damage(GetHitBodyPart(state, hitChunk), damage);
             return;
         }
         else if (additionalPartsRoll <= 0.75f)
         {
-            Debug.Log("CutDamage hit 1 additional bodyPart");
+            //Debug.Log("CutDamage hit 1 additional bodyPart");
             additionalParts = 1;
         }
         else if (additionalPartsRoll <= 0.95f)
         {
-            Debug.Log("CutDamage hit 2 additional bodyParts");
+            //Debug.Log("CutDamage hit 2 additional bodyParts");
             additionalParts = 2;
         }
         else
         {
-            Debug.Log("CutDamage hit 3 additional bodyParts");
+            //Debug.Log("CutDamage hit 3 additional bodyParts");
             additionalParts = 3;
         }
 
         damage *= (1 + 1.4f) / (1 + additionalParts + 1.4f) * (1 + additionalPartsRoll);
 
         RWBodyPart focusedBodyPart = GetHitBodyPart(state, hitChunk);
-        Debug.Log("CutDamage focusedBodyPart is " + focusedBodyPart);
+        //Debug.Log("CutDamage focusedBodyPart is " + focusedBodyPart);
 
         List<RWBodyPart> list = new(1) { focusedBodyPart };
 
@@ -480,7 +602,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 continue;
             }
 
-            Debug.Log("CutDamage focusedBodyParts subPart " + state.bodyParts[i] + " was added");
+            //Debug.Log("CutDamage focusedBodyParts subPart " + state.bodyParts[i] + " was added");
             list.Add(state.bodyParts[i]);
         } //Get all sub parts of the focusedBodypart
 
@@ -497,7 +619,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 continue;
             }
 
-            Debug.Log(focusedBodyPart + " parent is " + state.bodyParts[i]);
+            //Debug.Log(focusedBodyPart + " parent is " + state.bodyParts[i]);
 
             focusedBodyPart = state.bodyParts[i];
             break;
@@ -516,7 +638,7 @@ public class RimWorldHealth : BaseUnityPlugin
                     continue;
                 }
 
-                Debug.Log("CutDamage focusedBodyParts subPart " + state.bodyParts[i] + " was added");
+                //Debug.Log("CutDamage focusedBodyParts subPart " + state.bodyParts[i] + " was added");
 
                 list.Add(state.bodyParts[i]);
             } //Get all sub parts of the focusedBodypart's parent
@@ -536,7 +658,7 @@ public class RimWorldHealth : BaseUnityPlugin
                         continue;
                     }
 
-                    Debug.Log(focusedBodyPart + " parent is " + state.bodyParts[i]);
+                    //Debug.Log(focusedBodyPart + " parent is " + state.bodyParts[i]);
 
                     focusedBodyPart = state.bodyParts[i];
                     break;
@@ -558,7 +680,7 @@ public class RimWorldHealth : BaseUnityPlugin
                         continue;
                     }
 
-                    Debug.Log("CutDamage focusedBodyParts subPart " + state.bodyParts[i] + " was added");
+                    //Debug.Log("CutDamage focusedBodyParts subPart " + state.bodyParts[i] + " was added");
 
                     list.Add(state.bodyParts[i]);
                 } //Get all sub parts of the focusedBodypart's parent
@@ -569,7 +691,7 @@ public class RimWorldHealth : BaseUnityPlugin
         {
             if (list.Count < i - 1 + additionalParts)
             {
-                Debug.Log("CutDamage had less bodyparts stored then hit parts, list count = " + list.Count);
+                //Debug.Log("CutDamage had less bodyparts stored then hit parts, list count = " + list.Count);
                 Damage(list[UnityEngine.Random.Range(0, list.Count)], damage / (1 + additionalParts));
             }
             else
@@ -577,28 +699,21 @@ public class RimWorldHealth : BaseUnityPlugin
                 int listInt = UnityEngine.Random.Range(0, list.Count);
 
                 Damage(list[listInt], damage / (1 + additionalParts));
-                Debug.Log("CutDamage hit part is " + list[listInt]);
+                //Debug.Log("CutDamage hit part is " + list[listInt]);
                 list.RemoveAt(listInt);
             }
         }
 
         void Damage(RWBodyPart focusedBodyPart, float damage)
         {
-            string attackName = "";
-
-            if (source != null)
-            {
-                attackName = source.ToString();
-            }
-
-            RWHealthState.Damage(self, state, new RWCut(), damage, focusedBodyPart, attackName);
+            RWHealthState.Damage(self, state, new RWCut(), damage, focusedBodyPart, attackName, attackerName);
         }
     }
 
-    public static void ScratchDamage(CreatureState self, RWState state, BodyChunk hitChunk, float damage, PhysicalObject source)
+    public static void ScratchDamage(CreatureState self, RWState state, BodyChunk hitChunk, float damage, string attackName = "", string attackerName = "")
     {
         RWBodyPart focusedBodyPart = GetHitBodyPart(state, hitChunk);
-        Debug.Log("ScratchDamage focusedBodyPart is " + focusedBodyPart);
+        //Debug.Log("ScratchDamage focusedBodyPart is " + focusedBodyPart);
 
         List<RWBodyPart> list = new(1) { focusedBodyPart };
 
@@ -613,7 +728,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 continue;
             }
 
-            Debug.Log("CutDamage focusedBodyParts subPart " + state.bodyParts[i] + " was added");
+            //Debug.Log("CutDamage focusedBodyParts subPart " + state.bodyParts[i] + " was added");
             list.Add(state.bodyParts[i]);
         } //Get all sub parts of the focusedBodypart
 
@@ -630,7 +745,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 continue;
             }
 
-            Debug.Log(focusedBodyPart + " parent is " + state.bodyParts[i]);
+            //Debug.Log(focusedBodyPart + " parent is " + state.bodyParts[i]);
 
             focusedBodyPart = state.bodyParts[i];
             break;
@@ -649,7 +764,7 @@ public class RimWorldHealth : BaseUnityPlugin
                     continue;
                 }
 
-                Debug.Log("CutDamage focusedBodyParts subPart " + state.bodyParts[i] + " was added");
+                //Debug.Log("CutDamage focusedBodyParts subPart " + state.bodyParts[i] + " was added");
 
                 list.Add(state.bodyParts[i]);
             } //Get all sub parts of the focusedBodypart's parent
@@ -658,30 +773,23 @@ public class RimWorldHealth : BaseUnityPlugin
         int listInt = UnityEngine.Random.Range(0, list.Count);
 
         Damage(list[listInt], damage * 0.67f);
-        Debug.Log("CutDamage hit part is " + list[listInt]);
+        //Debug.Log("CutDamage hit part is " + list[listInt]);
 
         listInt = UnityEngine.Random.Range(0, list.Count);
 
         Damage(list[listInt], damage * 0.67f);
-        Debug.Log("CutDamage second hit part is " + list[listInt]);
+        //Debug.Log("CutDamage second hit part is " + list[listInt]);
 
         void Damage(RWBodyPart focusedBodyPart, float damage)
         {
-            string attackName = "";
-
-            if (source != null)
-            {
-                attackName = source.ToString();
-            }
-
-            RWHealthState.Damage(self, state, new RWScratch(), damage, focusedBodyPart, attackName);
+            RWHealthState.Damage(self, state, new RWScratch(), damage, focusedBodyPart, attackName, attackerName);
         }
     }
 
     public static void CentipedeShockDamage(CreatureState self, RWState state, Centipede source, bool underwater, bool shockGiveUp)
     {
         RWBodyPart focusedBodyPart = GetHitBodyPart(state);
-        Debug.Log("CentipedeShockDamage focusedBodyPart is " + focusedBodyPart);
+        //Debug.Log("CentipedeShockDamage focusedBodyPart is " + focusedBodyPart);
 
         string attackerName;
         float damage;
@@ -728,6 +836,7 @@ public class RimWorldHealth : BaseUnityPlugin
             source.AI.annoyingCollisions = Math.Min(source.AI.annoyingCollisions * 2, 150);
         }
     }
+    #endregion
 
     public static RWBodyPart GetHitBodyPart(RWState state, BodyChunk hitChunk = null, RWBodyPart subPartOf = null, bool canHitInternal = false, bool isBlunt = false)
     {
@@ -831,8 +940,8 @@ public class RimWorldHealth : BaseUnityPlugin
             poison += insectoid.poison;
         }
 
-        Debug.Log(poison);
-
+        //Debug.Log(poison);
+        
         if (poison < 0.04f)
         {
             if (toxicBuildup != null)
@@ -853,5 +962,146 @@ public class RimWorldHealth : BaseUnityPlugin
                 state.updateCapacities = true;
             }
         }
+    }
+
+    public static string GetCreatureName(Creature self)
+    {
+        if (self == null)
+        {
+            return "";
+        }
+
+        string name = self.ToString();
+
+        if (self is BigNeedleWorm)
+        {
+            name = "Adult Noodlefly";
+        }
+        else if (self is BigSpider bigSpider)
+        {
+            if (bigSpider.spitter)
+            {
+                name = "Spitter Spider";
+            }
+            else if (bigSpider.mother)
+            {
+                name = "Mother Spider";
+            }
+            else
+            {
+                name = "Big Spider";
+            }
+        }
+        else if (self is DropBug)
+        {
+            name = "Dropwig";
+        }
+        else if (self is EggBug)
+        {
+            name = "Firebug";
+        }
+        else if (self is JetFish)
+        {
+            name = "Jetfish";
+        }
+        else if (self is Vulture vulture)
+        {
+            if (vulture.IsKing)
+            {
+                name = "King Vulture";
+            }
+            else if (vulture.IsMiros)
+            {
+                name = "Miros Vulture";
+            }
+            else
+            {
+                name = "Vulture";
+            }
+        }
+        else if (self is Leech leech)
+        {
+            if (leech.jungleLeech)
+            {
+                name = "Jungle Leech";
+            }
+            else if (leech.seaLeech)
+            {
+                name = "Sea Leech";
+            }
+            else
+            {
+                name = "Leech";
+            }
+        }
+        else if (self is Lizard)
+        {
+            name = "Lizard";
+        } //Will add all non-modded Lizards later
+        else if (self is MirosBird)
+        {
+            name = "Miros Bird";
+        }
+        else if (self is Player)
+        {
+            name = "Slugcat";
+        } //Will add all non-modded Slugcats later
+        else if (self is SkyWhale)
+        {
+            name = "Sky Whale";
+        }
+        else if (self is Scavenger scavenger)
+        {
+            if (scavenger.King)
+            {
+                name = "Chieftain Scavenger";
+            }
+            else if (scavenger.Elite)
+            {
+                name = "Scavenger Elite";
+            }
+            else if (scavenger.Templar)
+            {
+                name = "Scavenger Templar";
+            }
+            else if (scavenger.Disciple)
+            {
+                name = "Scavenger Templar";
+            }
+            else
+            {
+                name = "Scavenger";
+            }
+        }
+        else if (ModManager.MSC && self is SkyWhale)
+        {
+            name = "Stowaway";
+        }
+        else if (ModManager.Watcher && self is Watcher.BoxWorm)
+        {
+            name = "Box Worm";
+        }
+        else if (ModManager.Watcher && self is Watcher.DrillCrab)
+        {
+            name = "Drill Crab";
+        }
+        else if (ModManager.Watcher && self is Watcher.Frog)
+        {
+            name = "Frog";
+        }
+        else if (ModManager.Watcher && self is Watcher.Loach)
+        {
+            name = "Loach";
+        }
+        else if (ModManager.Watcher && self is Watcher.Rat)
+        {
+            name = "Rat";
+        }
+        else if (ModManager.Watcher && self is Watcher.RippleSpider)
+        {
+            name = "Ripple Spider";
+        }
+
+        return name;
     }
 }

@@ -72,6 +72,14 @@ internal class ILHooks
         IL.InsectoidCreature.Update += ILInsectoidCreatureUpdate;
         #endregion
 
+        #region KarmicShockwave
+        IL.KarmicShockwave.StunCreatures += ILKarmicShockwaveStunCreatures;
+        #endregion
+
+        #region KingTusk
+        IL.KingTusks.Tusk.ShootUpdate += ILKingTuskShootUpdate;
+        #endregion
+
         #region LanternMouse
         IL.LanternMouse.Update += ILLanternMouseUpdate;
         #endregion
@@ -117,6 +125,12 @@ internal class ILHooks
         IL.SporeCloud.Update += ILSporeCloudUpdate;
         #endregion
 
+        #region SporePlant(Bee)
+        IL.SporePlant.AttachedBee.ctor += ILNewSporePlantAttachedBee;
+
+        IL.SporePlant.AttachedBee.Update += ILSporePlantAttachedBeeUpdate;
+        #endregion
+
         #region OracleBehavior
         IL.SSOracleBehavior.ThrowOutBehavior.Update += ILThrowOutBehaviorUpdate;
         #endregion
@@ -124,6 +138,10 @@ internal class ILHooks
         #region TubeWorm
         IL.TubeWorm.Update += ILTubeWormUpdate;
         IL.TubeWorm.Tongue.Update += ILTubeWormTongueUpdate;
+        #endregion
+
+        #region UnderwaterShock
+        IL.UnderwaterShock.Update += ILUnderwaterShockUpdate;
         #endregion
 
         #region VultureGrub
@@ -170,8 +188,16 @@ internal class ILHooks
         IL.Watcher.BigMoth.Update += ILBigMothUpdate;
         #endregion
 
+        #region FlameJet
+        IL.Watcher.FlameJet.UpdateDamage += ILFlameJetUpdateDamage;
+        #endregion
+
         #region Frog
         IL.Watcher.Frog.BitByPlayer += ILFrogBitByPlayer;
+        #endregion
+
+        #region Lightning
+        IL.Watcher.LightningMaker.StrikeAOE.Update += ILLightningStrikeAOEUpdate;
         #endregion
 
         #region Rat
@@ -617,8 +643,6 @@ internal class ILHooks
             ((Player)shockObj).PyroDeath();
         }
 
-        Debug.Log(stun + " stun");
-
         shockObj.Stun((int)stun);
         self.room.AddObject(new CreatureSpasmer(shockObj, true, shockObj.stun));
         shockObj.LoseAllGrasps();
@@ -640,8 +664,6 @@ internal class ILHooks
         {
             stun = StunMath(stun, shockObj, Creature.DamageType.Electric);
         }
-
-        Debug.Log(stun + " stun");
 
         shockObj.Stun((int)stun);
 
@@ -676,8 +698,6 @@ internal class ILHooks
             ((Player)shockObj).PyroDeath();
         }
 
-        Debug.Log(stun + " stun");
-
         shockObj.Stun((int)stun);
         self.room.AddObject(new CreatureSpasmer(shockObj, true, shockObj.stun));
         shockObj.LoseAllGrasps();
@@ -699,8 +719,6 @@ internal class ILHooks
         {
             stun = StunMath(stun, shockObj, Creature.DamageType.Electric);
         }
-
-        Debug.Log(stun + " stun");
 
         shockObj.Stun((int)stun);
         self.room.AddObject(new CreatureSpasmer(shockObj, true, shockObj.stun));
@@ -1001,7 +1019,6 @@ internal class ILHooks
         }
 
         RWBodyPart focusedBodyPart = GetHitBodyPart(state);
-        Debug.Log("CentipedeShockDamage focusedBodyPart is " + focusedBodyPart);
 
         RWHealthState.Damage(self.State, state, new RWAcidBurn(), UnityEngine.Random.Range(8.2f, 18.8f), focusedBodyPart, "Acidic water");
 
@@ -1243,7 +1260,6 @@ internal class ILHooks
                 {
                     if (!IsDestroyed(state.bodyParts[i]) && state.bodyParts[i].isInternal && IsSubPartName(state.bodyParts[i], list[0]))
                     {
-                        Debug.Log("Adding Subpart of " + focusedBodyPart.name + " with the name " + state.bodyParts[i].name);
                         list.Add(state.bodyParts[i]);
                     }
                 }
@@ -1275,13 +1291,12 @@ internal class ILHooks
                 {
                     chance += list[i].coverage;
 
-                    Debug.Log("Roll = " + roll + "/" + chance + " for " + list[i].name);
+                    //Debug.Log("Roll = " + roll + "/" + chance + " for " + list[i].name);
 
                     if (roll <= chance)
                     {
                         tempFocusedBodyPart = list[i];
 
-                        Debug.Log("Bodypart out all subparts that was hit is " + tempFocusedBodyPart.name);
                         break;
                     }
                 }
@@ -1304,7 +1319,10 @@ internal class ILHooks
                 string attackName = obj.ToString();
                 string attackerName = "";
 
-                bool super = false;
+                if (obj.killTagHolder != null)
+                {
+                    attackerName = GetCreatureName(obj.killTagHolder);
+                }
 
                 if (sourceObj == null)
                 {
@@ -1312,7 +1330,7 @@ internal class ILHooks
                 }
                 else if (sourceObj is EggBug)
                 {
-                    attackName = "FireBug - Explosion";
+                    attackName = attackerName + " - Explosion";
                 }
                 else if (sourceObj is ExplosiveSpear)
                 {
@@ -1328,16 +1346,15 @@ internal class ILHooks
                 }
                 else if (sourceObj is Player)
                 {
-                    attackName = "Slugcat - Explosion";
+                    attackName = attackerName + " - Explosion";
                 }
                 else if (sourceObj is Vulture)
                 {
-                    attackName = "Miros Vulture - Laser explosion";
+                    attackName = attackerName + " - Laser explosion";
                 }
                 else if (ModManager.MSC && sourceObj is MoreSlugcats.EnergyCell)
                 {
                     attackName = "Energy cell";
-                    super = true;
                 }
                 else if (ModManager.MSC && sourceObj is MoreSlugcats.FireEgg)
                 {
@@ -1346,25 +1363,15 @@ internal class ILHooks
                 else if (ModManager.MSC && sourceObj is MoreSlugcats.SingularityBomb)
                 {
                     attackName = "Singularity bomb";
-                    super = true;
                 }
                 else if (ModManager.MSC && sourceObj is Oracle)
                 {
-                    attackName = "Oracle";
+                    attackName = attackerName + " - Explosion";
                 }
 
-                if (obj.killTagHolder != null)
-                {
-                    attackerName = obj.killTagHolder.ToString();
-                }
+                RWDamageType damageType = isSuper ? new RWSuperBomb() : new RWBomb();
 
-                RWDamageType damageType;
-
-                damageType = super ? new RWSuperBomb() : new RWBomb();
-
-                float tempDamage = super ? damage * 800 : damage;
-
-                RWHealthState.Damage(self.State, state, damageType, tempDamage / amount, focusedBodyPart, attackName, attackerName);
+                RWHealthState.Damage(self.State, state, damageType, damage / amount, focusedBodyPart, attackName, attackerName);
             }
         }
 
@@ -1694,6 +1701,92 @@ internal class ILHooks
         }
 
         return false;
+    }
+    #endregion
+
+    #region KarmicShockwave
+    static void ILKarmicShockwaveStunCreatures(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[2]
+            {
+                x => x.MatchLdloc(3),
+                x => x.MatchLdnull()
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldloc_3);
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit<TemplarCircle>(OpCodes.Ldfld, "source");
+                val.Emit(OpCodes.Isinst, typeof(Creature));
+                val.EmitDelegate(KarmicShockwaveStunCreatures);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILKarmicShockwaveStunCreatures!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    public static void KarmicShockwaveStunCreatures(Creature self, Creature attacker)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        {
+            return;
+        }
+
+        state.violenceAttackerOverride = GetCreatureName(attacker);
+        state.violenceAttackOverride = "Karmic Shockwave";
+    }
+    #endregion
+
+    #region KingTusk
+    static void ILKingTuskShootUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[5]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<KingTusks.Tusk>("impaleChunk"),
+                x => x.MatchCallvirt<BodyChunk>("get_owner"),
+                x => x.MatchIsinst(typeof(Creature)),
+                x => x.MatchBrfalse(out _)
+            }))
+            {
+                val.MoveBeforeLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit<KingTusks.Tusk>(OpCodes.Ldfld, "impaleChunk");
+                val.Emit<BodyChunk>(OpCodes.Callvirt, "get_owner");
+                val.Emit(OpCodes.Isinst, typeof(Creature));
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit<KingTusks.Tusk>(OpCodes.Ldfld, "owner");
+                val.Emit<KingTusks>(OpCodes.Ldfld, "vulture");
+                val.EmitDelegate(KingTuskShootUpdate);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILKingTuskShootUpdate!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    public static void KingTuskShootUpdate(Creature self, Creature attacker)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        {
+            return;
+        }
+
+        state.violenceAttackerOverride = GetCreatureName(attacker);
+        state.violenceAttackOverride = state.violenceAttackerOverride + " - Tusk";
     }
     #endregion
 
@@ -2594,6 +2687,77 @@ internal class ILHooks
     }
     #endregion
 
+    #region SporePlant(Bee)
+    static void ILNewSporePlantAttachedBee(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[4]
+            {
+                x => x.MatchLdarg(3),
+                x => x.MatchCallvirt<BodyChunk>("get_owner"),
+                x => x.MatchIsinst(typeof(Creature)),
+                x => x.MatchLdnull()
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_3);
+                val.Emit<BodyChunk>(OpCodes.Callvirt, "get_owner");
+                val.Emit(OpCodes.Isinst, typeof(Creature));
+                val.EmitDelegate(SporePlantAttachedBee);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILNewSporePlantAttachedBee!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    static void ILSporePlantAttachedBeeUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[5]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<SporePlant.AttachedBee>("attachedChunk"),
+                x => x.MatchCallvirt<BodyChunk>("get_owner"),
+                x => x.MatchIsinst(typeof(Creature)),
+                x => x.MatchLdnull()
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit<SporePlant.AttachedBee>(OpCodes.Ldfld, "attachedChunk");
+                val.Emit<BodyChunk>(OpCodes.Callvirt, "get_owner");
+                val.Emit(OpCodes.Isinst, typeof(Creature));
+                val.EmitDelegate(SporePlantAttachedBee);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILSporePlantAttachedBeeUpdate!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+
+    public static void SporePlantAttachedBee(Creature self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        {
+            return;
+        }
+
+        state.violenceAttackOverride = "Bee - Stinger";
+    }
+    #endregion
+
     #region OracleBehavior
     static void ILThrowOutBehaviorUpdate(ILContext il)
     {
@@ -2735,6 +2899,68 @@ internal class ILHooks
         }
 
         return false;
+    }
+    #endregion
+
+    #region UnderwaterShock
+    static void ILUnderwaterShockUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[1]
+            {
+                x => x.MatchCallvirt<Creature>("Violence")
+            })) {}
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILUnderwaterShockUpdate skip!");
+            }
+
+            if (val.TryGotoPrev(MoveType.After, new Func<Instruction, bool>[2]
+            {
+                x => x.MatchNewobj(typeof(UnderwaterShock.Flash)),
+                x => x.MatchCallvirt<Room>("AddObject")
+            }))
+            {
+                val.MoveBeforeLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit<UpdatableAndDeletable>(OpCodes.Ldfld, "room");
+                val.Emit<Room>(OpCodes.Callvirt, "get_abstractRoom");
+                val.Emit<AbstractRoom>(OpCodes.Ldfld, "creatures");
+                val.Emit(OpCodes.Ldloc_1);
+                val.Emit(OpCodes.Callvirt, typeof(List<AbstractCreature>).GetMethod("get_Item"));
+                val.Emit<AbstractCreature>(OpCodes.Callvirt, "get_realizedCreature");
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit<UnderwaterShock>(OpCodes.Ldfld, "killTagHolder");
+                val.EmitDelegate(UnderwaterShockUpdate);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILUnderwaterShockUpdate!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    public static void UnderwaterShockUpdate(Creature self, Creature attacker)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        {
+            return;
+        }
+
+        if (attacker != null)
+        {
+            state.violenceAttackerOverride = GetCreatureName(attacker);
+
+            state.violenceAttackOverride = state.violenceAttackerOverride + " - Underwater Shock";
+        }
+        else
+        {
+            state.violenceAttackOverride = "Underwater Shock";
+        }
     }
     #endregion
 
@@ -2890,7 +3116,7 @@ internal class ILHooks
             return true;
         }
 
-        BluntDamage(self.State, state, null, UnityEngine.Random.Range(0.2f, 1.8f), weapon);
+        BluntDamage(self.State, state, null, UnityEngine.Random.Range(0.2f, 1.8f), "Rock");
         self.Stun(80);
 
         return false;
@@ -2902,7 +3128,7 @@ internal class ILHooks
             return;
         }
 
-        BluntDamage(self.State, state, null, UnityEngine.Random.Range(0.2f, 1.8f), weapon);
+        BluntDamage(self.State, state, null, UnityEngine.Random.Range(0.2f, 1.8f), "Rock");
     }
     #endregion
 
@@ -3360,8 +3586,6 @@ internal class ILHooks
             return;
         }
 
-        Debug.Log("BigMoth Eat, meat left " + self.State.meatLeft);
-
         if (self.State.meatLeft == 0)
         {
             state.bloodLoss = 1f;
@@ -3377,6 +3601,43 @@ internal class ILHooks
             state.bloodLoss = Mathf.Max(state.bloodLoss, 0.5f);
             state.updateCapacities = true;
         }
+    }
+    #endregion
+
+    #region FlameJet
+    static void ILFlameJetUpdateDamage(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdloc(2),
+                x => x.MatchCallvirt<Creature>("get_dead"),
+                x => x.MatchBrtrue(out _)
+            }))
+            {
+                val.MoveBeforeLabels();
+
+                val.Emit(OpCodes.Ldloc_2);
+                val.EmitDelegate(FlameJetUpdateDamage);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILFlameJetUpdateDamage!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    public static void FlameJetUpdateDamage(Creature self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        {
+            return;
+        }
+
+        state.violenceAttackOverride = "Flame Jet";
     }
     #endregion
 
@@ -3407,6 +3668,42 @@ internal class ILHooks
             }
         }
         catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    #endregion
+
+    #region Lightning
+    static void ILLightningStrikeAOEUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[2]
+            {
+                x => x.MatchLdcR4(0.7f),
+                x => x.MatchBgeUn(out _)
+            }))
+            {
+                val.MoveBeforeLabels();
+
+                val.Emit(OpCodes.Ldloc, 11);
+                val.EmitDelegate(LightningStrikeAOEUpdate);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILLightningStrikeAOEUpdate!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    public static void LightningStrikeAOEUpdate(Creature self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        {
+            return;
+        }
+
+        state.violenceAttackOverride = "Lightning";
     }
     #endregion
 
@@ -3549,8 +3846,6 @@ internal class ILHooks
 
     public static int StunMath(float stun, Creature self, Creature.DamageType type)
     {
-        Debug.Log("Pre-Stun " + stun);
-
         stun = (2 * 30f + stun) / self.Template.baseStunResistance;
 
         if (self.State is HealthState)
@@ -3561,8 +3856,6 @@ internal class ILHooks
         {
             stun /= self.Template.damageRestistances[type.Index, 1];
         }
-
-        Debug.Log("Post-Stun " + stun);
 
         return (int)stun;
     }

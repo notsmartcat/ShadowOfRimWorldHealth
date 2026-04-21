@@ -447,8 +447,6 @@ public class RWHealthState
                 return part;
             }
 
-            Debug.Log("BodyPartType failed to get a new bodypart from " + part);
-
             return new RWBodyPart(self);
         }
     }
@@ -1381,6 +1379,8 @@ public class RWHealthState
 
         if (health <= 0f)
         {
+            Debug.Log(focusedBodyPart + " was destroyed");
+
             DestroyBodyPart();
 
             extraDamage = health * -1;
@@ -1390,16 +1390,13 @@ public class RWHealthState
         }
         else
         {
+            Debug.Log(focusedBodyPart + " was damaged for " + damage);
+
             focusedBodyPart.afflictions.Add(Scar(damage));
             focusedBodyPart.health = health;
         }
 
         state.updateCapacities = true;
-
-        if (damageType is RWBlunt)
-        {
-            damage = 0;
-        }
 
         while (extraDamage > 0 || damage > 0)
         {
@@ -1413,6 +1410,11 @@ public class RWHealthState
                     {
                         focusedBodyPart = state.bodyParts[i];
 
+                        if (damageType is RWBlunt && !focusedBodyPart.isInternal)
+                        {
+                            break;
+                        }
+
                         health = focusedBodyPart.health;
                         health -= damage + extraDamage;
 
@@ -1422,6 +1424,8 @@ public class RWHealthState
 
                         if (health <= 0f)
                         {
+                            Debug.Log("extra bodypart " + focusedBodyPart + " was destroyed");
+
                             DestroyBodyPart();
                             extraDamage = health * -1;
                             damage = 0;
@@ -1430,6 +1434,8 @@ public class RWHealthState
                         }
                         else
                         {
+                            Debug.Log("extra bodypart " + focusedBodyPart + " was damaged for " + tempDamage);
+
                             extraDamage = 0f;
 
                             focusedBodyPart.afflictions.Add(Scar(tempDamage));

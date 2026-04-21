@@ -1,4 +1,6 @@
-﻿namespace ShadowOfRimWorldHealth;
+﻿using UnityEngine;
+
+namespace ShadowOfRimWorldHealth;
 
 public class RWAffliction
 {
