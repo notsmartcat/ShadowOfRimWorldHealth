@@ -75,6 +75,22 @@ public class RimWorldHealth : BaseUnityPlugin
 
         public string violenceAttackOverride = "";
         public string violenceAttackerOverride = "";
+
+        #region Treatment
+        public float tendTime = 10;
+        public float tendTimeMax = 10;
+        public readonly float tendTimeBase = 60;
+        public Creature tendTarget = null;
+
+        public RWAffliction tendAffliction = null;
+        #endregion
+
+        #region Slugcat Specific Variables
+        public float poleClimbSpeedFac = 1f;
+        public float corridorClimbSpeedFac = 1f;
+        public float runspeedFac = 1.27f;
+        public float swimForceFac = 1f;
+        #endregion
     }
 
     public class OneTimeUseData
@@ -85,6 +101,9 @@ public class RimWorldHealth : BaseUnityPlugin
     public static readonly ConditionalWeakTable<CreatureState, RWState> healthState = new();
 
     public static readonly ConditionalWeakTable<Explosion, OneTimeUseData> singleExplosion = new();
+
+    public static readonly MoreSlugcats.SlugNPCAI.BehaviorType SlugTend = new("SlugTend", true);
+    public static readonly MoreSlugcats.SlugNPCAI.BehaviorType SlugSelfTend = new("SlugSelfTend", true);
 
     public static string all = "ShadowOfRWHealth: ";
     internal static new ManualLogSource Logger;
@@ -971,7 +990,7 @@ public class RimWorldHealth : BaseUnityPlugin
             return "";
         }
 
-        string name = self.ToString();
+        string name;
 
         if (self is BigNeedleWorm)
         {
@@ -1073,7 +1092,11 @@ public class RimWorldHealth : BaseUnityPlugin
                 name = "Scavenger";
             }
         }
-        else if (ModManager.MSC && self is SkyWhale)
+        else if (ModManager.MSC && self is MoreSlugcats.BigJellyFish)
+        {
+            name = "Big Jellyfish";
+        }
+        else if (ModManager.MSC && self is MoreSlugcats.StowawayBug)
         {
             name = "Stowaway";
         }
@@ -1100,6 +1123,11 @@ public class RimWorldHealth : BaseUnityPlugin
         else if (ModManager.Watcher && self is Watcher.RippleSpider)
         {
             name = "Ripple Spider";
+        }
+        else
+        {
+            name = self.ToString();
+            Debug.Log(self + " is a unknown creature");
         }
 
         return name;

@@ -1031,7 +1031,7 @@ public class RWHealthState
 
             float consciounessOffset = state.consciousness;
 
-            state.consciousness = ((state.consciousnessSource == null ? 1 : state.consciousnessSource.efficiency) * (1 - Mathf.Clamp((state.pain - 0.1f) * 4 / 9, 0, 0.4f)) * (1 - 0.2f * (1 - state.bloodPumping)) * (1 - 0.2f * (1 - state.breathing)) * (1 - 0.1f * (1 - state.bloodFiltration))) + consciounessOffset;
+            state.consciousness = ((state.consciousnessSource == null ? 1 : state.consciousnessSource.efficiency) * (1 - Mathf.Clamp((state.pain - 0.1f) * 4 / 9, 0, 0.4f)) * Mathf.Min(1, 1 - 0.2f * (1 - state.bloodPumping)) * Mathf.Min(1, 1 - 0.2f * (1 - state.breathing)) * Mathf.Min(1, 1 - 0.1f * (1 - state.bloodFiltration))) + consciounessOffset;
 
             if (state.bloodLoss >= 0.6f)
             {
@@ -1178,7 +1178,7 @@ public class RWHealthState
                     baseEfficiency += state.legSet[state.legSetNames[i]].Efficiency(state, offsets / state.armSetNames.Count, postFactors, otherEfficiency) / state.legSetNames.Count;
                 }
 
-                state.moving = state.moving = Mathf.Max(0, baseEfficiency);
+                state.moving = Mathf.Max(0, baseEfficiency);
             }
             else
             {
@@ -1238,6 +1238,16 @@ public class RWHealthState
             {
                 state.talking = 0;
             }
+
+            if (self.creature == null || self.creature.realizedCreature == null || self.creature.realizedCreature is not Player player)
+            {
+                return;
+            }
+
+            player.slugcatStats.poleClimbSpeedFac = Mathf.Max(0.05f, state.poleClimbSpeedFac * (1 + (state.moving - 1f) * 0.4f) * (1 + (state.manipulation - 1f) * 0.6f));
+            player.slugcatStats.corridorClimbSpeedFac = Mathf.Max(0.05f, state.corridorClimbSpeedFac * (1 + (state.moving - 1f) * 0.6f) * (1 + (state.manipulation - 1f) * 0.4f));
+            player.slugcatStats.runspeedFac = Mathf.Max(0.05f, state.runspeedFac * state.moving);
+            player.slugcatStats.swimForceFac = Mathf.Max(0.05f, state.swimForceFac * (1 + (state.moving - 1f) * 0.4f) * (1 + (state.manipulation - 1f) * 0.6f));
 
             void Disease(RWDisease disease)
             {

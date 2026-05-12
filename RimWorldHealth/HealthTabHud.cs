@@ -13,6 +13,8 @@ public class HealthTab : HudPart
     {
         this.owner = owner;
 
+        ownerState = healthState.TryGetValue(owner.state, out RWState state) ? state : null;
+
         sprites = new FSprite[2];
 
         capacityName = new(Custom.GetFont(), "Name")
@@ -249,22 +251,20 @@ public class HealthTab : HudPart
             }
         }
 
-        if (treating)
+        if (ownerState.tendAffliction != null)
         {
-            treatTime--;
+            ownerState.tendTime--;
 
-            if (treatedAffliction == null || treatedAffliction.isTended || treatedAffliction.part == null && treatedAffliction is not RWDisease)
+            if (ownerState.tendAffliction.isTended || ownerState.tendAffliction.part == null && ownerState.tendAffliction is not RWDisease)
             {
-                treating = false;
-                treatedAffliction = null;
+                ownerState.tendAffliction = null;
             }
-            else if (treatTime <= 0)
+            else if (ownerState.tendTime <= 0)
             {
-                treatedAffliction.isTended = true;
-                treating = false;
-                treatedAffliction.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * (owner == creatureState.creature ? 0.7f : 1) * Random.Range(0.75f, 1.25f), 0, 0.7f);
+                ownerState.tendAffliction.isTended = true;
+                ownerState.tendAffliction.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(ownerState) * 0.3f * (owner == creatureState.creature ? 0.7f : 1) * Random.Range(0.75f, 1.25f), 0, 0.7f);
 
-                if (treatedAffliction is RWInjury injury)
+                if (ownerState.tendAffliction is RWInjury injury)
                 {
                     injury.isBleeding = false;
 
@@ -273,13 +273,13 @@ public class HealthTab : HudPart
                         destroyed.isFresh = false;
                     }
                 }
-                else if (treatedAffliction is RWDisease disease)
+                else if (ownerState.tendAffliction is RWDisease disease)
                 {
-                    disease.timeUntilTreatment = state.cycleLength * disease.treatmentTimes;
+                    disease.timeUntilTreatment = ownerState.cycleLength * disease.treatmentTimes;
                     disease.totalTendQuality += disease.tendQuality;
                 }
 
-                treatedAffliction = null;
+                ownerState.tendAffliction = null;
 
                 state.updateCapacities = true;
             }
@@ -389,10 +389,9 @@ public class HealthTab : HudPart
 
         void startTreating(RWAffliction affliction)
         {
-            treatedAffliction = affliction;
-            treating = true;
-            treatTime = Mathf.Round(treatTimeBase / RWHealthState.MedicalTendSpeed(state));
-            treatTimeMax = treatTime;
+            ownerState.tendAffliction = affliction;
+            ownerState.tendTime = Mathf.Round(ownerState.tendTimeBase / RWHealthState.MedicalTendSpeed(ownerState));
+            ownerState.tendTimeMax = ownerState.tendTime;
         }
     }
 
@@ -437,7 +436,7 @@ public class HealthTab : HudPart
 
         selectedSprite.isVisible = visible && selected;
 
-        treatedSprite.isVisible = visible && treating;
+        treatedSprite.isVisible = visible && ownerState.tendAffliction != null;
         #endregion
 
         #region Updates
@@ -482,7 +481,7 @@ public class HealthTab : HudPart
         capacityName.color = Color.white;
         capacityName.x = DrawPos().x - 320;
         capacityName.y = DrawPos().y + 125;
-        capacityName.text = creatureState.creature.ToString();
+        capacityName.text = GetCreatureName(creatureState.creature.realizedCreature);
 
         if (bloodLossPerCycle.isVisible)
         {
@@ -574,23 +573,23 @@ public class HealthTab : HudPart
             }
         }
 
-        if (treatedSprite.isVisible && treatedAffliction != null)
+        if (treatedSprite.isVisible && ownerState.tendAffliction != null)
         {
-            treatedSprite.x = Mathf.Lerp(DrawPos().x, DrawPos().x + 60, 1 - treatTime / treatTimeMax);
+            treatedSprite.x = Mathf.Lerp(DrawPos().x, DrawPos().x + 60, 1 - ownerState.tendTime / ownerState.tendTimeMax);
             treatedSprite.alpha = 0.6f;
             treatedSprite.color = Color.magenta;
 
             treatedSprite.scaleY = 20;
-            treatedSprite.scaleX = Mathf.Lerp(0, 220, 1 - treatTime / treatTimeMax);
+            treatedSprite.scaleX = Mathf.Lerp(0, 220, 1 - ownerState.tendTime / ownerState.tendTimeMax);
 
             int selectedBodyPart = 0;
             int selectedAffliction = 0;
 
-            if (state.wholeBodyAfflictions.Count > 0 && state.wholeBodyAfflictions.Contains(treatedAffliction))
+            if (state.wholeBodyAfflictions.Count > 0 && state.wholeBodyAfflictions.Contains(ownerState.tendAffliction))
             {
                 for (int j = 0; j < state.wholeBodyAfflictions.Count - (healthTabWholeBody.bloodLossVisible ? 1 : 0); j++)
                 {
-                    if (state.wholeBodyAfflictions[j] == treatedAffliction)
+                    if (state.wholeBodyAfflictions[j] == state.tendAffliction)
                     {
                         selectedAffliction = j;
                         break;
@@ -614,19 +613,19 @@ public class HealthTab : HudPart
             {
                 for (int i = 0; i < healthTabBodyParts.Count; i++)
                 {
-                    if (healthTabBodyParts[i].bodyPart == treatedAffliction.part)
+                    if (healthTabBodyParts[i].bodyPart == ownerState.tendAffliction.part)
                     {
                         selectedBodyPart = i;
 
-                        if (healthTabBodyParts[i].allAfflictions.Contains(treatedAffliction))
+                        if (healthTabBodyParts[i].allAfflictions.Contains(ownerState.tendAffliction))
                         {
-                            selectedAffliction = healthTabBodyParts[i].allAfflictions.IndexOf(treatedAffliction);
+                            selectedAffliction = healthTabBodyParts[i].allAfflictions.IndexOf(ownerState.tendAffliction);
                             break;
                         }
 
                         for (int j = 0; j < healthTabBodyParts[i].combinedAfflictions.Count; j++)
                         {
-                            if (healthTabBodyParts[i].combinedAfflictions.TryGetValue(healthTabBodyParts[i].CombinedAfflictionName(healthTabBodyParts[i].bodyPart, j), out List<RWAffliction> list) && list.Contains(treatedAffliction))
+                            if (healthTabBodyParts[i].combinedAfflictions.TryGetValue(healthTabBodyParts[i].CombinedAfflictionName(healthTabBodyParts[i].bodyPart, j), out List<RWAffliction> list) && list.Contains(ownerState.tendAffliction))
                             {
                                 for (int k = 0; k < list.Count; k++)
                                 {
@@ -1922,8 +1921,7 @@ public class HealthTab : HudPart
 
         selectedTimer = selectedTimerMax;
 
-        treating = false;
-        treatedAffliction = null;
+        state.tendAffliction = null;
     }
     void TriggeredOff()
     {
@@ -1934,8 +1932,7 @@ public class HealthTab : HudPart
 
         selectedTimer = selectedTimerMax;
 
-        treating = false;
-        treatedAffliction = null;
+        state.tendAffliction = null;
     }
 
     public string ScarName(RWScar scar)
@@ -1962,6 +1959,7 @@ public class HealthTab : HudPart
     public List<string> capacityValueNamesNames;
 
     public AbstractCreature owner;
+    public RWState ownerState;
 
     public bool visible = false;
 
@@ -1980,14 +1978,6 @@ public class HealthTab : HudPart
 
     bool horizontalOnce = true;
     bool verticalOnce = true;
-
-    bool treating = false;
-
-    float treatTime = 10;
-    float treatTimeMax = 10;
-    readonly float treatTimeBase = 60;
-
-    RWAffliction treatedAffliction = null;
 
     public Player.InputPackage input;
     #endregion

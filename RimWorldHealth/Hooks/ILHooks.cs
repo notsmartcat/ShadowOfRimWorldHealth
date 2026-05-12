@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using RWCustom;
 
 using static ShadowOfRimWorldHealth.RimWorldHealth;
 
@@ -173,6 +174,10 @@ internal class ILHooks
         #region SingularityBomb
         IL.MoreSlugcats.SingularityBomb.Explode += ILSingularityBombExplode;
         #endregion
+
+        #region SlugNPCAI
+        IL.MoreSlugcats.SlugNPCAI.Update += ILSlugNPCAIUpdate;
+        #endregion
         #endregion
 
         #region Watcher
@@ -273,7 +278,7 @@ internal class ILHooks
             return;
         }
 
-        self.remainInDenCounter = Mathf.Max(10, Mathf.RoundToInt(200 * (2 - state.eating)));
+        self.remainInDenCounter = Mathf.Max(10, Mathf.RoundToInt(200 * (1 + (state.eating - 1f) * 0.4f) * (1f + (state.digestion - 1) * 0.6f)));
     }
     #endregion
 
@@ -1162,6 +1167,7 @@ internal class ILHooks
             }))
             {
                 val.MoveAfterLabels();
+                val.MoveAfterLabels();
 
                 val.Emit(OpCodes.Ldarg_0);
                 val.Emit(OpCodes.Ldarg_0);
@@ -1191,9 +1197,13 @@ internal class ILHooks
     }
     public static bool ExplosionUpdate(Explosion obj, Creature self, float damage)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || !singleExplosion.TryGetValue(obj, out OneTimeUseData data) || data.creatures.Contains(self) || damage <= 0)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || !singleExplosion.TryGetValue(obj, out OneTimeUseData data))
         {
             return true;
+        }
+        else if (data.creatures.Contains(self) || damage <= 0)
+        {
+            return false;
         }
 
         data.creatures.Add(self);
@@ -1364,9 +1374,13 @@ internal class ILHooks
                 {
                     attackName = "Singularity bomb";
                 }
-                else if (ModManager.MSC && sourceObj is Oracle)
+                else if (sourceObj is Oracle)
                 {
                     attackName = attackerName + " - Explosion";
+                }
+                else if (sourceObj == null)
+                {
+                    attackName = "Explosion";
                 }
 
                 RWDamageType damageType = isSuper ? new RWSuperBomb() : new RWBomb();
@@ -1740,7 +1754,7 @@ internal class ILHooks
         }
 
         state.violenceAttackerOverride = GetCreatureName(attacker);
-        state.violenceAttackOverride = "Karmic Shockwave";
+        state.violenceAttackOverride = state.violenceAttackerOverride + " - Karmic Shockwave";
     }
     #endregion
 
@@ -2054,12 +2068,7 @@ internal class ILHooks
             {
                 x => x.MatchStfld<Creature>("enteringShortCut"),
                 x => x.MatchBr(out target)
-            }))
-            {
-                val.MoveAfterLabels();
-
-                target = val.MarkLabel();
-            }
+            })){}
             else
             {
                 RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerTerrainImpact death target!");
@@ -3389,6 +3398,284 @@ internal class ILHooks
             }
         }
         catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    #endregion
+
+    #region SlugNPCAI
+    static void ILSlugNPCAIUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[5]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<ArtificialIntelligence>("creature"),
+                x => x.MatchLdfld<AbstractCreature>("abstractAI"),
+                x => x.MatchLdloc(1),
+                x => x.MatchCallvirt<AbstractCreatureAI>("SetDestination")
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit(OpCodes.Ldloc_1);
+                val.EmitDelegate(SlugNPCAIUpdate);
+                val.Emit(OpCodes.Stloc_1);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILSlugNPCAIUpdate!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    public static WorldCoordinate SlugNPCAIUpdate(MoreSlugcats.SlugNPCAI self, WorldCoordinate destination)
+    {
+        Debug.Log(self.behaviorType);
+
+        if (!healthState.TryGetValue(self.cat.State, out RWState state) || (self.behaviorType != SlugTend && self.behaviorType != SlugSelfTend))
+        {
+            return destination;
+        }
+
+        if (self.behaviorType == SlugSelfTend)
+        {
+            if (state.tendAffliction != null)
+            {
+                state.tendTime--;
+
+                Debug.Log("Self Tend " + state.tendTime);
+
+                if (state.tendAffliction.isTended || state.tendAffliction.part == null && state.tendAffliction is not RWDisease)
+                {
+                    state.tendAffliction = null;
+                }
+                else if (state.tendTime <= 0)
+                {
+                    state.tendAffliction.isTended = true;
+                    state.tendAffliction.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f * UnityEngine.Random.Range(0.75f, 1.25f), 0, 0.7f);
+
+                    if (state.tendAffliction is RWInjury injury)
+                    {
+                        injury.isBleeding = false;
+
+                        if (injury is RWDestroyed destroyed)
+                        {
+                            destroyed.isFresh = false;
+                        }
+                    }
+                    else if (state.tendAffliction is RWDisease disease)
+                    {
+                        disease.timeUntilTreatment = state.cycleLength * disease.treatmentTimes;
+                        disease.totalTendQuality += disease.tendQuality;
+                    }
+
+                    state.tendAffliction = null;
+
+                    state.updateCapacities = true;
+                }
+            }
+
+            return self.cat.abstractCreature.pos;
+        }
+
+        if (state.tendTarget == null || !healthState.TryGetValue(self.friendTracker.friend.State, out RWState otherState))
+        {
+            return destination;
+        }
+
+        if (self.grabTarget != null)
+        {
+            self.grabTarget = null;
+        }
+
+        if (!self.HoldingThis(state.tendTarget))
+        {
+            Debug.Log("Walking to tendTarget");
+            if (NPCGrabCheck(state.tendTarget))
+            {
+                Debug.Log("Grabbing tendTarget");
+                self.cat.NPCForceGrab(state.tendTarget);
+            }
+            return new WorldCoordinate(self.friendTracker.friendDest.room, self.friendTracker.friendDest.x + (self.cat.abstractCreature.pos.x < self.friendTracker.friendDest.x ? 2 : -2), self.friendTracker.friendDest.y, self.friendTracker.friendDest.abstractNode);
+        }
+
+        if (state.tendAffliction != null)
+        {
+            state.tendTime--;
+            Debug.Log("Tend " + state.tendTime);
+            if (state.tendAffliction.isTended || state.tendAffliction.part == null && state.tendAffliction is not RWDisease)
+            {
+                state.tendAffliction = null;
+
+                for (int i = 0; i < self.cat.grasps.Length; i++)
+                {
+                    self.cat.grasps[i] = null;
+                }
+            }
+            else if (state.tendTime <= 0)
+            {
+                state.tendAffliction.isTended = true;
+                state.tendAffliction.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * UnityEngine.Random.Range(0.75f, 1.25f), 0, 0.7f);
+
+                if (state.tendAffliction is RWInjury injury)
+                {
+                    injury.isBleeding = false;
+
+                    if (injury is RWDestroyed destroyed)
+                    {
+                        destroyed.isFresh = false;
+                    }
+                }
+                else if (state.tendAffliction is RWDisease disease)
+                {
+                    disease.timeUntilTreatment = state.cycleLength * disease.treatmentTimes;
+                    disease.totalTendQuality += disease.tendQuality;
+                }
+
+                state.tendAffliction = null;
+
+                otherState.updateCapacities = true;
+
+                for (int i = 0; i < self.cat.grasps.Length; i++)
+                {
+                    self.cat.grasps[i] = null;
+                }
+            }
+
+            return self.cat.abstractCreature.pos;
+        }
+
+        RWInjury bleeding = null;
+        RWDisease diseaseAffliction = null;
+        RWInjury untendedAffliction = null;
+
+        for (int i = 0; i < otherState.bodyParts.Count; i++)
+        {
+            for (int j = 0; j < otherState.bodyParts[i].afflictions.Count; j++)
+            {
+                if (!otherState.bodyParts[i].afflictions[j].isTended)
+                {
+                    if (otherState.bodyParts[i].afflictions[j] is RWInjury injury)
+                    {
+                        if (injury.isBleeding)
+                        {
+                            if (bleeding != null)
+                            {
+                                if (injury.healingDifficulty.bleeding * injury.damage > bleeding.healingDifficulty.bleeding * bleeding.damage)
+                                {
+                                    bleeding = injury;
+                                }
+                            }
+                            else bleeding ??= injury;
+                        }
+                        else
+                        {
+                            if (untendedAffliction != null)
+                            {
+                                if (injury.damage > untendedAffliction.damage)
+                                {
+                                    untendedAffliction = injury;
+                                }
+                            }
+                            else untendedAffliction ??= injury;
+
+                        }
+                    }
+                    else if (otherState.bodyParts[i].afflictions[j] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                    {
+                        if (diseaseAffliction != null)
+                        {
+                            if (disease.severity > diseaseAffliction.severity)
+                            {
+                                diseaseAffliction = disease;
+                            }
+                        }
+                        else diseaseAffliction ??= disease;
+                    }
+                    else
+                    {
+                        Debug.Log("Error affliction " + otherState.bodyParts[i].afflictions[j] + " does not belong to any tendable check");
+                    }
+                }
+                else if (otherState.bodyParts[i].afflictions[j] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                {
+                    if (diseaseAffliction != null)
+                    {
+                        if (disease.severity > diseaseAffliction.severity)
+                        {
+                            diseaseAffliction = disease;
+                        }
+                    }
+                    else diseaseAffliction ??= disease;
+                }
+            }
+        }
+
+        if (bleeding == null)
+        {
+            for (int i = 0; i < otherState.wholeBodyAfflictions.Count; i++)
+            {
+                if (otherState.wholeBodyAfflictions[i] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                {
+                    if (diseaseAffliction != null)
+                    {
+                        if (disease.severity > diseaseAffliction.severity)
+                        {
+                            diseaseAffliction = disease;
+                        }
+                    }
+                    else diseaseAffliction ??= disease;
+                }
+            }
+        }
+
+        if (bleeding != null)
+        {
+            startTreating(bleeding);
+        }
+        else if (diseaseAffliction != null)
+        {
+            startTreating(diseaseAffliction);
+        }
+        else if (untendedAffliction != null)
+        {
+            startTreating(untendedAffliction);
+        }
+
+        return self.cat.abstractCreature.pos;
+
+        void startTreating(RWAffliction affliction)
+        {
+            state.tendAffliction = affliction;
+            state.tendTime = Mathf.Round(state.tendTimeBase / RWHealthState.MedicalTendSpeed(state));
+            state.tendTimeMax = state.tendTime;
+        }
+
+        bool NPCGrabCheck(PhysicalObject item)
+        {
+            if (item.room == null || item.room != self.cat.room || item.grabbedBy.Count > 0)
+            {
+                return false;
+            }
+
+            int num = 0;
+            if (self.cat.Grabability(item) == Player.ObjectGrabability.Drag)
+            {
+                float dst = float.MaxValue;
+                for (int i = 0; i < item.bodyChunks.Length; i++)
+                {
+                    if (Custom.DistLess(self.cat.mainBodyChunk.pos, item.bodyChunks[i].pos, dst))
+                    {
+                        dst = Vector2.Distance(self.cat.mainBodyChunk.pos, item.bodyChunks[i].pos);
+                        num = i;
+                    }
+                }
+            }
+            return (Custom.DistLess(self.cat.bodyChunks[0].pos, item.bodyChunks[num].pos, item.bodyChunks[num].rad + 40f) && (Custom.DistLess(self.cat.bodyChunks[0].pos, item.bodyChunks[num].pos, item.bodyChunks[num].rad + 20f) || self.cat.room.VisualContact(self.cat.bodyChunks[0].pos, item.bodyChunks[num].pos)));
+        }
     }
     #endregion
     #endregion

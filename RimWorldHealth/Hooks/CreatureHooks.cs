@@ -173,11 +173,11 @@ internal class CreatureHooks
 
                 Override();
 
-                RWHealthState.Damage(self.State, state, new RWBomb(), damage, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                BombDamage(self.State, state, damage * BombDamageMultiplier(self.State is HealthState, false), attackName);
             }
             else if (type == Creature.DamageType.Stab)
             {
-                attackName = "Explosion";
+                attackName = "Stab";
 
                 Override();
 
@@ -192,6 +192,30 @@ internal class CreatureHooks
                 BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
 
                 return;
+            }
+            else if (type == Creature.DamageType.Bite)
+            {
+                attackName = "Bite";
+
+                Override();
+
+                RWHealthState.Damage(self.State, state, new RWBite(), damage, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+            }
+            else if (type == Creature.DamageType.Water)
+            {
+                attackName = "Water";
+
+                Override();
+
+                BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
+            }
+            else
+            {
+                attackName = "None";
+
+                Override();
+
+                BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
             }
         }
         else if (attacker is not Creature)
@@ -232,7 +256,7 @@ internal class CreatureHooks
 
                 if (type == Creature.DamageType.Explosion)
                 {
-                    BombDamage(self.State, state, damage, attackName, attackerName);
+                    BombDamage(self.State, state, damage * BombDamageMultiplier(self.State is HealthState, false), attackName, attackerName);
                 }
                 else
                 {
@@ -285,7 +309,7 @@ internal class CreatureHooks
 
                 Override();
 
-                BombDamage(self.State, state, damage, attackName, attackerName);
+                BombDamage(self.State, state, damage * BombDamageMultiplier(self.State is HealthState, false), attackName, attackerName);
             }
             else if (attacker is Spear spear)
             {
@@ -382,6 +406,14 @@ internal class CreatureHooks
                     attackerName = GetCreatureName(lillyPuck.thrownBy);
                 }
                 attackName = "Electric Spear";
+
+                Override();
+
+                BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
+            }
+            else
+            {
+                attackName = attacker.ToString();
 
                 Override();
 
@@ -608,28 +640,15 @@ internal class CreatureHooks
 
             BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
         }
-
-        RWBodyPart focusedBodyPart = GetHitBodyPart(state, hitChunk, null, false);
-
-        if (focusedBodyPart != null)
+        else
         {
-            float tempDamage = damage;
+            attackerName = GetCreatureName((Creature)attacker);
 
-            Damage(focusedBodyPart, tempDamage);
-        }
+            attackName = attackerName + " - Unknown";
 
-        //orig(self, source, directionAndMomentum, hitChunk, hitAppendage, type, damage, stunBonus);
+            Override();
 
-        void Damage(RWBodyPart focusedBodyPart, float damage)
-        {
-            string attackName = "";
-
-            if (source != null && source.owner != null)
-            {
-                attackName = source.owner.ToString();
-            }
-
-            RWHealthState.Damage(self.State, state, new(), damage, focusedBodyPart, attackName);
+            BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
         }
 
         void Override()
