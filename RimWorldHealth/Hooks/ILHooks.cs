@@ -3478,11 +3478,32 @@ internal class ILHooks
                 }
             }
 
+            if (self.HoldingThis(state.tendTarget))
+            {
+                for (int i = 0; i < self.cat.grasps.Length; i++)
+                {
+                    self.cat.ReleaseGrasp(i);
+                }
+            }
+
             return self.cat.abstractCreature.pos;
         }
 
-        if (state.tendTarget == null || !healthState.TryGetValue(self.friendTracker.friend.State, out RWState otherState))
+        if (state.tendTarget == null || state.tendTarget.State == null || !healthState.TryGetValue(state.tendTarget.State, out RWState otherState))
         {
+            if (state.tendTarget != null)
+            {
+                state.tendTarget = null;
+            }
+
+            for (int i = 0; i < self.cat.grasps.Length; i++)
+            {
+                if (self.cat.grasps[i].grabbedChunk != null && self.cat.grasps[i].grabbedChunk.owner != null && (self.cat.grasps[i].grabbedChunk.owner is Player || self.cat.grasps[i].grabbedChunk.owner is Lizard))
+                {
+                    self.cat.ReleaseGrasp(i);
+                }
+            }
+
             return destination;
         }
 
@@ -3497,10 +3518,13 @@ internal class ILHooks
             if (NPCGrabCheck(state.tendTarget))
             {
                 Debug.Log("Grabbing tendTarget");
+
                 self.cat.NPCForceGrab(state.tendTarget);
             }
-            return new WorldCoordinate(self.friendTracker.friendDest.room, self.friendTracker.friendDest.x + (self.cat.abstractCreature.pos.x < self.friendTracker.friendDest.x ? 2 : -2), self.friendTracker.friendDest.y, self.friendTracker.friendDest.abstractNode);
+            return new WorldCoordinate(state.tendTarget.abstractCreature.pos.room, state.tendTarget.abstractCreature.pos.x + (self.cat.abstractCreature.pos.x < state.tendTarget.abstractCreature.pos.x ? 2 : -2), state.tendTarget.abstractCreature.pos.y, state.tendTarget.abstractCreature.pos.abstractNode);
         }
+
+        Debug.Log(self.cat + " is grabbing tendTarget");
 
         if (state.tendAffliction != null)
         {
@@ -3512,7 +3536,7 @@ internal class ILHooks
 
                 for (int i = 0; i < self.cat.grasps.Length; i++)
                 {
-                    self.cat.grasps[i] = null;
+                    self.cat.ReleaseGrasp(i);
                 }
             }
             else if (state.tendTime <= 0)
@@ -3541,7 +3565,7 @@ internal class ILHooks
 
                 for (int i = 0; i < self.cat.grasps.Length; i++)
                 {
-                    self.cat.grasps[i] = null;
+                    self.cat.ReleaseGrasp(i);
                 }
             }
 
@@ -3634,20 +3658,20 @@ internal class ILHooks
 
         if (bleeding != null)
         {
-            startTreating(bleeding);
+            startTending(bleeding);
         }
         else if (diseaseAffliction != null)
         {
-            startTreating(diseaseAffliction);
+            startTending(diseaseAffliction);
         }
         else if (untendedAffliction != null)
         {
-            startTreating(untendedAffliction);
+            startTending(untendedAffliction);
         }
 
         return self.cat.abstractCreature.pos;
 
-        void startTreating(RWAffliction affliction)
+        void startTending(RWAffliction affliction)
         {
             state.tendAffliction = affliction;
             state.tendTime = Mathf.Round(state.tendTimeBase / RWHealthState.MedicalTendSpeed(state));
@@ -3674,7 +3698,7 @@ internal class ILHooks
                     }
                 }
             }
-            return (Custom.DistLess(self.cat.bodyChunks[0].pos, item.bodyChunks[num].pos, item.bodyChunks[num].rad + 40f) && (Custom.DistLess(self.cat.bodyChunks[0].pos, item.bodyChunks[num].pos, item.bodyChunks[num].rad + 20f) || self.cat.room.VisualContact(self.cat.bodyChunks[0].pos, item.bodyChunks[num].pos)));
+            return Custom.DistLess(self.cat.bodyChunks[0].pos, item.bodyChunks[num].pos, item.bodyChunks[num].rad + 40f) && (Custom.DistLess(self.cat.bodyChunks[0].pos, item.bodyChunks[num].pos, item.bodyChunks[num].rad + 20f) || self.cat.room.VisualContact(self.cat.bodyChunks[0].pos, item.bodyChunks[num].pos));
         }
     }
     #endregion

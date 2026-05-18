@@ -361,21 +361,52 @@ internal class SlugcatHooks
 
         if (bleeding != null)
         {
-            startTreating(bleeding);
+            startSelfTend(bleeding);
             return;
         }
         else if (diseaseAffliction != null)
         {
-            startTreating(diseaseAffliction);
+            startSelfTend(diseaseAffliction);
             return;
         }
         else if (untendedAffliction != null)
         {
-            startTreating(untendedAffliction);
+            startSelfTend(untendedAffliction);
             return;
         }
 
-        if (self.friendTracker.friend == null || !self.friendTracker.friend.Stunned || self.friendTracker.friend.State == null || !healthState.TryGetValue(self.friendTracker.friend.State, out RWState otherState))
+        Creature tendTarget = null;
+
+        if (self.friendTracker.friend != null && !self.friendTracker.friend.dead && self.friendTracker.friend.Stunned && (grabbedByThis(self.friendTracker.friend) || self.friendTracker.friend.grabbedBy.Count == 0) && self.friendTracker.friend.State != null && healthState.TryGetValue(self.friendTracker.friend.State, out RWState otherState))
+        {
+            for (int i = 0; i < otherState.bodyParts.Count; i++)
+            {
+                for (int j = 0; j < otherState.bodyParts[i].afflictions.Count; j++)
+                {
+                    if (!otherState.bodyParts[i].afflictions[j].isTended)
+                    {
+                        tendOther(self.friendTracker.friend);
+                        return;
+                    }
+                    else if (otherState.bodyParts[i].afflictions[j] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                    {
+                        tendOther(self.friendTracker.friend);
+                        return;
+                    }
+                }
+            }
+
+            for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
+            {
+                if (otherState.wholeBodyAfflictions[i] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                {
+                    tendOther(self.friendTracker.friend);
+                    return;
+                }
+            }
+        }
+
+        if (self.friendTracker.friend != null && self.friendTracker.friend.room != self.cat.room)
         {
             if (state.tendAffliction != null)
             {
@@ -385,33 +416,65 @@ internal class SlugcatHooks
             return;
         }
 
-        for (int i = 0; i < otherState.bodyParts.Count; i++)
+        for (int k = 0; k < self.creature.Room.creatures.Count; k++)
         {
-            for (int j = 0; j < otherState.bodyParts[i].afflictions.Count; j++)
+            Creature creature = self.creature.Room.creatures[k].realizedCreature;
+
+            if (creature == null || creature.dead || !creature.Stunned || (creature.grabbedBy.Count != 0 && !grabbedByThis(creature)) || creature.State == null || !healthState.TryGetValue(creature.State, out otherState) || (creature is not Player && (creature is not Lizard lizard || lizard.AI == null || lizard.AI.friendTracker.friend == null || lizard.AI.friendTracker.friend is not Player)) || (tendTarget != null && Custom.WorldCoordFloatDist(tendTarget.abstractCreature.pos, self.cat.abstractCreature.pos) > Custom.WorldCoordFloatDist(creature.abstractCreature.pos, self.cat.abstractCreature.pos)))
             {
-                if (!otherState.bodyParts[i].afflictions[j].isTended)
+                continue;
+            }
+
+            for (int i = 0; i < otherState.bodyParts.Count; i++)
+            {
+                for (int j = 0; j < otherState.bodyParts[i].afflictions.Count; j++)
                 {
-                    treatOther();
-                    return;
+                    if (!otherState.bodyParts[i].afflictions[j].isTended)
+                    {
+                        tendTarget = creature;
+                        break;
+                    }
+                    else if (otherState.bodyParts[i].afflictions[j] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                    {
+                        tendTarget = creature;
+                        break;
+                    }
                 }
-                else if (otherState.bodyParts[i].afflictions[j] is RWDisease disease && disease.timeUntilTreatment <= 0)
+
+                if (tendTarget == creature)
                 {
-                    treatOther();
-                    return;
+                    break;
+                }
+            }
+
+            for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
+            {
+                if (tendTarget == creature)
+                {
+                    break;
+                }
+
+                if (otherState.wholeBodyAfflictions[i] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                {
+                    tendTarget = creature;
+                    break;
                 }
             }
         }
 
-        for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
+        if (tendTarget == null)
         {
-            if (otherState.wholeBodyAfflictions[i] is RWDisease disease && disease.timeUntilTreatment <= 0)
+            if (state.tendAffliction != null)
             {
-                treatOther();
-                return;
+                state.tendAffliction = null;
             }
         }
+        else
+        {
+            tendOther(tendTarget);
+        }
 
-        void startTreating(RWAffliction affliction)
+        void startSelfTend(RWAffliction affliction)
         {
             self.behaviorType = SlugSelfTend;
 
@@ -425,10 +488,23 @@ internal class SlugcatHooks
             state.tendTimeMax = state.tendTime;
         }
 
-        void treatOther()
+        void tendOther(Creature creature)
         {
-            state.tendTarget = self.friendTracker.friend;
+            state.tendTarget = creature;
             self.behaviorType = SlugTend;
+        }
+
+        bool grabbedByThis(Creature creature)
+        {
+            for (int i = 0; i < creature.grabbedBy.Count; i++)
+            {
+                if (creature.grabbedBy[i].grabber == self.cat)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
     #endregion

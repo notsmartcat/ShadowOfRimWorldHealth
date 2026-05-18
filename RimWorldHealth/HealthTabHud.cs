@@ -408,6 +408,9 @@ public class HealthTab : HudPart
         }
         else
         {
+            if (ownerState != null)
+                ownerState.tendAffliction = null;
+
             this.state = null;
 
             TriggeredOff();
@@ -1921,7 +1924,8 @@ public class HealthTab : HudPart
 
         selectedTimer = selectedTimerMax;
 
-        state.tendAffliction = null;
+        if (ownerState != null)
+            ownerState.tendAffliction = null;
     }
     void TriggeredOff()
     {
@@ -1931,8 +1935,6 @@ public class HealthTab : HudPart
         selectedVertical = 0;
 
         selectedTimer = selectedTimerMax;
-
-        state.tendAffliction = null;
     }
 
     public string ScarName(RWScar scar)
