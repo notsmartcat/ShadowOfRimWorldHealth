@@ -145,7 +145,7 @@ internal class SlugcatHooks
         {
             if (state.bodyParts[i] is Lung part && !IsDestroyed(part))
             {
-                RWHealthState.Damage(self.State, state, new RWBomb(), 999999f, part, "Artificer - Explosion", "Artificer");
+                RWHealthState.Damage(self.State, state, new RWBomb(), 999999f, 999, part, "Artificer - Explosion", "Artificer");
             }
         }
     }

@@ -114,13 +114,13 @@ internal class CreatureHooks
     #region Creature
     static void CreatureViolence(On.Creature.orig_Violence orig, Creature self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos hitAppendage, Creature.DamageType type, float damage, float stunBonus)
     {
-        if (hitChunk == null || damage == 0 || self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (hitChunk == null || damage <= 0 || self.State == null || !healthState.TryGetValue(self.State, out RWState state))
         {
             orig(self, source, directionAndMomentum, hitChunk, hitAppendage, type, damage, stunBonus);
             return;
         }
 
-        #region Regulat Violence Code
+        #region Regular Violence Code
         if (source != null && source.owner is Creature)
         {
             self.SetKillTag((source.owner as Creature).abstractCreature);
@@ -155,6 +155,8 @@ internal class CreatureHooks
         string attackName;
         string attackerName = "";
 
+        float AP = 0;
+
         PhysicalObject attacker = source != null && source.owner != null ? source.owner : null;
 
         if (attacker == null)
@@ -165,7 +167,7 @@ internal class CreatureHooks
 
                 Override();
 
-                RWHealthState.Damage(self.State, state, new RWElectricBurn(), damage, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                RWHealthState.Damage(self.State, state, new RWElectricBurn(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
             }
             else if (type == Creature.DamageType.Explosion)
             {
@@ -181,7 +183,7 @@ internal class CreatureHooks
 
                 Override();
 
-                RWHealthState.Damage(self.State, state, new RWStab(), damage, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
             }
             else if (type == Creature.DamageType.Blunt)
             {
@@ -189,7 +191,7 @@ internal class CreatureHooks
 
                 Override();
 
-                BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
+                BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
 
                 return;
             }
@@ -199,7 +201,7 @@ internal class CreatureHooks
 
                 Override();
 
-                RWHealthState.Damage(self.State, state, new RWBite(), damage, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
             }
             else if (type == Creature.DamageType.Water)
             {
@@ -207,7 +209,7 @@ internal class CreatureHooks
 
                 Override();
 
-                BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
+                BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
             }
             else
             {
@@ -215,7 +217,7 @@ internal class CreatureHooks
 
                 Override();
 
-                BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
+                BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
             }
         }
         else if (attacker is not Creature)
@@ -230,7 +232,7 @@ internal class CreatureHooks
 
                 Override();
 
-                BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
+                BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
             }
             else if (attacker is DartMaggot dartMaggot)
             {
@@ -242,7 +244,7 @@ internal class CreatureHooks
 
                 Override();
 
-                RWHealthState.Damage(self.State, state, new RWStab(), damage, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
             }
             else if (attacker is ExplosiveSpear explosiveSpear)
             {
@@ -260,7 +262,7 @@ internal class CreatureHooks
                 }
                 else
                 {
-                    RWHealthState.Damage(self.State, state, new RWStab(), damage, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                    RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
                 }
             }
             else if (attacker is JellyFish jellyFish)
@@ -273,7 +275,7 @@ internal class CreatureHooks
 
                 Override();
 
-                RWHealthState.Damage(self.State, state, new RWElectricBurn(), damage, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                RWHealthState.Damage(self.State, state, new RWElectricBurn(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
             }
             else if (attacker is Pomegranate pomegranate)
             {
@@ -285,7 +287,7 @@ internal class CreatureHooks
 
                 Override();
 
-                BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
+                BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
             }
             else if (attacker is Rock rock)
             {
@@ -297,7 +299,7 @@ internal class CreatureHooks
 
                 Override();
 
-                BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
+                BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
             }
             else if (attacker is ScavengerBomb bomb)
             {
@@ -319,9 +321,11 @@ internal class CreatureHooks
                 }
                 attackName = "Spear";
 
+                damage = 25;
+
                 Override();
 
-                RWHealthState.Damage(self.State, state, new RWStab(), damage, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
             }
             else if (ModManager.MSC && attacker is MoreSlugcats.Bullet bullet)
             {
@@ -329,6 +333,10 @@ internal class CreatureHooks
                 {
                     attackerName = GetCreatureName(bullet.thrownBy);
                 }
+
+                damage = 18;
+
+                AP = 27;
 
                 if (bullet.abstractBullet.bulletType == JokeRifle.AbstractRifle.AmmoType.Rock)
                 {
@@ -385,7 +393,7 @@ internal class CreatureHooks
 
                 Override();
 
-                RWHealthState.Damage(self.State, state, new RWBullet(), damage, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                RWHealthState.Damage(self.State, state, new RWBullet(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
             }
             else if (ModManager.MSC && attacker is MoreSlugcats.ElectricSpear electricSpear)
             {
@@ -397,7 +405,7 @@ internal class CreatureHooks
 
                 Override();
 
-                RWHealthState.Damage(self.State, state, new RWElectricBurn(), damage, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                RWHealthState.Damage(self.State, state, new RWElectricBurn(), AP, damage, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
             }
             else if (ModManager.MSC && attacker is MoreSlugcats.LillyPuck lillyPuck)
             {
@@ -409,7 +417,7 @@ internal class CreatureHooks
 
                 Override();
 
-                BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
+                BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
             }
             else
             {
@@ -417,7 +425,7 @@ internal class CreatureHooks
 
                 Override();
 
-                BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
+                BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
             }
         }
         else if (attacker is BigNeedleWorm)
@@ -427,7 +435,7 @@ internal class CreatureHooks
 
             Override();
 
-            RWHealthState.Damage(self.State, state, new RWStab(), damage, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+            RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
         else if (attacker is BigSpider)
         {
@@ -437,7 +445,7 @@ internal class CreatureHooks
 
             Override();
 
-            RWHealthState.Damage(self.State, state, new RWBite(), damage, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+            RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
         else if (attacker is DropBug)
         {
@@ -447,7 +455,7 @@ internal class CreatureHooks
 
             Override();
 
-            RWHealthState.Damage(self.State, state, new RWBite(), damage, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+            RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
         else if (attacker is EggBug)
         {
@@ -457,7 +465,7 @@ internal class CreatureHooks
 
             Override();
 
-            RWHealthState.Damage(self.State, state, new RWStab(), damage, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+            RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
         else if (attacker is JetFish)
         {
@@ -467,7 +475,7 @@ internal class CreatureHooks
 
             Override();
 
-            BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
+            BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
         }
         else if (attacker is Leech)
         {
@@ -477,7 +485,7 @@ internal class CreatureHooks
 
             Override();
 
-            RWHealthState.Damage(self.State, state, new RWBite(), damage, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+            RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
         }
         else if (attacker is Lizard)
         {
@@ -489,7 +497,7 @@ internal class CreatureHooks
 
                 Override();
 
-                RWHealthState.Damage(self.State, state, new RWFrostbite(), damage, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                RWHealthState.Damage(self.State, state, new RWFrostbite(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
             }
             else
             {
@@ -497,7 +505,7 @@ internal class CreatureHooks
 
                 Override();
 
-                RWHealthState.Damage(self.State, state, new RWBite(), damage, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
             }
         }
         else if (attacker is MirosBird)
@@ -508,7 +516,7 @@ internal class CreatureHooks
 
             Override();
 
-            RWHealthState.Damage(self.State, state, new RWBite(), damage, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+            RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
         else if (attacker is Player)
         {
@@ -527,7 +535,7 @@ internal class CreatureHooks
 
                 Override();
 
-                BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
+                BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
             }
             else
             {
@@ -535,7 +543,7 @@ internal class CreatureHooks
 
                 Override();
 
-                RWHealthState.Damage(self.State, state, new RWBite(), damage, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
             }
 
         }
@@ -547,7 +555,7 @@ internal class CreatureHooks
 
             Override();
 
-            BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
+            BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
         }
         else if (attacker is Vulture)
         {
@@ -557,7 +565,7 @@ internal class CreatureHooks
 
             Override();
 
-            RWHealthState.Damage(self.State, state, new RWBite(), damage, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+            RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
         else if (ModManager.MSC && attacker is MoreSlugcats.StowawayBug)
         {
@@ -567,7 +575,7 @@ internal class CreatureHooks
 
             Override();
 
-            RWHealthState.Damage(self.State, state, new RWStab(), damage, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+            RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
         else if (ModManager.Watcher && attacker is Watcher.BoxWorm)
         {
@@ -577,7 +585,7 @@ internal class CreatureHooks
 
             Override();
 
-            RWHealthState.Damage(self.State, state, new RWBurn(), damage, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+            RWHealthState.Damage(self.State, state, new RWBurn(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
         }
         else if (ModManager.Watcher && attacker is Watcher.DrillCrab)
         {
@@ -587,7 +595,7 @@ internal class CreatureHooks
 
             Override();
 
-            CutDamage(self.State, state, hitChunk, damage, attackName, attackerName);
+            CutDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
         }
         else if (ModManager.Watcher && attacker is Watcher.Frog)
         {
@@ -599,7 +607,7 @@ internal class CreatureHooks
 
                 Override();
 
-                RWHealthState.Damage(self.State, state, new RWStab(), damage, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                RWHealthState.Damage(self.State, state, new RWStab(), AP, damage, GetHitBodyPart(state, hitChunk), attackName, attackerName);
             }
             else
             {
@@ -607,7 +615,7 @@ internal class CreatureHooks
 
                 Override();
 
-                BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
+                BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
             }
         }
         else if (ModManager.Watcher && attacker is Watcher.Loach)
@@ -618,7 +626,7 @@ internal class CreatureHooks
 
             Override();
 
-            BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
+            BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
         }
         else if (ModManager.Watcher && attacker is Watcher.Rat)
         {
@@ -628,7 +636,7 @@ internal class CreatureHooks
 
             Override();
 
-            BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
+            BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
         }
         else if (ModManager.Watcher && attacker is Watcher.RippleSpider)
         {
@@ -638,7 +646,7 @@ internal class CreatureHooks
 
             Override();
 
-            BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
+            BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
         }
         else
         {
@@ -648,7 +656,7 @@ internal class CreatureHooks
 
             Override();
 
-            BluntDamage(self.State, state, hitChunk, damage, attackName, attackerName);
+            BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
         }
 
         void Override()

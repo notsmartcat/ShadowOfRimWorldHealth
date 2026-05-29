@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Runtime.Remoting.Lifetime;
 using UnityEngine;
 
 using static ShadowOfRimWorldHealth.RimWorldHealth;
@@ -685,7 +684,7 @@ public class RWHealthState
                     RWBodyPart part = GetFrostbiteHitBodyPart(state);
 
                     int damage = Mathf.CeilToInt(part.maxHealth * 0.5f);
-                    Damage(self, state, new RWFrostbite(), damage, part);
+                    Damage(self, state, new RWFrostbite(), damage, 0, part);
                     state.updateCapacities = true;
                 }
 
@@ -1371,7 +1370,7 @@ public class RWHealthState
         }
     }
 
-    public static void Damage(CreatureState self, RWState state, RWDamageType damageType, float damage, RWBodyPart bodyPart, string attackName = "", string attackerName = "")
+    public static void Damage(CreatureState self, RWState state, RWDamageType damageType, float damage, float AP, RWBodyPart bodyPart, string attackName = "", string attackerName = "")
     {
         RWBodyPart focusedBodyPart = bodyPart;
 

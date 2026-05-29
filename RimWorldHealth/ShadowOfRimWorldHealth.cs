@@ -1,6 +1,5 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
-using Mono.Cecil;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -98,9 +97,19 @@ public class RimWorldHealth : BaseUnityPlugin
         public List<Creature> creatures = new();
     }
 
+    public class RWWeaponStats
+    {
+        public string quality = "Normal";
+
+        public float damage = 1;
+        public float AP = 0;
+    }
+
     public static readonly ConditionalWeakTable<CreatureState, RWState> healthState = new();
 
     public static readonly ConditionalWeakTable<Explosion, OneTimeUseData> singleExplosion = new();
+
+    public static readonly ConditionalWeakTable<AbstractPhysicalObject, RWWeaponStats> weaponstat = new();
 
     public static readonly MoreSlugcats.SlugNPCAI.BehaviorType SlugTend = new("SlugTend", true);
     public static readonly MoreSlugcats.SlugNPCAI.BehaviorType SlugSelfTend = new("SlugSelfTend", true);
@@ -200,15 +209,15 @@ public class RimWorldHealth : BaseUnityPlugin
 
                         if (j == 0)
                         {
-                            RWHealthState.Damage(self.State, state, new RWBomb(), 0.5f, head, "testtesttesttesttesttest");
+                            RWHealthState.Damage(self.State, state, new RWBomb(), 0.5f, 0, head, "testtesttesttesttesttest");
                         }
                         else if(j == 1)
                         {
-                            RWHealthState.Damage(self.State, state, new RWBomb(), 0.5f, head, "testtesttesttesttesttest testtesttesttesttesttest");
+                            RWHealthState.Damage(self.State, state, new RWBomb(), 0.5f, 0, head, "testtesttesttesttesttest testtesttesttesttesttest");
                         }
                         else if (j == 2)
                         {
-                            RWHealthState.Damage(self.State, state, new RWBomb(), 0.5f, head, "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
+                            RWHealthState.Damage(self.State, state, new RWBomb(), 0.5f, 0, head, "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
                         }
 
                         state.updateCapacities = true;
@@ -228,7 +237,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 {
                     if (state.bodyParts[i] is Arm part && !IsDestroyed(part) && part.subName == "Right")
                     {
-                        RWHealthState.Damage(self.State, state, new RWPoke(), 999999f, part, "oopsie");
+                        RWHealthState.Damage(self.State, state, new RWPoke(), 999999f, 999, part, "oopsie");
 
                         break;
                     }
@@ -464,11 +473,11 @@ public class RimWorldHealth : BaseUnityPlugin
             {
                 RWDamageType damageType = isSuper ? new RWSuperBomb() : new RWBomb();
 
-                RWHealthState.Damage(self, state, damageType, damage / amount, focusedBodyPart, attackName, attackerName);
+                RWHealthState.Damage(self, state, damageType, damage / amount, 10, focusedBodyPart, attackName, attackerName);
             }
         }
     }
-    public static void BluntDamage(CreatureState self, RWState state, BodyChunk hitChunk, float damage, string attackName = "", string attackerName = "")
+    public static void BluntDamage(CreatureState self, RWState state, BodyChunk hitChunk, float damage, float AP, string attackName = "", string attackerName = "")
     {
         RWBodyPart focusedBodyPart = GetHitBodyPart(state, hitChunk, null, false, true);
         RWBodyPart secondaryFocusedBodyPart = 0.4f < UnityEngine.Random.value ? GetHitBodyPart(state, hitChunk, focusedBodyPart) : null;
@@ -570,11 +579,11 @@ public class RimWorldHealth : BaseUnityPlugin
 
         void Damage(RWBodyPart focusedBodyPart, float damage)
         {
-            RWHealthState.Damage(self, state, new RWBlunt(), damage, focusedBodyPart, attackName, attackerName);
+            RWHealthState.Damage(self, state, new RWBlunt(), damage, AP, focusedBodyPart, attackName, attackerName);
         }
     }
 
-    public static void CutDamage(CreatureState self, RWState state, BodyChunk hitChunk, float damage, string attackName = "", string attackerName = "")
+    public static void CutDamage(CreatureState self, RWState state, BodyChunk hitChunk, float damage, float AP, string attackName = "", string attackerName = "")
     {
         //Debug.Log("CutDamage");
 
@@ -725,11 +734,11 @@ public class RimWorldHealth : BaseUnityPlugin
 
         void Damage(RWBodyPart focusedBodyPart, float damage)
         {
-            RWHealthState.Damage(self, state, new RWCut(), damage, focusedBodyPart, attackName, attackerName);
+            RWHealthState.Damage(self, state, new RWCut(), damage, AP, focusedBodyPart, attackName, attackerName);
         }
     }
 
-    public static void ScratchDamage(CreatureState self, RWState state, BodyChunk hitChunk, float damage, string attackName = "", string attackerName = "")
+    public static void ScratchDamage(CreatureState self, RWState state, BodyChunk hitChunk, float damage, float AP, string attackName = "", string attackerName = "")
     {
         RWBodyPart focusedBodyPart = GetHitBodyPart(state, hitChunk);
         //Debug.Log("ScratchDamage focusedBodyPart is " + focusedBodyPart);
@@ -801,7 +810,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
         void Damage(RWBodyPart focusedBodyPart, float damage)
         {
-            RWHealthState.Damage(self, state, new RWScratch(), damage, focusedBodyPart, attackName, attackerName);
+            RWHealthState.Damage(self, state, new RWScratch(), damage, AP, focusedBodyPart, attackName, attackerName);
         }
     }
 
@@ -812,6 +821,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
         string attackerName;
         float damage;
+        float AP = 0;
 
         if (source.abstractCreature.creatureTemplate.type == CreatureTemplate.Type.SmallCentipede)
         {
@@ -846,7 +856,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
         string attackName = attackerName + (source.Submersion > 0f ? " - Underwater shock" : " - Shock");
 
-        RWHealthState.Damage(self, state, new RWElectricBurn(), damage, focusedBodyPart, attackName, attackerName);
+        RWHealthState.Damage(self, state, new RWElectricBurn(), damage, AP, focusedBodyPart, attackName, attackerName);
 
         if (shockGiveUp && !self.dead)
         {
