@@ -66,22 +66,22 @@ internal class WeaponHooks
         if (self is Boomerang)
         {
             state.damage = 1 * qualityMult;
-            state.AP = 0 * qualityMult;
+            state.AP = 0;
         }
         else if (self is Rock)
         {
             state.damage = 1 * qualityMult;
-            state.AP = 0 * qualityMult;
+            state.AP = 0;
         }
         else if (self is Spear)
         {
-            state.damage = 25 * qualityMult;
+            state.damage = 8.3f * qualityMult;
             state.AP = 10 * qualityMult;
         }
         else if (ModManager.MSC && self is MoreSlugcats.LillyPuck)
         {
-            state.damage = 1 * qualityMult;
-            state.AP = 0 * qualityMult;
+            state.damage = 0.8f * qualityMult;
+            state.AP = 0;
         }
     }
 

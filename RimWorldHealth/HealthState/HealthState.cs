@@ -1381,6 +1381,8 @@ public class RWHealthState
 
         OverkillPrevention();
 
+        Debug.Log(damage);
+
         if (damage <= 0)
         {
             return;

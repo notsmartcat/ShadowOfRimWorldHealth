@@ -12,6 +12,7 @@ internal class SlugcatHooks
         #region Player
         On.Player.ctor += NewPlayer;
         On.Player.AddFood += PlayerAddFood;
+        On.Player.DeathByBiteMultiplier += PlayerDeathByBiteMultiplier;
         On.Player.GrabUpdate += PlayerGrabUpdate;
         On.Player.GraphicsModuleUpdated += PlayerGraphicsModuleUpdated;
         On.Player.LungUpdate += PlayerLungUpdate;
@@ -65,6 +66,16 @@ internal class SlugcatHooks
         }
 
         state.hasEaten = true;
+    }
+
+    static float PlayerDeathByBiteMultiplier(On.Player.orig_DeathByBiteMultiplier orig, Player self)
+    {
+        if (!healthState.TryGetValue(self.State, out _))
+        {
+            return orig(self);
+        }
+
+        return 1;
     }
 
     static void PlayerGrabUpdate(On.Player.orig_GrabUpdate orig, Player self, bool eu)

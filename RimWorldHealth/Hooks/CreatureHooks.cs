@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RWCustom;
+using System;
 using UnityEngine;
 
 using static ShadowOfRimWorldHealth.RimWorldHealth;
@@ -31,6 +32,23 @@ internal class CreatureHooks
         #region InsectoidCreature
         On.InsectoidCreature.Update += InsectoidCreatureUpdate;
         #endregion
+
+        #region StaticWorld
+        On.StaticWorld.InitStaticWorld += StaticWorldInitStaticWorld;
+        #endregion
+    }
+
+    static void StaticWorldInitStaticWorld(On.StaticWorld.orig_InitStaticWorld orig)
+    {
+        orig();
+
+        for (int i = 0; i < StaticWorld.creatureTemplates.Length; i++)
+        {
+            if (StaticWorld.creatureTemplates[i].IsLizard)
+            {
+                (StaticWorld.creatureTemplates[i].breedParameters as LizardBreedParams).biteDamageChance = 1;
+            }
+        }
     }
 
     #region Saving and Loading
@@ -232,6 +250,15 @@ internal class CreatureHooks
 
                 Override();
 
+                if (weaponstat.TryGetValue(boomerang.abstractPhysicalObject, out RWWeaponStats weaponState))
+                {
+                    damage = weaponState.damage;
+                }
+                else
+                {
+                    damage = 1;
+                }
+
                 BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
             }
             else if (attacker is DartMaggot dartMaggot)
@@ -244,26 +271,9 @@ internal class CreatureHooks
 
                 Override();
 
+                damage = 0.5f;
+
                 RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
-            }
-            else if (attacker is ExplosiveSpear explosiveSpear)
-            {
-                if (explosiveSpear.thrownBy != null)
-                {
-                    attackerName = GetCreatureName(explosiveSpear.thrownBy);
-                }
-                attackName = "Explosive Spear";
-
-                Override();
-
-                if (type == Creature.DamageType.Explosion)
-                {
-                    BombDamage(self.State, state, damage * BombDamageMultiplier(self.State is HealthState, false), attackName, attackerName);
-                }
-                else
-                {
-                    RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
-                }
             }
             else if (attacker is JellyFish jellyFish)
             {
@@ -274,6 +284,8 @@ internal class CreatureHooks
                 attackName = "Jellyfish";
 
                 Override();
+
+                damage = 1.5f;
 
                 RWHealthState.Damage(self.State, state, new RWElectricBurn(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
             }
@@ -287,6 +299,8 @@ internal class CreatureHooks
 
                 Override();
 
+                damage = 25f;
+
                 BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
             }
             else if (attacker is Rock rock)
@@ -298,6 +312,15 @@ internal class CreatureHooks
                 attackName = "Rock";
 
                 Override();
+
+                if (weaponstat.TryGetValue(rock.abstractPhysicalObject, out RWWeaponStats weaponState))
+                {
+                    damage = weaponState.damage;
+                }
+                else
+                {
+                    damage = 1;
+                }
 
                 BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
             }
@@ -319,9 +342,74 @@ internal class CreatureHooks
                 {
                     attackerName = GetCreatureName(spear.thrownBy);
                 }
-                attackName = "Spear";
 
-                damage = 25;
+                Debug.Log("Spear");
+
+                if (type != Creature.DamageType.Explosion)
+                {
+                    if (weaponstat.TryGetValue(spear.abstractPhysicalObject, out RWWeaponStats weaponState))
+                    {
+                        damage = weaponState.damage;
+                        AP = weaponState.AP;
+                    }
+                    else
+                    {
+                        damage = 8.3f; //1/3 of the RimWorld pila damage due to the spear not having a long cooldown like the pila does
+                    }
+
+                    damage *= spear.spearDamageBonus; //if thrown by the non-exhausted Gourmand the damage will match the RimWorld damage
+                }
+
+                if (spear.bugSpear)
+                {
+                    attackName = "Fire Spear";
+
+                    Override();
+
+                    RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+
+                    RWHealthState.Damage(self.State, state, new RWBurn(), 5, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+
+                    return;
+                }
+                else if (spear is ExplosiveSpear)
+                {
+                    attackName = "Explosive Spear";
+
+                    Override();
+
+                    Debug.Log("Explosive Spear");
+
+                    if (type == Creature.DamageType.Explosion)
+                    {
+                        BombDamage(self.State, state, damage * BombDamageMultiplier(self.State is HealthState, false), attackName, attackerName);
+                    }
+                    else
+                    {
+                        RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                    }
+
+                    return;
+                }
+                else if (ModManager.MSC && spear is MoreSlugcats.ElectricSpear)
+                {
+                    attackName = "Electric Spear";
+
+                    Override();
+
+                    if (type == Creature.DamageType.Electric)
+                    {
+                        RWHealthState.Damage(self.State, state, new RWElectricBurn(), 5, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                    }
+                    else
+                    {
+                        RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                    }
+
+                    return;
+                }
+
+                attackName = "Spear";
 
                 Override();
 
@@ -340,31 +428,18 @@ internal class CreatureHooks
 
                 if (bullet.abstractBullet.bulletType == JokeRifle.AbstractRifle.AmmoType.Rock)
                 {
+                    damage = 5;
                     attackName = "JokeRifle - Rock";
-                }
-                else if (bullet.abstractBullet.bulletType == JokeRifle.AbstractRifle.AmmoType.Grenade)
-                {
-                    attackName = "JokeRifle - Granade";
-                }
-                else if (bullet.abstractBullet.bulletType == JokeRifle.AbstractRifle.AmmoType.Firecracker)
-                {
-                    attackName = "JokeRifle - Firecracker";
-                }
-                else if (bullet.abstractBullet.bulletType == JokeRifle.AbstractRifle.AmmoType.Pearl)
-                {
-                    attackName = "JokeRifle - Pearl";
                 }
                 else if (bullet.abstractBullet.bulletType == JokeRifle.AbstractRifle.AmmoType.Light)
                 {
+                    damage = 1;
                     attackName = "JokeRifle - Light";
                 }
                 else if (bullet.abstractBullet.bulletType == JokeRifle.AbstractRifle.AmmoType.Ash)
                 {
+                    damage = 0.5f;
                     attackName = "JokeRifle - Ash";
-                }
-                else if (bullet.abstractBullet.bulletType == JokeRifle.AbstractRifle.AmmoType.Bees)
-                {
-                    attackName = "JokeRifle - Bees";
                 }
                 else if (bullet.abstractBullet.bulletType == JokeRifle.AbstractRifle.AmmoType.Void)
                 {
@@ -372,19 +447,8 @@ internal class CreatureHooks
                 }
                 else if (bullet.abstractBullet.bulletType == JokeRifle.AbstractRifle.AmmoType.Fruit)
                 {
+                    damage = 2;
                     attackName = "JokeRifle - Fruit";
-                }
-                else if (bullet.abstractBullet.bulletType == JokeRifle.AbstractRifle.AmmoType.Noodle)
-                {
-                    attackName = "JokeRifle - Noodle";
-                }
-                else if (bullet.abstractBullet.bulletType == JokeRifle.AbstractRifle.AmmoType.FireEgg)
-                {
-                    attackName = "JokeRifle - Fire Egg";
-                }
-                else if (bullet.abstractBullet.bulletType == JokeRifle.AbstractRifle.AmmoType.Singularity)
-                {
-                    attackName = "JokeRifle - Singularity";
                 }
                 else
                 {
@@ -395,27 +459,24 @@ internal class CreatureHooks
 
                 RWHealthState.Damage(self.State, state, new RWBullet(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
             }
-            else if (ModManager.MSC && attacker is MoreSlugcats.ElectricSpear electricSpear)
-            {
-                if (electricSpear.thrownBy != null)
-                {
-                    attackerName = GetCreatureName(electricSpear.thrownBy);
-                }
-                attackName = "Electric Spear";
-
-                Override();
-
-                RWHealthState.Damage(self.State, state, new RWElectricBurn(), AP, damage, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
-            }
             else if (ModManager.MSC && attacker is MoreSlugcats.LillyPuck lillyPuck)
             {
                 if (lillyPuck.thrownBy != null)
                 {
                     attackerName = GetCreatureName(lillyPuck.thrownBy);
                 }
-                attackName = "Electric Spear";
+                attackName = "Lilypuck";
 
                 Override();
+
+                if (weaponstat.TryGetValue(lillyPuck.abstractPhysicalObject, out RWWeaponStats weaponState))
+                {
+                    damage = weaponState.damage;
+                }
+                else
+                {
+                    damage = 0.8f;
+                }
 
                 BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
             }
@@ -487,7 +548,7 @@ internal class CreatureHooks
 
             RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
         }
-        else if (attacker is Lizard)
+        else if (attacker is Lizard lizard)
         {
             attackerName = GetCreatureName((Creature)attacker);
 
@@ -504,6 +565,10 @@ internal class CreatureHooks
                 attackName = attackerName + " - Teeth";
 
                 Override();
+
+                damage = Custom.LerpMap(lizard.lizardParams.maxMusclePower, 0, 16, 4, 22);
+
+                Debug.Log(damage);
 
                 RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
             }

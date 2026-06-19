@@ -3460,7 +3460,7 @@ internal class ILHooks
     }
     public static WorldCoordinate SlugNPCAIUpdate(MoreSlugcats.SlugNPCAI self, WorldCoordinate destination)
     {
-        Debug.Log(self.behaviorType);
+        //Debug.Log(self.behaviorType);
 
         if (!healthState.TryGetValue(self.cat.State, out RWState state) || (self.behaviorType != SlugTend && self.behaviorType != SlugSelfTend))
         {
@@ -3541,17 +3541,17 @@ internal class ILHooks
 
         if (!self.HoldingThis(state.tendTarget))
         {
-            Debug.Log("Walking to tendTarget");
+            //Debug.Log("Walking to tendTarget");
             if (NPCGrabCheck(state.tendTarget))
             {
-                Debug.Log("Grabbing tendTarget");
+                //Debug.Log("Grabbing tendTarget");
 
                 self.cat.NPCForceGrab(state.tendTarget);
             }
             return new WorldCoordinate(state.tendTarget.abstractCreature.pos.room, state.tendTarget.abstractCreature.pos.x + (self.cat.abstractCreature.pos.x < state.tendTarget.abstractCreature.pos.x ? 2 : -2), state.tendTarget.abstractCreature.pos.y, state.tendTarget.abstractCreature.pos.abstractNode);
         }
 
-        Debug.Log(self.cat + " is grabbing tendTarget");
+        //Debug.Log(self.cat + " is grabbing tendTarget");
 
         if (state.tendAffliction != null)
         {
