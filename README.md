@@ -28,7 +28,7 @@ FireBug: null - Spine Spikes
 FireBug: around 55 - Explosion  
 JetFish: null - Head (it seems to bump creatures with it's head)  
 Leech: null - Teeth  
-Lizard: 22 - Teeth (taken from RimWorld's Crocodile, unsure which Lizard will take the base damage as I believe the damage should differ depending on the size of the Lizard)  
+Lizard: (max) 22 - Teeth (taken from RimWorld's Crocodile) (here is the calculation for it: Custom.LerpMap(lizard.lizardParams.maxMusclePower, 0, 16, 4, 22);)  
 Lizard: null - Blizzard laser  
 MirosBird: null - Beak (not sure if I should say Beak or Teeth as Beak might be for pecking then biting but the MirosBird does seem to have a Beak)  
 Slugcat: Null - Teeth  
