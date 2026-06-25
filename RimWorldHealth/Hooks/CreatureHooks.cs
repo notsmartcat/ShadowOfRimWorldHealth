@@ -1,5 +1,7 @@
 ﻿using RWCustom;
 using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 using static ShadowOfRimWorldHealth.RimWorldHealth;
@@ -17,7 +19,13 @@ internal class CreatureHooks
         #endregion
 
         #region SaveState
+        On.SaveState.ctor += NewSaveState;
+
         On.SaveState.AbstractCreatureToStringStoryWorld_AbstractCreature_WorldCoordinate += SaveStateSaveAbstractCreature;
+
+        On.SaveState.BringUpToDate += SaveStateBringUpToDate;
+
+        On.PlayerState.ctor += NewPlayerState;
         #endregion
         #endregion
 
@@ -38,19 +46,68 @@ internal class CreatureHooks
         #endregion
     }
 
-    static void StaticWorldInitStaticWorld(On.StaticWorld.orig_InitStaticWorld orig)
+    static void NewSaveState(On.SaveState.orig_ctor orig, SaveState self, SlugcatStats.Name saveStateNumber, PlayerProgression progression)
     {
-        orig();
+        orig(self, saveStateNumber, progression);
 
-        for (int i = 0; i < StaticWorld.creatureTemplates.Length; i++)
-        {
-            if (StaticWorld.creatureTemplates[i].IsLizard)
-            {
-                (StaticWorld.creatureTemplates[i].breedParameters as LizardBreedParams).biteDamageChance = 1;
-            }
-        }
+        rimWorldHealthHandler.Load(progression.rainWorld.options.saveSlot.ToString(), progression.PlayingAsSlugcat.ToString());
     }
 
+    static void SaveStateBringUpToDate(On.SaveState.orig_BringUpToDate orig, SaveState self, RainWorldGame game)
+    {
+        orig(self, game);
+
+        rimWorldHealthHandler.Save(game, game.rainWorld.options.saveSlot.ToString(), self.progression.PlayingAsSlugcat.ToString());
+    }
+
+    static void NewPlayerState(On.PlayerState.orig_ctor orig, PlayerState self, AbstractCreature crit, int playerNumber, SlugcatStats.Name slugcatCharacter, bool isGhost)
+    {
+        orig(self, crit, playerNumber, slugcatCharacter, isGhost);
+
+        Debug.Log("playerState load pre for " + crit);
+
+        if (!healthState.TryGetValue(self, out RWState state) || !rimWorldHealthHandler.unrecognizedSaveStrings.ContainsKey(playerNumber.ToString()))
+        {
+            return;
+        }
+
+        Dictionary<string, string> savedData = rimWorldHealthHandler.unrecognizedSaveStrings[playerNumber.ToString()];
+
+        if (savedData.ContainsKey("LastCycle"))
+        {
+            state.lastCycle = int.Parse(savedData["LastCycle"]);
+        }
+
+        for (int bodyPartNumber = 0; bodyPartNumber < state.bodyParts.Count; bodyPartNumber++)
+        {
+            RWBodyPart part = state.bodyParts[bodyPartNumber];
+            string bodyPartName = GetBodyPartKeyName(part);
+
+            Debug.Log("checking for existing afflictions for " + bodyPartName);
+
+            if (savedData.TryGetValue(bodyPartName, out string bodyPartAfflictions))
+            {
+                string[] allAfflictions = Regex.Split(bodyPartAfflictions, ";");
+
+                Debug.Log("existing affliction found for for " + bodyPartName);
+
+                for (int i = 0; i < allAfflictions.Length; i++)
+                {
+                    Debug.Log(allAfflictions[i]);
+
+                    string[] afflictionInfo = Regex.Split(allAfflictions[i], ":");
+
+                    Debug.Log(afflictionInfo[0]);
+
+                    part.afflictions.Add(LoadAffliction(afflictionInfo, part, self));
+                }
+            }
+        }
+
+        state.updateCapacities = true;
+
+        Debug.Log(all + crit + " lastCycle = " + state.lastCycle);
+    }
     #region Saving and Loading
     #region CreatureState
     static void NewCreatureState(On.CreatureState.orig_ctor orig, CreatureState self, AbstractCreature creature)
@@ -70,20 +127,153 @@ internal class CreatureHooks
 
         RWHealthState.NewRWHealthState(self, state);
     }
+
     static void CreatureStateLoadFromString(On.CreatureState.orig_LoadFromString orig, CreatureState self, string[] s)
     {
         orig(self, s);
 
-        if (!healthState.TryGetValue(self, out RWState _))
+        if (!healthState.TryGetValue(self, out RWState state))
         {
             return;
         }
+
+        try
+        {
+            Dictionary<string, string> savedData = self.unrecognizedSaveStrings;
+
+            if (savedData.ContainsKey("ShadowOfLizardUpdatedCycle"))
+            {
+                state.lastCycle = int.Parse(savedData["ShadowOfLizardUpdatedCycle"]);
+                savedData.Remove("ShadowOfLizardUpdatedCycle");
+            }
+
+            Debug.Log(all + self.creature + " updatedCycle = " + state.lastCycle);
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
     }
     #endregion
 
-    static string SaveStateSaveAbstractCreature(On.SaveState.orig_AbstractCreatureToStringStoryWorld_AbstractCreature_WorldCoordinate orig, AbstractCreature critter, WorldCoordinate pos)
+    static string SaveStateSaveAbstractCreature(On.SaveState.orig_AbstractCreatureToStringStoryWorld_AbstractCreature_WorldCoordinate orig, AbstractCreature self, WorldCoordinate cc)
     {
-        return orig(critter, pos);
+        if (self == null || self.state == null || self.state.unrecognizedSaveStrings == null || !healthState.TryGetValue(self.state, out RWState state))
+        {
+            return orig(self, cc);
+        }
+
+        try
+        {
+            Dictionary<string, string> savedData = self.state.unrecognizedSaveStrings;
+
+            savedData["LastCycle"] = self.world.game.GetStorySession.saveState.cycleNumber.ToString();
+
+            //run code to automatically treat all afflictions, then run code to heal afflictions based on the after-cycle-time
+
+            for (int i = 0; i < state.bodyParts.Count; i++)
+            {
+                if (state.bodyParts[i].afflictions.Count > 0)
+                {
+                    savedData[GetBodyPartKeyName(state.bodyParts[i])] = GetAllAfflictionValueName(state.bodyParts[i]);
+                }
+            }
+
+            //Debug.Log("saving data for " + self);
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+
+        return orig(self, cc);
+    }
+
+    public static string GetBodyPartKeyName(RWBodyPart part)
+    {
+        return part.subName + part.name;
+    }
+
+    public static string GetAllAfflictionValueName(RWBodyPart part)
+    {
+        string name = "";
+        RWAffliction affliction;
+        string nameEnding;
+
+        for (int i = 0; i < part.afflictions.Count; i++)
+        {
+            if (i > 0)
+                name += ";";
+
+            affliction = part.afflictions[i];
+
+            if (affliction is RWInjury injury)
+            {
+                nameEnding = "";
+
+                if (injury is RWScar scar)
+                {
+                    name += "Scar:";
+
+                    nameEnding = $"{scar.isRevealed}:{scar.isPermanent}:{scar.scarDamage}:{scar.painCategory}";
+                }
+                else if (injury is RWDestroyed)
+                {
+                    name += "Destroyed:";
+                }
+                else
+                {
+                    name += "Injury:";
+                }
+
+                name += $"{affliction.tendQuality}:{injury.attackName}:{injury.attackerName}:{injury.damage}:{injury.damageType}:{injury.infectionTimer}:{injury.healingDifficulty.name}";
+
+                name += nameEnding;
+            }
+            else if (affliction is RWDisease disease)
+            {
+                name = $"{disease.name}:{disease.severity}:{disease.isImmune}:{disease.immunity}:{disease.timeUntilTreatment}:{disease.totalTendQuality}:{disease.InfectionLuck}";
+            }
+        }
+
+        return name;
+    }
+
+    public static RWAffliction LoadAffliction(string[] afflictionInfo, RWBodyPart part, CreatureState state)
+    {
+        if (afflictionInfo[0] == "Injury" || afflictionInfo[0] == "Scar" || afflictionInfo[0] == "Destroyed")
+        {
+            float tendQuality = float.Parse(afflictionInfo[1]);
+            string attackName = afflictionInfo[2];
+            string attackerName = afflictionInfo[3];
+            float damage = float.Parse(afflictionInfo[4]);
+            RWDamageType damageType = RWDamageType.GetRWDamageType(afflictionInfo[5]);
+            float infectionTimer = float.Parse(afflictionInfo[6]);
+
+            RWHealingDifficulty healingDifficulty = RWHealingDifficulty.GetRWHealingDifficulty(afflictionInfo[7]);
+
+            bool isRevealed = false;
+            bool isPermanent = false;
+            float scarDamage = 0;
+            string painCategory = "";
+
+            if (afflictionInfo[0] == "Scar")
+            {
+                isRevealed = afflictionInfo[8] == "True";
+                isPermanent = afflictionInfo[9] == "True";
+                scarDamage = float.Parse(afflictionInfo[10]);
+                painCategory = afflictionInfo[11];
+            }
+
+            RWAffliction affliction = afflictionInfo[0] switch
+            {
+                "Scar" => new RWScar(state, part, tendQuality, attackName, attackerName, damage, damageType, infectionTimer, healingDifficulty, isRevealed, isPermanent, scarDamage, painCategory),
+                "Destroyed" => new RWDestroyed(state, part, tendQuality, attackName, attackerName, damage, damageType, infectionTimer, healingDifficulty),
+                _ => new RWInjury(state, part, tendQuality, attackName, attackerName, damage, damageType, infectionTimer, healingDifficulty)
+            };
+
+            Debug.Log("created new affliction " + affliction + " for " + part);
+
+            return affliction;
+        }
+        else
+        {
+            return null;
+        }
     }
     #endregion
 
@@ -185,7 +375,7 @@ internal class CreatureHooks
 
                 Override();
 
-                RWHealthState.Damage(self.State, state, new RWElectricBurn(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                RWHealthState.Damage(self.State, state, new RWElectricalBurn(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
             }
             else if (type == Creature.DamageType.Explosion)
             {
@@ -287,7 +477,7 @@ internal class CreatureHooks
 
                 damage = 1.5f;
 
-                RWHealthState.Damage(self.State, state, new RWElectricBurn(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                RWHealthState.Damage(self.State, state, new RWElectricalBurn(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
             }
             else if (attacker is Pomegranate pomegranate)
             {
@@ -399,7 +589,7 @@ internal class CreatureHooks
 
                     if (type == Creature.DamageType.Electric)
                     {
-                        RWHealthState.Damage(self.State, state, new RWElectricBurn(), 5, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                        RWHealthState.Damage(self.State, state, new RWElectricalBurn(), 5, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
                     }
                     else
                     {
@@ -751,6 +941,21 @@ internal class CreatureHooks
         }
 
         SetToxicBuildup(state, self);
+    }
+    #endregion
+
+    #region StaticWorld
+    static void StaticWorldInitStaticWorld(On.StaticWorld.orig_InitStaticWorld orig)
+    {
+        orig();
+
+        for (int i = 0; i < StaticWorld.creatureTemplates.Length; i++)
+        {
+            if (StaticWorld.creatureTemplates[i].IsLizard)
+            {
+                (StaticWorld.creatureTemplates[i].breedParameters as LizardBreedParams).biteDamageChance = 1;
+            }
+        }
     }
     #endregion
 }

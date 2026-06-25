@@ -26,6 +26,30 @@ public class RWHealingDifficulty
     public string destroyedOut = "Destroyed";
 
     public string description = "Miscellaneous injuries.";
+
+    public static RWHealingDifficulty GetRWHealingDifficulty(string name)
+    {
+        RWHealingDifficulty healingDifficulty = name switch
+        {
+            "Burn" => new RWHDBurn(),
+            "Electrical burn" => new RWHDElectricalBurn(),
+            "Crush" => new RWHDCrush(),
+            "Crack" => new RWHDCrack(),
+            "Cut" => new RWHDCut(),
+            "Surgical cut" => new RWHDSurgicalCut(),
+            "Scratch" => new RWHDScratch(),
+            "Bite" => new RWHDBite(),
+            "Stab" => new RWHDStab(),
+            "Gunshot" => new RWHDGunshot(),
+            "Shredded" => new RWHDShredded(),
+            "Bruise" => new RWHDBruise(),
+            "Frostbite" => new RWHDFrostbite(),
+            "Acid burn" => new RWHDAcidBurn(),
+            _ => null,
+        };
+
+        return healingDifficulty;
+    }
 }
 public class RWHDBurnBase : RWHealingDifficulty
 {

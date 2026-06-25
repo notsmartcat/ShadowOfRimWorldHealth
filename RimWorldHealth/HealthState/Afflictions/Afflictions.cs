@@ -1,19 +1,10 @@
-﻿using UnityEngine;
+﻿namespace ShadowOfRimWorldHealth;
 
-namespace ShadowOfRimWorldHealth;
-
-public class RWAffliction
+public class RWAffliction(CreatureState state, RWBodyPart part)
 {
-    public RWAffliction(CreatureState state,  RWBodyPart part)
-    {
-        this.state = state;
+    public CreatureState state = state;
 
-        this.part = part;
-    }
-
-    public CreatureState state;
-
-    public RWBodyPart part;
+    public RWBodyPart part = part;
 
     public float pain;
 
@@ -74,24 +65,7 @@ public class RWInjury : RWAffliction
                 RWHealingDifficultyName = damageType.headiffs[0];
             }
 
-            RWHealingDifficulty healingDifficulty = RWHealingDifficultyName switch
-            {
-                "Burn" => new RWHDBurn(),
-                "Electrical burn" => new RWHDElectricalBurn(),
-                "Crush" => new RWHDCrush(),
-                "Crack" => new RWHDCrack(),
-                "Cut" => new RWHDCut(),
-                "Surgical cut" => new RWHDSurgicalCut(),
-                "Scratch" => new RWHDScratch(),
-                "Bite" => new RWHDBite(),
-                "Stab" => new RWHDStab(),
-                "Gunshot" => new RWHDGunshot(),
-                "Shredded" => new RWHDShredded(),
-                "Bruise" => new RWHDBruise(),
-                "Frostbite" => new RWHDFrostbite(),
-                "Acid burn" => new RWHDAcidBurn(),
-                _ => null,
-            };
+            RWHealingDifficulty healingDifficulty = RWHealingDifficulty.GetRWHealingDifficulty(RWHealingDifficultyName);
 
             //Space to add custom HealingDifficulties
 
@@ -99,6 +73,21 @@ public class RWInjury : RWAffliction
 
             return healingDifficulty;
         }
+    }
+
+    public RWInjury(CreatureState state, RWBodyPart part, float tendQuality, string attackName, string attackerName, float damage, RWDamageType damageType, float infectionTimer, RWHealingDifficulty healingDifficulty) : base(state, part)
+    {
+        isTended = true;
+
+        isBleeding = false;
+
+        this.tendQuality = tendQuality;
+        this.attackName = attackName;
+        this.attackerName = attackerName;
+        this.damage = damage;
+        this.damageType = damageType;
+        this.infectionTimer = infectionTimer;
+        this.healingDifficulty = healingDifficulty;
     }
 
     public string attackName; //Name of the attack, used in the HealthTab
@@ -114,13 +103,8 @@ public class RWInjury : RWAffliction
     public RWHealingDifficulty healingDifficulty;
 }
 
-public class RWDisease : RWAffliction
+public class RWDisease(CreatureState state, RWBodyPart part) : RWAffliction(state, part)
 {
-    public RWDisease(CreatureState state, RWBodyPart part) : base(state, part)
-    {
-        InfectionLuck = UnityEngine.Random.Range(0.8f, 1.2f);
-    }
-
     public string name = "";
 
     public bool lethal = false; //Lethal diseases will kill when their severity reaches 100%
@@ -136,11 +120,11 @@ public class RWDisease : RWAffliction
     public float treatment = 0; //Treatment will negate severity gain per cycle, the shown treatment amount shows what it would be at 100% tend quality
 
     public float timeUntilTreatment = 0;
-    public float treatmentTimes = 1; //Tend times determine how often a new tend is allowd, this is multiplied off of the cycle time. so if tendTime is 0.5 and the cycleLength is 13 it will take 6.5 minutes before a new tend can be done
+    public float treatmentTimes = 1; //Tend times determine how often a new tend is allowed, this is multiplied off of the cycle time. so if tendTime is 0.5 and the cycleLength is 13 it will take 6.5 minutes before a new tend can be done
 
     public float totalTendQuality = 0; //Some diseases require the total tend quality to reach 300% before being treated
 
-    public float InfectionLuck = 0; //Infection luck ranges from 0.8 to 1.2 and it multiplies the severity gained/lost
+    public float InfectionLuck = UnityEngine.Random.Range(0.8f, 1.2f); //Infection luck ranges from 0.8 to 1.2 and it multiplies the severity gained/lost
 }
 
 public class RWInformational : RWAffliction

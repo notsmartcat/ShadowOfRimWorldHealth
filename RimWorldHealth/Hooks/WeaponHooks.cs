@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using static ShadowOfRimWorldHealth.RimWorldHealth;
+﻿using static ShadowOfRimWorldHealth.RimWorldHealth;
 
 namespace ShadowOfRimWorldHealth;
 

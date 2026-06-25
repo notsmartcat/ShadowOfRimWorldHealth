@@ -6,7 +6,7 @@
     <RWDir>$(HOME)/.local/share/Steam/steamapps/common/Rain World/</RWDir>
   </PropertyGroup>
   <PropertyGroup>
-    <LangVersion>11.0</LangVersion>
+    <LangVersion>preview</LangVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <BaseOutputPath></BaseOutputPath>
   </PropertyGroup>
@@ -50,6 +50,12 @@
     </Reference>
     <Reference Include="Fisobs">
       <HintPath>libs\Fisobs.dll</HintPath>
+    </Reference>
+    <Reference Include="gelbi-silly-lib">
+      <HintPath>libs\gelbi-silly-lib.dll</HintPath>
+    </Reference>
+    <Reference Include="gelbi-silly-lib-preloader">
+      <HintPath>libs\gelbi-silly-lib-preloader.dll</HintPath>
     </Reference>
     <Reference Include="HOOKS-Assembly-CSharp">
       <HintPath>libs\HOOKS-Assembly-CSharp.dll</HintPath>

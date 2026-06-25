@@ -2228,7 +2228,7 @@ internal class ILHooks
         {
             if (state.bodyParts[i] is Tongue part && !IsDestroyed(part))
             {
-                RWHealthState.Damage(self.State, state, new RWElectricBurn(), UnityEngine.Random.Range(7.2f, 12.8f), 999, part, "Zap-Coil");
+                RWHealthState.Damage(self.State, state, new RWElectricalBurn(), UnityEngine.Random.Range(7.2f, 12.8f), 999, part, "Zap-Coil");
             }
         }
 
@@ -2903,7 +2903,7 @@ internal class ILHooks
         {
             if (state.bodyParts[i] is Tongue part && !IsDestroyed(part))
             {
-                RWHealthState.Damage(self.State, state, new RWElectricBurn(), UnityEngine.Random.Range(7.2f, 12.8f), 999, part, "Zap-Coil");
+                RWHealthState.Damage(self.State, state, new RWElectricalBurn(), UnityEngine.Random.Range(7.2f, 12.8f), 999, part, "Zap-Coil");
             }
         }
 
@@ -3212,7 +3212,7 @@ internal class ILHooks
             return true;
         }
 
-        RWHealthState.Damage(self.State, state, new RWElectricBurn(), UnityEngine.Random.Range(7.2f, 12.8f), 999, GetHitBodyPart(state), "Zap-Coil");
+        RWHealthState.Damage(self.State, state, new RWElectricalBurn(), UnityEngine.Random.Range(7.2f, 12.8f), 999, GetHitBodyPart(state), "Zap-Coil");
 
         return false;
     }
@@ -3274,7 +3274,7 @@ internal class ILHooks
             return true;
         }
 
-        RWHealthState.Damage(self.State, state, new RWElectricBurn(), UnityEngine.Random.Range(22.2f, 44.8f), 0, GetHitBodyPart(state), "Big Jellyfish - Electricity");
+        RWHealthState.Damage(self.State, state, new RWElectricalBurn(), UnityEngine.Random.Range(22.2f, 44.8f), 0, GetHitBodyPart(state), "Big Jellyfish - Electricity");
 
         if (!self.dead)
         {
@@ -3791,7 +3791,7 @@ internal class ILHooks
             return;
         }
 
-        RWHealthState.Damage(self.State, state, new RWElectricBurn(), UnityEngine.Random.Range(7.2f, 12.8f), 999, GetHitBodyPart(state), "Zapper");
+        RWHealthState.Damage(self.State, state, new RWElectricalBurn(), UnityEngine.Random.Range(7.2f, 12.8f), 999, GetHitBodyPart(state), "Zapper");
     }
     public static bool ARZapperZapperContactDie(Creature self)
     {
@@ -3800,7 +3800,7 @@ internal class ILHooks
             return true;
         }
 
-        RWHealthState.Damage(self.State, state, new RWElectricBurn(), UnityEngine.Random.Range(7.2f, 12.8f), 999, GetHitBodyPart(state), "Zapper");
+        RWHealthState.Damage(self.State, state, new RWElectricalBurn(), UnityEngine.Random.Range(7.2f, 12.8f), 999, GetHitBodyPart(state), "Zapper");
 
         return false;
     }

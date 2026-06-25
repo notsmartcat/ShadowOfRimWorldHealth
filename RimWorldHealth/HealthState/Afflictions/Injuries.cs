@@ -6,6 +6,14 @@ public class RWScar : RWInjury
     {
     }
 
+    public RWScar(CreatureState state, RWBodyPart part, float tendQuality, string attackName, string attackerName, float damage, RWDamageType damageType, float infectionTimer, RWHealingDifficulty healingDifficulty, bool isRevealed, bool isPermanent, float scarDamage, string painCategory) : base(state, part, tendQuality, attackName, attackerName, damage, damageType, infectionTimer, healingDifficulty)
+    {
+        this.isRevealed = isRevealed;
+        this.isPermanent = isPermanent;
+        this.scarDamage = scarDamage;
+        this.painCategory = painCategory;
+    }
+
     public bool isRevealed = false; //Scars reveal when the injuries damage get's healed to the scarDamage
 
     public bool isPermanent = false; //Permanent scars get revealed on creation and they use the total damage dealt rather then a fraction
@@ -33,6 +41,11 @@ public class RWDestroyed : RWInjury
             isTended = false;
             isBleeding = true;
         }
+    }
+
+    public RWDestroyed(CreatureState state, RWBodyPart part, float tendQuality, string attackName, string attackerName, float damage, RWDamageType damageType, float infectionTimer, RWHealingDifficulty healingDifficulty) : base(state, part, tendQuality, attackName, attackerName, damage, damageType, infectionTimer, healingDifficulty)
+    {
+        isFresh = false;
     }
 
     public bool isFresh = true;

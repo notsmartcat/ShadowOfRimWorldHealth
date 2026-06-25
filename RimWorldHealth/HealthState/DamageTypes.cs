@@ -19,6 +19,33 @@ public class RWDamageType
     public int overkillMax;
 
     public List<string> headiffs = new();
+
+    public static RWDamageType GetRWDamageType(string name)
+    {
+        RWDamageType damageType = name switch
+        {
+            "RWCut" => new RWCut(),
+            "RWCrush" => new RWCrush(),
+            "RWBlunt" => new RWBlunt(),
+            "RWPoke" => new RWPoke(),
+            "RWDemolish" => new RWDemolish(),
+            "RWStab" => new RWStab(),
+            "RWBullet" => new RWBullet(),
+            "RWScratch" => new RWScratch(),
+            "RWBite" => new RWBite(),
+            "RWBomb" => new RWBomb(),
+            "RWSuperBomb" => new RWSuperBomb(),
+            "RWFlame" => new RWFlame(),
+            "RWBurn" => new RWBurn(),
+            "RWFrostbite" => new RWFrostbite(),
+            "RWElectricalBurn" => new RWElectricalBurn(),
+            "RWAcidBurn" => new RWAcidBurn(),
+            "RWSurgicalCut" => new RWSurgicalCut(),
+            _ => null,
+        };
+
+        return damageType;
+    }
 }
 
 public class RWCut : RWDamageType
@@ -120,24 +147,6 @@ public class RWStab : RWDamageType
         name = "Stab";
 
         category = "Melee";
-
-        armourCategory = "Sharp";
-
-        overkillMin = 40;
-        overkillMax = 100;
-
-        headiffs.Add("Stab");
-        headiffs.Add("");
-        headiffs.Add("Crack");
-    }
-}
-public class RWRangedStab : RWDamageType
-{
-    public RWRangedStab() : base()
-    {
-        name = "Stab";
-
-        category = "Ranged";
 
         armourCategory = "Sharp";
 
@@ -289,9 +298,9 @@ public class RWFrostbite : RWDamageType
         headiffs.Add("Frostbite");
     }
 }
-public class RWElectricBurn : RWDamageType
+public class RWElectricalBurn : RWDamageType
 {
-    public RWElectricBurn() : base()
+    public RWElectricalBurn() : base()
     {
         name = "Electrical burn";
 

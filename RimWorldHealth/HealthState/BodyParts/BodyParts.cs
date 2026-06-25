@@ -2,14 +2,9 @@
 
 namespace ShadowOfRimWorldHealth;
 
-public class RWBodyPart
+public class RWBodyPart(CreatureState state)
 {
-    public RWBodyPart(CreatureState state)
-    {
-        this.state = state;
-    }
-
-    public CreatureState state;
+    public CreatureState state = state;
 
     //name is used for showing up in the Health Tab and for localization
     public string name = "Generic Body Part";

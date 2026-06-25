@@ -1,5 +1,6 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
+using gelbi_silly_lib;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -13,6 +14,10 @@ public class RimWorldHealth : BaseUnityPlugin
 {
     public class RWState
     {
+        #region Saving variables
+        public int lastCycle = -1; //This refers to the last cycle the creature was saved so whenever it is loaded the afflictions are properily calculated
+        #endregion
+
         public float maxHealth = 0;
         public float bodySizeFactor = 1;
 
@@ -103,7 +108,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
         public float damage = 1;
         public float AP = 0;
-    }
+    }    
 
     public static readonly ConditionalWeakTable<CreatureState, RWState> healthState = new();
 
@@ -116,6 +121,8 @@ public class RimWorldHealth : BaseUnityPlugin
 
     public static string all = "ShadowOfRWHealth: ";
     internal static new ManualLogSource Logger;
+
+    public static RimWorldHealthHandler rimWorldHealthHandler;
 
     public HealthTab healthTab;
     public bool buttonHeld = false;
@@ -132,6 +139,8 @@ public class RimWorldHealth : BaseUnityPlugin
             On.Player.Update += PlayerUpdate;
 
             On.Player.checkInput += PlayercheckInput;
+
+            rimWorldHealthHandler = new(["notsmartcat"], "rimworldhealth");
 
             ILHooks.Apply();
             CreatureHooks.Apply();
@@ -856,7 +865,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
         string attackName = attackerName + (source.Submersion > 0f ? " - Underwater shock" : " - Shock");
 
-        RWHealthState.Damage(self, state, new RWElectricBurn(), damage, AP, focusedBodyPart, attackName, attackerName);
+        RWHealthState.Damage(self, state, new RWElectricalBurn(), damage, AP, focusedBodyPart, attackName, attackerName);
 
         if (shockGiveUp && !self.dead)
         {
