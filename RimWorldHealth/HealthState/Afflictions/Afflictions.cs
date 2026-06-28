@@ -11,6 +11,8 @@ public class RWAffliction(CreatureState state, RWBodyPart part)
     public bool isTended = false;
 
     public float tendQuality;
+
+    public bool isCharacterSpecific = false;
 }
 
 public class RWInjury : RWAffliction
@@ -67,27 +69,13 @@ public class RWInjury : RWAffliction
 
             RWHealingDifficulty healingDifficulty = RWHealingDifficulty.GetRWHealingDifficulty(RWHealingDifficultyName);
 
-            //Space to add custom HealingDifficulties
-
-            healingDifficulty ??= new();
-
             return healingDifficulty;
         }
     }
 
-    public RWInjury(CreatureState state, RWBodyPart part, float tendQuality, string attackName, string attackerName, float damage, RWDamageType damageType, float infectionTimer, RWHealingDifficulty healingDifficulty) : base(state, part)
+    public RWInjury(CreatureState state, RWBodyPart part) : base(state, part)
     {
-        isTended = true;
 
-        isBleeding = false;
-
-        this.tendQuality = tendQuality;
-        this.attackName = attackName;
-        this.attackerName = attackerName;
-        this.damage = damage;
-        this.damageType = damageType;
-        this.infectionTimer = infectionTimer;
-        this.healingDifficulty = healingDifficulty;
     }
 
     public string attackName; //Name of the attack, used in the HealthTab

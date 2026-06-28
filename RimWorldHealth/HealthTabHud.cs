@@ -275,7 +275,7 @@ public class HealthTab : HudPart
                 }
                 else if (ownerState.tendAffliction is RWDisease disease)
                 {
-                    disease.timeUntilTreatment = ownerState.cycleLength * disease.treatmentTimes;
+                    disease.timeUntilTreatment = cycleLength * disease.treatmentTimes;
                     disease.totalTendQuality += disease.tendQuality;
                 }
 
@@ -488,7 +488,7 @@ public class HealthTab : HudPart
 
         if (bloodLossPerCycle.isVisible)
         {
-            float bloodLoss = state.cycleLength * (1 - state.bloodLoss) / (state.bloodLossPerCycle / 100);
+            float bloodLoss = cycleLength * (1 - state.bloodLoss) / (state.bloodLossPerCycle / 100);
 
             string bloodLossTime = bloodLoss < 0 ? Mathf.Round(bloodLoss * 10000) / 100 + (Mathf.Round(bloodLoss * 10000) / 100 == 1 ? " second" : " seconds") : bloodLoss > 60 ? Mathf.Round(bloodLoss / 60 * 10) / 10 + (Mathf.Round(bloodLoss / 60 * 10) / 10 == 1 ? " hour" : " hours") : Mathf.Round(bloodLoss * 10) / 10 + (Mathf.Round(bloodLoss * 10) / 10 == 1 ? " minute" : " minutes");
 

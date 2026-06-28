@@ -574,7 +574,7 @@ public class RWHealthState
 
         if (state.bloodLossPerCycle == 0 && state.bloodLoss > 0)
         {
-            state.bloodLoss -= 0.333f / (40 * 60 * state.cycleLength);
+            state.bloodLoss -= 0.333f / (40 * 60 * cycleLength);
 
             if (updateBloodLoss())
             {
@@ -583,7 +583,7 @@ public class RWHealthState
         } //Replenishes 33.3% of blood per cycle if not bleeding
         else if (state.bloodLossPerCycle > 0)
         {
-            state.bloodLoss += state.bloodLossPerCycle / 100 / (40 * 60 * state.cycleLength);
+            state.bloodLoss += state.bloodLossPerCycle / 100 / (40 * 60 * cycleLength);
 
             if (updateBloodLoss())
             {
@@ -612,16 +612,16 @@ public class RWHealthState
 
             if (!disease.isImmune)
             {
-                disease.severity += disease.severityGain / (40 * 60 * state.cycleLength);
+                disease.severity += disease.severityGain / (40 * 60 * cycleLength);
 
                 if (disease.isTended)
                 {
-                    disease.severity -= disease.treatment * disease.tendQuality / (40 * 60 * state.cycleLength);
+                    disease.severity -= disease.treatment * disease.tendQuality / (40 * 60 * cycleLength);
                 }
 
-                disease.immunity += disease.immunityGain * disease.InfectionLuck * ImmunityGainSpeed(self, state) / (40 * 60 * state.cycleLength);
+                disease.immunity += disease.immunityGain * disease.InfectionLuck * ImmunityGainSpeed(self, state) / (40 * 60 * cycleLength);
 
-                disease.timeUntilTreatment -= 1 / (40 * 60 * state.cycleLength);
+                disease.timeUntilTreatment -= 1 / (40 * 60 * cycleLength);
 
                 if (disease.timeUntilTreatment <= -3)
                 {
@@ -630,7 +630,7 @@ public class RWHealthState
             }
             else
             {
-                disease.severity -= disease.severityLoss / (40 * 60 * state.cycleLength);
+                disease.severity -= disease.severityLoss / (40 * 60 * cycleLength);
             }
 
             if (disease.isImmune && disease.severity <= 0)
@@ -1744,7 +1744,7 @@ public class RWHealthState
     }
 
     #region Stats
-    static float ImmunityGainSpeed(CreatureState self, RWState state)
+    public static float ImmunityGainSpeed(CreatureState self, RWState state)
     {
         float value = (state.bloodFiltration / 2) + 0.5f;
 

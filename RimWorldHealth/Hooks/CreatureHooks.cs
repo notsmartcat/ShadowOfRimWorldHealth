@@ -78,6 +78,32 @@ internal class CreatureHooks
             state.lastCycle = int.Parse(savedData["LastCycle"]);
         }
 
+        if (savedData.TryGetValue("WholeBody", out string wholeBodyAfflictions))
+        {
+            string[] allAfflictions = Regex.Split(wholeBodyAfflictions, ";");
+
+            if (allAfflictions.Length > 0)
+            {
+                Debug.Log("existing affliction found for WholeBody");
+
+                for (int i = 0; i < allAfflictions.Length; i++)
+                {
+                    Debug.Log(allAfflictions[i]);
+
+                    string[] afflictionInfo = Regex.Split(allAfflictions[i], ":");
+
+                    if (afflictionInfo.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    Debug.Log(afflictionInfo[0]);
+
+                    state.wholeBodyAfflictions.Add(LoadAffliction(afflictionInfo, null, self));
+                }
+            }
+        }
+
         for (int bodyPartNumber = 0; bodyPartNumber < state.bodyParts.Count; bodyPartNumber++)
         {
             RWBodyPart part = state.bodyParts[bodyPartNumber];
@@ -89,13 +115,23 @@ internal class CreatureHooks
             {
                 string[] allAfflictions = Regex.Split(bodyPartAfflictions, ";");
 
-                Debug.Log("existing affliction found for for " + bodyPartName);
+                if (allAfflictions.Length == 0)
+                {
+                    continue;
+                }
+
+                Debug.Log("existing affliction found for " + bodyPartName);
 
                 for (int i = 0; i < allAfflictions.Length; i++)
                 {
                     Debug.Log(allAfflictions[i]);
 
                     string[] afflictionInfo = Regex.Split(allAfflictions[i], ":");
+
+                    if (afflictionInfo.Length == 0)
+                    {
+                        continue;
+                    }
 
                     Debug.Log(afflictionInfo[0]);
 
@@ -137,19 +173,342 @@ internal class CreatureHooks
             return;
         }
 
+        List<RWAffliction> diseasesToSave;
+        List<RWDisease> diseasesToTend;
+
+        List<RWInjury> injuriesToTend = new();
+
+        Dictionary<RWBodyPart, List<RWAffliction>> afflictionsToSave = new();
+
         try
         {
             Dictionary<string, string> savedData = self.unrecognizedSaveStrings;
 
-            if (savedData.ContainsKey("ShadowOfLizardUpdatedCycle"))
+            if (savedData.ContainsKey("ShadowOfRimWorldLastCycle"))
             {
-                state.lastCycle = int.Parse(savedData["ShadowOfLizardUpdatedCycle"]);
-                savedData.Remove("ShadowOfLizardUpdatedCycle");
+                state.lastCycle = int.Parse(savedData["ShadowOfRimWorldLastCycle"]);
+                savedData.Remove("ShadowOfRimWorldLastCycle");
             }
 
-            Debug.Log(all + self.creature + " updatedCycle = " + state.lastCycle);
+            diseasesToSave = new();
+            diseasesToTend = new();
+
+            #region WholeBody
+            if (savedData.TryGetValue("ShadowOfRimWorldWholeBody", out string wholeBodyAfflictions))
+            {
+                string[] allAfflictions = Regex.Split(wholeBodyAfflictions, ";");
+
+                if (allAfflictions.Length > 0)
+                {
+                    Debug.Log("existing affliction found for WholeBody");
+
+                    for (int i = 0; i < allAfflictions.Length; i++)
+                    {
+                        Debug.Log(allAfflictions[i]);
+
+                        string[] afflictionInfo = Regex.Split(allAfflictions[i], ":");
+
+                        if (afflictionInfo.Length == 0)
+                        {
+                            continue;
+                        }
+
+                        diseasesToTend.Add(LoadAffliction(afflictionInfo, null, self) as RWDisease);
+                    }
+
+                    for (int diseasesNumber = 0; diseasesNumber < diseasesToTend.Count; diseasesNumber++)
+                    {
+                        UpdateDisease(diseasesToTend[diseasesNumber], state, self);
+                    }
+
+                    state.wholeBodyAfflictions = diseasesToSave;
+                }
+
+                savedData.Remove("ShadowOfRimWorldWholeBody");
+            }
+            #endregion
+
+            for (int bodyPartNumber = 0; bodyPartNumber < state.bodyParts.Count; bodyPartNumber++)
+            {
+                RWBodyPart part = state.bodyParts[bodyPartNumber];
+                string bodyPartName = "ShadowOfRimWorld" + GetBodyPartKeyName(part);
+
+                Debug.Log("checking for existing afflictions for " + bodyPartName);
+
+                if (savedData.TryGetValue(bodyPartName, out string bodyPartAfflictions))
+                {
+                    string[] allAfflictions = Regex.Split(bodyPartAfflictions, ";");
+
+                    if (allAfflictions.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    Debug.Log("existing affliction found for " + bodyPartName);
+
+                    for (int i = 0; i < allAfflictions.Length; i++)
+                    {
+                        Debug.Log(allAfflictions[i]);
+
+                        string[] afflictionInfo = Regex.Split(allAfflictions[i], ":");
+
+                        if (afflictionInfo.Length == 0)
+                        {
+                            continue;
+                        }
+
+                        Debug.Log(afflictionInfo[0]);
+
+                        part.afflictions.Add(LoadAffliction(afflictionInfo, part, self));
+                    }
+
+                    savedData.Remove(bodyPartName);
+                }
+            }
+
+            for (int bodyPartNumber = 0; bodyPartNumber < state.bodyParts.Count; bodyPartNumber++)
+            {
+                RWBodyPart part = state.bodyParts[bodyPartNumber];
+
+                diseasesToSave = new();
+                diseasesToTend = new();
+
+                for (int afflictionNumber = 0; afflictionNumber < part.afflictions.Count; afflictionNumber++)
+                {
+                    RWAffliction affliction = part.afflictions[afflictionNumber];
+
+                    if (affliction.isCharacterSpecific)
+                    {
+                        continue;
+                    }
+
+                    if (affliction is RWInjury injury)
+                    {
+                        if (affliction is RWDestroyed)
+                        {
+                            afflictionsToSave[part].Add(injury);
+
+                            continue;
+                        }
+                        if (affliction is RWScar scar)
+                        {
+                            if (scar.isRevealed || scar.isPermanent)
+                            {
+                                afflictionsToSave[part].Add(injury);
+                            }
+                            else
+                            {
+                                injuriesToTend.Add(injury);
+                            }
+
+                            continue;
+                        }
+
+                        injuriesToTend.Add(injury);
+                    }
+                    else if (affliction is RWDisease disease)
+                    {
+                        diseasesToTend.Add(disease);
+                    }
+                }
+
+                for (int diseasesNumber = 0; diseasesNumber < diseasesToTend.Count; diseasesNumber++)
+                {
+                    UpdateDisease(diseasesToTend[diseasesNumber], state, self);
+                }
+
+                for (int diseasesNumber = 0; diseasesNumber < diseasesToSave.Count; diseasesNumber++)
+                {
+                    afflictionsToSave[part].Add(diseasesToSave[diseasesNumber]);
+                }
+            }
+
+            UpdateInjuries(injuriesToTend, state);
+
+            foreach (var key in afflictionsToSave)
+            {
+                key.Key.afflictions = key.Value;
+            }
+
+            state.updateCapacities = true;
         }
         catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+
+        void UpdateInjuries(List<RWInjury> healList, RWState state)
+        {
+            int cycleDifference = Mathf.Abs(state.lastCycle - self.creature.world.game.GetStorySession.saveState.cycleNumber);
+
+            float afterCycleTreatmentTime = (afterCycleLength * 6f * cycleDifference) + (cycleLength * 6 * (cycleDifference - 1));
+
+            for (int i = 0; i < healList.Count; i++)
+            {
+                if (!healList[i].isTended)
+                {
+                    healList[i].isTended = true;
+                    healList[i].tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f, 0, 0.7f);
+                }
+            }
+
+            for (int i = 0; i < afterCycleTreatmentTime; i++)
+            {
+                if (healList.Count <= 0)
+                {
+                    return;
+                }
+
+                RWInjury injury = healList[UnityEngine.Random.Range(0, healList.Count)];
+
+                float healRate = 8;
+
+                if (injury.isTended)
+                {
+                    healRate += 4;
+
+                    healRate += Mathf.Round(injury.tendQuality) * 0.08f;
+                }
+
+                injury.damage -= healRate * 0.1f;
+
+                if (injury is RWScar scar)
+                {
+                    if (scar.damage <= scar.scarDamage)
+                    {
+                        scar.damage = scar.scarDamage;
+                        scar.isTended = true;
+                        scar.isBleeding = false;
+                        scar.isRevealed = true;
+
+                        afflictionsToSave[injury.part].Add(injury);
+                        healList.Remove(injury);
+                    }
+                }
+                else if (injury.damage <= 0)
+                {
+                    healList.Remove(injury);
+                }
+            }
+
+            for (int i = 0; i < healList.Count; i++)
+            {
+                afflictionsToSave[healList[i].part].Add(healList[i]);
+            }
+        }
+
+        void UpdateDisease(RWDisease disease, RWState state, CreatureState creatureState)
+        {
+            int cycleDifference = Mathf.Abs(state.lastCycle - self.creature.world.game.GetStorySession.saveState.cycleNumber);
+
+            float afterCycleTreatmentTime = (afterCycleLength * 60f * cycleDifference) + (cycleLength * 60 * (cycleDifference - 1));
+
+            if (disease.timeUntilTreatment <= 0 || !disease.isTended)
+            {
+                disease.isTended = true;
+                disease.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f, 0, 0.7f);
+                disease.timeUntilTreatment = cycleLength * disease.treatmentTimes;
+            }
+
+            float timeUntilTreatment = disease.timeUntilTreatment * 60f;
+
+            bool willUpdateTend = afterCycleTreatmentTime > timeUntilTreatment;
+
+            float treatmentTime = willUpdateTend ? afterCycleTreatmentTime : timeUntilTreatment;
+
+            bool willSeverityMax;
+            bool willImmunityMax;
+
+            float severityMaxTimer;
+            float immunityMaxTimer;
+
+            if (!willUpdateTend)
+            {
+                willSeverityMax = (disease.severity += disease.severityGain / (40 * 60 * cycleLength) * treatmentTime) >= 1;
+                willImmunityMax = (disease.immunity += disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(creatureState, state) / (40 * 60 * cycleLength) * treatmentTime) >= 1;
+
+                severityMaxTimer = willSeverityMax ? (disease.severity - 1) / disease.severityGain / (40 * 60 * cycleLength) * treatmentTime : 0;
+                immunityMaxTimer = willImmunityMax ? (disease.immunity - 1) / disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(creatureState, state) / (40 * 60 * cycleLength) * treatmentTime : 0;
+
+                if (willSeverityMax && willImmunityMax && severityMaxTimer > immunityMaxTimer)
+                {
+                    return;
+                }
+
+                if (willSeverityMax)
+                {
+                    return;
+                }
+                else if (willImmunityMax)
+                {
+                    treatmentTime -= immunityMaxTimer;
+
+                    disease.severity -= disease.severityLoss / (40 * 60 * cycleLength) * immunityMaxTimer;
+
+                    disease.severity -= disease.severityLoss / (40 * 60 * cycleLength) * treatmentTime;
+
+                    if (disease.severity > 0)
+                    {
+                        disease.timeUntilTreatment = treatmentTime / 60;
+
+                        diseasesToSave.Add(disease);
+                    }
+
+                    return;
+                }
+
+                disease.timeUntilTreatment = treatmentTime / 60;
+
+                diseasesToSave.Add(disease);
+
+                return;
+            }
+
+            willSeverityMax = (disease.severity += disease.severityGain / (40 * 60 * cycleLength) * timeUntilTreatment) >= 1;
+            willImmunityMax = (disease.immunity += disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(creatureState, state) / (40 * 60 * cycleLength) * timeUntilTreatment) >= 1;
+
+            severityMaxTimer = willSeverityMax ? (disease.severity - 1) / disease.severityGain / (40 * 60 * cycleLength) * timeUntilTreatment : 0;
+            immunityMaxTimer = willImmunityMax ? (disease.immunity - 1) / disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(creatureState, state) / (40 * 60 * cycleLength) * timeUntilTreatment : 0;
+
+            disease.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f, 0, 0.7f);
+            treatmentTime -= timeUntilTreatment;
+
+            willSeverityMax = (disease.severity += disease.severityGain / (40 * 60 * cycleLength) * treatmentTime) >= 1;
+            willImmunityMax = (disease.immunity += disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(creatureState, state) / (40 * 60 * cycleLength) * treatmentTime) >= 1;
+
+            severityMaxTimer = willSeverityMax ? (disease.severity - 1) / disease.severityGain / (40 * 60 * cycleLength) * treatmentTime : 0;
+            immunityMaxTimer = willImmunityMax ? (disease.immunity - 1) / disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(creatureState, state) / (40 * 60 * cycleLength) * treatmentTime : 0;
+
+            disease.timeUntilTreatment = (cycleLength * disease.treatmentTimes) - (treatmentTime / 60);
+
+            if (willSeverityMax && willImmunityMax && severityMaxTimer > immunityMaxTimer)
+            {
+                return;
+            }
+
+            if (willSeverityMax)
+            {
+                return;
+            }
+            else if (willImmunityMax)
+            {
+                treatmentTime -= immunityMaxTimer;
+
+                disease.severity -= disease.severityLoss / (40 * 60 * cycleLength) * immunityMaxTimer;
+
+                disease.severity -= disease.severityLoss / (40 * 60 * cycleLength) * treatmentTime;
+
+                if (disease.severity > 0)
+                {
+                    disease.timeUntilTreatment = treatmentTime / 60;
+
+                    diseasesToSave.Add(disease);
+                }
+
+                return;
+            }
+
+            disease.timeUntilTreatment = treatmentTime / 60;
+
+            diseasesToSave.Add(disease);
+        }
     }
     #endregion
 
@@ -166,13 +525,54 @@ internal class CreatureHooks
 
             savedData["LastCycle"] = self.world.game.GetStorySession.saveState.cycleNumber.ToString();
 
-            //run code to automatically treat all afflictions, then run code to heal afflictions based on the after-cycle-time
+            List<RWAffliction> afflictionsToSave = new();
+
+            for (int afflictionNumber = 0; afflictionNumber < state.wholeBodyAfflictions.Count; afflictionNumber++)
+            {
+                RWAffliction affliction = state.wholeBodyAfflictions[afflictionNumber];
+
+                if (affliction.isCharacterSpecific)
+                {
+                    continue;
+                }
+
+                if (affliction is RWDisease disease)
+                {
+                    afflictionsToSave.Add(disease);
+                }
+            }
+
+            if (afflictionsToSave.Count > 0)
+            {
+                savedData["ShadowOfRimWorldWholeBody"] = GetAllWholeBodyAfflictionValueName(afflictionsToSave);
+            }
+
+
 
             for (int i = 0; i < state.bodyParts.Count; i++)
             {
+                afflictionsToSave = new();
+
                 if (state.bodyParts[i].afflictions.Count > 0)
                 {
-                    savedData[GetBodyPartKeyName(state.bodyParts[i])] = GetAllAfflictionValueName(state.bodyParts[i]);
+                    for (int afflictionNumber = 0; afflictionNumber < state.wholeBodyAfflictions.Count; afflictionNumber++)
+                    {
+                        RWAffliction affliction = state.bodyParts[i].afflictions[afflictionNumber];
+
+                        if (affliction.isCharacterSpecific)
+                        {
+                            continue;
+                        }
+
+                        afflictionsToSave.Add(affliction);
+                    }
+
+                    state.bodyParts[i].afflictions = afflictionsToSave;
+
+                    if (afflictionsToSave.Count > 0)
+                    {
+                        savedData["ShadowOfRimWorld" + GetBodyPartKeyName(state.bodyParts[i])] = GetAllAfflictionValueName(state.bodyParts[i]);
+                    }
                 }
             }
 
@@ -220,13 +620,58 @@ internal class CreatureHooks
                     name += "Injury:";
                 }
 
-                name += $"{affliction.tendQuality}:{injury.attackName}:{injury.attackerName}:{injury.damage}:{injury.damageType}:{injury.infectionTimer}:{injury.healingDifficulty.name}";
+                name += $"{affliction.isTended}:{affliction.tendQuality}:{injury.attackName}:{injury.attackerName}:{injury.damage}:{injury.damageType}:{injury.infectionTimer}:{injury.healingDifficulty.name}";
 
                 name += nameEnding;
             }
             else if (affliction is RWDisease disease)
             {
-                name = $"{disease.name}:{disease.severity}:{disease.isImmune}:{disease.immunity}:{disease.timeUntilTreatment}:{disease.totalTendQuality}:{disease.InfectionLuck}";
+                name = $"{affliction.isTended}:{disease.name}:{disease.severity}:{disease.isImmune}:{disease.immunity}:{disease.timeUntilTreatment}:{disease.totalTendQuality}:{disease.InfectionLuck}";
+            }
+        }
+
+        return name;
+    }
+
+    public static string GetAllWholeBodyAfflictionValueName(List<RWAffliction> wholeBodyAfflictions)
+    {
+        string name = "";
+        RWAffliction affliction;
+        string nameEnding;
+
+        for (int i = 0; i < wholeBodyAfflictions.Count; i++)
+        {
+            if (i > 0)
+                name += ";";
+
+            affliction = wholeBodyAfflictions[i];
+
+            if (affliction is RWInjury injury)
+            {
+                nameEnding = "";
+
+                if (injury is RWScar scar)
+                {
+                    name += "Scar:";
+
+                    nameEnding = $"{scar.isRevealed}:{scar.isPermanent}:{scar.scarDamage}:{scar.painCategory}";
+                }
+                else if (injury is RWDestroyed)
+                {
+                    name += "Destroyed:";
+                }
+                else
+                {
+                    name += "Injury:";
+                }
+
+                name += $"{affliction.isTended}:{affliction.tendQuality}:{injury.attackName}:{injury.attackerName}:{injury.damage}:{injury.damageType}:{injury.infectionTimer}:{injury.healingDifficulty.name}";
+
+                name += nameEnding;
+            }
+            else if (affliction is RWDisease disease)
+            {
+                name = $"{disease.name}:{affliction.isTended}:{disease.severity}:{disease.isImmune}:{disease.immunity}:{disease.timeUntilTreatment}:{disease.totalTendQuality}:{disease.InfectionLuck}";
             }
         }
 
@@ -235,44 +680,65 @@ internal class CreatureHooks
 
     public static RWAffliction LoadAffliction(string[] afflictionInfo, RWBodyPart part, CreatureState state)
     {
+        if (afflictionInfo.Length == 0)
+        {
+            return null;
+        }
+
         if (afflictionInfo[0] == "Injury" || afflictionInfo[0] == "Scar" || afflictionInfo[0] == "Destroyed")
         {
-            float tendQuality = float.Parse(afflictionInfo[1]);
-            string attackName = afflictionInfo[2];
-            string attackerName = afflictionInfo[3];
-            float damage = float.Parse(afflictionInfo[4]);
-            RWDamageType damageType = RWDamageType.GetRWDamageType(afflictionInfo[5]);
-            float infectionTimer = float.Parse(afflictionInfo[6]);
-
-            RWHealingDifficulty healingDifficulty = RWHealingDifficulty.GetRWHealingDifficulty(afflictionInfo[7]);
-
-            bool isRevealed = false;
-            bool isPermanent = false;
-            float scarDamage = 0;
-            string painCategory = "";
-
-            if (afflictionInfo[0] == "Scar")
+            RWInjury injury = afflictionInfo[0] switch
             {
-                isRevealed = afflictionInfo[8] == "True";
-                isPermanent = afflictionInfo[9] == "True";
-                scarDamage = float.Parse(afflictionInfo[10]);
-                painCategory = afflictionInfo[11];
-            }
-
-            RWAffliction affliction = afflictionInfo[0] switch
-            {
-                "Scar" => new RWScar(state, part, tendQuality, attackName, attackerName, damage, damageType, infectionTimer, healingDifficulty, isRevealed, isPermanent, scarDamage, painCategory),
-                "Destroyed" => new RWDestroyed(state, part, tendQuality, attackName, attackerName, damage, damageType, infectionTimer, healingDifficulty),
-                _ => new RWInjury(state, part, tendQuality, attackName, attackerName, damage, damageType, infectionTimer, healingDifficulty)
+                "Scar" => new RWScar(state, part),
+                "Destroyed" => new RWDestroyed(state, part),
+                _ => new RWInjury(state, part)
             };
 
-            Debug.Log("created new affliction " + affliction + " for " + part);
+            injury.isTended = afflictionInfo[1] == "True";
+            injury.tendQuality = float.TryParse(afflictionInfo[2], out float tendQuality) ? tendQuality : 0f;
+            injury.attackName = afflictionInfo[3];
+            injury.attackerName = afflictionInfo[4];
+            injury.damage = float.TryParse(afflictionInfo[5], out float damage) ? damage : 0f;
+            injury.damageType = RWDamageType.GetRWDamageType(afflictionInfo[6]);
+            injury.infectionTimer = float.TryParse(afflictionInfo[7], out float infectionTimer) ? infectionTimer : 0f;
 
-            return affliction;
+            injury.healingDifficulty = RWHealingDifficulty.GetRWHealingDifficulty(afflictionInfo[8]);
+
+            if (injury is RWScar scar)
+            {
+                scar.isRevealed = afflictionInfo[9] == "True";
+                scar.isPermanent = afflictionInfo[10] == "True";
+                scar.scarDamage = float.TryParse(afflictionInfo[11], out float scarDamage) ? scarDamage : 0f;
+                scar.painCategory = afflictionInfo[12];
+            }
+
+
+
+            Debug.Log("created new affliction " + injury + " for " + part);
+
+            return injury;
         }
         else
         {
-            return null;
+            Debug.Log("Disease name = " + afflictionInfo[0]);
+
+            RWDisease disease = afflictionInfo[0] switch
+            {
+                "Flu" => new RWFlu(state, part ?? null),
+                "Infection" => new RWInfection(state, part ?? null),
+                _ => throw new NotImplementedException()
+            };
+
+            disease.isTended = afflictionInfo[1] == "True";
+            
+            disease.severity = float.TryParse(afflictionInfo[2], out float severity) ? severity : 0f;
+            disease.isImmune = afflictionInfo[3] == "True";
+            disease.immunity = float.TryParse(afflictionInfo[4], out float immunity) ? immunity : 0f;
+            disease.timeUntilTreatment = float.TryParse(afflictionInfo[5], out float timeUntilTreatment) ? timeUntilTreatment : 0f;
+            disease.tendQuality = float.TryParse(afflictionInfo[6], out float tendQuality) ? tendQuality : 0f;
+            disease.InfectionLuck = float.TryParse(afflictionInfo[7], out float InfectionLuck) ? InfectionLuck : 0f;
+
+            return disease;
         }
     }
     #endregion

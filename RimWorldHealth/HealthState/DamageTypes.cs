@@ -44,6 +44,10 @@ public class RWDamageType
             _ => null,
         };
 
+        //Space to add custom DamageTypes
+
+        damageType ??= new RWPoke();
+
         return damageType;
     }
 }

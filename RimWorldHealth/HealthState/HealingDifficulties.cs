@@ -48,6 +48,10 @@ public class RWHealingDifficulty
             _ => null,
         };
 
+        //Space to add custom HealingDifficulties
+
+        healingDifficulty ??= new();
+
         return healingDifficulty;
     }
 }

@@ -68,8 +68,6 @@ public class RimWorldHealth : BaseUnityPlugin
         public bool updateCapacities = false;
         #endregion
 
-        public float cycleLength = 13;
-
         public int healingRateTics = 600;
         public int healingRate = 600;
 
@@ -126,6 +124,9 @@ public class RimWorldHealth : BaseUnityPlugin
 
     public HealthTab healthTab;
     public bool buttonHeld = false;
+
+    public static float cycleLength = 13;
+    public static float afterCycleLength = 13;
 
     public void OnEnable()
     {

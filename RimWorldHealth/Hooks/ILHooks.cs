@@ -3495,7 +3495,7 @@ internal class ILHooks
                     }
                     else if (state.tendAffliction is RWDisease disease)
                     {
-                        disease.timeUntilTreatment = state.cycleLength * disease.treatmentTimes;
+                        disease.timeUntilTreatment = cycleLength * disease.treatmentTimes;
                         disease.totalTendQuality += disease.tendQuality;
                     }
 
@@ -3582,7 +3582,7 @@ internal class ILHooks
                 }
                 else if (state.tendAffliction is RWDisease disease)
                 {
-                    disease.timeUntilTreatment = state.cycleLength * disease.treatmentTimes;
+                    disease.timeUntilTreatment = cycleLength * disease.treatmentTimes;
                     disease.totalTendQuality += disease.tendQuality;
                 }
 
