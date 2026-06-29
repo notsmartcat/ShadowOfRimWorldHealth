@@ -941,7 +941,7 @@ internal class CreatureHooks
 
                 Override();
 
-                damage = 1.5f;
+                damage = 0.5f;
 
                 RWHealthState.Damage(self.State, state, new RWElectricalBurn(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
             }
@@ -999,8 +999,6 @@ internal class CreatureHooks
                     attackerName = GetCreatureName(spear.thrownBy);
                 }
 
-                Debug.Log("Spear");
-
                 if (type != Creature.DamageType.Explosion)
                 {
                     if (weaponstat.TryGetValue(spear.abstractPhysicalObject, out RWWeaponStats weaponState))
@@ -1033,8 +1031,6 @@ internal class CreatureHooks
                     attackName = "Explosive Spear";
 
                     Override();
-
-                    Debug.Log("Explosive Spear");
 
                     if (type == Creature.DamageType.Explosion)
                     {
@@ -1152,6 +1148,9 @@ internal class CreatureHooks
 
             Override();
 
+            damage = 25;
+            AP = 20;
+
             RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
         else if (attacker is BigSpider)
@@ -1161,6 +1160,9 @@ internal class CreatureHooks
             attackName = attackerName + " - Fangs";
 
             Override();
+
+            damage = 10;
+            AP = 10;
 
             RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
@@ -1172,6 +1174,9 @@ internal class CreatureHooks
 
             Override();
 
+            damage = 10;
+            AP = 10;
+
             RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
         else if (attacker is EggBug)
@@ -1181,6 +1186,9 @@ internal class CreatureHooks
             attackName = attackerName + " - Spine Spikes";
 
             Override();
+
+            damage = 5;
+            AP = 10;
 
             RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
@@ -1192,6 +1200,8 @@ internal class CreatureHooks
 
             Override();
 
+            damage = 6;
+
             BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
         }
         else if (attacker is Leech)
@@ -1201,6 +1211,9 @@ internal class CreatureHooks
             attackName = attackerName + " - Teeth";
 
             Override();
+
+            damage = 0.5f;
+            AP = 10;
 
             RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
         }
@@ -1233,9 +1246,12 @@ internal class CreatureHooks
         {
             attackerName = GetCreatureName((Creature)attacker);
 
-            attackName = attackerName + " - Beak";
+            attackName = attackerName + " - Teeth";
 
             Override();
+
+            damage = 30;
+            AP = 50;
 
             RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
@@ -1248,10 +1264,15 @@ internal class CreatureHooks
                 if (damage == 1)
                 {
                     attackName = attackerName + " - Roll";
+
+                    damage = 1;
                 }
                 else
                 {
                     attackName = attackerName + " - Slam";
+
+                    damage = 10;
+                    AP = 10;
                 }
 
                 Override();
@@ -1263,6 +1284,9 @@ internal class CreatureHooks
                 attackName = attackerName + " - Teeth";
 
                 Override();
+
+                damage = 8;
+                AP = 10;
 
                 RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
             }
@@ -1276,15 +1300,21 @@ internal class CreatureHooks
 
             Override();
 
+            damage = 10;
+            AP = 10;
+
             BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
         }
         else if (attacker is Vulture)
         {
             attackerName = GetCreatureName((Creature)attacker);
 
-            attackName = attackerName + " - Beak";
+            attackName = attackerName + " - Teeth";
 
             Override();
+
+            damage = 10;
+            AP = 10;
 
             RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
@@ -1296,6 +1326,9 @@ internal class CreatureHooks
 
             Override();
 
+            damage = 1;
+            AP = 10;
+
             RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
         else if (ModManager.Watcher && attacker is Watcher.BoxWorm)
@@ -1306,6 +1339,9 @@ internal class CreatureHooks
 
             Override();
 
+            damage = 6;
+            AP = 10;
+
             RWHealthState.Damage(self.State, state, new RWBurn(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
         }
         else if (ModManager.Watcher && attacker is Watcher.DrillCrab)
@@ -1315,6 +1351,9 @@ internal class CreatureHooks
             attackName = attackerName + " - Drill";
 
             Override();
+
+            damage = 7;
+            AP = 10;
 
             CutDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
         }
@@ -1328,6 +1367,9 @@ internal class CreatureHooks
 
                 Override();
 
+                damage = 1;
+                AP = 10;
+
                 RWHealthState.Damage(self.State, state, new RWStab(), AP, damage, GetHitBodyPart(state, hitChunk), attackName, attackerName);
             }
             else
@@ -1335,6 +1377,8 @@ internal class CreatureHooks
                 attackName = attackerName + " - Body";
 
                 Override();
+
+                damage = 0.5f;
 
                 BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
             }
@@ -1347,6 +1391,9 @@ internal class CreatureHooks
 
             Override();
 
+            damage = 5;
+            AP = 10;
+
             BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
         }
         else if (ModManager.Watcher && attacker is Watcher.Rat)
@@ -1357,6 +1404,8 @@ internal class CreatureHooks
 
             Override();
 
+            damage = 0.5f;
+
             BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
         }
         else if (ModManager.Watcher && attacker is Watcher.RippleSpider)
@@ -1366,6 +1415,8 @@ internal class CreatureHooks
             attackName = attackerName + " - Body";
 
             Override();
+
+            damage = 0.5f;
 
             BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
         }

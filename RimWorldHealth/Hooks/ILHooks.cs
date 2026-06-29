@@ -1023,11 +1023,12 @@ internal class ILHooks
             return true;
         }
 
-        RWBodyPart focusedBodyPart = GetHitBodyPart(state);
+        LethalWaterDamage(self.State, state);
 
-        RWHealthState.Damage(self.State, state, new RWAcidBurn(), UnityEngine.Random.Range(8.2f, 18.8f), 999, focusedBodyPart, "Acidic water");
-
-        self.firstChunk.vel += Vector2.ClampMagnitude(new Vector2(0f, 5f) / self.firstChunk.mass, 10f);
+        if (self.lavaContactCount > 3)
+        {
+            self.mainBodyChunk.vel.y = 5f;
+        }
 
         self.Stun(StunMath(0.1f, self, Creature.DamageType.Explosion));
 
@@ -1210,184 +1211,66 @@ internal class ILHooks
 
         bool isSuper = ModManager.MSC && obj.sourceObject != null && (obj.sourceObject is MoreSlugcats.EnergyCell || obj.sourceObject is MoreSlugcats.SingularityBomb);
 
-        damage *= BombDamageMultiplier(true, isSuper);
+        PhysicalObject sourceObj = obj.sourceObject ?? null;
 
-        int amount = UnityEngine.Random.Range(1, 5);
+        string attackName = obj.ToString();
+        string attackerName = "";
 
-        RWBodyPart focusedBodyPart;
-
-        List<RWBodyPart> list = new();
-
-        for (int p = 0; p < amount; p++)
+        if (obj.killTagHolder != null)
         {
-            focusedBodyPart = null;
-            list.Clear();
-
-            for (int i = 0; i < state.bodyParts.Count; i++)
-            {
-                if (state.bodyParts[i].connectedBodyChunks.Count > 0 && !state.bodyParts[i].isInternal && !IsDestroyed(state.bodyParts[i]))
-                {
-                    list.Add(state.bodyParts[i]);
-                }
-            }
-
-            if (list.Count > 1)
-            {
-                float chance = 0;
-
-                for (int i = 0; i < list.Count; i++)
-                {
-                    chance += list[i].coverage;
-                }
-
-                float roll = UnityEngine.Random.Range(0f, chance);
-
-                chance = 0;
-
-                for (int i = 0; i < list.Count; i++)
-                {
-                    chance += list[i].coverage;
-
-                    if (roll <= chance)
-                    {
-                        focusedBodyPart = list[i];
-                        break;
-                    }
-                }
-            }
-            else if (list.Count == 1)
-            {
-                focusedBodyPart = list[0];
-            }
-
-            list.Clear();
-
-            list.Add(focusedBodyPart);
-
-            while (focusedBodyPart != null && focusedBodyPart is not Neck)
-            {
-                for (int i = 0; i < state.bodyParts.Count; i++)
-                {
-                    if (!IsDestroyed(state.bodyParts[i]) && state.bodyParts[i].isInternal && IsSubPartName(state.bodyParts[i], list[0]))
-                    {
-                        list.Add(state.bodyParts[i]);
-                    }
-                }
-
-                if (list.Count == 0)
-                {
-                    break;
-                }
-                else if (list.Count == 1)
-                {
-                    focusedBodyPart = list[0];
-                    break;
-                }
-
-                float chance = 0;
-
-                for (int i = 0; i < list.Count; i++)
-                {
-                    chance += list[i].coverage;
-                }
-
-                float roll = UnityEngine.Random.Range(0f, chance);
-
-                chance = 0;
-
-                RWBodyPart tempFocusedBodyPart = null;
-
-                for (int i = 0; i < list.Count; i++)
-                {
-                    chance += list[i].coverage;
-
-                    //Debug.Log("Roll = " + roll + "/" + chance + " for " + list[i].name);
-
-                    if (roll <= chance)
-                    {
-                        tempFocusedBodyPart = list[i];
-
-                        break;
-                    }
-                }
-
-                if (tempFocusedBodyPart == null || tempFocusedBodyPart == focusedBodyPart)
-                {
-                    break;
-                }
-                else
-                {
-                    list.Clear();
-                    list.Add(tempFocusedBodyPart);
-                }
-            }
-
-            if (focusedBodyPart != null)
-            {
-                PhysicalObject sourceObj = obj.sourceObject ?? null;
-
-                string attackName = obj.ToString();
-                string attackerName = "";
-
-                if (obj.killTagHolder != null)
-                {
-                    attackerName = GetCreatureName(obj.killTagHolder);
-                }
-
-                if (sourceObj == null)
-                {
-                    attackName = "Explosion";
-                }
-                else if (sourceObj is EggBug)
-                {
-                    attackName = attackerName + " - Explosion";
-                }
-                else if (sourceObj is ExplosiveSpear)
-                {
-                    attackName = "Explosive spear";
-                }
-                else if (sourceObj is FirecrackerPlant)
-                {
-                    attackName = "Firecracker";
-                }
-                else if (sourceObj is ScavengerBomb)
-                {
-                    attackName = "Bomb";
-                }
-                else if (sourceObj is Player)
-                {
-                    attackName = attackerName + " - Explosion";
-                }
-                else if (sourceObj is Vulture)
-                {
-                    attackName = attackerName + " - Laser explosion";
-                }
-                else if (ModManager.MSC && sourceObj is MoreSlugcats.EnergyCell)
-                {
-                    attackName = "Energy cell";
-                }
-                else if (ModManager.MSC && sourceObj is MoreSlugcats.FireEgg)
-                {
-                    attackName = "Fire egg";
-                }
-                else if (ModManager.MSC && sourceObj is MoreSlugcats.SingularityBomb)
-                {
-                    attackName = "Singularity bomb";
-                }
-                else if (sourceObj is Oracle)
-                {
-                    attackName = attackerName + " - Explosion";
-                }
-                else if (sourceObj == null)
-                {
-                    attackName = "Explosion";
-                }
-
-                RWDamageType damageType = isSuper ? new RWSuperBomb() : new RWBomb();
-
-                RWHealthState.Damage(self.State, state, damageType, damage / amount, 10, focusedBodyPart, attackName, attackerName);
-            }
+            attackerName = GetCreatureName(obj.killTagHolder);
         }
+
+        if (sourceObj == null)
+        {
+            attackName = "Explosion";
+        }
+        else if (sourceObj is EggBug)
+        {
+            attackName = attackerName + " - Explosion";
+        }
+        else if (sourceObj is ExplosiveSpear)
+        {
+            attackName = "Explosive spear";
+        }
+        else if (sourceObj is FirecrackerPlant)
+        {
+            attackName = "Firecracker";
+        }
+        else if (sourceObj is ScavengerBomb)
+        {
+            attackName = "Bomb";
+        }
+        else if (sourceObj is Player)
+        {
+            attackName = attackerName + " - Explosion";
+        }
+        else if (sourceObj is Vulture)
+        {
+            attackName = attackerName + " - Laser explosion";
+        }
+        else if (ModManager.MSC && sourceObj is MoreSlugcats.EnergyCell)
+        {
+            attackName = "Energy cell";
+        }
+        else if (ModManager.MSC && sourceObj is MoreSlugcats.FireEgg)
+        {
+            attackName = "Fire egg";
+        }
+        else if (ModManager.MSC && sourceObj is MoreSlugcats.SingularityBomb)
+        {
+            attackName = "Singularity bomb";
+        }
+        else if (sourceObj is Oracle)
+        {
+            attackName = attackerName + " - Explosion";
+        }
+        else if (sourceObj == null)
+        {
+            attackName = "Explosion";
+        }
+
+        BombDamage(self.State, state, damage * BombDamageMultiplier(self.State is HealthState, isSuper), attackName, attackerName);
 
         return false;
     }
@@ -1917,8 +1800,7 @@ internal class ILHooks
             return true;
         }
 
-        RWHealthState.Damage(self.State, state, new RWBite(), UnityEngine.Random.Range(0.8f, 1.2f), 0, GetHitBodyPart(state), "Locust swarm - Mandibles");
-
+        LocustDamage(self.State, state);
         return false;
     }
     #endregion
@@ -2084,6 +1966,7 @@ internal class ILHooks
                 val.MoveAfterLabels();
 
                 val.Emit(OpCodes.Ldarg_0);
+                val.Emit(OpCodes.Ldarg_3);
                 val.Emit(OpCodes.Ldarg_1);
                 val.EmitDelegate(PlayerTerrainImpactDeath);
                 val.Emit(OpCodes.Brfalse, target);
@@ -2118,6 +2001,7 @@ internal class ILHooks
                 val.MoveAfterLabels();
 
                 val.Emit(OpCodes.Ldarg_0);
+                val.Emit(OpCodes.Ldarg_3);
                 val.Emit(OpCodes.Ldarg_1);
                 val.EmitDelegate(PlayerTerrainImpactHard);
                 val.Emit(OpCodes.Brfalse, target);
@@ -2129,18 +2013,14 @@ internal class ILHooks
         }
         catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
     }
-    public static bool PlayerTerrainImpactDeath(Player self, int hitChunk = 0)
+    public static bool PlayerTerrainImpactDeath(Player self, float speed, int hitChunk = 0)
     {
         if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
         {
             return true;
         }
 
-        RWBodyPart part = GetHitBodyPart(state, self.bodyChunks[hitChunk], null, false, true);
-
-        part ??= GetHitBodyPart(state);
-
-        RWHealthState.Damage(self.State, state, new RWBlunt(), UnityEngine.Random.Range(9.2f, 12.8f), 0, part, "Ground Impact");
+        TerrainImpactDamage(self, state, hitChunk, speed, true);
 
         if (self.dead)
         {
@@ -2154,18 +2034,14 @@ internal class ILHooks
 
         return false;
     }
-    public static bool PlayerTerrainImpactHard(Player self, int hitChunk = 0)
+    public static bool PlayerTerrainImpactHard(Player self, float speed, int hitChunk = 0)
     {
         if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
         {
             return true;
         }
 
-        RWBodyPart part = GetHitBodyPart(state, self.bodyChunks[hitChunk], null, false, true);
-
-        part ??= GetHitBodyPart(state);
-
-        RWHealthState.Damage(self.State, state, new RWBlunt(), UnityEngine.Random.Range(1.2f, 4.8f), 0, part, "Ground Impact");
+        TerrainImpactDamage(self, state, hitChunk, speed, false);
 
         if (self.dead)
         {
@@ -2224,13 +2100,7 @@ internal class ILHooks
             return true;
         }
 
-        for (int i = 0; i < state.bodyParts.Count; i++)
-        {
-            if (state.bodyParts[i] is Tongue part && !IsDestroyed(part))
-            {
-                RWHealthState.Damage(self.State, state, new RWElectricalBurn(), UnityEngine.Random.Range(7.2f, 12.8f), 999, part, "Zap-Coil");
-            }
-        }
+        TongueElectricDamage(self.State, state);
 
         return false;
     }
@@ -2310,7 +2180,7 @@ internal class ILHooks
             return;
         }
 
-        RWHealthState.Damage(self.State, state, new RWBlunt(), UnityEngine.Random.Range(0.8f, 3.2f), 0, GetHitBodyPart(state, null, null, false, true), "Rain");
+        RainDamage(self.State, state, false);
     }
     public static bool RoomRainThrowAroundObjectsDie(Player self)
     {
@@ -2319,7 +2189,7 @@ internal class ILHooks
             return true;
         }
 
-        RWHealthState.Damage(self.State, state, new RWBlunt(), UnityEngine.Random.Range(14.2f, 24.8f), 999, GetHitBodyPart(state, null, null, false, true), "Rain");
+        RainDamage(self.State, state, true);
 
         return false;
     }
@@ -2538,7 +2408,7 @@ internal class ILHooks
 
         if (UnityEngine.Random.value < 0.1f)
         {
-            RWHealthState.Damage(self.State, state, new RWBite(), UnityEngine.Random.Range(0.8f, 1.2f), 10, GetHitBodyPart(state), "Coalescipede - Fangs");
+            SpiderDamage(self.State, state);
         }
 
         return false;
@@ -2899,13 +2769,7 @@ internal class ILHooks
             return true;
         }
 
-        for (int i = 0; i < state.bodyParts.Count; i++)
-        {
-            if (state.bodyParts[i] is Tongue part && !IsDestroyed(part))
-            {
-                RWHealthState.Damage(self.State, state, new RWElectricalBurn(), UnityEngine.Random.Range(7.2f, 12.8f), 999, part, "Zap-Coil");
-            }
-        }
+        TongueElectricDamage(self.State, state);
 
         return false;
     }
@@ -3212,7 +3076,7 @@ internal class ILHooks
             return true;
         }
 
-        RWHealthState.Damage(self.State, state, new RWElectricalBurn(), UnityEngine.Random.Range(7.2f, 12.8f), 999, GetHitBodyPart(state), "Zap-Coil");
+        ZapCoilDamage(self.State, state);
 
         return false;
     }
@@ -3274,7 +3138,7 @@ internal class ILHooks
             return true;
         }
 
-        RWHealthState.Damage(self.State, state, new RWElectricalBurn(), UnityEngine.Random.Range(22.2f, 44.8f), 0, GetHitBodyPart(state), "Big Jellyfish - Electricity");
+        BigJellyfishDamage(self.State, state);
 
         if (!self.dead)
         {
@@ -3791,7 +3655,7 @@ internal class ILHooks
             return;
         }
 
-        RWHealthState.Damage(self.State, state, new RWElectricalBurn(), UnityEngine.Random.Range(7.2f, 12.8f), 999, GetHitBodyPart(state), "Zapper");
+        ARZapperDamage(self.State, state, false);
     }
     public static bool ARZapperZapperContactDie(Creature self)
     {
@@ -3800,7 +3664,7 @@ internal class ILHooks
             return true;
         }
 
-        RWHealthState.Damage(self.State, state, new RWElectricalBurn(), UnityEngine.Random.Range(7.2f, 12.8f), 999, GetHitBodyPart(state), "Zapper");
+        ARZapperDamage(self.State, state, true);
 
         return false;
     }
@@ -4131,7 +3995,7 @@ internal class ILHooks
             return;
         }
 
-        RWHealthState.Damage(self.State, state, new RWBlunt(), UnityEngine.Random.Range(0.8f, 3.2f), 0, GetHitBodyPart(state, null, null, false, true), "Sandstorm");
+        SandstormDamage(self.State, state, false);
     }
     public static bool SandstormAffectObjectsDie(Player self)
     {
@@ -4140,7 +4004,7 @@ internal class ILHooks
             return true;
         }
 
-        RWHealthState.Damage(self.State, state, new RWBlunt(), UnityEngine.Random.Range(14.2f, 24.8f), 999, GetHitBodyPart(state, null, null, false, true), "Sandstorm");
+        SandstormDamage(self.State, state, true);
 
         return false;
     }

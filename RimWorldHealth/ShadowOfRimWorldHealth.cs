@@ -376,7 +376,7 @@ public class RimWorldHealth : BaseUnityPlugin
             focusedBodyPart = null;
             list.Clear();
 
-            bool isSuper = attackerName == "Energy Cell" || attackerName == "Singularity Bomb";
+            bool isSuper = attackName == "Energy Cell" || attackName == "Singularity Bomb";
 
             for (int i = 0; i < state.bodyParts.Count; i++)
             {
@@ -425,7 +425,6 @@ public class RimWorldHealth : BaseUnityPlugin
                 {
                     if (!IsDestroyed(state.bodyParts[i]) && state.bodyParts[i].isInternal && IsSubPartName(state.bodyParts[i], list[0]))
                     {
-                        //Debug.Log("Adding Subpart of " + focusedBodyPart.name + " with the name " + state.bodyParts[i].name);
                         list.Add(state.bodyParts[i]);
                     }
                 }
@@ -457,13 +456,10 @@ public class RimWorldHealth : BaseUnityPlugin
                 {
                     chance += list[i].coverage;
 
-                    //Debug.Log("Roll = " + roll + "/" + chance + " for " + list[i].name);
-
                     if (roll <= chance)
                     {
                         tempFocusedBodyPart = list[i];
 
-                        //Debug.Log("Bodypart out all subparts that was hit is " + tempFocusedBodyPart.name);
                         break;
                     }
                 }
@@ -595,38 +591,30 @@ public class RimWorldHealth : BaseUnityPlugin
 
     public static void CutDamage(CreatureState self, RWState state, BodyChunk hitChunk, float damage, float AP, string attackName = "", string attackerName = "")
     {
-        //Debug.Log("CutDamage");
-
         float additionalPartsRoll = UnityEngine.Random.value;
         int additionalParts;
 
         if (additionalPartsRoll <= 0.3f)
         {
-            //Debug.Log("CutDamage hit only 1 bodyPart");
             Damage(GetHitBodyPart(state, hitChunk), damage);
             return;
         }
         else if (additionalPartsRoll <= 0.75f)
         {
-            //Debug.Log("CutDamage hit 1 additional bodyPart");
             additionalParts = 1;
         }
         else if (additionalPartsRoll <= 0.95f)
         {
-            //Debug.Log("CutDamage hit 2 additional bodyParts");
             additionalParts = 2;
         }
         else
         {
-            //Debug.Log("CutDamage hit 3 additional bodyParts");
             additionalParts = 3;
         }
 
         damage *= (1 + 1.4f) / (1 + additionalParts + 1.4f) * (1 + additionalPartsRoll);
 
         RWBodyPart focusedBodyPart = GetHitBodyPart(state, hitChunk);
-        //Debug.Log("CutDamage focusedBodyPart is " + focusedBodyPart);
-
         List<RWBodyPart> list = new(1) { focusedBodyPart };
 
         for (int i = 0; i < state.bodyParts.Count; i++)
@@ -874,6 +862,121 @@ public class RimWorldHealth : BaseUnityPlugin
             source.shockGiveUpCounter = Math.Max(source.shockGiveUpCounter, 30);
             source.AI.annoyingCollisions = Math.Min(source.AI.annoyingCollisions * 2, 150);
         }
+    }
+
+    public static void LethalWaterDamage(CreatureState self, RWState state)
+    {
+        RWBodyPart focusedBodyPart = GetHitBodyPart(state);
+
+        RWDamageType damageType = new RWAcidBurn();
+        string attackName = "Acidic water";
+
+        float damage = 8 + self.creature.realizedCreature.lavaContactCount;
+
+        RWHealthState.Damage(self, state, damageType, damage, 999, focusedBodyPart, attackName);
+    }
+
+    public static void LocustDamage(CreatureState self, RWState state)
+    {
+        RWHealthState.Damage(self, state, new RWBite(), 1, 0, GetHitBodyPart(state), "Locust swarm - Mandibles");
+    }
+
+    public static void TerrainImpactDamage(Player self, RWState state, int hitChunk, float speed, bool death)
+    {
+        RWBodyPart part = GetHitBodyPart(state, self.bodyChunks[hitChunk], null, false, true);
+
+        part ??= GetHitBodyPart(state);
+
+        float damage;
+
+        bool gourm = self.isGourmand;
+
+        if (death)
+        {
+            if (speed < (gourm ? 90 : 70))
+            {
+                damage = 8;
+            }
+            else if (speed < (gourm ? 100 : 80))
+            {
+                damage = 10;
+            }
+            else if (speed < (gourm ? 100 : 80))
+            {
+                damage = 12;
+            }
+            else
+            {
+                damage = 14;
+            }
+        }
+        else
+        {
+            if (speed < (gourm ? 50 : 45))
+            {
+                damage = 2;
+            }
+            else if (speed < (gourm ? 60 : 55))
+            {
+                damage = 4;
+            }
+            else if (speed < (gourm ? 70 : 75))
+            {
+                damage = 6;
+            }
+            else
+            {
+                damage = 8;
+            }
+        }
+
+        RWHealthState.Damage(self.State, state, new RWBlunt(), damage, 0, part, "Terrain impact");
+    }
+
+    public static void TongueElectricDamage(CreatureState self, RWState state)
+    {
+        for (int i = 0; i < state.bodyParts.Count; i++)
+        {
+            if (state.bodyParts[i] is Tongue part && !IsDestroyed(part))
+            {
+                RWHealthState.Damage(self, state, new RWElectricalBurn(), 8, 999, part, "Zap-Coil");
+                break;
+            }
+        }
+    }
+
+    public static void RainDamage(CreatureState self, RWState state, bool death)
+    {
+        float damage = death ? 8f : 0.5f;
+
+        RWHealthState.Damage(self, state, new RWBlunt(), damage, 999, GetHitBodyPart(state, null, null, false, true), "Rain");
+    }
+    public static void SandstormDamage(CreatureState self, RWState state, bool death)
+    {
+        float damage = death ? 8f : 0.5f;
+
+        RWHealthState.Damage(self, state, new RWBlunt(), damage, 999, GetHitBodyPart(state, null, null, false, true), "Sandstorm");
+    }
+
+    public static void SpiderDamage(CreatureState self, RWState state)
+    {
+        RWHealthState.Damage(self, state, new RWBite(), 1, 10, GetHitBodyPart(state), "Coalescipede - Fangs");
+    }
+
+    public static void ZapCoilDamage(CreatureState self, RWState state)
+    {
+        RWHealthState.Damage(self, state, new RWElectricalBurn(), 20, 999, GetHitBodyPart(state), "Zap-Coil");
+    }
+    public static void BigJellyfishDamage(CreatureState self, RWState state)
+    {
+        RWHealthState.Damage(self, state, new RWElectricalBurn(), 20, 999, GetHitBodyPart(state), "Big Jellyfish - Electricity");
+    }
+
+    public static void ARZapperDamage(CreatureState self, RWState state, bool death)
+    {
+        float damage = death ? 12f : 8f;
+
+        RWHealthState.Damage(self, state, new RWElectricalBurn(), damage, 999, GetHitBodyPart(state), "Zapper");
     }
     #endregion
 
