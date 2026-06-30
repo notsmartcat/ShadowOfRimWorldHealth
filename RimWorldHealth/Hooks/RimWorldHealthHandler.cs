@@ -15,14 +15,18 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
 
     public Dictionary<string, Dictionary<string, string>> unrecognizedSaveStrings = new();
 
-    public override void BaseLoad()
-    {
-    }
+    public override void BaseLoad() {}
 
     // save method invoked when you need data to be saved, `handler` is your instantiated saved data handler
     public void Save(RainWorldGame game, string saveSlot, string campaigName)
     {
-        Dictionary<string, object> saves = [], save = [], campaign = [], data = [];
+        Dictionary<string, object> save = [], campaign = [], saveData = [];
+
+        if (!data.TryGetValueWithType(saveSlot, out save))
+            save = [];
+
+        if (!save.TryGetValueWithType(campaigName, out campaign))
+            campaign = [];
 
         List<RWAffliction> diseasesToSave;
         List<RWDisease> diseasesToTend;
@@ -38,20 +42,20 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
             if (playerState.dead || !healthState.TryGetValue(playerState, out RWState state))
             {
                 //Add code that deletes any info from this player
-
+                Debug.Log("Saving Failed");
                 continue;
             }
 
-            data["LastCycle"] = game.GetStorySession.saveState.cycleNumber.ToString();
+            Debug.Log("Saving");
+
+            saveData["LastCycle"] = game.GetStorySession.saveState.cycleNumber.ToString();
 
             diseasesToSave = new();
             diseasesToTend = new();
 
             #region WholeBody
-            for (int afflictionNumber = 0; afflictionNumber < state.wholeBodyAfflictions.Count; afflictionNumber++)
+            foreach (RWAffliction affliction in state.wholeBodyAfflictions)
             {
-                RWAffliction affliction = state.wholeBodyAfflictions[afflictionNumber];
-
                 if (affliction.isCharacterSpecific)
                 {
                     continue;
@@ -63,30 +67,26 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
                 }
             }
 
-            for (int diseasesNumber = 0; diseasesNumber < diseasesToTend.Count; diseasesNumber++)
+            foreach (RWDisease disease in diseasesToTend)
             {
-                UpdateDisease(diseasesToTend[diseasesNumber], state, playerState);
+                UpdateDisease(disease, state, playerState);
             }
 
             state.wholeBodyAfflictions = diseasesToSave;
 
             if (state.wholeBodyAfflictions.Count > 0)
             {
-                data["WholeBody"] = CreatureHooks.GetAllWholeBodyAfflictionValueName(state.wholeBodyAfflictions);
+                saveData["WholeBody"] = SavingandLoadingHooks.GetAllWholeBodyAfflictionValueName(state.wholeBodyAfflictions);
             }
             #endregion
 
-            for (int bodyPartNumber = 0; bodyPartNumber < state.bodyParts.Count; bodyPartNumber++)
+            foreach (RWBodyPart part in state.bodyParts)
             {
-                RWBodyPart part = state.bodyParts[bodyPartNumber];
-
                 diseasesToSave = new();
                 diseasesToTend = new();
 
-                for (int afflictionNumber = 0; afflictionNumber < part.afflictions.Count; afflictionNumber++)
+                foreach (RWAffliction affliction in part.afflictions)
                 {
-                    RWAffliction affliction = part.afflictions[afflictionNumber];
-
                     if (affliction.isCharacterSpecific)
                     {
                         continue;
@@ -96,6 +96,11 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
                     {
                         if (affliction is RWDestroyed)
                         {
+                            if (!afflictionsToSave.ContainsKey(injury.part))
+                            {
+                                afflictionsToSave.Add(injury.part, new());
+                            }
+
                             afflictionsToSave[part].Add(injury);
 
                             continue;
@@ -104,6 +109,11 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
                         {
                             if (scar.isRevealed || scar.isPermanent)
                             {
+                                if (!afflictionsToSave.ContainsKey(injury.part))
+                                {
+                                    afflictionsToSave.Add(injury.part, new());
+                                }
+
                                 afflictionsToSave[part].Add(injury);
                             }
                             else
@@ -122,14 +132,19 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
                     }
                 }
 
-                for (int diseasesNumber = 0; diseasesNumber < diseasesToTend.Count; diseasesNumber++)
+                foreach (RWDisease disease in diseasesToTend)
                 {
-                    UpdateDisease(diseasesToTend[diseasesNumber], state, playerState);
+                    UpdateDisease(disease, state, playerState);
                 }
 
-                for (int diseasesNumber = 0; diseasesNumber < diseasesToSave.Count; diseasesNumber++)
+                foreach (RWAffliction disease in diseasesToSave)
                 {
-                    afflictionsToSave[part].Add(diseasesToSave[diseasesNumber]);
+                    if (!afflictionsToSave.ContainsKey(part))
+                    {
+                        afflictionsToSave.Add(part, new());
+                    }
+
+                    afflictionsToSave[part].Add(disease);
                 }
             }
 
@@ -140,34 +155,36 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
                 key.Key.afflictions = key.Value;
             }
 
-            for (int i = 0; i < state.bodyParts.Count; i++)
+            foreach (RWBodyPart part in state.bodyParts)
             {
-                if (state.bodyParts[i].afflictions.Count > 0)
+                Debug.Log(part + " is being saved");
+
+                if (part.afflictions.Count > 0)
                 {
-                    data[CreatureHooks.GetBodyPartKeyName(state.bodyParts[i])] = CreatureHooks.GetAllAfflictionValueName(state.bodyParts[i]);
+                    Debug.Log(part + " has more then 0 afflictions");
+                    saveData[SavingandLoadingHooks.GetBodyPartKeyName(part)] = SavingandLoadingHooks.GetAllAfflictionValueName(part);
+                    Debug.Log("Key: " + SavingandLoadingHooks.GetBodyPartKeyName(part) + " Value: " + SavingandLoadingHooks.GetAllAfflictionValueName(part));
                 }
             }
 
-            campaign[playerNumber.ToString()] = data;
+            campaign[playerNumber.ToString()] = saveData;
             save[campaigName] = campaign;
 
-            rimWorldHealthHandler.data[saveSlot] = save;
+            data[saveSlot] = save;
         }
 
-        rimWorldHealthHandler.Write();
+        Write();
 
         void UpdateInjuries(List<RWInjury> healList, RWState state)
         {
             float afterCycleTreatmentTime = afterCycleLength * 6f;
 
-            for (int i = 0; i < healList.Count; i++)
+            foreach (RWInjury injury in healList)
             {
-                if (!healList[i].isTended)
+                if (!injury.isTended)
                 {
-                    healList[i].isTended = true;
-                    healList[i].tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f, 0, 0.7f);
-
-                    Debug.Log("Injury tendQuality " + healList[i].tendQuality);
+                    injury.isTended = true;
+                    injury.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f, 0, 0.7f);
                 }
             }
 
@@ -200,6 +217,11 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
                         scar.isBleeding = false;
                         scar.isRevealed = true;
 
+                        if (!afflictionsToSave.ContainsKey(injury.part))
+                        {
+                            afflictionsToSave.Add(injury.part, new());
+                        }
+
                         afflictionsToSave[injury.part].Add(injury);
                         healList.Remove(injury);
                     }
@@ -210,9 +232,14 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
                 }
             }
 
-            for (int i = 0; i < healList.Count; i++)
+            foreach (RWInjury injury in healList)
             {
-                afflictionsToSave[healList[i].part].Add(healList[i]);
+                if (!afflictionsToSave.ContainsKey(injury.part))
+                {
+                    afflictionsToSave.Add(injury.part, new());
+                }
+
+                afflictionsToSave[injury.part].Add(injury);
             }
         }
 
@@ -432,5 +459,46 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
                 unrecognized[campaignData2.Key] = campaignData2.Value.ToString();
             }
         }
+    }
+
+    public void WipeCampaign(string saveSlot, string campaignName)
+    {
+        Debug.Log("Wiping Save State number: " + campaignName);
+
+        if (!data.ContainsKey(saveSlot) || !data.TryGetValueWithType(saveSlot, out Dictionary<string, object> _))
+        {
+            return;
+        }
+
+        Debug.Log(campaignName + " campaign name exists");
+
+        (data[saveSlot] as Dictionary<string, object>).Remove(campaignName);
+
+        unrecognizedSaveStrings.Clear();
+
+        Write();
+    }
+
+    public void WipeSaveSlot(string saveSlot)
+    {
+        Debug.Log("Wiping Save SLot number: " + saveSlot);
+
+        if (!data.ContainsKey(saveSlot))
+        {
+            return;
+        }
+
+        Debug.Log(saveSlot + " campaign name exists");
+
+        data.Remove(saveSlot);
+
+        unrecognizedSaveStrings.Clear();
+
+        Write();
+    }
+
+    public void ClearUnrecognizedSaveStrings()
+    {
+        unrecognizedSaveStrings.Clear();
     }
 }

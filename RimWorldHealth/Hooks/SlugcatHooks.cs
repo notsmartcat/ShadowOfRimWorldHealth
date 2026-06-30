@@ -87,6 +87,8 @@ internal class SlugcatHooks
         {
             return;
         }
+
+        //???
     }
 
     static void PlayerGraphicsDrawSprites(On.PlayerGraphics.orig_DrawSprites orig, PlayerGraphics self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
@@ -101,6 +103,9 @@ internal class SlugcatHooks
         if (!ArmCheck(state) && JawCheck(state) && self.player.grasps[0] != null)
         {
             sLeaser.sprites[5].isVisible = false;
+            sLeaser.sprites[6].isVisible = false;
+            sLeaser.sprites[7].isVisible = false;
+            sLeaser.sprites[8].isVisible = false;
         }
     }
 
@@ -115,9 +120,9 @@ internal class SlugcatHooks
 
         RWAirInLungs airInLungs = null;
 
-        for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
+        foreach (RWAffliction affliction in state.wholeBodyAfflictions)
         {
-            if (state.wholeBodyAfflictions[i] is RWAirInLungs tempAirInLungs)
+            if (affliction is RWAirInLungs tempAirInLungs)
             {
                 airInLungs = tempAirInLungs;
                 break;
@@ -165,13 +170,7 @@ internal class SlugcatHooks
             return;
         }
 
-        for (int i = 0; i < state.bodyParts.Count; i++)
-        {
-            if (state.bodyParts[i] is Lung part && !IsDestroyed(part))
-            {
-                RWHealthState.Damage(self.State, state, new RWBomb(), 999999f, 999, part, "Artificer - Explosion", "Artificer");
-            }
-        }
+        ArtiLungExplosion(self.State, state);
     }
 
     static void PlayerSubtractFood(On.Player.orig_SubtractFood orig, Player self, int sub)
@@ -291,6 +290,14 @@ internal class SlugcatHooks
                 state.tendAffliction = null;
             }
 
+            foreach (var grasp in self.creature.realizedCreature.grasps)
+            {
+                if (grasp.grabbedChunk != null && grasp.grabbedChunk.owner != null && grasp.grabbedChunk.owner is Creature)
+                {
+                    (self.creature.realizedCreature as Player).ReleaseGrasp(grasp.graspUsed);
+                }
+            }
+
             return;
         }
 
@@ -303,13 +310,13 @@ internal class SlugcatHooks
         RWDisease diseaseAffliction = null;
         RWInjury untendedAffliction = null;
 
-        for (int i = 0; i < state.bodyParts.Count; i++)
+        foreach (RWBodyPart part in state.bodyParts)
         {
-            for (int j = 0; j < state.bodyParts[i].afflictions.Count; j++)
+            foreach (RWAffliction affliction in part.afflictions)
             {
-                if (!state.bodyParts[i].afflictions[j].isTended)
+                if (!affliction.isTended)
                 {
-                    if (state.bodyParts[i].afflictions[j] is RWInjury injury)
+                    if (affliction is RWInjury injury)
                     {
                         if (injury.isBleeding)
                         {
@@ -335,7 +342,7 @@ internal class SlugcatHooks
 
                         }
                     }
-                    else if (state.bodyParts[i].afflictions[j] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                    else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
                     {
                         if (diseaseAffliction != null)
                         {
@@ -348,10 +355,10 @@ internal class SlugcatHooks
                     }
                     else
                     {
-                        Debug.Log("Error affliction " + state.bodyParts[i].afflictions[j] + " does not belong to any tendable check");
+                        Debug.Log("Error affliction " + affliction + " does not belong to any tendable check");
                     }
                 }
-                else if (state.bodyParts[i].afflictions[j] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
                 {
                     if (diseaseAffliction != null)
                     {
@@ -367,9 +374,9 @@ internal class SlugcatHooks
 
         if (bleeding == null)
         {
-            for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
+            foreach (RWAffliction affliction in state.wholeBodyAfflictions)
             {
-                if (state.wholeBodyAfflictions[i] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
                 {
                     if (diseaseAffliction != null)
                     {
@@ -403,16 +410,16 @@ internal class SlugcatHooks
 
         if (self.friendTracker.friend != null && !self.friendTracker.friend.dead && self.friendTracker.friend.Stunned && (grabbedByThis(self.friendTracker.friend) || self.friendTracker.friend.grabbedBy.Count == 0) && self.friendTracker.friend.State != null && healthState.TryGetValue(self.friendTracker.friend.State, out RWState otherState))
         {
-            for (int i = 0; i < otherState.bodyParts.Count; i++)
+            foreach (RWBodyPart part in otherState.bodyParts)
             {
-                for (int j = 0; j < otherState.bodyParts[i].afflictions.Count; j++)
+                foreach (RWAffliction affliction in part.afflictions)
                 {
-                    if (!otherState.bodyParts[i].afflictions[j].isTended)
+                    if (!affliction.isTended)
                     {
                         tendOther(self.friendTracker.friend);
                         return;
                     }
-                    else if (otherState.bodyParts[i].afflictions[j] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                    else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
                     {
                         tendOther(self.friendTracker.friend);
                         return;
@@ -420,9 +427,9 @@ internal class SlugcatHooks
                 }
             }
 
-            for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
+            foreach (RWAffliction affliction in state.wholeBodyAfflictions)
             {
-                if (otherState.wholeBodyAfflictions[i] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
                 {
                     tendOther(self.friendTracker.friend);
                     return;
@@ -440,25 +447,30 @@ internal class SlugcatHooks
             return;
         }
 
-        for (int k = 0; k < self.creature.Room.creatures.Count; k++)
+        foreach (AbstractCreature abstrCrit in self.creature.Room.creatures)
         {
-            Creature creature = self.creature.Room.creatures[k].realizedCreature;
+            if (abstrCrit.realizedCreature == null)
+            {
+                continue;
+            }
+
+            Creature creature = abstrCrit.realizedCreature;
 
             if (creature == null || creature.dead || !creature.Stunned || (creature.grabbedBy.Count != 0 && !grabbedByThis(creature)) || creature.State == null || !healthState.TryGetValue(creature.State, out otherState) || (creature is not Player && (creature is not Lizard lizard || lizard.AI == null || lizard.AI.friendTracker.friend == null || lizard.AI.friendTracker.friend is not Player)) || (tendTarget != null && Custom.WorldCoordFloatDist(tendTarget.abstractCreature.pos, self.cat.abstractCreature.pos) > Custom.WorldCoordFloatDist(creature.abstractCreature.pos, self.cat.abstractCreature.pos)))
             {
                 continue;
             }
 
-            for (int i = 0; i < otherState.bodyParts.Count; i++)
+            foreach (RWBodyPart part in otherState.bodyParts)
             {
-                for (int j = 0; j < otherState.bodyParts[i].afflictions.Count; j++)
+                foreach (RWAffliction affliction in part.afflictions)
                 {
-                    if (!otherState.bodyParts[i].afflictions[j].isTended)
+                    if (!affliction.isTended)
                     {
                         tendTarget = creature;
                         break;
                     }
-                    else if (otherState.bodyParts[i].afflictions[j] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                    else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
                     {
                         tendTarget = creature;
                         break;
@@ -471,14 +483,14 @@ internal class SlugcatHooks
                 }
             }
 
-            for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
+            foreach (RWAffliction affliction in state.wholeBodyAfflictions)
             {
                 if (tendTarget == creature)
                 {
                     break;
                 }
 
-                if (otherState.wholeBodyAfflictions[i] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
                 {
                     tendTarget = creature;
                     break;
@@ -520,9 +532,9 @@ internal class SlugcatHooks
 
         bool grabbedByThis(Creature creature)
         {
-            for (int i = 0; i < creature.grabbedBy.Count; i++)
+            foreach (var grabbed in creature.grabbedBy)
             {
-                if (creature.grabbedBy[i].grabber == self.cat)
+                if (grabbed.grabber == self.cat)
                 {
                     return true;
                 }
@@ -535,14 +547,25 @@ internal class SlugcatHooks
 
     static bool JawCheck(RWState state)
     {
-        for (int i = 0; i < state.bodyParts.Count; i++)
+        foreach (RWBodyPart part in state.bodyParts)
         {
-            if (state.bodyParts[i] is Jaw jaw)
+            if (part is Jaw jaw)
             {
                 return jaw.efficiency > 0;
             }
         }
 
         return false;
+    }
+
+    public static void ArtiLungExplosion(CreatureState self, RWState state)
+    {
+        foreach (RWBodyPart part in state.bodyParts)
+        {
+            if (part is Lung && !IsDestroyed(part))
+            {
+                RWHealthState.Damage(self, state, new RWBomb(), 999999f, 999, part, "Artificer - Explosion", "Artificer");
+            }
+        }
     }
 }

@@ -75,11 +75,11 @@ public class ArmSet
                 return description;
             }
         }
-        for (int i = 0; i < fingers.Count; i++)
+        foreach (Finger finger in fingers)
         {
-            if (fingers[i].health < fingers[i].maxHealth)
+            if (finger.health < finger.maxHealth)
             {
-                description += SetDescription(fingers[i]);
+                description += SetDescription(finger);
             }
         }
 
@@ -246,11 +246,11 @@ public class LegSet
                 return description;
             }
         }
-        for (int i = 0; i < toes.Count; i++)
+        foreach (Toe toe in toes)
         {
-            if (toes[i].health < toes[i].maxHealth)
+            if (toe.health < toe.maxHealth)
             {
-                description += ArmSet.SetDescription(toes[i]);
+                description += ArmSet.SetDescription(toe);
             }
         }
 

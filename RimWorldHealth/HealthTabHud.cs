@@ -11,9 +11,9 @@ public class HealthTab : HudPart
 {
     public HealthTab(HUD.HUD hud, AbstractCreature owner) : base(hud)
     {
-        this.owner = owner;
+        player = owner;
 
-        ownerState = healthState.TryGetValue(owner.state, out RWState state) ? state : null;
+        playerState = healthState.TryGetValue(player.state, out RWState state) ? state : null;
 
         sprites = new FSprite[2];
 
@@ -47,19 +47,19 @@ public class HealthTab : HudPart
         selectedSprite = new FSprite("pixel", true);
         treatedSprite = new FSprite("pixel", true);
 
-        for (int k = 0; k < sprites.Length; k++)
+        for (int i = 0; i < sprites.Length; i++)
         {
-            sprites[k] = new FSprite("pixel", true);
-            hud.fContainers[1].AddChild(sprites[k]);
+            sprites[i] = new FSprite("pixel", true);
+            hud.fContainers[1].AddChild(sprites[i]);
         }
 
         hud.fContainers[1].AddChild(capacityName);
         hud.fContainers[1].AddChild(bloodLossPerCycle);
 
-        for (int k = 0; k < capacityValueNames.Count; k++)
+        for (int i = 0; i < capacityValueNames.Count; i++)
         {
-            hud.fContainers[1].AddChild(capacityValueNames[k]);
-            hud.fContainers[1].AddChild(capacityValues[k]);
+            hud.fContainers[1].AddChild(capacityValueNames[i]);
+            hud.fContainers[1].AddChild(capacityValues[i]);
         }
 
         hud.fContainers[1].AddChild(selectedSprite);
@@ -77,7 +77,7 @@ public class HealthTab : HudPart
     {
         base.Update();
 
-        if (owner == null || owner.realizedCreature == null || !owner.realizedCreature.dead && owner.realizedCreature.Stunned)
+        if (player == null || player.realizedCreature == null || !player.realizedCreature.dead && player.realizedCreature.Stunned)
         {
             visible = false;
         }
@@ -86,7 +86,7 @@ public class HealthTab : HudPart
 
         for (int i = healthTabBodyParts.Count - 1; i >= 0; i--)
         {
-            if (healthTabBodyParts[i].slatedForDeletion || state == null || !visible)
+            if (healthTabBodyParts[i].slatedForDeletion || inspectedState == null || !visible)
             {
                 healthTabBodyParts[i].ClearSprites();
                 healthTabBodyParts.RemoveAt(i);
@@ -98,7 +98,7 @@ public class HealthTab : HudPart
         }
         for (int i = healthTabInfos.Count - 1; i >= 0; i--)
         {
-            if (healthTabInfos[i].slatedForDeletion || state == null || !visible)
+            if (healthTabInfos[i].slatedForDeletion || inspectedState == null || !visible)
             {
                 healthTabInfos[i].ClearSprites();
                 healthTabInfos.RemoveAt(i);
@@ -109,112 +109,73 @@ public class HealthTab : HudPart
             }
         }
 
-        if (state == null || !visible)
+        if (inspectedState == null || !visible)
         {
             return;
         }
 
-        for (int i = 0; i < state.bodyParts.Count; i++)
+        foreach (RWBodyPart part in inspectedState.bodyParts)
         {
-            if (state.bodyParts[i].afflictions.Count > 0)
+            if (part.afflictions.Count == 0)
             {
-                bool alreadyExists = false;
-                for (int j = 0; j < healthTabBodyParts.Count; j++)
+                continue;
+            }
+
+            bool alreadyExists = false;
+            foreach (var bodyPartTab in healthTabBodyParts)
+            {
+                if (bodyPartTab.bodyPart == part)
                 {
-                    if (healthTabBodyParts[j].bodyPart == state.bodyParts[i])
+                    alreadyExists = true;
+
+                    if (IsSubPartDestroyed(inspectedState, bodyPartTab.bodyPart))
                     {
-                        alreadyExists = true;
-
-                        if (IsSubPartDestroyed(state, healthTabBodyParts[j].bodyPart))
-                        {
-                            healthTabBodyParts[j].slatedForDeletion = true;
-                        }
-                        break;
+                        bodyPartTab.slatedForDeletion = true;
                     }
+                    break;
                 }
+            }
 
-                if (!alreadyExists && !IsSubPartDestroyed(state, state.bodyParts[i]))
-                {
-                    HealthTabBodyPart part = new(this, state.bodyParts[i]);
+            if (!alreadyExists && !IsSubPartDestroyed(inspectedState, part))
+            {
+                HealthTabBodyPart partTab = new(this, part);
 
-                    healthTabBodyParts.Add(part);
+                healthTabBodyParts.Add(partTab);
 
-                    part.Update();
-                }
+                partTab.Update();
             }
         }
 
         if (input.x != 0)
         {
-            if (!horizontalOnce && healthTabBodyParts.Count + healthTabWholeBody.afflictionNumber > 0)
+            if (horizontalOnce || healthTabBodyParts.Count + healthTabWholeBody.afflictionNumber == 0)
             {
-                horizontalOnce = true;
-
-                selectedTimer = selectedTimerMax;
-
-                selectedHorizontal += input.x > 0 ? -1 : 1;
-
-                if (selectedHorizontal >= 2)
-                {
-                    selectedHorizontal = 0;
-                }
-                else if (selectedHorizontal <= -1)
-                {
-                    selectedHorizontal = 1;
-                }
-
-                if (selectedVertical != -1)
-                {
-                    int maxVertical = selectedHorizontal == 0 ? 12 : -1;
-
-                    if (maxVertical == -1)
-                    {
-                        maxVertical = healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0;
-
-                        for (int i = 0; i < healthTabBodyParts.Count; i++)
-                        {
-                            maxVertical += healthTabBodyParts[i].combinedAfflictions.Count + healthTabBodyParts[i].afflictions.Count;
-                        }
-                    }
-
-                    if (selectedVertical >= maxVertical)
-                    {
-                        selectedVertical = maxVertical - 1;
-                    }
-                    else if (selectedVertical <= -1)
-                    {
-                        selectedVertical = 0;
-                    }
-                }
+                goto skipHorizontal;
             }
-        }
-        else
-        {
-            horizontalOnce = false;
-        }
 
-        if (healthTabBodyParts.Count + healthTabWholeBody.afflictionNumber <= 0)
-        {
-            selectedHorizontal = 0;
-        }
+            horizontalOnce = true;
 
-        if (input.y != 0)
-        {
-            if (!verticalOnce)
+            selectedTimer = selectedTimerMax;
+
+            selectedHorizontal += input.x > 0 ? -1 : 1;
+
+            if (selectedHorizontal >= 2)
             {
-                selected = true;
+                selectedHorizontal = 0;
+            }
+            else if (selectedHorizontal <= -1)
+            {
+                selectedHorizontal = 1;
+            }
 
-                selectedTimer = selectedTimerMax;
-
-                verticalOnce = true;
-
-                selectedVertical += input.y > 0 ? -1 : 1;
-
-                int maxVertical = selectedHorizontal == 0 ? !creatureState.dead ? 12 : 1 : -1;
+            if (selectedVertical != -1)
+            {
+                int maxVertical = selectedHorizontal == 0 ? 12 : -1;
 
                 if (maxVertical == -1)
                 {
                     maxVertical = healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0;
+
                     for (int i = 0; i < healthTabBodyParts.Count; i++)
                     {
                         maxVertical += healthTabBodyParts[i].combinedAfflictions.Count + healthTabBodyParts[i].afflictions.Count;
@@ -223,12 +184,57 @@ public class HealthTab : HudPart
 
                 if (selectedVertical >= maxVertical)
                 {
-                    selectedVertical = 0;
+                    selectedVertical = maxVertical - 1;
                 }
                 else if (selectedVertical <= -1)
                 {
-                    selectedVertical = maxVertical - 1;
+                    selectedVertical = 0;
                 }
+            }
+        }
+        else
+        {
+            horizontalOnce = false;
+        }
+
+    skipHorizontal:
+
+        if (healthTabBodyParts.Count + healthTabWholeBody.afflictionNumber <= 0)
+            selectedHorizontal = 0;
+
+        if (input.y != 0)
+        {
+            if (verticalOnce)
+            {
+                goto skipVertical;
+            }
+
+            selected = true;
+
+            selectedTimer = selectedTimerMax;
+
+            verticalOnce = true;
+
+            selectedVertical += input.y > 0 ? -1 : 1;
+
+            int maxVertical = selectedHorizontal == 0 ? !inspectedCreatureState.dead ? 12 : 1 : -1;
+
+            if (maxVertical == -1)
+            {
+                maxVertical = healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0;
+                for (int i = 0; i < healthTabBodyParts.Count; i++)
+                {
+                    maxVertical += healthTabBodyParts[i].combinedAfflictions.Count + healthTabBodyParts[i].afflictions.Count;
+                }
+            }
+
+            if (selectedVertical >= maxVertical)
+            {
+                selectedVertical = 0;
+            }
+            else if (selectedVertical <= -1)
+            {
+                selectedVertical = maxVertical - 1;
             }
         }
         else
@@ -236,13 +242,15 @@ public class HealthTab : HudPart
             verticalOnce = false;
         }
 
+    skipVertical:
+
         if (selectedHorizontal == 1)
         {
             int maxVertical = healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0;
 
-            for (int i = 0; i < healthTabBodyParts.Count; i++)
+            foreach (HealthTabBodyPart bodyPartTab in healthTabBodyParts)
             {
-                maxVertical += healthTabBodyParts[i].combinedAfflictions.Count + healthTabBodyParts[i].afflictions.Count;
+                maxVertical += bodyPartTab.combinedAfflictions.Count + bodyPartTab.afflictions.Count;
             }
 
             if (selectedVertical >= maxVertical)
@@ -251,20 +259,20 @@ public class HealthTab : HudPart
             }
         }
 
-        if (ownerState.tendAffliction != null)
+        if (playerState.tendAffliction != null)
         {
-            ownerState.tendTime--;
+            playerState.tendTime--;
 
-            if (ownerState.tendAffliction.isTended || ownerState.tendAffliction.part == null && ownerState.tendAffliction is not RWDisease)
+            if (playerState.tendAffliction.isTended || playerState.tendAffliction.part == null && playerState.tendAffliction is not RWDisease)
             {
-                ownerState.tendAffliction = null;
+                playerState.tendAffliction = null;
             }
-            else if (ownerState.tendTime <= 0)
+            else if (playerState.tendTime <= 0)
             {
-                ownerState.tendAffliction.isTended = true;
-                ownerState.tendAffliction.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(ownerState) * 0.3f * (owner == creatureState.creature ? 0.7f : 1) * Random.Range(0.75f, 1.25f), 0, 0.7f);
+                playerState.tendAffliction.isTended = true;
+                playerState.tendAffliction.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(playerState) * 0.3f * (player == inspectedCreatureState.creature ? 0.7f : 1) * Random.Range(0.75f, 1.25f), 0, 0.7f);
 
-                if (ownerState.tendAffliction is RWInjury injury)
+                if (playerState.tendAffliction is RWInjury injury)
                 {
                     injury.isBleeding = false;
 
@@ -273,15 +281,15 @@ public class HealthTab : HudPart
                         destroyed.isFresh = false;
                     }
                 }
-                else if (ownerState.tendAffliction is RWDisease disease)
+                else if (playerState.tendAffliction is RWDisease disease)
                 {
                     disease.timeUntilTreatment = cycleLength * disease.treatmentTimes;
                     disease.totalTendQuality += disease.tendQuality;
                 }
 
-                ownerState.tendAffliction = null;
+                playerState.tendAffliction = null;
 
-                state.updateCapacities = true;
+                inspectedState.updateCapacities = true;
             }
 
             return;
@@ -293,13 +301,13 @@ public class HealthTab : HudPart
             RWDisease diseaseAffliction = null;
             RWInjury untendedAffliction = null;
 
-            for (int i = 0; i < state.bodyParts.Count; i++)
+            foreach (RWBodyPart part in inspectedState.bodyParts)
             {
-                for (int j = 0; j < state.bodyParts[i].afflictions.Count; j++)
+                foreach (RWAffliction affliction in part.afflictions)
                 {
-                    if (!state.bodyParts[i].afflictions[j].isTended)
+                    if (!affliction.isTended)
                     {
-                        if (state.bodyParts[i].afflictions[j] is RWInjury injury)
+                        if (affliction is RWInjury injury)
                         {
                             if (injury.isBleeding)
                             {
@@ -325,7 +333,7 @@ public class HealthTab : HudPart
 
                             }
                         }
-                        else if (state.bodyParts[i].afflictions[j] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                        else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
                         {
                             if (diseaseAffliction != null)
                             {
@@ -338,10 +346,10 @@ public class HealthTab : HudPart
                         }
                         else
                         {
-                            Debug.Log("Error affliction " + state.bodyParts[i].afflictions[j] + " does not belong to any tendable check");
+                            Debug.Log("Error affliction " + affliction + " does not belong to any tendable check");
                         }
                     }
-                    else if (state.bodyParts[i].afflictions[j] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                    else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
                     {
                         if (diseaseAffliction != null)
                         {
@@ -357,41 +365,43 @@ public class HealthTab : HudPart
 
             if (bleeding == null)
             {
-                for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
+                foreach (RWAffliction affliction in inspectedState.wholeBodyAfflictions)
                 {
-                    if (state.wholeBodyAfflictions[i] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                    if (affliction is not RWDisease disease || disease.timeUntilTreatment <= 0)
                     {
-                        if (diseaseAffliction != null)
-                        {
-                            if (disease.severity > diseaseAffliction.severity)
-                            {
-                                diseaseAffliction = disease;
-                            }
-                        }
-                        else diseaseAffliction ??= disease;
+                        continue;
                     }
+
+                    if (diseaseAffliction != null)
+                    {
+                        if (disease.severity > diseaseAffliction.severity)
+                        {
+                            diseaseAffliction = disease;
+                        }
+                    }
+                    else diseaseAffliction ??= disease;
                 }
             }
 
             if (bleeding != null)
             {
-                startTreating(bleeding);
+                startTending(bleeding);
             }
             else if (diseaseAffliction != null)
             {
-                startTreating(diseaseAffliction);
+                startTending(diseaseAffliction);
             }
             else if (untendedAffliction != null)
             {
-                startTreating(untendedAffliction);
+                startTending(untendedAffliction);
             }
         }
 
-        void startTreating(RWAffliction affliction)
+        void startTending(RWAffliction affliction)
         {
-            ownerState.tendAffliction = affliction;
-            ownerState.tendTime = Mathf.Round(ownerState.tendTimeBase / RWHealthState.MedicalTendSpeed(ownerState));
-            ownerState.tendTimeMax = ownerState.tendTime;
+            playerState.tendAffliction = affliction;
+            playerState.tendTime = Mathf.Round(playerState.tendTimeBase / RWHealthState.MedicalTendSpeed(playerState));
+            playerState.tendTimeMax = playerState.tendTime;
         }
     }
 
@@ -401,17 +411,17 @@ public class HealthTab : HudPart
 
         if (visible)
         {
-            this.state = state;
-            creatureState = self;
+            inspectedState = state;
+            inspectedCreatureState = self;
 
             TriggeredOn();
         }
         else
         {
-            if (ownerState != null)
-                ownerState.tendAffliction = null;
+            if (playerState != null)
+                playerState.tendAffliction = null;
 
-            this.state = null;
+            inspectedState = null;
 
             TriggeredOff();
         }
@@ -422,9 +432,9 @@ public class HealthTab : HudPart
         base.Draw(timeStacker);
 
         #region Visibility
-        for (int i = 0; i < sprites.Length; i++)
+        foreach (FSprite sprite in sprites)
         {
-            sprites[i].isVisible = visible;
+            sprite.isVisible = visible;
         }
 
         for (int i = 0; i < capacityValueNames.Count; i++)
@@ -435,32 +445,32 @@ public class HealthTab : HudPart
 
         capacityName.isVisible = visible;
 
-        bloodLossPerCycle.isVisible = visible && state.bloodLossPerCycle >= 1 && state.bloodLoss < 1 && !creatureState.dead;
+        bloodLossPerCycle.isVisible = visible && inspectedState.bloodLossPerCycle >= 1 && inspectedState.bloodLoss < 1 && !inspectedCreatureState.dead;
 
         selectedSprite.isVisible = visible && selected;
 
-        treatedSprite.isVisible = visible && ownerState.tendAffliction != null;
+        treatedSprite.isVisible = visible && playerState.tendAffliction != null;
         #endregion
 
         #region Updates
         healthTabWholeBody.Draw();
 
-        for (int i = healthTabBodyParts.Count - 1; i >= 0; i--)
+        foreach (HealthTabBodyPart bodyPartTab in healthTabBodyParts)
         {
-            healthTabBodyParts[i].Draw();
+            bodyPartTab.Draw();
         }
-        for (int i = healthTabInfos.Count - 1; i >= 0; i--)
+        foreach (var infoTab in healthTabInfos)
         {
-            healthTabInfos[i].Draw();
+            infoTab.Draw();
         }
         #endregion
 
-        if (!visible || state == null)
+        if (!visible || inspectedState == null)
         {
             return;
         }
 
-        if (!creatureState.dead)
+        if (!inspectedCreatureState.dead)
         {
             capacityValueNamesNames = new(12) { "Pain", "Consiousness", "Moving", "Manipulation", "Talking", "Eating", "Sight", "Hearing", "Breathing", "Blood filtrarion", "Blood pumping", "Digestion" };
         }
@@ -484,18 +494,18 @@ public class HealthTab : HudPart
         capacityName.color = Color.white;
         capacityName.x = DrawPos().x - 320;
         capacityName.y = DrawPos().y + 125;
-        capacityName.text = GetCreatureName(creatureState.creature.realizedCreature);
+        capacityName.text = GetCreatureName(inspectedCreatureState.creature.realizedCreature);
 
         if (bloodLossPerCycle.isVisible)
         {
-            float bloodLoss = cycleLength * (1 - state.bloodLoss) / (state.bloodLossPerCycle / 100);
+            float bloodLoss = cycleLength * (1 - inspectedState.bloodLoss) / (inspectedState.bloodLossPerCycle / 100);
 
             string bloodLossTime = bloodLoss < 0 ? Mathf.Round(bloodLoss * 10000) / 100 + (Mathf.Round(bloodLoss * 10000) / 100 == 1 ? " second" : " seconds") : bloodLoss > 60 ? Mathf.Round(bloodLoss / 60 * 10) / 10 + (Mathf.Round(bloodLoss / 60 * 10) / 10 == 1 ? " hour" : " hours") : Mathf.Round(bloodLoss * 10) / 10 + (Mathf.Round(bloodLoss * 10) / 10 == 1 ? " minute" : " minutes");
 
             bloodLossPerCycle.color = Color.white;
             bloodLossPerCycle.x = DrawPos().x - 165;
             bloodLossPerCycle.y = DrawPos().y - 105;
-            bloodLossPerCycle.text = "Bleeding: " + Mathf.Round(state.bloodLossPerCycle) + "%/c (death in " + bloodLossTime + ")";
+            bloodLossPerCycle.text = "Bleeding: " + Mathf.Round(inspectedState.bloodLossPerCycle) + "%/c (death in " + bloodLossTime + ")";
         }
 
         for (int i = 0; i < capacityValueNames.Count; i++)
@@ -518,18 +528,18 @@ public class HealthTab : HudPart
 
             float value = capacityValueNamesNames[i] switch
             {
-                "Pain" => !creatureState.dead ? state.pain : 0,
-                "Consiousness" => state.consciousness,
-                "Moving" => state.moving,
-                "Manipulation" => state.manipulation,
-                "Talking" => state.talking,
-                "Eating" => state.eating,
-                "Sight" => state.sight,
-                "Hearing" => state.hearing,
-                "Breathing" => state.breathing,
-                "Blood filtrarion" => state.bloodFiltration,
-                "Blood pumping" => state.bloodPumping,
-                "Digestion" => state.digestion,
+                "Pain" => !inspectedCreatureState.dead ? inspectedState.pain : 0,
+                "Consiousness" => inspectedState.consciousness,
+                "Moving" => inspectedState.moving,
+                "Manipulation" => inspectedState.manipulation,
+                "Talking" => inspectedState.talking,
+                "Eating" => inspectedState.eating,
+                "Sight" => inspectedState.sight,
+                "Hearing" => inspectedState.hearing,
+                "Breathing" => inspectedState.breathing,
+                "Blood filtrarion" => inspectedState.bloodFiltration,
+                "Blood pumping" => inspectedState.bloodPumping,
+                "Digestion" => inspectedState.digestion,
                 _ => 0,
             };
 
@@ -576,23 +586,23 @@ public class HealthTab : HudPart
             }
         }
 
-        if (treatedSprite.isVisible && ownerState.tendAffliction != null)
+        if (treatedSprite.isVisible && playerState.tendAffliction != null)
         {
-            treatedSprite.x = Mathf.Lerp(DrawPos().x, DrawPos().x + 60, 1 - ownerState.tendTime / ownerState.tendTimeMax);
+            treatedSprite.x = Mathf.Lerp(DrawPos().x, DrawPos().x + 60, 1 - playerState.tendTime / playerState.tendTimeMax);
             treatedSprite.alpha = 0.6f;
             treatedSprite.color = Color.magenta;
 
             treatedSprite.scaleY = 20;
-            treatedSprite.scaleX = Mathf.Lerp(0, 220, 1 - ownerState.tendTime / ownerState.tendTimeMax);
+            treatedSprite.scaleX = Mathf.Lerp(0, 220, 1 - playerState.tendTime / playerState.tendTimeMax);
 
             int selectedBodyPart = 0;
             int selectedAffliction = 0;
 
-            if (state.wholeBodyAfflictions.Count > 0 && state.wholeBodyAfflictions.Contains(ownerState.tendAffliction))
+            if (inspectedState.wholeBodyAfflictions.Count > 0 && inspectedState.wholeBodyAfflictions.Contains(playerState.tendAffliction))
             {
-                for (int j = 0; j < state.wholeBodyAfflictions.Count - (healthTabWholeBody.bloodLossVisible ? 1 : 0); j++)
+                for (int j = 0; j < inspectedState.wholeBodyAfflictions.Count - (healthTabWholeBody.bloodLossVisible ? 1 : 0); j++)
                 {
-                    if (state.wholeBodyAfflictions[j] == state.tendAffliction)
+                    if (inspectedState.wholeBodyAfflictions[j] == inspectedState.tendAffliction)
                     {
                         selectedAffliction = j;
                         break;
@@ -616,19 +626,19 @@ public class HealthTab : HudPart
             {
                 for (int i = 0; i < healthTabBodyParts.Count; i++)
                 {
-                    if (healthTabBodyParts[i].bodyPart == ownerState.tendAffliction.part)
+                    if (healthTabBodyParts[i].bodyPart == playerState.tendAffliction.part)
                     {
                         selectedBodyPart = i;
 
-                        if (healthTabBodyParts[i].allAfflictions.Contains(ownerState.tendAffliction))
+                        if (healthTabBodyParts[i].allAfflictions.Contains(playerState.tendAffliction))
                         {
-                            selectedAffliction = healthTabBodyParts[i].allAfflictions.IndexOf(ownerState.tendAffliction);
+                            selectedAffliction = healthTabBodyParts[i].allAfflictions.IndexOf(playerState.tendAffliction);
                             break;
                         }
 
                         for (int j = 0; j < healthTabBodyParts[i].combinedAfflictions.Count; j++)
                         {
-                            if (healthTabBodyParts[i].combinedAfflictions.TryGetValue(healthTabBodyParts[i].CombinedAfflictionName(healthTabBodyParts[i].bodyPart, j), out List<RWAffliction> list) && list.Contains(ownerState.tendAffliction))
+                            if (healthTabBodyParts[i].combinedAfflictions.TryGetValue(healthTabBodyParts[i].CombinedAfflictionName(healthTabBodyParts[i].bodyPart, j), out List<RWAffliction> list) && list.Contains(playerState.tendAffliction))
                             {
                                 for (int k = 0; k < list.Count; k++)
                                 {
@@ -767,7 +777,7 @@ public class HealthTab : HudPart
 
             if (selectedVertical == 0)
             {
-                SetPainInfo(!creatureState.dead ? state.pain : 0);
+                SetPainInfo(!inspectedCreatureState.dead ? inspectedState.pain : 0);
             }
             else
             {
@@ -821,73 +831,73 @@ public class HealthTab : HudPart
                 switch (stringValue)
                 {
                     case "Consiousness":
-                        value = state.consciousness;
+                        value = inspectedState.consciousness;
 
-                        if (state.consciousnessSource != null && state.consciousnessSource.efficiency != 1)
+                        if (inspectedState.consciousnessSource != null && inspectedState.consciousnessSource.efficiency != 1)
                         {
                             isCapacityAffected = true;
-                            description += "  " + state.consciousnessSource.name + ": " + Mathf.Round(state.consciousnessSource.health) + " / " + state.consciousnessSource.maxHealth + "\n";
+                            description += "  " + inspectedState.consciousnessSource.name + ": " + Mathf.Round(inspectedState.consciousnessSource.health) + " / " + inspectedState.consciousnessSource.maxHealth + "\n";
                         }
-                        if (state.bloodLoss >= 0.15f)
+                        if (inspectedState.bloodLoss >= 0.15f)
                         {
                             isCapacityAffected = true;
                             description += "  " + healthTabWholeBody.bloodLossName.text + "\n";
                         }
-                        if (state.pain > 0.1f)
+                        if (inspectedState.pain > 0.1f)
                         {
                             isCapacityAffected = true;
-                            description += "  Pain " + Mathf.Round(state.pain * 100) + "%\n";
+                            description += "  Pain " + Mathf.Round(inspectedState.pain * 100) + "%\n";
                         }
-                        if (state.bloodPumping < 1f)
+                        if (inspectedState.bloodPumping < 1f)
                         {
                             isCapacityAffected = true;
-                            description += "  Blood pumping " + Mathf.Round(state.bloodPumping * 100) + "%\n";
+                            description += "  Blood pumping " + Mathf.Round(inspectedState.bloodPumping * 100) + "%\n";
                         }
-                        if (state.breathing < 1f)
+                        if (inspectedState.breathing < 1f)
                         {
                             isCapacityAffected = true;
-                            description += "  Breathing " + Mathf.Round(state.breathing * 100) + "%\n";
+                            description += "  Breathing " + Mathf.Round(inspectedState.breathing * 100) + "%\n";
                         }
-                        if (state.bloodFiltration < 1f)
+                        if (inspectedState.bloodFiltration < 1f)
                         {
                             isCapacityAffected = true;
-                            description += "  Blood filtration " + Mathf.Round(state.bloodFiltration * 100) + "%\n";
+                            description += "  Blood filtration " + Mathf.Round(inspectedState.bloodFiltration * 100) + "%\n";
                         }
 
                         description = CapacityAffectingAffliction(description);
                         break;
                     case "Moving":
                         {
-                            value = state.moving;
+                            value = inspectedState.moving;
 
-                            if (state.consciousness < 1f)
+                            if (inspectedState.consciousness < 1f)
                             {
                                 isCapacityAffected = true;
-                                description += "  Consciousness " + Mathf.Round(state.consciousness * 100) + "%\n";
+                                description += "  Consciousness " + Mathf.Round(inspectedState.consciousness * 100) + "%\n";
                             }
-                            if (state.bloodPumping < 1f)
+                            if (inspectedState.bloodPumping < 1f)
                             {
                                 isCapacityAffected = true;
-                                description += "  Blood pumping " + Mathf.Round(state.bloodPumping * 100) + "%\n";
+                                description += "  Blood pumping " + Mathf.Round(inspectedState.bloodPumping * 100) + "%\n";
                             }
-                            if (state.breathing < 1f)
+                            if (inspectedState.breathing < 1f)
                             {
                                 isCapacityAffected = true;
-                                description += "  Breathing " + Mathf.Round(state.breathing * 100) + "%\n";
+                                description += "  Breathing " + Mathf.Round(inspectedState.breathing * 100) + "%\n";
                             }
 
-                            for (int i = 0; i < state.movingBP.Count; i++)
+                            for (int i = 0; i < inspectedState.movingBP.Count; i++)
                             {
-                                if (state.movingBP[i].efficiency < 1)
+                                if (inspectedState.movingBP[i].efficiency < 1)
                                 {
                                     isCapacityAffected = true;
-                                    description += "  " + state.movingBP[i].name + ": " + Mathf.Round(state.movingBP[i].health) + " / " + state.movingBP[i].maxHealth + "\n";
+                                    description += "  " + inspectedState.movingBP[i].name + ": " + Mathf.Round(inspectedState.movingBP[i].health) + " / " + inspectedState.movingBP[i].maxHealth + "\n";
                                 }
                             }
 
-                            for (int i = 0; i < state.legSetNames.Count; i++)
+                            for (int i = 0; i < inspectedState.legSetNames.Count; i++)
                             {
-                                string temp = state.legSet[state.legSetNames[i]].CapacityAffectingAffliction();
+                                string temp = inspectedState.legSet[inspectedState.legSetNames[i]].CapacityAffectingAffliction();
 
                                 if (temp != "")
                                 {
@@ -901,26 +911,26 @@ public class HealthTab : HudPart
                         }
                     case "Manipulation":
                         {
-                            value = state.manipulation;
+                            value = inspectedState.manipulation;
 
-                            if (state.consciousness < 1f)
+                            if (inspectedState.consciousness < 1f)
                             {
                                 isCapacityAffected = true;
-                                description += "  Consciousness " + Mathf.Round(state.consciousness * 100) + "%\n";
+                                description += "  Consciousness " + Mathf.Round(inspectedState.consciousness * 100) + "%\n";
                             }
 
-                            for (int i = 0; i < state.manipulationBP.Count; i++)
+                            for (int i = 0; i < inspectedState.manipulationBP.Count; i++)
                             {
-                                if (state.manipulationBP[i].efficiency < 1)
+                                if (inspectedState.manipulationBP[i].efficiency < 1)
                                 {
                                     isCapacityAffected = true;
-                                    description += "  " + state.manipulationBP[i].name + ": " + Mathf.Round(state.manipulationBP[i].health) + " / " + state.manipulationBP[i].maxHealth + "\n";
+                                    description += "  " + inspectedState.manipulationBP[i].name + ": " + Mathf.Round(inspectedState.manipulationBP[i].health) + " / " + inspectedState.manipulationBP[i].maxHealth + "\n";
                                 }
                             }
 
-                            for (int i = 0; i < state.armSetNames.Count; i++)
+                            for (int i = 0; i < inspectedState.armSetNames.Count; i++)
                             {
-                                string temp = state.armSet[state.armSetNames[i]].CapacityAffectingAffliction();
+                                string temp = inspectedState.armSet[inspectedState.armSetNames[i]].CapacityAffectingAffliction();
 
                                 if (temp != "")
                                 {
@@ -934,20 +944,20 @@ public class HealthTab : HudPart
                         }
                     case "Talking":
                         {
-                            value = state.talking;
+                            value = inspectedState.talking;
 
-                            if (state.consciousness < 1f)
+                            if (inspectedState.consciousness < 1f)
                             {
                                 isCapacityAffected = true;
-                                description += "  Consciousness " + Mathf.Round(state.consciousness * 100) + "%\n";
+                                description += "  Consciousness " + Mathf.Round(inspectedState.consciousness * 100) + "%\n";
                             }
 
-                            for (int i = 0; i < state.talkingBP.Count; i++)
+                            for (int i = 0; i < inspectedState.talkingBP.Count; i++)
                             {
-                                if (state.talkingBP[i].efficiency < 1)
+                                if (inspectedState.talkingBP[i].efficiency < 1)
                                 {
                                     isCapacityAffected = true;
-                                    description += "  " + state.talkingBP[i].name + ": " + Mathf.Round(state.talkingBP[i].health) + " / " + state.talkingBP[i].maxHealth + "\n";
+                                    description += "  " + inspectedState.talkingBP[i].name + ": " + Mathf.Round(inspectedState.talkingBP[i].health) + " / " + inspectedState.talkingBP[i].maxHealth + "\n";
                                 }
                             }
 
@@ -956,20 +966,20 @@ public class HealthTab : HudPart
                         }
                     case "Eating":
                         {
-                            value = state.eating;
+                            value = inspectedState.eating;
 
-                            if (state.consciousness < 1f)
+                            if (inspectedState.consciousness < 1f)
                             {
                                 isCapacityAffected = true;
-                                description += "  Consciousness " + Mathf.Round(state.consciousness * 100) + "%\n";
+                                description += "  Consciousness " + Mathf.Round(inspectedState.consciousness * 100) + "%\n";
                             }
 
-                            for (int i = 0; i < state.eatingBP.Count; i++)
+                            for (int i = 0; i < inspectedState.eatingBP.Count; i++)
                             {
-                                if (state.eatingBP[i].efficiency < 1)
+                                if (inspectedState.eatingBP[i].efficiency < 1)
                                 {
                                     isCapacityAffected = true;
-                                    description += "  " + state.eatingBP[i].name + ": " + Mathf.Round(state.eatingBP[i].health) + " / " + state.eatingBP[i].maxHealth + "\n";
+                                    description += "  " + inspectedState.eatingBP[i].name + ": " + Mathf.Round(inspectedState.eatingBP[i].health) + " / " + inspectedState.eatingBP[i].maxHealth + "\n";
                                 }
                             }
 
@@ -978,14 +988,14 @@ public class HealthTab : HudPart
                         }
                     case "Sight":
                         {
-                            value = state.sight;
+                            value = inspectedState.sight;
 
-                            for (int i = 0; i < state.sightBP.Count; i++)
+                            for (int i = 0; i < inspectedState.sightBP.Count; i++)
                             {
-                                if (state.sightBP[i].efficiency < 1)
+                                if (inspectedState.sightBP[i].efficiency < 1)
                                 {
                                     isCapacityAffected = true;
-                                    description += "  " + state.sightBP[i].name + ": " + Mathf.Round(state.sightBP[i].health) + " / " + state.sightBP[i].maxHealth + "\n";
+                                    description += "  " + inspectedState.sightBP[i].name + ": " + Mathf.Round(inspectedState.sightBP[i].health) + " / " + inspectedState.sightBP[i].maxHealth + "\n";
                                 }
                             }
 
@@ -994,14 +1004,14 @@ public class HealthTab : HudPart
                         }
                     case "Hearing":
                         {
-                            value = state.hearing;
+                            value = inspectedState.hearing;
 
-                            for (int i = 0; i < state.hearingBP.Count; i++)
+                            for (int i = 0; i < inspectedState.hearingBP.Count; i++)
                             {
-                                if (state.hearingBP[i].efficiency < 1)
+                                if (inspectedState.hearingBP[i].efficiency < 1)
                                 {
                                     isCapacityAffected = true;
-                                    description += "  " + state.hearingBP[i].name + ": " + Mathf.Round(state.hearingBP[i].health) + " / " + state.hearingBP[i].maxHealth + "\n";
+                                    description += "  " + inspectedState.hearingBP[i].name + ": " + Mathf.Round(inspectedState.hearingBP[i].health) + " / " + inspectedState.hearingBP[i].maxHealth + "\n";
                                 }
                             }
 
@@ -1010,14 +1020,14 @@ public class HealthTab : HudPart
                         }
                     case "Breathing":
                         {
-                            value = state.breathing;
+                            value = inspectedState.breathing;
 
-                            for (int i = 0; i < state.breathingBP.Count; i++)
+                            for (int i = 0; i < inspectedState.breathingBP.Count; i++)
                             {
-                                if (state.breathingBP[i].efficiency < 1)
+                                if (inspectedState.breathingBP[i].efficiency < 1)
                                 {
                                     isCapacityAffected = true;
-                                    description += "  " + state.breathingBP[i].name + ": " + Mathf.Round(state.breathingBP[i].health) + " / " + state.breathingBP[i].maxHealth + "\n";
+                                    description += "  " + inspectedState.breathingBP[i].name + ": " + Mathf.Round(inspectedState.breathingBP[i].health) + " / " + inspectedState.breathingBP[i].maxHealth + "\n";
                                 }
                             }
 
@@ -1026,14 +1036,14 @@ public class HealthTab : HudPart
                         }
                     case "Blood filtrarion":
                         {
-                            value = state.bloodFiltration;
+                            value = inspectedState.bloodFiltration;
 
-                            for (int i = 0; i < state.bloodFiltrationBP.Count; i++)
+                            for (int i = 0; i < inspectedState.bloodFiltrationBP.Count; i++)
                             {
-                                if (state.bloodFiltrationBP[i].efficiency < 1)
+                                if (inspectedState.bloodFiltrationBP[i].efficiency < 1)
                                 {
                                     isCapacityAffected = true;
-                                    description += "  " + state.bloodFiltrationBP[i].name + ": " + Mathf.Round(state.bloodFiltrationBP[i].health) + " / " + state.bloodFiltrationBP[i].maxHealth + "\n";
+                                    description += "  " + inspectedState.bloodFiltrationBP[i].name + ": " + Mathf.Round(inspectedState.bloodFiltrationBP[i].health) + " / " + inspectedState.bloodFiltrationBP[i].maxHealth + "\n";
                                 }
                             }
 
@@ -1042,14 +1052,14 @@ public class HealthTab : HudPart
                         }
                     case "Blood pumping":
                         {
-                            value = state.bloodPumping;
+                            value = inspectedState.bloodPumping;
 
-                            for (int i = 0; i < state.bloodPumpingBP.Count; i++)
+                            for (int i = 0; i < inspectedState.bloodPumpingBP.Count; i++)
                             {
-                                if (state.bloodPumpingBP[i].efficiency < 1)
+                                if (inspectedState.bloodPumpingBP[i].efficiency < 1)
                                 {
                                     isCapacityAffected = true;
-                                    description += "  " + state.bloodPumpingBP[i].name + ": " + Mathf.Round(state.bloodPumpingBP[i].health) + " / " + state.bloodPumpingBP[i].maxHealth + "\n";
+                                    description += "  " + inspectedState.bloodPumpingBP[i].name + ": " + Mathf.Round(inspectedState.bloodPumpingBP[i].health) + " / " + inspectedState.bloodPumpingBP[i].maxHealth + "\n";
                                 }
                             }
 
@@ -1058,14 +1068,14 @@ public class HealthTab : HudPart
                         }
                     case "Digestion":
                         {
-                            value = state.digestion;
+                            value = inspectedState.digestion;
 
-                            for (int i = 0; i < state.digestionBP.Count; i++)
+                            for (int i = 0; i < inspectedState.digestionBP.Count; i++)
                             {
-                                if (state.digestionBP[i].efficiency < 1)
+                                if (inspectedState.digestionBP[i].efficiency < 1)
                                 {
                                     isCapacityAffected = true;
-                                    description += "  " + state.digestionBP[i].name + ": " + Mathf.Round(state.digestionBP[i].health) + " / " + state.digestionBP[i].maxHealth + "\n";
+                                    description += "  " + inspectedState.digestionBP[i].name + ": " + Mathf.Round(inspectedState.digestionBP[i].health) + " / " + inspectedState.digestionBP[i].maxHealth + "\n";
                                 }
                             }
 
@@ -1099,9 +1109,9 @@ public class HealthTab : HudPart
 
                 string CapacityAffectingAffliction(string description)
                 {
-                    for (int i = 0; i < state.capacityAffectingAffliction.Count; i++)
+                    for (int i = 0; i < inspectedState.capacityAffectingAffliction.Count; i++)
                     {
-                        if (state.capacityAffectingAffliction[i] is RWDisease disease)
+                        if (inspectedState.capacityAffectingAffliction[i] is RWDisease disease)
                         {
                             if (disease is RWFlu)
                             {
@@ -1150,10 +1160,10 @@ public class HealthTab : HudPart
                             }
                             else
                             {
-                                Debug.Log(state.capacityAffectingAffliction[i] + " is not a valid type of disease");
+                                Debug.Log(inspectedState.capacityAffectingAffliction[i] + " is not a valid type of disease");
                             }
                         }
-                        else if (state.capacityAffectingAffliction[i] is RWInformational informational)
+                        else if (inspectedState.capacityAffectingAffliction[i] is RWInformational informational)
                         {
                             if (informational is RWHypothermia)
                             {
@@ -1234,7 +1244,7 @@ public class HealthTab : HudPart
                         }
                         else
                         {
-                            Debug.Log(state.capacityAffectingAffliction[i] + " is not a valid type of affliction");
+                            Debug.Log(inspectedState.capacityAffectingAffliction[i] + " is not a valid type of affliction");
                         }
                     }
 
@@ -1260,7 +1270,7 @@ public class HealthTab : HudPart
             if (healthTabWholeBody.bloodLossVisible && selectedVertical == 0)
             {
                 healthTabInfos[0].name.text = healthTabWholeBody.bloodLossName.text;
-                healthTabInfos[0].nameStatus.text = " : " + Mathf.Round(state.bloodLoss * 100) + "%";
+                healthTabInfos[0].nameStatus.text = " : " + Mathf.Round(inspectedState.bloodLoss * 100) + "%";
 
                 healthTabInfos[0].description.text = "A reduction in the normal blood volume.\n" +
                     "Minor blood loss has relatively mild\n" +
@@ -1274,11 +1284,11 @@ public class HealthTab : HudPart
                     "as the body slowly regenerates its blood\n" +
                     "supply.";
 
-                if (state.bloodLoss >= 1)
+                if (inspectedState.bloodLoss >= 1)
                 {
 
                 }
-                else if (state.bloodLoss >= 0.6f)
+                else if (inspectedState.bloodLoss >= 0.6f)
                 {
                     healthTabInfos[0].description.text += "\n" +
                         "\n" +
@@ -1287,19 +1297,19 @@ public class HealthTab : HudPart
                     healthTabInfos[0].description.text += "\n" +
                         "  - Consciousness: Max 10%";
                 }
-                else if (state.bloodLoss >= 0.45f)
+                else if (inspectedState.bloodLoss >= 0.45f)
                 {
                     healthTabInfos[0].description.text += "\n" +
                         "\n" +
                         "  - Consciousness: -40%";
                 }
-                else if (state.bloodLoss >= 0.3f)
+                else if (inspectedState.bloodLoss >= 0.3f)
                 {
                     healthTabInfos[0].description.text += "\n" +
                         "\n" +
                         "  - Consciousness: -20%";
                 }
-                else if (state.bloodLoss >= 0.15f)
+                else if (inspectedState.bloodLoss >= 0.15f)
                 {
                     healthTabInfos[0].description.text += "\n" +
                         "\n" +
@@ -1310,7 +1320,7 @@ public class HealthTab : HudPart
             {
                 healthTabInfos[0].name.text = healthTabWholeBody.afflictionVisuals[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)].name.text;
 
-                if (state.wholeBodyAfflictions[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)] is RWDisease disease)
+                if (inspectedState.wholeBodyAfflictions[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)] is RWDisease disease)
                 {
                     healthTabInfos[0].nameStatus.text = ": " + (Mathf.Round(disease.severity * 1000) / 10) + "%";
 
@@ -1368,7 +1378,7 @@ public class HealthTab : HudPart
                         healthTabInfos[0].description.text += "Immunity: " + (Mathf.Round(disease.immunity * 1000) / 10) + "%";
                     }
                 }
-                else if (state.wholeBodyAfflictions[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)] is RWInformational informational)
+                else if (inspectedState.wholeBodyAfflictions[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)] is RWInformational informational)
                 {
                     healthTabInfos[0].description.text = "The description was not set, report this is seen";
                     healthTabInfos[0].nameStatus.text = ": the name status has not been set, report this if seen";
@@ -1468,8 +1478,6 @@ public class HealthTab : HudPart
                                 "  - Consciousness: -25%";
                         }
 
-
-
                         healthTabInfos[0].nameStatus.text = ": " + Mathf.Round(informational.tendQuality * 100) + "%";
                     }
                 }
@@ -1553,28 +1561,28 @@ public class HealthTab : HudPart
 
                     int j = i + 1;
 
-                    if (affliction is RWInjury injury)
+                    if (affliction is RWInjury combinedInjury)
                     {
-                        healthTabInfos[j].name.text = injury.healingDifficulty.name + (injury.attackName != "" ? " (" + injury.attackName + ")" : "");
+                        healthTabInfos[j].name.text = combinedInjury.healingDifficulty.name + (combinedInjury.attackName != "" ? " (" + combinedInjury.attackName + ")" : "");
 
-                        healthTabInfos[j].nameStatus.text = " : " + (Mathf.Round(injury.damage * 10) / 10).ToString();
+                        healthTabInfos[j].nameStatus.text = " : " + (Mathf.Round(combinedInjury.damage * 10) / 10).ToString();
 
                         string description = "";
 
-                        if (!creatureState.dead)
+                        if (!inspectedCreatureState.dead)
                         {
-                            float bleeding = Mathf.Max(1f, Mathf.Round(injury.healingDifficulty.bleeding * injury.damage * state.bodySizeFactor * RWHealthState.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
+                            float bleeding = Mathf.Max(1f, Mathf.Round(combinedInjury.healingDifficulty.bleeding * combinedInjury.damage * inspectedState.bodySizeFactor * RWHealthState.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
 
-                            if (injury.isBleeding)
+                            if (combinedInjury.isBleeding)
                             {
                                 description += "  - Bleeding: ";
                                 description += bleeding.ToString();
                                 description += "%/c";
                             }
 
-                            float pain = Mathf.Round(injury.damage * injury.healingDifficulty.pain / state.bodySizeFactor);
+                            float pain = Mathf.Round(combinedInjury.damage * combinedInjury.healingDifficulty.pain / inspectedState.bodySizeFactor);
 
-                            if (injury.healingDifficulty.pain > 0 && pain > 0f)
+                            if (combinedInjury.healingDifficulty.pain > 0 && pain > 0f)
                             {
                                 if (description != "")
                                 {
@@ -1586,7 +1594,7 @@ public class HealthTab : HudPart
                                 description += "%";
                             }
 
-                            if (!injury.isTended)
+                            if (!combinedInjury.isTended)
                             {
                                 if (description != "")
                                 {
@@ -1606,93 +1614,173 @@ public class HealthTab : HudPart
 
                                 if (healthTabBodyParts[selectedBodyPart].bodyPart.isSolid)
                                 {
-                                    description += injury.healingDifficulty.solidTreated;
+                                    description += combinedInjury.healingDifficulty.solidTreated;
                                 }
                                 else if (healthTabBodyParts[selectedBodyPart].bodyPart.isInternal)
                                 {
-                                    description += injury.healingDifficulty.innerTreated;
+                                    description += combinedInjury.healingDifficulty.innerTreated;
                                 }
                                 else
                                 {
-                                    description += injury.healingDifficulty.treated;
+                                    description += combinedInjury.healingDifficulty.treated;
                                 }
 
-                                description += " (quality " + (Mathf.Round(injury.tendQuality * 1000) / 10) + "%)";
+                                description += " (quality " + (Mathf.Round(combinedInjury.tendQuality * 1000) / 10) + "%)";
                             }
                         }
 
                         healthTabInfos[j].description.text = description;
                     }
                 }
+
+                return;
             }
-            else
+
+            if (affliction == null)
             {
-                if (affliction == null)
+                if (healthTabInfos.Count > 1)
                 {
-                    if (healthTabInfos.Count > 1)
-                    {
-                        for (int i = 1; i < healthTabInfos.Count; i++)
-                        {
-                            healthTabInfos[i].slatedForDeletion = true;
-                        }
-                    }
-
-                    return;
-                }
-
-                if (healthTabInfos.Count < 2)
-                {
-                    healthTabInfos.Add(new(this));
-                }
-                else if (healthTabInfos.Count > 2)
-                {
-                    for (int i = 2; i < healthTabInfos.Count; i++)
+                    for (int i = 1; i < healthTabInfos.Count; i++)
                     {
                         healthTabInfos[i].slatedForDeletion = true;
                     }
                 }
 
-                healthTabInfos[1].name.text = healthTabBodyParts[selectedBodyPart].afflictionVisuals[selectedAffliction].name.text;
+                return;
+            }
 
-                if (affliction is RWInjury injury)
+            if (healthTabInfos.Count < 2)
+            {
+                healthTabInfos.Add(new(this));
+            }
+            else if (healthTabInfos.Count > 2)
+            {
+                for (int i = 2; i < healthTabInfos.Count; i++)
                 {
-                    if (injury is RWDestroyed)
+                    healthTabInfos[i].slatedForDeletion = true;
+                }
+            }
+
+            healthTabInfos[1].name.text = healthTabBodyParts[selectedBodyPart].afflictionVisuals[selectedAffliction].name.text;
+
+            if (affliction is RWInjury injury)
+            {
+                if (injury is RWDestroyed)
+                {
+                    healthTabInfos[1].nameStatus.text = "";
+
+                    string description = "A body part is entirely missing.";
+
+                    if (!inspectedCreatureState.dead && !injury.isTended)
                     {
-                        healthTabInfos[1].nameStatus.text = "";
+                        description += "\n\n";
 
-                        string description = "A body part is entirely missing.";
+                        float bleeding = Mathf.Max(1f, Mathf.Round(injury.healingDifficulty.bleeding * injury.part.maxHealth * 2 * inspectedState.bodySizeFactor * RWHealthState.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
 
-                        if (!creatureState.dead && !injury.isTended)
+                        if (injury.isBleeding)
                         {
-                            description += "\n\n";
+                            description += "  - Bleeding: ";
 
-                            float bleeding = Mathf.Max(1f, Mathf.Round(injury.healingDifficulty.bleeding * injury.part.maxHealth * 2 * state.bodySizeFactor * RWHealthState.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
+                            description += bleeding.ToString();
 
-                            if (injury.isBleeding)
+                            description += "%/c";
+                        }
+
+                        float pain = Mathf.Round(injury.part.maxHealth * 2 * injury.healingDifficulty.pain / inspectedState.bodySizeFactor);
+
+                        if (injury.healingDifficulty.pain > 0 && pain > 0f)
+                        {
+                            if (description != "")
                             {
-                                description += "  - Bleeding: ";
-
-                                description += bleeding.ToString();
-
-                                description += "%/c";
+                                description += "\n";
                             }
 
-                            float pain = Mathf.Round(injury.part.maxHealth * 2 * injury.healingDifficulty.pain / state.bodySizeFactor);
+                            description += "  - Pain: +";
 
-                            if (injury.healingDifficulty.pain > 0 && pain > 0f)
+                            description += pain.ToString();
+
+                            description += "%";
+                        }
+
+                        if (description != "")
+                        {
+                            description += "\n";
+                            description += "\n";
+                        }
+
+                        description += "Needs tending now";
+                    }
+
+                    healthTabInfos[1].description.text = description;
+                }
+                else if (injury is RWScar scar && scar.isRevealed)
+                {
+                    healthTabInfos[1].name.text = ScarName(scar);
+
+                    healthTabInfos[1].nameStatus.text = " : " + (Mathf.Round(scar.damage * 10) / 10).ToString();
+
+                    string description = "";
+
+                    if (!inspectedCreatureState.dead && scar.painCategory != "")
+                    {
+                        description = "  - Pain: +";
+
+                        if (scar.painCategory == "painful")
+                        {
+                            description += Mathf.Round(scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / inspectedState.bodySizeFactor).ToString();
+                        }
+                        else if (scar.painCategory == "aching")
+                        {
+                            description += Mathf.Round(scar.scarDamage * injury.healingDifficulty.scarPain / inspectedState.bodySizeFactor).ToString();
+                        }
+                        else if (scar.painCategory == "itchy")
+                        {
+                            description += Mathf.Round(scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / inspectedState.bodySizeFactor).ToString();
+                        }
+
+                        description += "%";
+                    }
+
+                    healthTabInfos[1].description.text = description;
+                }
+                else
+                {
+                    healthTabInfos[1].name.text = injury.healingDifficulty.name + (injury.attackName != "" ? " (" + injury.attackName + ")" : "");
+                    healthTabInfos[1].nameStatus.text = " : " + (Mathf.Round(injury.damage * 10) / 10).ToString();
+
+                    string description = "";
+
+                    if (!inspectedCreatureState.dead)
+                    {
+                        float bleeding = Mathf.Max(1f, Mathf.Round(injury.healingDifficulty.bleeding * injury.damage * inspectedState.bodySizeFactor * RWHealthState.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
+
+                        if (injury.isBleeding)
+                        {
+                            description += "  - Bleeding: ";
+
+                            description += bleeding.ToString();
+
+                            description += "%/c";
+                        }
+
+                        float pain = Mathf.Round(injury.damage * injury.healingDifficulty.pain / inspectedState.bodySizeFactor);
+
+                        if (injury.healingDifficulty.pain > 0 && pain > 0f)
+                        {
+                            if (description != "")
                             {
-                                if (description != "")
-                                {
-                                    description += "\n";
-                                }
-
-                                description += "  - Pain: +";
-
-                                description += pain.ToString();
-
-                                description += "%";
+                                description += "\n";
                             }
 
+                            description += "  - Pain: +";
+
+                            description += pain.ToString();
+
+                            description += "%";
+                        }
+
+                        if (!injury.isTended)
+                        {
                             if (description != "")
                             {
                                 description += "\n";
@@ -1701,177 +1789,97 @@ public class HealthTab : HudPart
 
                             description += "Needs tending now";
                         }
-
-                        healthTabInfos[1].description.text = description;
-                    }
-                    else if (injury is RWScar scar && scar.isRevealed)
-                    {
-                        healthTabInfos[1].name.text = ScarName(scar);
-
-                        healthTabInfos[1].nameStatus.text = " : " + (Mathf.Round(scar.damage * 10) / 10).ToString();
-
-                        string description = "";
-
-                        if (!creatureState.dead && scar.painCategory != "")
+                        else
                         {
-                            description = "  - Pain: +";
-
-                            if (scar.painCategory == "painful")
+                            if (description != "")
                             {
-                                description += Mathf.Round(scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor).ToString();
-                            }
-                            else if (scar.painCategory == "aching")
-                            {
-                                description += Mathf.Round(scar.scarDamage * injury.healingDifficulty.scarPain / state.bodySizeFactor).ToString();
-                            }
-                            else if (scar.painCategory == "itchy")
-                            {
-                                description += Mathf.Round(scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor).ToString();
+                                description += "\n";
+                                description += "\n";
                             }
 
-                            description += "%";
-                        }
-
-                        healthTabInfos[1].description.text = description;
-                    }
-                    else
-                    {
-                        healthTabInfos[1].name.text = injury.healingDifficulty.name + (injury.attackName != "" ? " (" + injury.attackName + ")" : "");
-                        healthTabInfos[1].nameStatus.text = " : " + (Mathf.Round(injury.damage * 10) / 10).ToString();
-
-                        string description = "";
-
-                        if (!creatureState.dead)
-                        {
-                            float bleeding = Mathf.Max(1f, Mathf.Round(injury.healingDifficulty.bleeding * injury.damage * state.bodySizeFactor * RWHealthState.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
-
-                            if (injury.isBleeding)
+                            if (healthTabBodyParts[selectedBodyPart].bodyPart.isSolid)
                             {
-                                description += "  - Bleeding: ";
-
-                                description += bleeding.ToString();
-
-                                description += "%/c";
+                                description += injury.healingDifficulty.solidTreated;
                             }
-
-                            float pain = Mathf.Round(injury.damage * injury.healingDifficulty.pain / state.bodySizeFactor);
-
-                            if (injury.healingDifficulty.pain > 0 && pain > 0f)
+                            else if (healthTabBodyParts[selectedBodyPart].bodyPart.isInternal)
                             {
-                                if (description != "")
-                                {
-                                    description += "\n";
-                                }
-
-                                description += "  - Pain: +";
-
-                                description += pain.ToString();
-
-                                description += "%";
-                            }
-
-                            if (!injury.isTended)
-                            {
-                                if (description != "")
-                                {
-                                    description += "\n";
-                                    description += "\n";
-                                }
-
-                                description += "Needs tending now";
+                                description += injury.healingDifficulty.innerTreated;
                             }
                             else
                             {
-                                if (description != "")
-                                {
-                                    description += "\n";
-                                    description += "\n";
-                                }
-
-                                if (healthTabBodyParts[selectedBodyPart].bodyPart.isSolid)
-                                {
-                                    description += injury.healingDifficulty.solidTreated;
-                                }
-                                else if (healthTabBodyParts[selectedBodyPart].bodyPart.isInternal)
-                                {
-                                    description += injury.healingDifficulty.innerTreated;
-                                }
-                                else
-                                {
-                                    description += injury.healingDifficulty.treated;
-                                }
-
-                                description += " (quality " + (Mathf.Round(injury.tendQuality * 1000) / 10) + "%)";
+                                description += injury.healingDifficulty.treated;
                             }
-                        }
 
-                        healthTabInfos[1].description.text = description;
+                            description += " (quality " + (Mathf.Round(injury.tendQuality * 1000) / 10) + "%)";
+                        }
                     }
-                }
-                else if (affliction is RWDisease disease)
-                {
-                    healthTabInfos[1].nameStatus.text = " : " + (Mathf.Round(disease.severity * 1000) / 10) + "%";
 
-                    if (disease is RWInfection)
-                    {
-                        healthTabInfos[1].description.text = "Bacterial infection in a wound. Without\n" +
-                            "treatment, the bacteria will multiply,\n" +
-                            "killing local tissue, and eventually\n" +
-                            "causing blood poisoning and death.";
-
-                        if (disease.severity < 0.32f)
-                        {
-                            healthTabInfos[1].description.text += "\n" +
-                                "\n" +
-                                "  - Pain: +5%\n";
-                        }
-                        else if (disease.severity < 0.77f)
-                        {
-                            healthTabInfos[1].description.text += "\n" +
-                                "\n" +
-                                "  - Pain: +8%\n";
-                        }
-                        else if (disease.severity < 0.86f)
-                        {
-                            healthTabInfos[1].description.text += "\n" +
-                                "\n" +
-                                "  - Pain: +12%\n" +
-                                "  - Consciousness: -5%\n";
-                        }
-                        else
-                        {
-                            healthTabInfos[1].description.text += "\n" +
-                                "\n" +
-                                "  - Pain: +12%\n" +
-                                "  - Consciousness: -5%\n" +
-                                "  - Breathing: -5%";
-                        }
-
-                        if (!disease.isTended)
-                        {
-                            healthTabInfos[1].description.text += "\n" +
-                                "Needs tending now\n";
-                        }
-                        else
-                        {
-                            float tendedIn = disease.timeUntilTreatment;
-
-                            string canBeTendedIn = tendedIn < 0 ? Mathf.Round(tendedIn * 10000) / 100 + (Mathf.Round(tendedIn * 10000) / 100 == 1 ? " second" : " seconds") : tendedIn > 60 ? Mathf.Round(tendedIn / 60 * 10) / 10 + (Mathf.Round(tendedIn / 60 * 10) / 10 == 1 ? " hour" : " hours") : Mathf.Round(tendedIn * 10) / 10 + (Mathf.Round(tendedIn * 10) / 10 == 1 ? " minute" : " minutes");
-
-                            float expiresIn = disease.timeUntilTreatment + 3;
-
-                            string tendingExpiresIn = expiresIn < 0 ? Mathf.Round(expiresIn * 10000) / 100 + (Mathf.Round(expiresIn * 10000) / 100 == 1 ? " second" : " seconds") : expiresIn > 60 ? Mathf.Round(expiresIn / 60 * 10) / 10 + (Mathf.Round(expiresIn / 60 * 10) / 10 == 1 ? " hour" : " hours") : Mathf.Round(expiresIn * 10) / 10 + (Mathf.Round(expiresIn * 10) / 10 == 1 ? " minute" : " minutes");
-
-
-                            healthTabInfos[1].description.text += "\n" +
-                                "Tend quality: " + (Mathf.Round(disease.tendQuality * 1000) / 10) + "%\n" +
-                                "Can be tended in " + canBeTendedIn + "\n" +
-                                "Tending expires in " + tendingExpiresIn + "\n";
-                        }
-                        healthTabInfos[1].description.text += "Immunity: " + (Mathf.Round(disease.immunity * 1000) / 10) + "%";
-                    }
+                    healthTabInfos[1].description.text = description;
                 }
             }
+            else if (affliction is RWDisease disease)
+            {
+                healthTabInfos[1].nameStatus.text = " : " + (Mathf.Round(disease.severity * 1000) / 10) + "%";
+
+                if (disease is RWInfection)
+                {
+                    healthTabInfos[1].description.text = "Bacterial infection in a wound. Without\n" +
+                        "treatment, the bacteria will multiply,\n" +
+                        "killing local tissue, and eventually\n" +
+                        "causing blood poisoning and death.";
+
+                    if (disease.severity < 0.32f)
+                    {
+                        healthTabInfos[1].description.text += "\n" +
+                            "\n" +
+                            "  - Pain: +5%\n";
+                    }
+                    else if (disease.severity < 0.77f)
+                    {
+                        healthTabInfos[1].description.text += "\n" +
+                            "\n" +
+                            "  - Pain: +8%\n";
+                    }
+                    else if (disease.severity < 0.86f)
+                    {
+                        healthTabInfos[1].description.text += "\n" +
+                            "\n" +
+                            "  - Pain: +12%\n" +
+                            "  - Consciousness: -5%\n";
+                    }
+                    else
+                    {
+                        healthTabInfos[1].description.text += "\n" +
+                            "\n" +
+                            "  - Pain: +12%\n" +
+                            "  - Consciousness: -5%\n" +
+                            "  - Breathing: -5%";
+                    }
+
+                    if (!disease.isTended)
+                    {
+                        healthTabInfos[1].description.text += "\n" +
+                            "Needs tending now\n";
+                    }
+                    else
+                    {
+                        float tendedIn = disease.timeUntilTreatment;
+
+                        string canBeTendedIn = tendedIn < 0 ? Mathf.Round(tendedIn * 10000) / 100 + (Mathf.Round(tendedIn * 10000) / 100 == 1 ? " second" : " seconds") : tendedIn > 60 ? Mathf.Round(tendedIn / 60 * 10) / 10 + (Mathf.Round(tendedIn / 60 * 10) / 10 == 1 ? " hour" : " hours") : Mathf.Round(tendedIn * 10) / 10 + (Mathf.Round(tendedIn * 10) / 10 == 1 ? " minute" : " minutes");
+
+                        float expiresIn = disease.timeUntilTreatment + 3;
+
+                        string tendingExpiresIn = expiresIn < 0 ? Mathf.Round(expiresIn * 10000) / 100 + (Mathf.Round(expiresIn * 10000) / 100 == 1 ? " second" : " seconds") : expiresIn > 60 ? Mathf.Round(expiresIn / 60 * 10) / 10 + (Mathf.Round(expiresIn / 60 * 10) / 10 == 1 ? " hour" : " hours") : Mathf.Round(expiresIn * 10) / 10 + (Mathf.Round(expiresIn * 10) / 10 == 1 ? " minute" : " minutes");
+
+
+                        healthTabInfos[1].description.text += "\n" +
+                            "Tend quality: " + (Mathf.Round(disease.tendQuality * 1000) / 10) + "%\n" +
+                            "Can be tended in " + canBeTendedIn + "\n" +
+                            "Tending expires in " + tendingExpiresIn + "\n";
+                    }
+                    healthTabInfos[1].description.text += "Immunity: " + (Mathf.Round(disease.immunity * 1000) / 10) + "%";
+                }
+            }  
         }
     }
 
@@ -1881,31 +1889,31 @@ public class HealthTab : HudPart
 
         healthTabWholeBody.ClearSprites();
 
-        for (int i = 0; i < healthTabBodyParts.Count; i++)
+        foreach (HealthTabBodyPart bodyPartTab in healthTabBodyParts)
         {
-            healthTabBodyParts[i].ClearSprites();
+            bodyPartTab.ClearSprites();
         }
 
-        for (int i = 0; i < healthTabInfos.Count; i++)
+        foreach (HealthTabInfo infoTab in healthTabInfos)
         {
-            healthTabInfos[i].ClearSprites();
+            infoTab.ClearSprites();
         }
 
         capacityName.RemoveFromContainer();
 
-        for (int i = 0; i < capacityValueNames.Count; i++)
+        foreach (FLabel capacityName in capacityValueNames)
         {
-            capacityValueNames[i].RemoveFromContainer();
+            capacityName.RemoveFromContainer();
         }
 
-        for (int i = 0; i < capacityValues.Count; i++)
+        foreach (FLabel capacityValue in capacityValues)
         {
-            capacityValues[i].RemoveFromContainer();
+            capacityValue.RemoveFromContainer();
         }
 
-        for (int i = 0; i < sprites.Length; i++)
+        foreach (FSprite sprite in sprites)
         {
-            sprites[i].RemoveFromContainer();
+            sprite.RemoveFromContainer();
         }
 
         selectedSprite.RemoveFromContainer();
@@ -1924,8 +1932,8 @@ public class HealthTab : HudPart
 
         selectedTimer = selectedTimerMax;
 
-        if (ownerState != null)
-            ownerState.tendAffliction = null;
+        if (playerState != null)
+            playerState.tendAffliction = null;
     }
     void TriggeredOff()
     {
@@ -1943,8 +1951,11 @@ public class HealthTab : HudPart
     }
 
     #region Values
-    public RWState state;
-    public CreatureState creatureState;
+    public RWState playerState;
+    public AbstractCreature player;
+
+    public RWState inspectedState;
+    public CreatureState inspectedCreatureState;
 
     public FLabel capacityName;
 
@@ -1959,9 +1970,6 @@ public class HealthTab : HudPart
     public FSprite treatedSprite;
 
     public List<string> capacityValueNamesNames;
-
-    public AbstractCreature owner;
-    public RWState ownerState;
 
     public bool visible = false;
 
@@ -2249,9 +2257,9 @@ public class HealthTabBodyPart
 
         bodyPartName.RemoveFromContainer();
 
-        for (int i = 0; i < afflictionVisuals.Count; i++)
+        foreach (HealthTabAffliction afflictionVisual in afflictionVisuals)
         {
-            afflictionVisuals[i].ClearSprites();
+            afflictionVisual.ClearSprites();
         }
 
         afflictionVisuals.Clear();
@@ -2353,13 +2361,13 @@ public class HealthTabWholeBody
 
     public void Update()
     {
-        bloodLossVisible = owner.state != null && owner.state.bloodLoss >= 0.15f;
+        bloodLossVisible = owner.inspectedState != null && owner.inspectedState.bloodLoss >= 0.15f;
 
-        afflictionNumber = (bloodLossVisible ? 1 : 0) + (owner.state != null ? owner.state.wholeBodyAfflictions.Count : 0);
+        afflictionNumber = (bloodLossVisible ? 1 : 0) + (owner.inspectedState != null ? owner.inspectedState.wholeBodyAfflictions.Count : 0);
 
         active = afflictionNumber > 0;
 
-        if ((owner.state != null ? owner.state.wholeBodyAfflictions.Count : 0) < afflictionVisuals.Count)
+        if ((owner.inspectedState != null ? owner.inspectedState.wholeBodyAfflictions.Count : 0) < afflictionVisuals.Count)
         {
             List<HealthTabAffliction> list = new(afflictionVisuals);
 
@@ -2370,7 +2378,7 @@ public class HealthTabWholeBody
                 afflictionVisuals.Remove(list[i]);
             }
         }
-        else if ((owner.state != null ? owner.state.wholeBodyAfflictions.Count : 0) > afflictionVisuals.Count)
+        else if ((owner.inspectedState != null ? owner.inspectedState.wholeBodyAfflictions.Count : 0) > afflictionVisuals.Count)
         {
             List<HealthTabAffliction> list = new(afflictionVisuals);
 
@@ -2386,7 +2394,7 @@ public class HealthTabWholeBody
         name.isVisible = owner.visible && active;
         bloodLossName.isVisible = owner.visible && active && bloodLossVisible;
 
-        if (owner == null || owner.state == null || !owner.visible || !active)
+        if (owner == null || owner.inspectedState == null || !owner.visible || !active)
         {
             for (int i = 0; i < afflictionVisuals.Count; i++)
             {
@@ -2416,19 +2424,19 @@ public class HealthTabWholeBody
             bloodLossName.x = DrawPos().x - 45;
             bloodLossName.y = DrawPos().y;
 
-            if (owner.state.bloodLoss >= 0.6f)
+            if (owner.inspectedState.bloodLoss >= 0.6f)
             {
                 bloodLossName.text = "Blood loss (extreme)";
             }
-            else if (owner.state.bloodLoss >= 0.45f)
+            else if (owner.inspectedState.bloodLoss >= 0.45f)
             {
                 bloodLossName.text = "Blood loss (severe)";
             }
-            else if (owner.state.bloodLoss >= 0.3f)
+            else if (owner.inspectedState.bloodLoss >= 0.3f)
             {
                 bloodLossName.text = "Blood loss (moderate)";
             }
-            else if (owner.state.bloodLoss >= 0.15f)
+            else if (owner.inspectedState.bloodLoss >= 0.15f)
             {
                 bloodLossName.text = "Blood loss (minor)";
             }
@@ -2440,7 +2448,7 @@ public class HealthTabWholeBody
             bloodLossName.color = Color.white;
         }
 
-        for (int i = 0; i < afflictionVisuals.Count && i < owner.state.wholeBodyAfflictions.Count; i++)
+        for (int i = 0; i < afflictionVisuals.Count && i < owner.inspectedState.wholeBodyAfflictions.Count; i++)
         {
             afflictionVisuals[i].name.x = DrawPos().x - 45;
             afflictionVisuals[i].name.y = DrawPos().y - ((bloodLossVisible ? 17.5f : 0) + (17.5f * i));
@@ -2450,7 +2458,7 @@ public class HealthTabWholeBody
             afflictionVisuals[i].icon.y = DrawPos().y - 7 - ((bloodLossVisible ? 17.5f : 0) + (17.5f * i));
             afflictionVisuals[i].icon.scale = 14;
 
-            if (owner.state.wholeBodyAfflictions[i] is RWDisease disease)
+            if (owner.inspectedState.wholeBodyAfflictions[i] is RWDisease disease)
             {
                 string text = disease.name;
 
@@ -2480,7 +2488,7 @@ public class HealthTabWholeBody
 
                 afflictionVisuals[i].icon.color = disease.isTended ? Color.white : Color.grey;
             }
-            else if (owner.state.wholeBodyAfflictions[i] is RWInformational informational)
+            else if (owner.inspectedState.wholeBodyAfflictions[i] is RWInformational informational)
             {
                 string text = "null";
 
@@ -2585,9 +2593,9 @@ public class HealthTabWholeBody
 
         bloodLossName.RemoveFromContainer();
 
-        for (int i = 0; i < afflictionVisuals.Count; i++)
+        foreach (HealthTabAffliction afflictionVisual in afflictionVisuals)
         {
-            afflictionVisuals[i].ClearSprites();
+            afflictionVisual.ClearSprites();
         }
 
         afflictionVisuals.Clear();
@@ -2821,9 +2829,9 @@ public class HealthTabInfo
 
     public void ClearSprites()
     {
-        for (int i = 0; i < backgrounds.Length; i++)
+        foreach (FSprite background in backgrounds)
         {
-            backgrounds[i].RemoveFromContainer();
+            background.RemoveFromContainer();
         }
 
         name.RemoveFromContainer();

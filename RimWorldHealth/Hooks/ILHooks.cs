@@ -360,11 +360,11 @@ internal class ILHooks
 
         RWBodyPart mainPart = null;
 
-        for (int i = 0; i < state.bodyParts.Count; i++)
+        foreach (RWBodyPart part in state.bodyParts)
         {
-            if (state.bodyParts[i] is UpperTorso)
+            if (part is UpperTorso)
             {
-                mainPart = state.bodyParts[i];
+                mainPart = part;
                 break;
             }
         }
@@ -861,9 +861,9 @@ internal class ILHooks
 
         RWHypothermia hypothermia = null;
 
-        for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
+        foreach (RWAffliction affliction in state.wholeBodyAfflictions)
         {
-            if (state.wholeBodyAfflictions[i] is RWHypothermia tempHypothermia)
+            if (affliction is RWHypothermia tempHypothermia)
             {
                 hypothermia = tempHypothermia;
                 break;
@@ -1437,9 +1437,9 @@ internal class ILHooks
         RWAirInLungs airInLungs = null;
         float lungs = 1 - ((Fly)self).drown;
 
-        for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
+        foreach (RWAffliction affliction in state.wholeBodyAfflictions)
         {
-            if (state.wholeBodyAfflictions[i] is RWAirInLungs tempAirInLungs)
+            if (affliction is RWAirInLungs tempAirInLungs)
             {
                 airInLungs = tempAirInLungs;
                 break;
@@ -1569,9 +1569,9 @@ internal class ILHooks
         RWAirInLungs airInLungs = null;
         float lungs = 1 - ((Fly)self).drown;
 
-        for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
+        foreach (RWAffliction affliction in state.wholeBodyAfflictions)
         {
-            if (state.wholeBodyAfflictions[i] is RWAirInLungs tempAirInLungs)
+            if (affliction is RWAirInLungs tempAirInLungs)
             {
                 airInLungs = tempAirInLungs;
                 break;
@@ -1930,13 +1930,7 @@ internal class ILHooks
             return;
         }
 
-        for (int i = 0; i < state.bodyParts.Count; i++)
-        {
-            if (state.bodyParts[i] is Lung part && !IsDestroyed(part))
-            {
-                RWHealthState.Damage(self.State, state, new RWBomb(), 999999f, 999, part, "Artificer - Explosion", "Artificer");
-            }
-        }
+        SlugcatHooks.ArtiLungExplosion(self.State, state);
     }
 
     static void ILPlayerTerrainImpact(ILContext il)
@@ -2267,7 +2261,6 @@ internal class ILHooks
         try
         {
             ILCursor val = new(il);
-            //ILLabel target = null;
 
             if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[2]
             {
@@ -2513,9 +2506,9 @@ internal class ILHooks
 
         RWToxicBuildup toxicBuildup = null;
 
-        for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
+        foreach (RWAffliction affliction in state.wholeBodyAfflictions)
         {
-            if (state.wholeBodyAfflictions[i] is RWToxicBuildup tempToxicBuildup)
+            if (affliction is RWToxicBuildup tempToxicBuildup)
             {
                 toxicBuildup = tempToxicBuildup;
                 break;
@@ -2542,9 +2535,9 @@ internal class ILHooks
 
         RWToxicBuildup toxicBuildup = null;
 
-        for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
+        foreach (RWAffliction affliction in state.wholeBodyAfflictions)
         {
-            if (state.wholeBodyAfflictions[i] is RWToxicBuildup tempToxicBuildup)
+            if (affliction is RWToxicBuildup tempToxicBuildup)
             {
                 toxicBuildup = tempToxicBuildup;
                 break;
@@ -3337,8 +3330,6 @@ internal class ILHooks
             {
                 state.tendTime--;
 
-                Debug.Log("Self Tend " + state.tendTime);
-
                 if (state.tendAffliction.isTended || state.tendAffliction.part == null && state.tendAffliction is not RWDisease)
                 {
                     state.tendAffliction = null;
@@ -3405,22 +3396,17 @@ internal class ILHooks
 
         if (!self.HoldingThis(state.tendTarget))
         {
-            //Debug.Log("Walking to tendTarget");
             if (NPCGrabCheck(state.tendTarget))
             {
-                //Debug.Log("Grabbing tendTarget");
-
                 self.cat.NPCForceGrab(state.tendTarget);
             }
             return new WorldCoordinate(state.tendTarget.abstractCreature.pos.room, state.tendTarget.abstractCreature.pos.x + (self.cat.abstractCreature.pos.x < state.tendTarget.abstractCreature.pos.x ? 2 : -2), state.tendTarget.abstractCreature.pos.y, state.tendTarget.abstractCreature.pos.abstractNode);
         }
 
-        //Debug.Log(self.cat + " is grabbing tendTarget");
-
         if (state.tendAffliction != null)
         {
             state.tendTime--;
-            Debug.Log("Tend " + state.tendTime);
+
             if (state.tendAffliction.isTended || state.tendAffliction.part == null && state.tendAffliction is not RWDisease)
             {
                 state.tendAffliction = null;
@@ -3467,13 +3453,13 @@ internal class ILHooks
         RWDisease diseaseAffliction = null;
         RWInjury untendedAffliction = null;
 
-        for (int i = 0; i < otherState.bodyParts.Count; i++)
+        foreach (RWBodyPart part in otherState.bodyParts)
         {
-            for (int j = 0; j < otherState.bodyParts[i].afflictions.Count; j++)
+            foreach (RWAffliction affliction in part.afflictions)
             {
-                if (!otherState.bodyParts[i].afflictions[j].isTended)
+                if (!affliction.isTended)
                 {
-                    if (otherState.bodyParts[i].afflictions[j] is RWInjury injury)
+                    if (affliction is RWInjury injury)
                     {
                         if (injury.isBleeding)
                         {
@@ -3499,7 +3485,7 @@ internal class ILHooks
 
                         }
                     }
-                    else if (otherState.bodyParts[i].afflictions[j] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                    else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
                     {
                         if (diseaseAffliction != null)
                         {
@@ -3512,10 +3498,10 @@ internal class ILHooks
                     }
                     else
                     {
-                        Debug.Log("Error affliction " + otherState.bodyParts[i].afflictions[j] + " does not belong to any tendable check");
+                        Debug.Log("Error affliction " + affliction + " does not belong to any tendable check");
                     }
                 }
-                else if (otherState.bodyParts[i].afflictions[j] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
                 {
                     if (diseaseAffliction != null)
                     {
@@ -3531,9 +3517,9 @@ internal class ILHooks
 
         if (bleeding == null)
         {
-            for (int i = 0; i < otherState.wholeBodyAfflictions.Count; i++)
+            foreach (RWAffliction affliction in otherState.wholeBodyAfflictions)
             {
-                if (otherState.wholeBodyAfflictions[i] is RWDisease disease && disease.timeUntilTreatment <= 0)
+                if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
                 {
                     if (diseaseAffliction != null)
                     {
@@ -4011,7 +3997,7 @@ internal class ILHooks
     #endregion
 
     #region Tardigrade
-    private static void ILTardigradeBitByPlayer(ILContext il)
+    static void ILTardigradeBitByPlayer(ILContext il)
     {
         try
         {

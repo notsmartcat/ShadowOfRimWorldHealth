@@ -2,13 +2,9 @@
 
 public class RWScar : RWInjury
 {
-    public RWScar(CreatureState state, RWBodyPart part, float damage, RWDamageType damageType, string attackName = "", string attackerName = "") : base(state, part, damage, damageType, attackName, attackerName)
-    {
-    }
+    public RWScar(CreatureState state, RWBodyPart part, float damage, RWDamageType damageType, string attackName = "", string attackerName = "") : base(state, part, damage, damageType, attackName, attackerName) {}
 
-    public RWScar(CreatureState state, RWBodyPart part) : base(state, part)
-    {
-    }
+    public RWScar(CreatureState state, RWBodyPart part) : base(state, part) {}
 
     public bool isRevealed = false; //Scars reveal when the injuries damage get's healed to the scarDamage
 
@@ -18,6 +14,7 @@ public class RWScar : RWInjury
 
     public string painCategory = ""; //The pain category consist of: Painless (no pain), Low (50% of pain), Medium (100% pain), High (150% pain)
 }
+
 public class RWDestroyed : RWInjury
 {
     public RWDestroyed(CreatureState state, RWBodyPart part, float damage, RWDamageType damageType, string attackName = "", string attackerName = "") : base(state, part, damage, damageType, attackName, attackerName)

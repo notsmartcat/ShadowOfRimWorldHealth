@@ -151,6 +151,7 @@ public class RimWorldHealth : BaseUnityPlugin
             CreatureHooks.Apply();
             SlugcatHooks.Apply();
             WeaponHooks.Apply();
+            SavingandLoadingHooks.Apply();
 
             On.RainWorld.OnModsInit += ModInit;
         }
@@ -176,7 +177,7 @@ public class RimWorldHealth : BaseUnityPlugin
     {
         orig(self);
 
-        if (healthTab != null && healthTab.owner == self.abstractCreature && healthTab.visible)
+        if (healthTab != null && healthTab.player == self.abstractCreature && healthTab.visible)
         {
             healthTab.input = self.input[0];
 
@@ -196,7 +197,7 @@ public class RimWorldHealth : BaseUnityPlugin
     {
         orig(self, hud, session, abstractPlayer);
 
-        if (!healthState.TryGetValue(abstractPlayer.state, out RWState _))
+        if (!healthState.TryGetValue(abstractPlayer.state, out _))
         {
             return;
         }
@@ -210,7 +211,7 @@ public class RimWorldHealth : BaseUnityPlugin
     {
         orig(self, cam);
 
-        if (!healthState.TryGetValue((self.owner as Creature).State, out RWState _))
+        if (!healthState.TryGetValue((self.owner as Creature).State, out _))
         {
             return;
         }
@@ -296,25 +297,26 @@ public class RimWorldHealth : BaseUnityPlugin
 
         if (Input.GetKey("h") && healthTab != null)
         {
-            if (buttonHeld == false)
+            if (buttonHeld)
             {
-                buttonHeld = true;
-
-                CreatureState healthTabCreatureState = self.State;
-                RWState healthTabState = state;
-
-                for (int i = 0; i < self.grasps.Length; i++)
-                {
-                    if (self.grasps[i] != null && self.grasps[i].grabbedChunk != null && self.grasps[i].grabbedChunk.owner != null && self.grasps[i].grabbedChunk.owner is Creature crit && crit.State != null && healthState.TryGetValue(crit.State, out RWState tempHealthTabState))
-                    {
-                        healthTabState = tempHealthTabState;
-                        healthTabCreatureState = crit.State;
-                        break;
-                    }
-                }
-
-                healthTab.ToggleVisibility(healthTabCreatureState, healthTabState);
+                return;
             }
+
+            buttonHeld = true;
+
+            CreatureState healthTabCreatureState = self.State;
+            RWState healthTabState = state;
+
+            foreach (var grasp in self.grasps)
+            {
+                if (grasp != null && grasp.grabbedChunk != null && grasp.grabbedChunk.owner != null && grasp.grabbedChunk.owner is Creature crit && crit.State != null && healthState.TryGetValue(crit.State, out healthTabState))
+                {
+                    healthTabCreatureState = crit.State;
+                    break;
+                }
+            }
+
+            healthTab.ToggleVisibility(healthTabCreatureState, healthTabState);
         }
         else
         {
@@ -1226,7 +1228,7 @@ public class RimWorldHealth : BaseUnityPlugin
         }
         else if (self is Player)
         {
-            name = "Slugcat";
+            name = ((PlayerState)self.State).isPup ? "Slugpup" : "Slugcat";
         } //Will add all non-modded Slugcats later
         else if (self is SkyWhale)
         {
@@ -1240,7 +1242,7 @@ public class RimWorldHealth : BaseUnityPlugin
             }
             else if (scavenger.Elite)
             {
-                name = "Scavenger Elite";
+                name = "Elite Scavenger";
             }
             else if (scavenger.Templar)
             {
@@ -1248,7 +1250,7 @@ public class RimWorldHealth : BaseUnityPlugin
             }
             else if (scavenger.Disciple)
             {
-                name = "Scavenger Templar";
+                name = "Scavenger Disciple";
             }
             else
             {
@@ -1360,7 +1362,7 @@ public class RimWorldHealth : BaseUnityPlugin
                     }
                     else if (!containsOneItem)
                     {
-                        foreach (var part in dic.Value)
+                        foreach (RWBodyPart part in dic.Value)
                         {
                             if (part is RWBone)
                             {
@@ -1453,7 +1455,7 @@ public class RimWorldHealth : BaseUnityPlugin
                         }
                         else if (!containsOneItem)
                         {
-                            foreach (var part in dic.Value)
+                            foreach (RWBodyPart part in dic.Value)
                             {
                                 if (part is RWBone)
                                 {
@@ -1527,9 +1529,9 @@ public class RimWorldHealth : BaseUnityPlugin
 
         if (diseaseToHeal == null)
         {
-            foreach (RWBodyPart bodyPart in state.bodyParts)
+            foreach (RWBodyPart part in state.bodyParts)
             {
-                foreach (RWAffliction affliction in bodyPart.afflictions)
+                foreach (RWAffliction affliction in part.afflictions)
                 {
                     if (affliction is RWDisease disease && (diseaseToHeal == null || disease.severity > diseaseToHeal.severity))
                     {
@@ -1612,33 +1614,33 @@ public class RimWorldHealth : BaseUnityPlugin
         List<RWBodyPart> facialParts = new();
         List<RWBodyPart> fingersAndToes = new();
 
-        foreach (RWBodyPart bodyPart in state.bodyParts)
+        foreach (RWBodyPart part in state.bodyParts)
         {
-            if (bodyPart is Lung lung)
+            if (part is Lung lung)
             {
                 lungs.Add(lung);
             }
-            else if (bodyPart is Kidney kidney)
+            else if (part is Kidney kidney)
             {
                 kidneys.Add(kidney);
             }
-            else if (bodyPart is Eye eye)
+            else if (part is Eye eye)
             {
                 facialParts.Add(eye);
                 eyes.Add(eye);
             }
-            else if (bodyPart is Ear ear)
+            else if (part is Ear ear)
             {
                 facialParts.Add(ear);
                 ears.Add(ear);
             }
-            else if (bodyPart is Nose || bodyPart is Jaw || bodyPart is Tongue)
+            else if (part is Nose || part is Jaw || part is Tongue)
             {
-                facialParts.Add(bodyPart);
+                facialParts.Add(part);
             }
-            else if (bodyPart is Finger || bodyPart is Toe)
+            else if (part is Finger || part is Toe)
             {
-                fingersAndToes.Add(bodyPart);
+                fingersAndToes.Add(part);
             }
         }
 
@@ -1662,21 +1664,21 @@ public class RimWorldHealth : BaseUnityPlugin
             }
         }
 
-        foreach (RWBodyPart bodyPart in facialParts)
+        foreach (RWBodyPart part in facialParts)
         {
-            if (bodyPart.afflictions.Count == 1 && bodyPart.afflictions[0] is RWDestroyed)
+            if (part.afflictions.Count == 1 && part.afflictions[0] is RWDestroyed)
             {
-                bodyPart.afflictions.Clear();
+                part.afflictions.Clear();
 
                 return;
             }
         }
 
-        foreach (RWBodyPart bodyPart in fingersAndToes)
+        foreach (RWBodyPart part in fingersAndToes)
         {
-            if (bodyPart.afflictions.Count == 1 && bodyPart.afflictions[0] is RWDestroyed)
+            if (part.afflictions.Count == 1 && part.afflictions[0] is RWDestroyed)
             {
-                bodyPart.afflictions.Clear();
+                part.afflictions.Clear();
 
                 return;
             }
@@ -1688,9 +1690,9 @@ public class RimWorldHealth : BaseUnityPlugin
         //Tier 7 Drug addictions (there might never be any)
 
         #region Tier 8 Scars on other parts
-        foreach (RWBodyPart bodyPart in state.bodyParts)
+        foreach (RWBodyPart part in state.bodyParts)
         {
-            foreach (RWAffliction affliction in bodyPart.afflictions)
+            foreach (RWAffliction affliction in part.afflictions)
             {
                 if (affliction is RWScar scar && (scar.isRevealed || scar.isPermanent))
                 {
@@ -1718,9 +1720,9 @@ public class RimWorldHealth : BaseUnityPlugin
         #region Tier 9 Injuries
         RWInjury injuryToHeal = null;
 
-        foreach (RWBodyPart bodyPart in state.bodyParts)
+        foreach (RWBodyPart part in state.bodyParts)
         {
-            foreach (RWAffliction affliction in bodyPart.afflictions)
+            foreach (RWAffliction affliction in part.afflictions)
             {
                 if (affliction is RWInjury injury && injury is not RWDestroyed && (affliction is not RWScar || affliction is RWScar scar && !scar.isRevealed && !scar.isPermanent))
                 {

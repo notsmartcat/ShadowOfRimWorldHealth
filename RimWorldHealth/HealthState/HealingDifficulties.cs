@@ -55,60 +55,24 @@ public class RWHealingDifficulty
         return healingDifficulty;
     }
 }
-public class RWHDBurnBase : RWHealingDifficulty
+
+public class RWHDCut : RWHealingDifficulty
 {
-    public RWHDBurnBase() : base()
+    public RWHDCut() : base()
     {
-        name = "Burn";
+        name = "Cut";
 
-        pain = 1.875f;
+        infectionChance = 0.15f;
 
-        bleeding = 0;
+        scar = "Cut scar";
 
-        infectionChance = 0.3f;
+        destroyed = "Cut off";
+        destroyedOut = "Cut out";
 
-        combines = true;
-
-        innerTreated = "Tended";
-        solidTreated = "Tended";
-
-        description = "";
+        description = "A cut.";
     }
 }
-public class RWHDBurn : RWHDBurnBase
-{
-    public RWHDBurn() : base()
-    {
-        name = "Burn";
 
-        scar = "Burn scar";
-
-        destroyed = "Burned off";
-        destroyedOut = "Burned out";
-
-        description = "A burn.";
-    }
-}
-public class RWHDElectricalBurn : RWHDBurnBase
-{
-    public RWHDElectricalBurn() : base()
-    {
-        name = "Electrical burn";
-
-        pain = 1.875f;
-
-        bleeding = 0;
-
-        infectionChance = 0.3f;
-
-        scar = "Electrical burn scar";
-
-        destroyed = "Burned off";
-        destroyedOut = "Burned out";
-
-        description = "An electrical burn.";
-    }
-}
 public class RWHDCrush : RWHealingDifficulty
 {
     public RWHDCrush() : base()
@@ -127,6 +91,35 @@ public class RWHDCrush : RWHealingDifficulty
         destroyedOut = "Crushed";
 
         description = "A crushing wound.";
+    }
+}
+public class RWHDShredded : RWHealingDifficulty
+{
+    public RWHDShredded() : base()
+    {
+        name = "Shredded";
+
+        infectionChance = 0.2f;
+
+        combines = true;
+
+        scar = "Shredded scar";
+
+        destroyed = "Torn off";
+        destroyedOut = "Torn out";
+
+        description = "A part of the body has been shredded and torn.";
+    }
+}
+public class RWHDBruise : RWHealingDifficulty
+{
+    public RWHDBruise() : base()
+    {
+        name = "Bruise";
+
+        bleeding = 0;
+
+        description = "A bruise.";
     }
 }
 public class RWHDCrack : RWHealingDifficulty
@@ -153,38 +146,44 @@ public class RWHDCrack : RWHealingDifficulty
         description = "A crack.";
     }
 }
-public class RWHDCut : RWHealingDifficulty
+
+public class RWHDStab : RWHealingDifficulty
 {
-    public RWHDCut() : base()
+    public RWHDStab() : base()
     {
-        name = "Cut";
+        name = "Stab";
+
+        combines = false;
 
         infectionChance = 0.15f;
 
-        scar = "Cut scar";
+        scar = "Stab scar";
 
         destroyed = "Cut off";
         destroyedOut = "Cut out";
 
-        description = "A cut.";
+        description = "A stab wound.";
     }
 }
-public class RWHDSurgicalCut : RWHealingDifficulty
+
+public class RWHDGunshot : RWHealingDifficulty
 {
-    public RWHDSurgicalCut() : base()
+    public RWHDGunshot() : base()
     {
-        name = "Surgical cut";
+        name = "Gunshot";
 
         infectionChance = 0.15f;
 
-        scar = "Surgical scar";
+        scar = "Old gunshot";
+        permanentScar = "Permanent gunshot injury";
 
-        destroyed = "Cut off";
-        destroyedOut = "Cut out";
+        destroyed = "Shot off";
+        destroyedOut = "Shot out";
 
-        description = "A cut made during surgery.";
+        description = "A gunshot wound.";
     }
 }
+
 public class RWHDScratch : RWHealingDifficulty
 {
     public RWHDScratch() : base()
@@ -221,68 +220,39 @@ public class RWHDBite : RWHealingDifficulty
         description = "A bite wound.";
     }
 }
-public class RWHDStab : RWHealingDifficulty
+
+public class RWHDBurnBase : RWHealingDifficulty
 {
-    public RWHDStab() : base()
+    public RWHDBurnBase() : base()
     {
-        name = "Stab";
+        name = "Burn";
 
-        combines = false;
-
-        infectionChance = 0.15f;
-
-        scar = "Stab scar";
-
-        destroyed = "Cut off";
-        destroyedOut = "Cut out";
-
-        description = "A stab wound.";
-    }
-}
-public class RWHDGunshot : RWHealingDifficulty
-{
-    public RWHDGunshot() : base()
-    {
-        name = "Gunshot";
-
-        infectionChance = 0.15f;
-
-        scar = "Old gunshot";
-        permanentScar = "Permanent gunshot injury";
-
-        destroyed = "Shot off";
-        destroyedOut = "Shot out";
-
-        description = "A gunshot wound.";
-    }
-}
-public class RWHDShredded : RWHealingDifficulty
-{
-    public RWHDShredded() : base()
-    {
-        name = "Shredded";
-
-        infectionChance = 0.2f;
-
-        combines = true;
-
-        scar = "Shredded scar";
-
-        destroyed = "Torn off";
-        destroyedOut = "Torn out";
-
-        description = "A part of the body has been shredded and torn.";
-    }
-}
-public class RWHDBruise : RWHealingDifficulty
-{
-    public RWHDBruise() : base()
-    {
-        name = "Bruise";
+        pain = 1.875f;
 
         bleeding = 0;
 
-        description = "A bruise.";
+        infectionChance = 0.3f;
+
+        combines = true;
+
+        innerTreated = "Tended";
+        solidTreated = "Tended";
+
+        description = "";
+    }
+}
+public class RWHDBurn : RWHDBurnBase
+{
+    public RWHDBurn() : base()
+    {
+        name = "Burn";
+
+        scar = "Burn scar";
+
+        destroyed = "Burned off";
+        destroyedOut = "Burned out";
+
+        description = "A burn.";
     }
 }
 public class RWHDFrostbite : RWHealingDifficulty
@@ -307,6 +277,26 @@ public class RWHDFrostbite : RWHealingDifficulty
         description = "Frozen tissue caused by exposure to cold. Frostbite is very painful, and frostbitten body parts are often lost.";
     }
 }
+public class RWHDElectricalBurn : RWHDBurnBase
+{
+    public RWHDElectricalBurn() : base()
+    {
+        name = "Electrical burn";
+
+        pain = 1.875f;
+
+        bleeding = 0;
+
+        infectionChance = 0.3f;
+
+        scar = "Electrical burn scar";
+
+        destroyed = "Burned off";
+        destroyedOut = "Burned out";
+
+        description = "An electrical burn.";
+    }
+}
 public class RWHDAcidBurn : RWHDBurnBase
 {
     public RWHDAcidBurn() : base()
@@ -319,5 +309,22 @@ public class RWHDAcidBurn : RWHDBurnBase
         destroyedOut = "Dissolved out";
 
         description = "An acid burn.";
+    }
+}
+
+public class RWHDSurgicalCut : RWHealingDifficulty
+{
+    public RWHDSurgicalCut() : base()
+    {
+        name = "Surgical cut";
+
+        infectionChance = 0.15f;
+
+        scar = "Surgical scar";
+
+        destroyed = "Cut off";
+        destroyedOut = "Cut out";
+
+        description = "A cut made during surgery.";
     }
 }

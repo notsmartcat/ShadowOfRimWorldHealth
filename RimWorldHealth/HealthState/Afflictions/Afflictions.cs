@@ -73,10 +73,7 @@ public class RWInjury : RWAffliction
         }
     }
 
-    public RWInjury(CreatureState state, RWBodyPart part) : base(state, part)
-    {
-
-    }
+    public RWInjury(CreatureState state, RWBodyPart part) : base(state, part) {}
 
     public string attackName; //Name of the attack, used in the HealthTab
     public string attackerName; //Name of the attacker (currently unused but will be used in the HealthTab)

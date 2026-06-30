@@ -4,10 +4,7 @@ namespace ShadowOfRimWorldHealth;
 
 public class RWDamageType
 {
-    public RWDamageType() 
-    {
-
-    }
+    public RWDamageType() {}
 
     public string name;
 
