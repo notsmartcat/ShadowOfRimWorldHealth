@@ -1174,7 +1174,7 @@ public class RWHealthState
 
                 for (int i = 0; i < state.legSetNames.Count; i++)
                 {
-                    baseEfficiency += state.legSet[state.legSetNames[i]].Efficiency(state, offsets / state.armSetNames.Count, postFactors, otherEfficiency) / state.legSetNames.Count;
+                    baseEfficiency += state.legSet[state.legSetNames[i]].Efficiency(state, offsets / state.legSetNames.Count, postFactors, otherEfficiency) / state.legSetNames.Count;
                 }
 
                 state.moving = Mathf.Max(0, baseEfficiency);

@@ -21,7 +21,7 @@ internal class RWToxicBuildup : RWInformational
 {
     public RWToxicBuildup(CreatureState state, RWBodyPart part, float poison) : base(state, part)
     {
-        tendQuality = poison; //TendQuality is used for determining how Toxic Buildup there is
+        tendQuality = poison; //TendQuality is used for determining how much Toxic Buildup there is
         lastToxicBuildup = poison;
     }
 

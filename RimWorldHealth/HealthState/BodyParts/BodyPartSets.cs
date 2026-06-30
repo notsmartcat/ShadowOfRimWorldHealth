@@ -15,9 +15,9 @@ public class ArmSet
         {
             fingerEfficiency = 0;
 
-            for (int i = 0; i < fingers.Count; i++)
+            foreach (Finger finger in fingers)
             {
-                fingerEfficiency += fingers[i].efficiency;
+                fingerEfficiency += finger.efficiency;
             }
 
             fingerEfficiency = (fingerEfficiency * (0.8f / fingers.Count)) + 0.2f;
@@ -86,6 +86,92 @@ public class ArmSet
         return description;
     }
 
+    public Dictionary<string, List<RWBodyPart>> KarmaFlowerGetMainMissingPart(string key, Dictionary<string, List<RWBodyPart>> dic)
+    {
+        List<RWBodyPart> list = new();
+
+        if (shoulder != null && shoulder.afflictions.Count == 1 && shoulder.afflictions[0] is RWDestroyed)
+        {
+            list.Add(shoulder);
+            dic.Add(key, list);
+            return dic;
+        }
+        else if (clavicle != null && clavicle.afflictions.Count == 1 && clavicle.afflictions[0] is RWDestroyed)
+        {
+            list.Add(clavicle);
+            dic.Add(key, list);
+            return dic;
+        }
+        else if (arm != null && arm.afflictions.Count == 1 && arm.afflictions[0] is RWDestroyed)
+        {
+            list.Add(arm);
+            dic.Add(key, list);
+            return dic;
+        }
+
+        if (humerus != null && humerus.afflictions.Count == 1 && humerus.afflictions[0] is RWDestroyed)
+        {
+            list.Add(humerus);
+        }
+        if (radius != null && radius.afflictions.Count == 1 && radius.afflictions[0] is RWDestroyed)
+        {
+            list.Add(radius);
+        }
+        if (hand != null && hand.afflictions.Count == 1 && hand.afflictions[0] is RWDestroyed)
+        {
+            list.Add(hand);
+        }
+
+        if (list.Count > 0)
+        {
+            dic.Add(key, list);
+        }
+
+        return dic;
+    }
+
+    public void KarmaFlowerHeal(RWState state, RWBodyPart part)
+    {
+        if (part == shoulder)
+        {
+            shoulder.afflictions.Clear();
+            arm.afflictions.Clear();
+            hand.afflictions.Clear();
+            foreach (Finger finger in fingers)
+            {
+                finger.afflictions.Clear();
+            }
+            clavicle.afflictions.Clear();
+            humerus.afflictions.Clear();
+            radius.afflictions.Clear();
+        }
+        else if (part == arm)
+        {
+            arm.afflictions.Clear();
+            hand.afflictions.Clear();
+            foreach (Finger finger in fingers)
+            {
+                finger.afflictions.Clear();
+            }
+            humerus.afflictions.Clear();
+            radius.afflictions.Clear();
+        }
+        else if (part == hand)
+        {
+            hand.afflictions.Clear();
+            foreach (Finger finger in fingers)
+            {
+                finger.afflictions.Clear();
+            }
+        }
+        else
+        {
+            part.afflictions.Clear();
+        }
+
+        state.updateCapacities = true;
+    }
+
     public Shoulder shoulder;
     public Arm arm;
     public Hand hand;
@@ -116,9 +202,9 @@ public class LegSet
         {
             toeEfficiency = 0;
 
-            for (int i = 0; i < toes.Count; i++)
+            foreach (Toe toe in toes)
             {
-                toeEfficiency += toes[i].efficiency;
+                toeEfficiency += toe.efficiency;
             }
 
             toeEfficiency = (toeEfficiency * (0.4f / toes.Count)) + 0.6f;
@@ -169,6 +255,67 @@ public class LegSet
         }
 
         return description;
+    }
+
+    public Dictionary<string, List<RWBodyPart>> KarmaFlowerGetMainMissingPart(string key, Dictionary<string, List<RWBodyPart>> dic)
+    {
+        List<RWBodyPart> list = new();
+
+        if (leg != null && leg.afflictions.Count == 1 && leg.afflictions[0] is RWDestroyed)
+        {
+            list.Add(leg);
+            dic.Add(key, list);
+            return dic;
+        }
+
+        if (femur != null && femur.afflictions.Count == 1 && femur.afflictions[0] is RWDestroyed)
+        {
+            list.Add(femur);
+        }
+        if (tibia != null && tibia.afflictions.Count == 1 && tibia.afflictions[0] is RWDestroyed)
+        {
+            list.Add(tibia);
+        }
+        if (foot != null && foot.afflictions.Count == 1 && foot.afflictions[0] is RWDestroyed)
+        {
+            list.Add(foot);
+        }
+
+        if (list.Count > 0)
+        {
+            dic.Add(key, list);
+        }
+
+        return dic;
+    }
+
+    public void KarmaFlowerHeal(RWState state, RWBodyPart part)
+    {
+        if (part == leg)
+        {
+            leg.afflictions.Clear();
+            foot.afflictions.Clear();
+            foreach (Toe toe in toes)
+            {
+                toe.afflictions.Clear();
+            }
+            femur.afflictions.Clear();
+            tibia.afflictions.Clear();
+        }
+        else if (part == foot)
+        {
+            foot.afflictions.Clear();
+            foreach (Toe toe in toes)
+            {
+                toe.afflictions.Clear();
+            }
+        }
+        else
+        {
+            part.afflictions.Clear();
+        }
+
+        state.updateCapacities = true;
     }
 
     public Leg leg;

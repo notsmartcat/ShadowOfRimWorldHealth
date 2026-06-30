@@ -1227,6 +1227,9 @@ internal class CreatureHooks
 
                 Override();
 
+                damage = 5f;
+                AP = 10;
+
                 RWHealthState.Damage(self.State, state, new RWFrostbite(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
             }
             else

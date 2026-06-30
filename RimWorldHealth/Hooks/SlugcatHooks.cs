@@ -16,6 +16,7 @@ internal class SlugcatHooks
         On.Player.GrabUpdate += PlayerGrabUpdate;
         On.Player.GraphicsModuleUpdated += PlayerGraphicsModuleUpdated;
         On.Player.LungUpdate += PlayerLungUpdate;
+        On.Player.ObjectEaten += PlayerObjectEaten;
         On.Player.PyroDeath += PlayerPyroDeath;
         On.Player.SubtractFood += PlayerSubtractFood;
         On.Player.Update += PlayerUpdate;
@@ -141,6 +142,18 @@ internal class SlugcatHooks
                 state.wholeBodyAfflictions.Add(new RWAirInLungs(self.State, null, self.airInLungs));
             }
         }
+    }
+
+    static void PlayerObjectEaten(On.Player.orig_ObjectEaten orig, Player self, IPlayerEdible edible)
+    {
+        orig(self, edible);
+
+        if (!healthState.TryGetValue(self.State, out RWState state) || !ShadowOfOptions.karma_flower.Value || edible is not KarmaFlower || self.room.game.session is StoryGameSession && ShadowOfOptions.karma_flower.Value && !(self.room.game.session as StoryGameSession).saveState.deathPersistentSaveData.reinforcedKarma)
+        {
+            return;
+        }
+
+        KarmaFlowerHeal(self, state);
     }
 
     static void PlayerPyroDeath(On.Player.orig_PyroDeath orig, Player self)

@@ -1,6 +1,5 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
-using gelbi_silly_lib;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -118,15 +117,20 @@ public class RimWorldHealth : BaseUnityPlugin
     public static readonly MoreSlugcats.SlugNPCAI.BehaviorType SlugSelfTend = new("SlugSelfTend", true);
 
     public static string all = "ShadowOfRWHealth: ";
-    internal static new ManualLogSource Logger;
 
-    public static RimWorldHealthHandler rimWorldHealthHandler;
+    private bool init = false;
 
     public HealthTab healthTab;
     public bool buttonHeld = false;
 
     public static float cycleLength = 13;
     public static float afterCycleLength = 13;
+
+    internal static new ManualLogSource Logger;
+
+    public static ShadowOfOptions optionsMenuInstance;
+
+    public static RimWorldHealthHandler rimWorldHealthHandler;
 
     public void OnEnable()
     {
@@ -147,6 +151,23 @@ public class RimWorldHealth : BaseUnityPlugin
             CreatureHooks.Apply();
             SlugcatHooks.Apply();
             WeaponHooks.Apply();
+
+            On.RainWorld.OnModsInit += ModInit;
+        }
+        catch (Exception e) { Logger.LogError(e); }
+    }
+
+    void ModInit(On.RainWorld.orig_OnModsInit orig, RainWorld rainWorld)
+    {
+        orig(rainWorld);
+        try
+        {
+            if (!init)
+            {
+                init = true;
+            }
+            optionsMenuInstance = new(this);
+            MachineConnector.SetRegisteredOI("notsmartcat.shadowofrimworldhealth", optionsMenuInstance);
         }
         catch (Exception e) { Logger.LogError(e); }
     }
@@ -237,7 +258,7 @@ public class RimWorldHealth : BaseUnityPlugin
             }
             if (Input.GetKey("m"))
             {
-                if (state.wholeBodyAfflictions.Count == 0)
+                if (false && state.wholeBodyAfflictions.Count == 0)
                 {
                     state.wholeBodyAfflictions.Add(new RWFlu(self.State, null));
                 }
@@ -252,7 +273,17 @@ public class RimWorldHealth : BaseUnityPlugin
                         break;
                     }
                 }
-                
+
+                for (int i = 0; i < state.bodyParts.Count; i++)
+                {
+                    if (state.bodyParts[i] is Hand part && !IsDestroyed(part) && part.subName == "Left")
+                    {
+                        RWHealthState.Damage(self.State, state, new RWPoke(), 999999f, 999, part, "oopsie");
+
+                        break;
+                    }
+                }
+
 
                 state.updateCapacities = true;
             }
@@ -302,7 +333,7 @@ public class RimWorldHealth : BaseUnityPlugin
         {
             for (int i = 0; i < state.bodyParts.Count; i++)
             {
-                if (state.bodyParts[i].name == self.subPartOf && state.bodyParts[i] is not UpperTorso && state.bodyParts[i].afflictions.Count == 1 && state.bodyParts[i].afflictions[0] is RWDestroyed)
+                if (IsSubPartName(self, state.bodyParts[i]) && state.bodyParts[i] is not UpperTorso && state.bodyParts[i].afflictions.Count == 1 && state.bodyParts[i].afflictions[0] is RWDestroyed)
                 {
                     return true;
                 }
@@ -824,27 +855,27 @@ public class RimWorldHealth : BaseUnityPlugin
         if (source.abstractCreature.creatureTemplate.type == CreatureTemplate.Type.SmallCentipede)
         {
             attackerName = "Baby centipede";
-            damage = UnityEngine.Random.Range(0.8f, 1.2f);
+            damage = 1.2f;
         }
         else if (source.abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Centiwing)
         {
             attackerName = "Centiwing";
-            damage = UnityEngine.Random.Range(4.8f, 8.2f);
+            damage = 5f;
         }
         else if (ModManager.DLCShared && source.abstractCreature.creatureTemplate.type == DLCSharedEnums.CreatureTemplateType.AquaCenti)
         {
             attackerName = "AquaCenti";
-            damage = UnityEngine.Random.Range(4.8f, 8.2f);
+            damage = 5f;
         }
         else if (source.abstractCreature.creatureTemplate.type == CreatureTemplate.Type.RedCentipede)
         {
             attackerName = "Red centipede";
-            damage = UnityEngine.Random.Range(8.8f, 12.2f);
+            damage = 10;
         }
         else
         {
             attackerName = "Centipede";
-            damage = UnityEngine.Random.Range(4.8f, 8.2f);
+            damage = 5;
         }
 
         if (underwater)
@@ -868,8 +899,19 @@ public class RimWorldHealth : BaseUnityPlugin
     {
         RWBodyPart focusedBodyPart = GetHitBodyPart(state);
 
-        RWDamageType damageType = new RWAcidBurn();
-        string attackName = "Acidic water";
+        RWDamageType damageType;
+        string attackName;
+
+        if (self.creature.Room.realizedRoom.roomSettings.GetEffect(RoomSettings.RoomEffect.Type.LavaSurface) != null)
+        {
+            damageType = new RWBurn();
+            attackName = "Lava";
+        }
+        else
+        {
+            damageType = new RWAcidBurn();
+            attackName = "Acidic water";
+        }
 
         float damage = 8 + self.creature.realizedCreature.lavaContactCount;
 
@@ -1082,8 +1124,6 @@ public class RimWorldHealth : BaseUnityPlugin
             poison += insectoid.poison;
         }
 
-        //Debug.Log(poison);
-        
         if (poison < 0.04f)
         {
             if (toxicBuildup != null)
@@ -1254,5 +1294,455 @@ public class RimWorldHealth : BaseUnityPlugin
         }
 
         return name;
+    }
+
+    public static void KarmaFlowerHeal(Creature self, RWState state)
+    {
+        #region Tier 1 (Missing important BodyParts)
+        for (int i = 0; i < state.bodyParts.Count; i++)
+        {
+            if (state.bodyParts[i] is LowerTorso lowerTorso)
+            {
+                if (lowerTorso.afflictions.Count == 1 && lowerTorso.afflictions[0] is RWDestroyed)
+                {
+                    lowerTorso.afflictions.Clear();
+                    return;
+                }
+
+                break;
+            }
+        }
+
+        Dictionary<string, List<RWBodyPart>> limbMissingBodyparts = new();
+
+        for (int i = 0; i < state.legSetNames.Count; i++)
+        {
+            limbMissingBodyparts = state.legSet[state.legSetNames[i]].KarmaFlowerGetMainMissingPart(state.legSetNames[i], limbMissingBodyparts);
+        }
+
+        if (limbMissingBodyparts.Count > 0)
+        {
+            Dictionary<string, RWBodyPart> mainBodyparts = new();
+
+            List<string> mainBodypartNames = new();
+
+            bool containsLeg = false;
+            bool containsOneItem = false;
+            bool containsBone = false;
+
+            foreach (var dic in limbMissingBodyparts)
+            {
+                if (dic.Value[0] is Leg leg)
+                {
+                    if (!containsLeg)
+                    {
+                        mainBodyparts.Clear();
+                        mainBodypartNames.Clear();
+                    }
+
+                    containsLeg = true;
+                    mainBodyparts.Add(dic.Key, leg);
+                    mainBodypartNames.Add(dic.Key);
+                }
+                else if (!containsLeg)
+                {
+                    if (dic.Value.Count == 1)
+                    {
+                        if (!containsOneItem)
+                        {
+                            mainBodyparts.Clear();
+                            mainBodypartNames.Clear();
+                        }
+
+                        containsOneItem = true;
+                        mainBodyparts.Add(dic.Key, dic.Value[0]);
+                        mainBodypartNames.Add(dic.Key);
+                    }
+                    else if (!containsOneItem)
+                    {
+                        foreach (var part in dic.Value)
+                        {
+                            if (part is RWBone)
+                            {
+                                if (!containsBone)
+                                {
+                                    mainBodyparts.Clear();
+                                    mainBodypartNames.Clear();
+                                }
+
+                                containsBone = true;
+                                mainBodyparts.Add(dic.Key, part);
+                                mainBodypartNames.Add(dic.Key);
+                                break;
+                            }
+                            else if (!containsBone)
+                            {
+                                mainBodyparts.Add(dic.Key, part);
+                                mainBodypartNames.Add(dic.Key);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            int randomNumber = UnityEngine.Random.Range(0, mainBodypartNames.Count);
+
+            state.legSet[mainBodypartNames[randomNumber]].KarmaFlowerHeal(state, mainBodyparts[mainBodypartNames[randomNumber]]);
+
+            return;
+        }
+
+        for (int i = 0; i < state.armSetNames.Count; i++)
+        {
+            limbMissingBodyparts = state.armSet[state.armSetNames[i]].KarmaFlowerGetMainMissingPart(state.armSetNames[i], limbMissingBodyparts);
+        }
+
+        if (limbMissingBodyparts.Count > 0)
+        {
+            Dictionary<string, RWBodyPart> mainBodyparts = new();
+
+            List<string> mainBodypartNames = new();
+
+            bool containsShoulder = false;
+            bool containsArm = false;
+            bool containsOneItem = false;
+            bool containsBone = false;
+
+            foreach (var dic in limbMissingBodyparts)
+            {
+                if (dic.Value[0] is Shoulder || dic.Value[0] is Clavicle)
+                {
+                    if (!containsShoulder)
+                    {
+                        mainBodyparts.Clear();
+                        mainBodypartNames.Clear();
+                    }
+
+                    containsShoulder = true;
+                    mainBodyparts.Add(dic.Key, dic.Value[0]);
+                    mainBodypartNames.Add(dic.Key);
+                }
+                else if (!containsShoulder)
+                {
+                    if (dic.Value[0] is Arm)
+                    {
+                        if (!containsArm)
+                        {
+                            mainBodyparts.Clear();
+                            mainBodypartNames.Clear();
+                        }
+
+                        containsArm = true;
+                        mainBodyparts.Add(dic.Key, dic.Value[0]);
+                        mainBodypartNames.Add(dic.Key);
+                    }
+                    else if (!containsArm)
+                    {
+                        if (dic.Value.Count == 1)
+                        {
+                            if (!containsOneItem)
+                            {
+                                mainBodyparts.Clear();
+                                mainBodypartNames.Clear();
+                            }
+
+                            containsOneItem = true;
+                            mainBodyparts.Add(dic.Key, dic.Value[0]);
+                            mainBodypartNames.Add(dic.Key);
+                        }
+                        else if (!containsOneItem)
+                        {
+                            foreach (var part in dic.Value)
+                            {
+                                if (part is RWBone)
+                                {
+                                    if (!containsBone)
+                                    {
+                                        mainBodyparts.Clear();
+                                        mainBodypartNames.Clear();
+                                    }
+
+                                    containsBone = true;
+                                    mainBodyparts.Add(dic.Key, part);
+                                    mainBodypartNames.Add(dic.Key);
+                                    break;
+                                }
+                                else if (!containsBone)
+                                {
+                                    mainBodyparts.Add(dic.Key, part);
+                                    mainBodypartNames.Add(dic.Key);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            int randomNumber = UnityEngine.Random.Range(0, mainBodypartNames.Count);
+
+            state.armSet[mainBodypartNames[randomNumber]].KarmaFlowerHeal(state, mainBodyparts[mainBodypartNames[randomNumber]]);
+
+            return;
+        }
+
+        for (int i = 0; i < state.bodyParts.Count; i++)
+        {
+            if (state.bodyParts[i] is Spine spine)
+            {
+                if (spine.afflictions.Count == 1 && spine.afflictions[0] is RWDestroyed)
+                {
+                    spine.afflictions.Clear();
+                    return;
+                }
+
+                break;
+            }
+        }
+        #endregion
+
+        #region Tier 2 Whole Body Ailments
+        if (self.injectedPoison > 0 || self is InsectoidCreature && (self as InsectoidCreature).poison > 0)
+        {
+            if (self is InsectoidCreature insectoidCreature)
+            {
+                insectoidCreature.poison = 0;
+            }
+
+            self.injectedPoison = 0;
+
+            return;
+        }
+
+        RWDisease diseaseToHeal = null;
+
+        foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+        {
+            if (affliction is RWDisease disease && (diseaseToHeal == null || disease.severity > diseaseToHeal.severity))
+            {
+                diseaseToHeal = disease;
+            }
+        }
+
+        if (diseaseToHeal == null)
+        {
+            foreach (RWBodyPart bodyPart in state.bodyParts)
+            {
+                foreach (RWAffliction affliction in bodyPart.afflictions)
+                {
+                    if (affliction is RWDisease disease && (diseaseToHeal == null || disease.severity > diseaseToHeal.severity))
+                    {
+                        diseaseToHeal = disease;
+                    }
+                }
+            }
+        }
+
+        if (diseaseToHeal != null)
+        {
+            if (diseaseToHeal.part == null)
+            {
+                state.wholeBodyAfflictions.Remove(diseaseToHeal);
+                diseaseToHeal.state = null;
+            }
+            else
+            {
+                state.wholeBodyAfflictions.Remove(diseaseToHeal);
+                diseaseToHeal.part = null;
+                diseaseToHeal.state = null;
+            }
+
+            state.updateCapacities = true;
+
+            return;
+        }
+
+        if (state.bloodLoss >= 0.15f)
+        {
+            state.bloodLoss = 0;
+
+            return;
+        }
+
+        if (self.Hypothermia >= 0.04f)
+        {
+            self.Hypothermia = 0;
+
+            return;
+        }
+
+        //Frail (might add at some point)
+        #endregion
+
+        //Tier 3 Brain Ailments (if I ever add any)
+
+        #region Tier 4 Scars on the brain
+        RWScar scarToHeal = null;
+
+        foreach (RWAffliction affliction in state.consciousnessSource.afflictions)
+        {
+            if (affliction is RWScar scar && (scar.isRevealed || scar.isPermanent))
+            {
+                if (scarToHeal == null || scarToHeal != null && scar.scarDamage > scarToHeal.scarDamage)
+                {
+                    scarToHeal = scar;
+                }
+            }
+        }
+
+        if (scarToHeal != null)
+        {
+            scarToHeal.part.afflictions.Remove(scarToHeal);
+
+            scarToHeal.part = null;
+            scarToHeal.state = null;
+
+            state.updateCapacities = true;
+
+            return;
+        }
+        #endregion
+
+        #region Tier 5 Missing organs
+        List<Lung> lungs = new();
+        List<Kidney> kidneys = new();
+        List<Eye> eyes = new();
+        List<Ear> ears = new();
+        List<RWBodyPart> facialParts = new();
+        List<RWBodyPart> fingersAndToes = new();
+
+        foreach (RWBodyPart bodyPart in state.bodyParts)
+        {
+            if (bodyPart is Lung lung)
+            {
+                lungs.Add(lung);
+            }
+            else if (bodyPart is Kidney kidney)
+            {
+                kidneys.Add(kidney);
+            }
+            else if (bodyPart is Eye eye)
+            {
+                facialParts.Add(eye);
+                eyes.Add(eye);
+            }
+            else if (bodyPart is Ear ear)
+            {
+                facialParts.Add(ear);
+                ears.Add(ear);
+            }
+            else if (bodyPart is Nose || bodyPart is Jaw || bodyPart is Tongue)
+            {
+                facialParts.Add(bodyPart);
+            }
+            else if (bodyPart is Finger || bodyPart is Toe)
+            {
+                fingersAndToes.Add(bodyPart);
+            }
+        }
+
+        foreach (Lung lung in lungs)
+        {
+            if (lung.afflictions.Count == 1 && lung.afflictions[0] is RWDestroyed)
+            {
+                lung.afflictions.Clear();
+
+                return;
+            }
+        }
+
+        foreach (Kidney kidney in kidneys)
+        {
+            if (kidney.afflictions.Count == 1 && kidney.afflictions[0] is RWDestroyed)
+            {
+                kidney.afflictions.Clear();
+
+                return;
+            }
+        }
+
+        foreach (RWBodyPart bodyPart in facialParts)
+        {
+            if (bodyPart.afflictions.Count == 1 && bodyPart.afflictions[0] is RWDestroyed)
+            {
+                bodyPart.afflictions.Clear();
+
+                return;
+            }
+        }
+
+        foreach (RWBodyPart bodyPart in fingersAndToes)
+        {
+            if (bodyPart.afflictions.Count == 1 && bodyPart.afflictions[0] is RWDestroyed)
+            {
+                bodyPart.afflictions.Clear();
+
+                return;
+            }
+        }
+        #endregion
+
+        //Tier 6 Ailments in other parts (currently there are none, this is wher the eyes and ears list would be used)
+
+        //Tier 7 Drug addictions (there might never be any)
+
+        #region Tier 8 Scars on other parts
+        foreach (RWBodyPart bodyPart in state.bodyParts)
+        {
+            foreach (RWAffliction affliction in bodyPart.afflictions)
+            {
+                if (affliction is RWScar scar && (scar.isRevealed || scar.isPermanent))
+                {
+                    if (scarToHeal == null || scarToHeal != null && scar.scarDamage > scarToHeal.scarDamage)
+                    {
+                        scarToHeal = scar;
+                    }
+                }
+            }
+        }
+
+        if (scarToHeal != null)
+        {
+            scarToHeal.part.afflictions.Remove(scarToHeal);
+
+            scarToHeal.part = null;
+            scarToHeal.state = null;
+
+            state.updateCapacities = true;
+
+            return;
+        }
+        #endregion
+
+        #region Tier 9 Injuries
+        RWInjury injuryToHeal = null;
+
+        foreach (RWBodyPart bodyPart in state.bodyParts)
+        {
+            foreach (RWAffliction affliction in bodyPart.afflictions)
+            {
+                if (affliction is RWInjury injury && injury is not RWDestroyed && (affliction is not RWScar || affliction is RWScar scar && !scar.isRevealed && !scar.isPermanent))
+                {
+                    if (injuryToHeal == null || injuryToHeal != null && injury.damage > injuryToHeal.damage)
+                    {
+                        injuryToHeal = injury;
+                    }
+                }
+            }
+        }
+
+        if (injuryToHeal != null)
+        {
+            injuryToHeal.part.afflictions.Remove(injuryToHeal);
+
+            injuryToHeal.part = null;
+            injuryToHeal.state = null;
+
+            state.updateCapacities = true;
+
+            return;
+        }
+        #endregion
     }
 }
