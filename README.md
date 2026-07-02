@@ -31,8 +31,8 @@ Leech: 0.5 - Teeth
 Lizard: (max) 22 - Teeth (taken from RimWorld's Crocodile) (here is the calculation for it: Custom.LerpMap(lizard.lizardParams.maxMusclePower, 0, 16, 4, 22);)  
 Lizard: 5 - Blizzard laser  
 MirosBird: 30 - Teeth
-Slugcat: 8 - Teeth  
-Slugcat: 1 - Roll (the Gourmand roll does damage)  
+Slugcat: 7 - Teeth  (raken from RimWorld's Cat, Teeth)
+Slugcat: 3 - Roll (the Gourmand roll does damage, raken from RimWorld's Cat, Head)  
 Slugcat: 10 - Slam (this refers when Gourmand jumps on a creature from a height and damages it)  
 Slugcat: around 55 - Explosion (whenever arti explodes or rocket jumps)  
 SkyWhale: 10 - Head (the SkyWhale seems to deal damage upon contact, probabily not often)  
@@ -42,10 +42,10 @@ StowawayBug: 1 - Tendril
 BoxWorm: 6 - Steam  
 DrillCrab: 7 - Drill  
 Frog: 1 - Tendril (this happens whenever the fron attaches)  
-Frog: 0.5 - Body (this happens whenever the frog fails to attach, or jumps through a creature without attaching (do not quote me on this))  
-Loach: 5 - Body (it seems to do contact damage)  
-Rat: 0.5 - Body (it seems to do contact stun)  
-RippleSpider: 0.5 - Body (it seems to do contact damage)  
+Frog: 0.5 - Head (this happens whenever the frog fails to attach, or jumps through a creature without attaching (do not quote me on this))  
+Loach: 5 - Head (it seems to do contact damage)  
+Rat: 2 - Head (it seems to do contact stun, raken from RimWorld's Rat, Head)  
+RippleSpider: 1 - Head (it seems to do contact damage)  
 
 ### Creature Special Mention:
 Centipede (all of these damages are multipleied by 1.2 if it takes place underwater):
