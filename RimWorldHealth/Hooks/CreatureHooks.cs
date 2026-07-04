@@ -553,7 +553,8 @@ internal class CreatureHooks
                 {
                     attackName = attackerName + " - Roll";
 
-                    damage = 1;
+                    damage = 3;
+                    AP = 4;
                 }
                 else
                 {
@@ -573,7 +574,7 @@ internal class CreatureHooks
 
                 Override();
 
-                damage = 8;
+                damage = 7;
                 AP = 10;
 
                 RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
@@ -662,7 +663,7 @@ internal class CreatureHooks
             }
             else
             {
-                attackName = attackerName + " - Body";
+                attackName = attackerName + " - Head";
 
                 Override();
 
@@ -675,7 +676,7 @@ internal class CreatureHooks
         {
             attackerName = GetCreatureName((Creature)attacker);
 
-            attackName = attackerName + " - Body";
+            attackName = attackerName + " - Head";
 
             Override();
 
@@ -688,11 +689,12 @@ internal class CreatureHooks
         {
             attackerName = GetCreatureName((Creature)attacker);
 
-            attackName = attackerName + " - Body";
+            attackName = attackerName + " - Head";
 
             Override();
 
-            damage = 0.5f;
+            damage = 2f;
+            AP = 3;
 
             BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
         }
@@ -700,7 +702,7 @@ internal class CreatureHooks
         {
             attackerName = GetCreatureName((Creature)attacker);
 
-            attackName = attackerName + " - Body";
+            attackName = attackerName + " - Head";
 
             Override();
 

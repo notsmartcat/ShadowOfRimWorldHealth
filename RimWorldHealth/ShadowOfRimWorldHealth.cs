@@ -122,6 +122,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
     public HealthTab healthTab;
     public bool buttonHeld = false;
+    public bool tempButtonHeld = false;
 
     public static float cycleLength = 13;
     public static float afterCycleLength = 13;
@@ -233,6 +234,13 @@ public class RimWorldHealth : BaseUnityPlugin
             {
                 //state.bloodLoss = 0.5f;
 
+                if (tempButtonHeld)
+                {
+                    return;
+                }
+
+                tempButtonHeld = true;
+
                 for (int i = 0; i < state.bodyParts.Count; i++)
                 {
                     if (state.bodyParts[i] is Head head)
@@ -241,21 +249,42 @@ public class RimWorldHealth : BaseUnityPlugin
 
                         if (j == 0)
                         {
-                            RWHealthState.Damage(self.State, state, new RWBomb(), 0.5f, 0, head, "testtesttesttesttesttest");
+                            RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, head, "testtesttesttesttesttest");
                         }
                         else if(j == 1)
                         {
-                            RWHealthState.Damage(self.State, state, new RWBomb(), 0.5f, 0, head, "testtesttesttesttesttest testtesttesttesttesttest");
+                            RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, head, "testtesttesttesttesttest testtesttesttesttesttest");
                         }
                         else if (j == 2)
                         {
-                            RWHealthState.Damage(self.State, state, new RWBomb(), 0.5f, 0, head, "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
+                            RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, head, "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
                         }
 
                         state.updateCapacities = true;
                         break;
                     }
+
+                    continue;
+
+                    int k = UnityEngine.Random.Range(0, 3);
+
+                    if (k == 0)
+                    {
+                        RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest");
+                    }
+                    else if (k == 1)
+                    {
+                        RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest");
+                    }
+                    else if (k == 2)
+                    {
+                        RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
+                    }
                 }
+            }
+            else
+            {
+                tempButtonHeld = false;
             }
             if (Input.GetKey("m"))
             {

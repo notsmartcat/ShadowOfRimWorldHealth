@@ -24,7 +24,7 @@ public class HealthTab : HudPart
             anchorY = 1f
         };
 
-        bloodLossPerCycle = new(Custom.GetFont(), "blood Loss")
+        bloodLossPerCycle = new(Custom.GetFont(), "Blood loss")
         {
             alignment = FLabelAlignment.Left,
             anchorX = 0f,
@@ -33,12 +33,12 @@ public class HealthTab : HudPart
 
         for (int i = 0; i < 12; i++)
         {
-            capacityValueNames.Add(new FLabel(Custom.GetFont(), "capacityName"));
+            capacityValueNames.Add(new FLabel(Custom.GetFont(), "Capacity name"));
             capacityValueNames[i].alignment = FLabelAlignment.Left;
             capacityValueNames[i].anchorX = 0f;
             capacityValueNames[i].anchorY = 1f;
 
-            capacityValues.Add(new FLabel(Custom.GetFont(), "StatValue"));
+            capacityValues.Add(new FLabel(Custom.GetFont(), "Stat value"));
             capacityValues[i].alignment = FLabelAlignment.Left;
             capacityValues[i].anchorX = 1f;
             capacityValues[i].anchorY = 1f;
@@ -588,12 +588,14 @@ public class HealthTab : HudPart
 
         if (treatedSprite.isVisible && playerState.tendAffliction != null)
         {
-            treatedSprite.x = Mathf.Lerp(DrawPos().x, DrawPos().x + 60, 1 - playerState.tendTime / playerState.tendTimeMax);
-            treatedSprite.alpha = 0.6f;
-            treatedSprite.color = Color.magenta;
+            float tendProgress = 1 - playerState.tendTime / playerState.tendTimeMax;
 
+            treatedSprite.x = Mathf.Lerp(DrawPos().x - 50, DrawPos().x + 60, tendProgress);
+            treatedSprite.alpha = 0.6f;
+            treatedSprite.color = Color.yellow;
+
+            treatedSprite.scaleX = Mathf.Lerp(0, 220, tendProgress);
             treatedSprite.scaleY = 20;
-            treatedSprite.scaleX = Mathf.Lerp(0, 220, 1 - playerState.tendTime / playerState.tendTimeMax);
 
             int selectedBodyPart = 0;
             int selectedAffliction = 0;
@@ -618,9 +620,9 @@ public class HealthTab : HudPart
                     prevHeight = healthTabWholeBody.afflictionsHeight[selectedAffliction][1];
                 }
 
-                treatedSprite.y = healthTabWholeBody.DrawPos().y - ((healthTabWholeBody.bloodLossVisible ? 17.5f : 0) + -1 + (17.5f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
+                treatedSprite.y = healthTabWholeBody.DrawPos().y - ((healthTabWholeBody.bloodLossVisible ? 18f : 0) + -1 + (18f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
                 treatedSprite.MoveInFrontOfOtherNode(healthTabWholeBody.background);
-                treatedSprite.scaleY = 2 + 17.5f + (15 * extraHeight);
+                treatedSprite.scaleY += 15 * extraHeight;
             }
             else
             {
@@ -658,11 +660,11 @@ public class HealthTab : HudPart
                 int extraHeight = healthTabBodyParts[selectedBodyPart].allAfflictionsHeight[selectedAffliction][0] - 1;
                 int prevHeight = healthTabBodyParts[selectedBodyPart].allAfflictionsHeight[selectedAffliction][1];
 
-                treatedSprite.y = healthTabBodyParts[selectedBodyPart].DrawPos().y - (-1 + (17.5f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
+                treatedSprite.y = healthTabBodyParts[selectedBodyPart].DrawPos().y - (-1 + (18f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
 
                 treatedSprite.MoveInFrontOfOtherNode(healthTabBodyParts[selectedBodyPart].background);
 
-                treatedSprite.scaleY = 2 + 17.5f + (15 * extraHeight);
+                treatedSprite.scaleY = 17f + (15 * extraHeight);
             }
         }
 
@@ -711,17 +713,15 @@ public class HealthTab : HudPart
                 if (healthTabWholeBody.bloodLossVisible && selectedVertical == 0)
                 {
                     selectedSprite.y += 5;
-
-                    selectedSprite.scaleY = 2 + 17.5f;
                 }
                 else
                 {
                     int extraHeight = healthTabWholeBody.afflictionsHeight[selectedVertical][0] - 1;
                     int prevHeight = healthTabWholeBody.afflictionsHeight[selectedVertical][1];
 
-                    selectedSprite.y = healthTabWholeBody.DrawPos().y - (-1 + (17.5f * selectedVertical) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
+                    selectedSprite.y = healthTabWholeBody.DrawPos().y - (-1 + (18f * selectedVertical) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
 
-                    selectedSprite.scaleY = 2 + 17.5f + (15 * extraHeight);
+                    selectedSprite.scaleY += 15 * extraHeight;
                 }
 
                 selectedSprite.MoveInFrontOfOtherNode(healthTabWholeBody.background);
@@ -758,11 +758,15 @@ public class HealthTab : HudPart
                 int extraHeight = healthTabBodyParts[selectedBodyPart].allAfflictionsHeight[selectedAffliction][0] - 1;
                 int prevHeight = healthTabBodyParts[selectedBodyPart].allAfflictionsHeight[selectedAffliction][1];
 
-                selectedSprite.y = healthTabBodyParts[selectedBodyPart].DrawPos().y - (-1 + (17.5f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
+                selectedSprite.y = healthTabBodyParts[selectedBodyPart].DrawPos().y - (-1 + (18f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
 
                 selectedSprite.MoveInFrontOfOtherNode(healthTabBodyParts[selectedBodyPart].background);
 
-                selectedSprite.scaleY = 2 + 17.5f + (15 * extraHeight);
+                selectedSprite.scaleY = 17f + (15 * extraHeight);
+
+                Debug.Log("Top Limit: " + (selectedSprite.y + selectedSprite.scaleY));
+
+                Debug.Log("Bottom Limit: " + (selectedSprite.y - selectedSprite.scaleY));
 
                 if (selectedTimer <= 0)
                 {
@@ -1927,6 +1931,8 @@ public class HealthTab : HudPart
         selectedHorizontal = 0;
         selectedVertical = -1;
 
+        scrollPivot = 0;
+
         horizontalOnce = true;
         verticalOnce = true;
 
@@ -1941,6 +1947,8 @@ public class HealthTab : HudPart
 
         selectedHorizontal = 0;
         selectedVertical = 0;
+
+        scrollPivot = 0;
 
         selectedTimer = selectedTimerMax;
     }
@@ -1985,6 +1993,13 @@ public class HealthTab : HudPart
 
     public int selectedHorizontal = 0;
     public int selectedVertical = -1;
+
+    public int scrollPivot = 0; //if this number is positive it means the pivot is the top affliction, if this number is negative it means that the pivot is the bottom affliction
+
+    public float topLimit = 450;
+    public float bottomLimit = 253;
+
+    public float pivotOffset = 0;
 
     bool horizontalOnce = true;
     bool verticalOnce = true;
@@ -2033,12 +2048,12 @@ public class HealthTabBodyPart
 
         if (owner.healthTabWholeBody.active)
         {
-            pos.y -= 10f + ((owner.healthTabWholeBody.afflictionNumber * 8.75f) + ((owner.healthTabWholeBody.afflictionNumber - 1) * 8.75f) + (owner.healthTabWholeBody.extraHeight * 7.5f) + (owner.healthTabWholeBody.extraHeight * 7.5f));
+            pos.y -= 8f + ((owner.healthTabWholeBody.afflictionNumber * 9f) + ((owner.healthTabWholeBody.afflictionNumber - 1) * 9f) + (owner.healthTabWholeBody.extraHeight * 7.5f) + (owner.healthTabWholeBody.extraHeight * 7.5f));
         }
 
         for (int i = 0; i < owner.healthTabBodyParts.IndexOf(this); i++)
         {
-            pos.y -= 10f + ((owner.healthTabBodyParts[i].afflictionNumber * 8.75f) + ((owner.healthTabBodyParts[i].afflictionNumber - 1) * 8.75f) + (owner.healthTabBodyParts[i].extraHeight * 7.5f) + (owner.healthTabBodyParts[i].extraHeight * 7.5f));
+            pos.y -= 8f + ((owner.healthTabBodyParts[i].afflictionNumber * 9f) + ((owner.healthTabBodyParts[i].afflictionNumber - 1) * 9f) + (owner.healthTabBodyParts[i].extraHeight * 7.5f) + (owner.healthTabBodyParts[i].extraHeight * 7.5f));
         }
 
         return pos;
@@ -2112,9 +2127,9 @@ public class HealthTabBodyPart
         if (background.isVisible)
         {
             background.x = DrawPos().x;
-            background.y = DrawPos().y - (-2 + (8.75f * afflictionNumber));
+            background.y = DrawPos().y - (-3 + (9f * afflictionNumber));
             background.scaleX = 340;
-            background.scaleY = 2 + 17.5f * afflictionNumber;
+            background.scaleY = (17f * afflictionNumber) + (afflictionNumber > 1 ? 1 * (afflictionNumber - 1) : 0);
             background.color = Color.black;
         }
 
@@ -2135,11 +2150,11 @@ public class HealthTabBodyPart
         for (int i = 0; i < afflictionVisuals.Count; i++)
         {
             afflictionVisuals[i].name.x = DrawPos().x - 45;
-            afflictionVisuals[i].name.y = DrawPos().y - 17.5f * i;
+            afflictionVisuals[i].name.y = DrawPos().y - 18f * i;
             afflictionVisuals[i].name.color = Color.white;
 
             afflictionVisuals[i].icon.x = DrawPos().x + 160;
-            afflictionVisuals[i].icon.y = DrawPos().y - 7 - 17.5f * i;
+            afflictionVisuals[i].icon.y = DrawPos().y - 7 - 18f * i;
             afflictionVisuals[i].icon.scale = 14;
 
             for (int j = 0; j < bodyPart.afflictions.Count; j++)
@@ -2242,6 +2257,8 @@ public class HealthTabBodyPart
         {
             afflictionVisuals[i].name.y -= 15 * extraHeight;
             afflictionVisuals[i].icon.y -= 15 * extraHeight;
+
+            Debug.Log(i + " height: " + height);
 
             background.y -= 7.5f * (height - 1);
             background.scaleY += 15 * (height - 1);
@@ -2410,9 +2427,9 @@ public class HealthTabWholeBody
         if (background.isVisible)
         {
             background.x = DrawPos().x;
-            background.y = DrawPos().y - (-2 + (8.75f * afflictionNumber));
+            background.y = DrawPos().y - (-3 + (9f * afflictionNumber));
             background.scaleX = 340;
-            background.scaleY = 2 + (17.5f * afflictionNumber);
+            background.scaleY = (17f * afflictionNumber) + (afflictionNumber > 1 ? 1 * (afflictionNumber - 1) : 0);
             background.color = Color.black;
         }
 
@@ -2451,11 +2468,11 @@ public class HealthTabWholeBody
         for (int i = 0; i < afflictionVisuals.Count && i < owner.inspectedState.wholeBodyAfflictions.Count; i++)
         {
             afflictionVisuals[i].name.x = DrawPos().x - 45;
-            afflictionVisuals[i].name.y = DrawPos().y - ((bloodLossVisible ? 17.5f : 0) + (17.5f * i));
+            afflictionVisuals[i].name.y = DrawPos().y - ((bloodLossVisible ? 18f : 0) + (18f * i));
             afflictionVisuals[i].name.color = Color.yellow;
 
             afflictionVisuals[i].icon.x = DrawPos().x + 160;
-            afflictionVisuals[i].icon.y = DrawPos().y - 7 - ((bloodLossVisible ? 17.5f : 0) + (17.5f * i));
+            afflictionVisuals[i].icon.y = DrawPos().y - 7 - ((bloodLossVisible ? 18f : 0) + (18f * i));
             afflictionVisuals[i].icon.scale = 14;
 
             if (owner.inspectedState.wholeBodyAfflictions[i] is RWDisease disease)

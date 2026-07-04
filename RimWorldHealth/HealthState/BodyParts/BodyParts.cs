@@ -227,7 +227,7 @@ public class Tongue : RWBodyPart
 {
     public Tongue(CreatureState state) : base(state)
     {
-        name = "Jaw";
+        name = "Tongue";
 
         coverage = 0.1f;
 
