@@ -1577,11 +1577,11 @@ public class RWHealthState
 
                 foreach (RWBodyPart part in state.bodyParts)
                 {
-                    foreach (RWBodyPart subPart in subParts)
+                    for (int i = 0; i < subParts.Count; i++)
                     {
-                        if (!subParts.Contains(part) && !subPartsRestricted.Contains(part) && IsSubPartName(part, subPart))
+                        if (!subParts.Contains(part) && !subPartsRestricted.Contains(part) && IsSubPartName(part, subParts[i]))
                         {
-                            if (subPart.afflictions.Count == 1 && subPart.afflictions[0] is RWDestroyed)
+                            if (subParts[i].afflictions.Count == 1 && subParts[i].afflictions[0] is RWDestroyed)
                             {
                                 subPartsRestricted.Add(part);
                                 continue;

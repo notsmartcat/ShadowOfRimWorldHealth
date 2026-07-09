@@ -243,42 +243,44 @@ public class RimWorldHealth : BaseUnityPlugin
 
                 for (int i = 0; i < state.bodyParts.Count; i++)
                 {
-                    if (state.bodyParts[i] is Head head)
+                    if (false)
                     {
-                        int j = UnityEngine.Random.Range(0, 3);
-
-                        if (j == 0)
+                        if (state.bodyParts[i] is Arm)
                         {
-                            RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, head, "testtesttesttesttesttest");
-                        }
-                        else if(j == 1)
+                            int j = UnityEngine.Random.Range(0, 3);
+
+                            if (j == 0)
+                            {
+                                RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest");
+                            }
+                            else if (j == 1)
+                            {
+                                RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest");
+                            }
+                            else if (j == 2)
+                            {
+                                RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
+                            }
+
+                            state.updateCapacities = true;
+                        } 
+                    }
+                    else
+                    {
+                        int k = UnityEngine.Random.Range(0, 3);
+
+                        if (k == 0)
                         {
-                            RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, head, "testtesttesttesttesttest testtesttesttesttesttest");
+                            RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest");
                         }
-                        else if (j == 2)
+                        else if (k == 1)
                         {
-                            RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, head, "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
+                            RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest");
                         }
-
-                        state.updateCapacities = true;
-                        break;
-                    }
-
-                    continue;
-
-                    int k = UnityEngine.Random.Range(0, 3);
-
-                    if (k == 0)
-                    {
-                        RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest");
-                    }
-                    else if (k == 1)
-                    {
-                        RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest");
-                    }
-                    else if (k == 2)
-                    {
-                        RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
+                        else if (k == 2)
+                        {
+                            RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
+                        }
                     }
                 }
             }
@@ -288,11 +290,12 @@ public class RimWorldHealth : BaseUnityPlugin
             }
             if (Input.GetKey("m"))
             {
-                if (false && state.wholeBodyAfflictions.Count == 0)
+                if (state.wholeBodyAfflictions.Count == 0)
                 {
                     state.wholeBodyAfflictions.Add(new RWFlu(self.State, null));
                 }
 
+                state.bloodLoss = 0.5f;
                 
                 for (int i = 0; i < state.bodyParts.Count; i++)
                 {
