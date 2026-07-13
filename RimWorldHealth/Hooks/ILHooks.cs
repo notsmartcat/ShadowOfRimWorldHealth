@@ -849,6 +849,21 @@ internal class ILHooks
             {
                 RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCreatureHypothermiaUpdate!");
             }
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdcR4(0.0f),
+                x => x.MatchStfld<Creature>("HypothermiaExposure"),
+            }))
+            {
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(CreatureHypothermiaUpdate);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILCreatureHypothermiaUpdate!");
+            }
         }
         catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
     }

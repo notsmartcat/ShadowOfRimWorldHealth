@@ -386,7 +386,7 @@ public class HealthTab : HudPart
             {
                 foreach (RWAffliction affliction in inspectedState.wholeBodyAfflictions)
                 {
-                    if (affliction is not RWDisease disease || disease.timeUntilTreatment <= 0)
+                    if (affliction is not RWDisease disease || disease.timeUntilTreatment > 0)
                     {
                         continue;
                     }
@@ -760,19 +760,42 @@ public class HealthTab : HudPart
             {
                 if (healthTabWholeBody.bloodLossVisible && selectedVertical == 0)
                 {
-                    selectedSprite.y += 5;
+                    selectedSprite.y = healthTabWholeBody.DrawPos().y - 6.5f;
+                    selectedSprite.scaleY = 17f;
                 }
                 else
                 {
+                    if (healthTabWholeBody.afflictionVisuals.Count <= selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0))
+                    {
+                        return;
+                    }
+
                     int extraHeight = healthTabWholeBody.afflictionsHeight[selectedVertical][0] - 1;
                     int prevHeight = healthTabWholeBody.afflictionsHeight[selectedVertical][1];
 
-                    selectedSprite.y = healthTabWholeBody.DrawPos().y - (-1 + (18f * selectedVertical) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
+                    selectedSprite.y = healthTabWholeBody.DrawPos().y - ((healthTabWholeBody.bloodLossVisible ? -2 : -1) + (18f * selectedVertical) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
 
-                    selectedSprite.scaleY = 17f + (15 * extraHeight);
+                    selectedSprite.scaleY = (healthTabWholeBody.bloodLossVisible ? 1 : 0) + 17f + (15 * extraHeight);
                 }
 
                 selectedSprite.MoveInFrontOfOtherNode(healthTabWholeBody.background);
+
+                if (selectedVertical == 0)
+                {
+                    pivotOffset = 0;
+
+                    topLimit = 510;
+                }
+                else if ((selectedSprite.y + (selectedSprite.scaleY / 2)) > topLimit)
+                {
+                    pivotOffset = healthTabWholeBody.GetPivotOffset(selectedVertical, true);
+                }
+                else if ((selectedSprite.y - (selectedSprite.scaleY / 2)) < bottomLimit)
+                {
+                    pivotOffset = healthTabWholeBody.GetPivotOffset(selectedVertical, false);
+
+                    topLimit = 495;
+                }
 
                 if (selectedTimer <= 0)
                 {
@@ -803,6 +826,11 @@ public class HealthTab : HudPart
                     }
                 }
 
+                if (healthTabBodyParts[selectedBodyPart].afflictionVisuals.Count <= selectedAffliction || healthTabBodyParts[selectedBodyPart].allAfflictionsHeight.Count <= selectedAffliction)
+                {
+                    return;
+                }
+
                 int extraHeight = healthTabBodyParts[selectedBodyPart].allAfflictionsHeight[selectedAffliction][0] - 1;
                 int prevHeight = healthTabBodyParts[selectedBodyPart].allAfflictionsHeight[selectedAffliction][1];
 
@@ -812,7 +840,7 @@ public class HealthTab : HudPart
 
                 selectedSprite.scaleY = 17f + (15 * extraHeight);
 
-                if (selectedBodyPart == 0 && selectedAffliction == 0)
+                if (!healthTabWholeBody.active && selectedBodyPart == 0 && selectedAffliction == 0)
                 {
                     pivotOffset = 0;
 
@@ -820,21 +848,13 @@ public class HealthTab : HudPart
                 }
                 else if ((selectedSprite.y + (selectedSprite.scaleY / 2)) > topLimit)
                 {
-                    Debug.Log("Top Limit: " + (selectedSprite.y + (selectedSprite.scaleY / 2)) + " over: " + topLimit);
-
-                    Debug.Log("selectedAffliction: " + selectedAffliction);
-
                     pivotOffset = healthTabBodyParts[selectedBodyPart].GetPivotOffset(selectedAffliction, true);      
                 }
                 else if ((selectedSprite.y - (selectedSprite.scaleY / 2)) < bottomLimit)
                 {
-                    Debug.Log("Bottom Limit: " + (selectedSprite.y - (selectedSprite.scaleY / 2)) + " under: " + topLimit);
-
-                    Debug.Log("selectedAffliction: " + selectedAffliction);
-
                     pivotOffset = healthTabBodyParts[selectedBodyPart].GetPivotOffset(selectedAffliction, false);
 
-                    topLimit = 490;
+                    topLimit = 495;
                 }
 
                 if (selectedTimer <= 0)
@@ -878,7 +898,6 @@ public class HealthTab : HudPart
 
                     healthTabInfos[0].description.text = "";
                 }
-
             }
             void SetInfo()
             {
@@ -937,7 +956,6 @@ public class HealthTab : HudPart
                             description += "  Blood filtration " + Mathf.Round(inspectedState.bloodFiltration * 100) + "%\n";
                         }
 
-                        description = CapacityAffectingAffliction(description);
                         break;
                     case "Moving":
                         {
@@ -979,7 +997,6 @@ public class HealthTab : HudPart
                                 }
                             }
 
-                            description = CapacityAffectingAffliction(description);
                             break;
                         }
                     case "Manipulation":
@@ -1012,7 +1029,6 @@ public class HealthTab : HudPart
                                 }
                             }
 
-                            description = CapacityAffectingAffliction(description);
                             break;
                         }
                     case "Talking":
@@ -1034,7 +1050,6 @@ public class HealthTab : HudPart
                                 }
                             }
 
-                            description = CapacityAffectingAffliction(description);
                             break;
                         }
                     case "Eating":
@@ -1056,7 +1071,6 @@ public class HealthTab : HudPart
                                 }
                             }
 
-                            description = CapacityAffectingAffliction(description);
                             break;
                         }
                     case "Sight":
@@ -1072,7 +1086,6 @@ public class HealthTab : HudPart
                                 }
                             }
 
-                            description = CapacityAffectingAffliction(description);
                             break;
                         }
                     case "Hearing":
@@ -1088,7 +1101,6 @@ public class HealthTab : HudPart
                                 }
                             }
 
-                            description = CapacityAffectingAffliction(description);
                             break;
                         }
                     case "Breathing":
@@ -1104,7 +1116,6 @@ public class HealthTab : HudPart
                                 }
                             }
 
-                            description = CapacityAffectingAffliction(description);
                             break;
                         }
                     case "Blood filtrarion":
@@ -1120,7 +1131,6 @@ public class HealthTab : HudPart
                                 }
                             }
 
-                            description = CapacityAffectingAffliction(description);
                             break;
                         }
                     case "Blood pumping":
@@ -1136,7 +1146,6 @@ public class HealthTab : HudPart
                                 }
                             }
 
-                            description = CapacityAffectingAffliction(description);
                             break;
                         }
                     case "Digestion":
@@ -1152,10 +1161,11 @@ public class HealthTab : HudPart
                                 }
                             }
 
-                            description = CapacityAffectingAffliction(description);
                             break;
                         }
                 }
+
+                description = CapacityAffectingAffliction(description);
 
                 if (!isCapacityAffected)
                 {
@@ -1182,9 +1192,9 @@ public class HealthTab : HudPart
 
                 string CapacityAffectingAffliction(string description)
                 {
-                    for (int i = 0; i < inspectedState.capacityAffectingAffliction.Count; i++)
+                    foreach (RWAffliction affliction in inspectedState.capacityAffectingAffliction)
                     {
-                        if (inspectedState.capacityAffectingAffliction[i] is RWDisease disease)
+                        if (affliction is RWDisease disease)
                         {
                             if (disease is RWFlu)
                             {
@@ -1195,18 +1205,22 @@ public class HealthTab : HudPart
 
                                 isCapacityAffected = true;
 
+                                string text = "  " + disease.name;
+
                                 if (disease.severity < 0.665f)
                                 {
-                                    description += "  " + disease.name + " (minor)" + "\n";
+                                    description += text + " (minor)\n";
                                 }
                                 else if (disease.severity < 0.832f)
                                 {
-                                    description += "  " + disease.name + " (major)" + "\n";
+                                    description += text + " (major)\n";
                                 }
                                 else
                                 {
-                                    description += "  " + disease.name + " (extreme)" + "\n";
+                                    description += text + " (extreme)\n";
                                 }
+
+                                continue;
                             }
                             else if (disease is RWInfection)
                             {
@@ -1223,20 +1237,23 @@ public class HealthTab : HudPart
                                     }
 
                                     isCapacityAffected = true;
-                                    description += "  " + disease.name + " (major)" + "\n";
+                                    description += "  " + disease.name + " (major)\n";
                                 }
                                 else if (disease.severity > 0.86f)
                                 {
                                     isCapacityAffected = true;
-                                    description += "  " + disease.name + " (extreme)" + "\n";
+                                    description += "  " + disease.name + " (extreme)\n";
                                 }
+
+                                continue;
                             }
                             else
                             {
-                                Debug.Log(inspectedState.capacityAffectingAffliction[i] + " is not a valid type of disease");
+                                Debug.Log(affliction + " is not a valid type of disease");
+                                continue;
                             }
                         }
-                        else if (inspectedState.capacityAffectingAffliction[i] is RWInformational informational)
+                        else if (affliction is RWInformational informational)
                         {
                             if (informational is RWHypothermia)
                             {
@@ -1280,6 +1297,8 @@ public class HealthTab : HudPart
                                     isCapacityAffected = true;
                                     description += "  Hypothermia (extreme)\n";
                                 }
+
+                                continue;
                             }
                             else if (informational is RWToxicBuildup)
                             {
@@ -1288,36 +1307,36 @@ public class HealthTab : HudPart
                                     continue;
                                 }
 
+                                isCapacityAffected = true;
+
                                 if (informational.tendQuality < 0.2f)
-                                {
-                                    isCapacityAffected = true;
+                                {                           
                                     description += "  Toxic buildup (initial)\n";
                                 }
                                 else if (informational.tendQuality < 0.4f)
                                 {
-                                    isCapacityAffected = true;
                                     description += "  Toxic buildup (minor)\n";
                                 }
                                 else if (informational.tendQuality < 0.6f)
                                 {
-                                    isCapacityAffected = true;
                                     description += "  Toxic buildup (moderate)\n";
                                 }
                                 else if (informational.tendQuality < 0.8f)
                                 {
-                                    isCapacityAffected = true;
                                     description += "  Toxic buildup (serious)\n";
                                 }
                                 else
                                 {
-                                    isCapacityAffected = true;
                                     description += "  Toxic buildup (extreme)\n";
                                 }
+
+                                continue;
                             }
                         }
                         else
                         {
-                            Debug.Log(inspectedState.capacityAffectingAffliction[i] + " is not a valid type of affliction");
+                            Debug.Log(affliction + " is not a valid type of affliction");
+                            continue;
                         }
                     }
 
@@ -1391,9 +1410,16 @@ public class HealthTab : HudPart
             }
             else
             {
-                healthTabInfos[0].name.text = healthTabWholeBody.afflictionVisuals[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)].name.text;
+                int selectedAffliction = selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0);
 
-                if (inspectedState.wholeBodyAfflictions[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)] is RWDisease disease)
+                if (healthTabWholeBody.afflictionVisuals.Count <= selectedAffliction || inspectedState.wholeBodyAfflictions.Count <= selectedAffliction)
+                {
+                    return;
+                }
+
+                healthTabInfos[0].name.text = healthTabWholeBody.afflictionVisuals[selectedAffliction].name.text;
+
+                if (inspectedState.wholeBodyAfflictions[selectedAffliction] is RWDisease disease)
                 {
                     healthTabInfos[0].nameStatus.text = ": " + (Mathf.Round(disease.severity * 1000) / 10) + "%";
 
@@ -1451,7 +1477,7 @@ public class HealthTab : HudPart
                         healthTabInfos[0].description.text += "Immunity: " + (Mathf.Round(disease.immunity * 1000) / 10) + "%";
                     }
                 }
-                else if (inspectedState.wholeBodyAfflictions[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)] is RWInformational informational)
+                else if (inspectedState.wholeBodyAfflictions[selectedAffliction] is RWInformational informational)
                 {
                     healthTabInfos[0].description.text = "The description was not set, report this is seen";
                     healthTabInfos[0].nameStatus.text = ": the name status has not been set, report this if seen";
@@ -1554,7 +1580,6 @@ public class HealthTab : HudPart
                         healthTabInfos[0].nameStatus.text = ": " + Mathf.Round(informational.tendQuality * 100) + "%";
                     }
                 }
-
             }
         }
         void AfflictionSelector(int selectedBodyPart, int selectedAffliction)
@@ -1991,6 +2016,9 @@ public class HealthTab : HudPart
 
         selectedSprite.RemoveFromContainer();
         treatedSprite.RemoveFromContainer();
+
+        afflictionsAboveLabel.RemoveFromContainer();
+        afflictionsBelowLabel.RemoveFromContainer();
     }
 
     void TriggeredOn()
@@ -2197,7 +2225,7 @@ public class HealthTabBodyPart
 
     public void Draw()
     {
-        background.isVisible = owner.visible && owner.healthTabWholeBody.active ? !(owner.healthTabBodyParts.IndexOf(this) % 2 == 0) : owner.healthTabBodyParts.IndexOf(this) % 2 == 0;
+        background.isVisible = owner.visible && owner.healthTabWholeBody.active ? owner.healthTabBodyParts.IndexOf(this) % 2 != 0 : owner.healthTabBodyParts.IndexOf(this) % 2 == 0;
         bodyPartName.isVisible = owner.visible;
 
         if (owner == null || !owner.visible)
@@ -2210,7 +2238,7 @@ public class HealthTabBodyPart
             background.x = DrawPos().x;
             background.y = DrawPos().y - (-3 + (9f * afflictionNumber));
             background.scaleX = 340;
-            background.scaleY = (17f * afflictionNumber) + (afflictionNumber > 1 ? 1 * (afflictionNumber - 1) : 0);
+            background.scaleY = (18f * afflictionNumber) - 1;
             background.color = Color.black;
         }
 
@@ -2428,8 +2456,6 @@ public class HealthTabBodyPart
             afflictionVisuals[i].name.y -= 15 * extraHeight;
             afflictionVisuals[i].icon.y -= 15 * extraHeight;
 
-            //Debug.Log(i + " height: " + height);
-
             background.y -= 7.5f * (height - 1);
             background.scaleY += 15 * (height - 1);
 
@@ -2526,8 +2552,6 @@ public class HealthTabBodyPart
             }
         }
 
-        Debug.Log(offset);
-
         if (top)
         {
             offset = owner.topLimit - offset - 5;
@@ -2542,17 +2566,12 @@ public class HealthTabBodyPart
 
         void HeightChanges(int i, int height)
         {
-            Debug.Log("i = " + i + " afflictionNumber = " + afflictionNumber);
-
             if (i == afflictionNumber)
             {
                 offset -= 15 * extraHeight;
 
-                Debug.Log("top = " + top);
-
                 if (!top)
                 {
-                    Debug.Log("height = " + height);
                     offset -= 15 * height;
                 }
             }
@@ -2628,13 +2647,14 @@ public class HealthTabWholeBody
         owner.hud.fContainers[1].AddChild(bloodLossName);
     }
 
-    public Vector2 DrawPos()
+    public Vector2 DrawPos(bool usePivot = true)
     {
         Vector2 pos = owner.DrawPos();
 
         pos.y += 120;
 
-        pos.y += Mathf.RoundToInt(owner.pivotOffset);
+        if (usePivot)
+            pos.y += Mathf.RoundToInt(owner.pivotOffset);
 
         return pos;
     }
@@ -2647,18 +2667,18 @@ public class HealthTabWholeBody
 
         active = afflictionNumber > 0;
 
-        if ((owner.inspectedState != null ? owner.inspectedState.wholeBodyAfflictions.Count : 0) < afflictionVisuals.Count)
+        if (afflictionNumber - (bloodLossVisible ? 1 : 0) <= afflictionVisuals.Count)
         {
             List<HealthTabAffliction> list = new(afflictionVisuals);
 
-            for (int i = list.Count - 1; i >= afflictionNumber; i--)
+            for (int i = list.Count - 1; i >= afflictionNumber - (bloodLossVisible ? 1 : 0); i--)
             {
                 afflictionVisuals[i].ClearSprites();
 
                 afflictionVisuals.Remove(list[i]);
             }
         }
-        else if ((owner.inspectedState != null ? owner.inspectedState.wholeBodyAfflictions.Count : 0) > afflictionVisuals.Count)
+        else if (afflictionNumber - (bloodLossVisible ? 1 : 0) > afflictionVisuals.Count)
         {
             List<HealthTabAffliction> list = new(afflictionVisuals);
 
@@ -2690,9 +2710,9 @@ public class HealthTabWholeBody
         if (background.isVisible)
         {
             background.x = DrawPos().x;
-            background.y = DrawPos().y - (-3 + (9f * afflictionNumber));
+            background.y = DrawPos().y + 3;
             background.scaleX = 340;
-            background.scaleY = (17f * afflictionNumber) + (afflictionNumber > 1 ? 1 * (afflictionNumber - 1) : 0);
+            background.scaleY = 0;
             background.color = Color.black;
         }
 
@@ -2701,8 +2721,8 @@ public class HealthTabWholeBody
 
         isVisible = false;
 
-        topVisible = -1;
-        bottomVisible = -1;
+        topVisible = false;
+        bottomReached = false;
 
         if (bloodLossVisible)
         {
@@ -2737,15 +2757,32 @@ public class HealthTabWholeBody
                 bloodLossName.isVisible = false;
 
                 owner.afflictionsAbove++;
+
+                background.y -= 18f;
             }
             else
             {
-                topVisible = -2;
+                isVisible = true;
+
+                topVisible = true;
+
+                background.y -= 9;
+                background.scaleY += 17f;
             }
         }
 
         for (int i = 0; i < afflictionVisuals.Count && i < owner.inspectedState.wholeBodyAfflictions.Count; i++)
         {
+            if (bottomReached)
+            {
+                afflictionVisuals[i].name.isVisible = false;
+                afflictionVisuals[i].icon.isVisible = false;
+
+                owner.afflictionsBelow++;
+
+                continue;
+            }
+
             afflictionVisuals[i].name.x = DrawPos().x - 45;
             afflictionVisuals[i].name.y = DrawPos().y - ((bloodLossVisible ? 18f : 0) + (18f * i));
             afflictionVisuals[i].name.color = Color.yellow;
@@ -2780,7 +2817,7 @@ public class HealthTabWholeBody
 
                 afflictionsHeight.Add(new(2) { Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight });
 
-                HeightChanges(i, Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight));
+                IsVisible(i);
 
                 afflictionVisuals[i].icon.color = disease.isTended ? Color.white : Color.grey;
             }
@@ -2862,41 +2899,9 @@ public class HealthTabWholeBody
 
                 afflictionsHeight.Add(new(2) { Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight });
 
-                HeightChanges(i, Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight));
+                IsVisible(i);
 
                 afflictionVisuals[i].icon.isVisible = false;
-            }
-
-            if (afflictionVisuals[i].name.y > owner.topLimit)
-            {
-                afflictionVisuals[i].name.isVisible = false;
-                afflictionVisuals[i].icon.isVisible = false;
-
-                owner.afflictionsAbove++;
-            }
-            else if (afflictionVisuals[i].name.y - afflictionVisuals[i].name.textRect.height < owner.bottomLimit)
-            {
-                afflictionVisuals[i].name.isVisible = false;
-                afflictionVisuals[i].icon.isVisible = false;
-
-                owner.afflictionsBelow++;
-
-                if (bottomVisible == -1)
-                {
-                    bottomVisible = i - 1;
-                }
-            }
-            else
-            {
-                afflictionVisuals[i].name.isVisible = true;
-                afflictionVisuals[i].icon.isVisible = true;
-
-                isVisible = true;
-
-                if (topVisible == -1)
-                {
-                    topVisible = i;
-                }
             }
         }
 
@@ -2909,50 +2914,55 @@ public class HealthTabWholeBody
         else
         {
             name.isVisible = true;
-
-            if (topVisible != 0 && topVisible != -2)
-            {
-                name.y = afflictionVisuals[topVisible].name.y;
-            }
-
-            if (topVisible == 0 && bottomVisible == -1)
-            {
-                return;
-            }
-
-            int visibleAfflictionNumber = (bottomVisible == -1 ? afflictionVisuals.Count : bottomVisible + 1) - (topVisible == -2 ? 0 : topVisible);
-
-            Debug.Log("Whole body visible afflictions = " + visibleAfflictionNumber);
-
-            background.y = DrawPos().y - (-3 + (9f * visibleAfflictionNumber));
-            background.scaleY = (17f * visibleAfflictionNumber) + (visibleAfflictionNumber > 1 ? 1 * (visibleAfflictionNumber - 1) : 0);
-
-            if (bloodLossVisible && topVisible != -2)
-            {
-                background.y -= 18;
-            }
-
-            for (int i = 0; i < afflictionVisuals.Count && i < owner.inspectedState.wholeBodyAfflictions.Count && i < (bottomVisible == -1 ? afflictionVisuals.Count : bottomVisible + 1); i++)
-            {
-                BackgroundHeightChanges(Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), i >= topVisible);
-            }
         }
 
-        void HeightChanges(int i, int height)
+        void IsVisible(int i)
         {
             afflictionVisuals[i].name.y -= 15 * extraHeight;
             afflictionVisuals[i].icon.y -= 15 * extraHeight;
 
-            background.y -= 7.5f * (height - 1);
-            background.scaleY += 15 * (height - 1);
+            if (afflictionVisuals[i].name.y > owner.topLimit)
+            {
+                afflictionVisuals[i].name.isVisible = false;
+                afflictionVisuals[i].icon.isVisible = false;
 
-            totalHeight += height;
-            extraHeight += height - 1;
-        }
+                owner.afflictionsAbove++;
 
-        void BackgroundHeightChanges(int height, bool isVisible)
-        {
-            if (isVisible)
+                background.y -= 18;
+            }
+            else if (afflictionVisuals[i].name.y - afflictionVisuals[i].name.textRect.height < owner.bottomLimit)
+            {
+                afflictionVisuals[i].name.isVisible = false;
+                afflictionVisuals[i].icon.isVisible = false;
+
+                owner.afflictionsBelow++;
+
+                if (!bottomReached)
+                {
+                    bottomReached = true;
+                }
+            }
+            else
+            {
+                afflictionVisuals[i].name.isVisible = true;
+                afflictionVisuals[i].icon.isVisible = true;
+
+                isVisible = true;
+
+                background.y -= 9;
+                background.scaleY += 17f + (topVisible ? 1 : 0);
+
+                if (!topVisible)
+                {
+                    topVisible = true;
+
+                    name.y = afflictionVisuals[i].name.y;
+                }
+            }
+
+            int height = Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight);
+
+            if (topVisible)
             {
                 background.y -= 7.5f * (height - 1);
 
@@ -2960,7 +2970,7 @@ public class HealthTabWholeBody
             }
             else
             {
-                background.y -= (15f * height) + 3;
+                background.y -= 15f * (height - 1);
             }
         }
     }
@@ -2980,6 +2990,57 @@ public class HealthTabWholeBody
 
         afflictionVisuals.Clear();
         afflictionsHeight.Clear();
+    }
+
+    public float GetPivotOffset(int afflictionNumber, bool top)
+    {
+        float offset = DrawPos(false).y;
+
+        int totalHeight = 0;
+        int extraHeight = 0;
+
+        if (bloodLossVisible)
+        {
+            offset -= 17;
+
+            afflictionNumber -= 1;
+        }
+
+        for (int i = 0; i < afflictionNumber + 1; i++)
+        {
+            if (i == afflictionNumber)
+                offset -= 18f * i;
+
+            HeightChanges(i, Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight));
+        }
+
+        if (top)
+        {
+            offset = owner.topLimit - offset - 5;
+        }
+        else
+        {
+            offset = owner.bottomLimit - offset;
+        }
+
+
+        return offset;
+
+        void HeightChanges(int i, int height)
+        {
+            if (i == afflictionNumber)
+            {
+                offset -= 15 * extraHeight;
+
+                if (!top)
+                {
+                    offset -= 15 * height;
+                }
+            }
+
+            totalHeight += height;
+            extraHeight += height - 1;
+        }
     }
 
     #region Values
@@ -3007,8 +3068,8 @@ public class HealthTabWholeBody
 
     public bool isVisible = true;
 
-    public int topVisible = 0;
-    public int bottomVisible = 0;
+    public bool topVisible = false;
+    public bool bottomReached = false;
     #endregion
 }
 
@@ -3159,7 +3220,7 @@ public class HealthTabInfo
         {
             if (owner.healthTabInfos.IndexOf(this) == 0)
             {
-                if (owner.healthTabWholeBody.active && owner.selectedVertical < owner.healthTabWholeBody.afflictionNumber)
+                if (owner.selectedHorizontal == 1 && owner.healthTabWholeBody.active && owner.selectedVertical < owner.healthTabWholeBody.afflictionNumber)
                 {
                     description.x = name.x;
                     description.y = name.y - (name.textRect.height * 2);

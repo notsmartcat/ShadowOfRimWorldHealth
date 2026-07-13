@@ -243,9 +243,9 @@ public class RimWorldHealth : BaseUnityPlugin
 
                 for (int i = 0; i < state.bodyParts.Count; i++)
                 {
-                    if (false)
+                    if (true)
                     {
-                        if (state.bodyParts[i] is Arm)
+                        if (state.bodyParts[i] is Head)
                         {
                             int j = UnityEngine.Random.Range(0, 3);
 
@@ -295,8 +295,18 @@ public class RimWorldHealth : BaseUnityPlugin
                     state.wholeBodyAfflictions.Add(new RWFlu(self.State, null));
                 }
 
-                state.bloodLoss = 0.5f;
-                
+                state.bloodLoss = 0.2f;
+
+                self.injectedPoison = 0.2f;
+
+                self.Hypothermia = 0.06f;
+
+                self.airInLungs = 0.5f;
+
+                state.updateCapacities = true;
+
+                return;
+
                 for (int i = 0; i < state.bodyParts.Count; i++)
                 {
                     if (state.bodyParts[i] is Arm part && !IsDestroyed(part) && part.subName == "Right")

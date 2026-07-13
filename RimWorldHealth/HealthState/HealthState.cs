@@ -836,6 +836,8 @@ public class RWHealthState
         {
             state.capacityAffectingAffliction.Clear();
 
+            state.forceUnconsciousness = false;
+
             if (!self.dead)
             {
                 state.bloodLossPerCycle = 0;
@@ -1319,12 +1321,12 @@ public class RWHealthState
                             state.consciousness -= 0.05f;
                             state.manipulation -= 0.08f;
                             break;
-                        case <= 0.4f:
+                        case <= 0.35f:
                             state.consciousness -= 0.1f;
                             state.manipulation -= 0.2f;
                             state.moving -= 0.1f;
                             break;
-                        case <= 0.6f:
+                        case <= 0.62f:
                             state.consciousness -= 0.2f;
                             state.manipulation -= 0.5f;
                             state.moving -= 0.3f;
