@@ -2426,6 +2426,13 @@ public class HealthTabBodyPart
 
             int height = Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight);
 
+            extraHeight += height - 1;
+
+            if (bottomReached)
+            {
+                return;
+            }
+
             if (topVisible)
             {
                 background.y -= 7.5f * (height - 1);
@@ -2436,8 +2443,6 @@ public class HealthTabBodyPart
             {
                 background.y -= 15f * (height - 1);
             }
-
-            extraHeight += height - 1;
         }
     }
 
@@ -2910,6 +2915,13 @@ public class HealthTabWholeBody
 
             int height = Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight);
 
+            extraHeight += height - 1;
+
+            if (bottomReached)
+            {
+                return;
+            }
+
             if (topVisible)
             {
                 background.y -= 7.5f * (height - 1);
@@ -2920,8 +2932,6 @@ public class HealthTabWholeBody
             {
                 background.y -= 15f * (height - 1);
             }
-
-            extraHeight += height - 1;
         }
     }
 
