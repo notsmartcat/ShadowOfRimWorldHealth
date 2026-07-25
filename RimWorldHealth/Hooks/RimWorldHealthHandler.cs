@@ -69,7 +69,7 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
 
             foreach (RWDisease disease in diseasesToTend)
             {
-                UpdateDisease(disease, state, playerState);
+                diseasesToSave = SavingandLoadingHooks.UpdateDisease(disease, state, playerState, diseasesToSave, true);
             }
 
             state.wholeBodyAfflictions = diseasesToSave;
@@ -134,7 +134,7 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
 
                 foreach (RWDisease disease in diseasesToTend)
                 {
-                    UpdateDisease(disease, state, playerState);
+                    diseasesToSave = SavingandLoadingHooks.UpdateDisease(disease, state, playerState, diseasesToSave, true);
                 }
 
                 foreach (RWAffliction disease in diseasesToSave)
@@ -148,7 +148,7 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
                 }
             }
 
-            UpdateInjuries(injuriesToTend, state);
+            afflictionsToSave = SavingandLoadingHooks.UpdateInjuries(injuriesToTend, state, afflictionsToSave);
 
             foreach (var key in afflictionsToSave)
             {
@@ -174,263 +174,6 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
         }
 
         Write();
-
-        void UpdateInjuries(List<RWInjury> healList, RWState state)
-        {
-            float afterCycleTreatmentTime = afterCycleLength * 6f;
-
-            foreach (RWInjury injury in healList)
-            {
-                if (!injury.isTended)
-                {
-                    injury.isTended = true;
-                    injury.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f, 0, 0.7f);
-                }
-            }
-
-            for (int i = 0; i < afterCycleTreatmentTime; i++)
-            {
-                if (healList.Count <= 0)
-                {
-                    return;
-                }
-
-                RWInjury injury = healList[Random.Range(0, healList.Count)];
-
-                float healRate = 8;
-
-                if (injury.isTended)
-                {
-                    healRate += 4;
-
-                    healRate += Mathf.Round(injury.tendQuality) * 0.08f;
-                }
-
-                injury.damage -= healRate * 0.1f;
-
-                if (injury is RWScar scar)
-                {
-                    if (scar.damage <= scar.scarDamage)
-                    {
-                        scar.damage = scar.scarDamage;
-                        scar.isTended = true;
-                        scar.isBleeding = false;
-                        scar.isRevealed = true;
-
-                        if (!afflictionsToSave.ContainsKey(injury.part))
-                        {
-                            afflictionsToSave.Add(injury.part, new());
-                        }
-
-                        afflictionsToSave[injury.part].Add(injury);
-                        healList.Remove(injury);
-                    }
-                }
-                else if (injury.damage <= 0)
-                {
-                    healList.Remove(injury);
-                }
-            }
-
-            foreach (RWInjury injury in healList)
-            {
-                if (!afflictionsToSave.ContainsKey(injury.part))
-                {
-                    afflictionsToSave.Add(injury.part, new());
-                }
-
-                afflictionsToSave[injury.part].Add(injury);
-            }
-        }
-
-        void UpdateDisease(RWDisease disease, RWState state, CreatureState playerState)
-        {
-            float afterCycleTreatmentTime = afterCycleLength * 60f;
-
-            if (disease.timeUntilTreatment <= 0 || !disease.isTended)
-            {
-                disease.isTended = true;
-                disease.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f, 0, 0.7f);
-                disease.timeUntilTreatment = cycleLength * disease.treatmentTimes;
-            }
-
-            Debug.Log("Disease Saving Start");
-
-            Debug.Log("Disease tendQuality " + disease.tendQuality);
-
-            float timeUntilTreatment = disease.timeUntilTreatment * 60f;
-
-            bool willUpdateTend = afterCycleTreatmentTime > timeUntilTreatment;
-
-            Debug.Log("willUpdateTend " + willUpdateTend);
-
-            Debug.Log("afterCycleTreatmentTime " + afterCycleTreatmentTime);
-
-            Debug.Log("timeUntilTreatment " + timeUntilTreatment);
-
-            float treatmentTime = willUpdateTend ? afterCycleTreatmentTime : timeUntilTreatment;
-
-            Debug.Log("treatmentTime " + treatmentTime);
-
-            bool willSeverityMax;
-            bool willImmunityMax;
-
-            float severityMaxTimer;
-            float immunityMaxTimer;
-
-            if (!willUpdateTend)
-            {
-                Debug.Log("won't update tend");
-
-                Debug.Log("pre severity " + disease.severity);
-                Debug.Log("pre immunity " + disease.immunity);
-
-                willSeverityMax = (disease.severity += disease.severityGain / (40 * 60 * cycleLength) * treatmentTime) >= 1;
-                willImmunityMax = (disease.immunity += disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(playerState, state) / (40 * 60 * cycleLength) * treatmentTime) >= 1;
-
-                Debug.Log("post severity " + disease.severity);
-                Debug.Log("post immunity " + disease.immunity);
-
-                severityMaxTimer = willSeverityMax ? (disease.severity - 1) / disease.severityGain / (40 * 60 * cycleLength) * treatmentTime : 0;
-                immunityMaxTimer = willImmunityMax ? (disease.immunity - 1) / disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(playerState, state) / (40 * 60 * cycleLength) * treatmentTime : 0;
-
-                Debug.Log("severityMaxTimer " + severityMaxTimer);
-                Debug.Log("immunityMaxTimer " + immunityMaxTimer);
-
-                if (willSeverityMax && willImmunityMax && severityMaxTimer > immunityMaxTimer)
-                {
-                    Debug.Log("severity greater then immunity");
-                    return;
-                }
-
-                if (willSeverityMax)
-                {
-                    Debug.Log("severity won");
-                    return;
-                }
-                else if (willImmunityMax)
-                {
-                    Debug.Log("immunity won");
-                    treatmentTime -= immunityMaxTimer;
-
-                    Debug.Log("treatmentTime " + treatmentTime);
-
-                    disease.severity -= disease.severityLoss / (40 * 60 * cycleLength) * immunityMaxTimer;
-
-                    Debug.Log("severity " + disease.severity);
-
-                    disease.severity -= disease.severityLoss / (40 * 60 * cycleLength) * treatmentTime;
-
-                    Debug.Log("severity " + disease.severity);
-
-                    if (disease.severity > 0)
-                    {
-                        disease.timeUntilTreatment = treatmentTime / 60;
-
-                        Debug.Log("timeUntilTreatment " + disease.timeUntilTreatment);
-
-                        diseasesToSave.Add(disease);
-                    }
-
-                    return;
-                }
-
-                disease.timeUntilTreatment = treatmentTime / 60;
-
-                Debug.Log("timeUntilTreatment " + disease.timeUntilTreatment);
-
-                diseasesToSave.Add(disease);
-
-                return;
-            }
-
-            Debug.Log("will update tend");
-
-            Debug.Log("pre severity " + disease.severity);
-            Debug.Log("pre immunity " + disease.immunity);
-
-            willSeverityMax = (disease.severity += disease.severityGain / (40 * 60 * cycleLength) * timeUntilTreatment) >= 1;
-            willImmunityMax = (disease.immunity += disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(playerState, state) / (40 * 60 * cycleLength) * timeUntilTreatment) >= 1;
-
-            Debug.Log("post severity " + disease.severity);
-            Debug.Log("post immunity " + disease.immunity);
-
-            severityMaxTimer = willSeverityMax ? (disease.severity - 1) / disease.severityGain / (40 * 60 * cycleLength) * timeUntilTreatment : 0;
-            immunityMaxTimer = willImmunityMax ? (disease.immunity - 1) / disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(playerState, state) / (40 * 60 * cycleLength) * timeUntilTreatment : 0;
-
-            Debug.Log("severityMaxTimer " + severityMaxTimer);
-            Debug.Log("immunityMaxTimer " + immunityMaxTimer);
-
-            Debug.Log("pre treatmentTime " + treatmentTime);
-
-            disease.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f, 0, 0.7f);
-            treatmentTime -= timeUntilTreatment;
-
-            Debug.Log("Disease tendQuality " + disease.tendQuality);
-
-            Debug.Log("post treatmentTime " + treatmentTime);
-
-            Debug.Log("pre severity " + disease.severity);
-            Debug.Log("pre immunity " + disease.immunity);
-
-            willSeverityMax = (disease.severity += disease.severityGain / (40 * 60 * cycleLength) * treatmentTime) >= 1;
-            willImmunityMax = (disease.immunity += disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(playerState, state) / (40 * 60 * cycleLength) * treatmentTime) >= 1;
-
-            Debug.Log("post severity " + disease.severity);
-            Debug.Log("post immunity " + disease.immunity);
-
-            severityMaxTimer = willSeverityMax ? (disease.severity - 1) / disease.severityGain / (40 * 60 * cycleLength) * treatmentTime : 0;
-            immunityMaxTimer = willImmunityMax ? (disease.immunity - 1) / disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(playerState, state) / (40 * 60 * cycleLength) * treatmentTime : 0;
-
-            Debug.Log("severityMaxTimer " + severityMaxTimer);
-            Debug.Log("immunityMaxTimer " + immunityMaxTimer);
-
-            disease.timeUntilTreatment = (cycleLength * disease.treatmentTimes) - (treatmentTime / 60);
-
-            if (willSeverityMax && willImmunityMax && severityMaxTimer > immunityMaxTimer)
-            {
-                Debug.Log("severity greater then immunity");
-                return;
-            }
-
-            if (willSeverityMax)
-            {
-                Debug.Log("severity won");
-                return;
-            }
-            else if (willImmunityMax)
-            {
-                Debug.Log("immunity won");
-                treatmentTime -= immunityMaxTimer;
-
-                Debug.Log("treatmentTime " + treatmentTime);
-
-                disease.severity -= disease.severityLoss / (40 * 60 * cycleLength) * immunityMaxTimer;
-
-                Debug.Log("severity " + disease.severity);
-
-                disease.severity -= disease.severityLoss / (40 * 60 * cycleLength) * treatmentTime;
-
-                Debug.Log("severity " + disease.severity);
-
-                if (disease.severity > 0)
-                {
-                    disease.timeUntilTreatment = treatmentTime / 60;
-
-                    Debug.Log("timeUntilTreatment " + disease.timeUntilTreatment);
-
-                    diseasesToSave.Add(disease);
-                }
-
-                return;
-            }
-
-            disease.timeUntilTreatment = treatmentTime / 60;
-
-            Debug.Log("timeUntilTreatment " + disease.timeUntilTreatment);
-
-            diseasesToSave.Add(disease);
-        }
     }
 
     public void Load(string currentSave, string currentCampaign)

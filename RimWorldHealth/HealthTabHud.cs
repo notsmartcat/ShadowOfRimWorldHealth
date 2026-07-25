@@ -11,9 +11,12 @@ public class HealthTab : HudPart
 {
     public HealthTab(HUD.HUD hud, AbstractCreature owner) : base(hud)
     {
-        player = owner;
+        if (owner != null)
+        {
+            player = owner;
 
-        playerState = healthState.TryGetValue(player.state, out RWState state) ? state : null;
+            playerState = healthState.TryGetValue(player.state, out RWState state) ? state : null;
+        }
 
         sprites = new FSprite[2];
 
@@ -282,7 +285,7 @@ public class HealthTab : HudPart
         {
             playerState.tendTime--;
 
-            if (playerState.tendAffliction.isTended || playerState.tendAffliction.part == null && playerState.tendAffliction is not RWDisease)
+            if (playerState.tendAffliction.state == null || playerState.tendAffliction.isTended && (playerState.tendAffliction is not RWDisease tendedDisease || tendedDisease.timeUntilTreatment > 0))
             {
                 playerState.tendAffliction = null;
             }
@@ -426,7 +429,7 @@ public class HealthTab : HudPart
 
     public void ToggleVisibility(CreatureState self, RWState state)
     {
-        visible = !visible;
+        visible = !visible && player != null;
 
         if (visible)
         {
@@ -464,11 +467,11 @@ public class HealthTab : HudPart
 
         capacityName.isVisible = visible;
 
-        bloodLossPerCycle.isVisible = visible && inspectedState.bloodLossPerCycle >= 1 && inspectedState.bloodLoss < 1 && !inspectedCreatureState.dead;
+        bloodLossPerCycle.isVisible = visible && inspectedState != null && inspectedState.bloodLossPerCycle >= 1 && inspectedState.bloodLoss < 1 && inspectedCreatureState != null && !inspectedCreatureState.dead;
 
         selectedSprite.isVisible = visible && selected;
 
-        treatedSprite.isVisible = visible && playerState.tendAffliction != null;
+        treatedSprite.isVisible = visible && playerState != null && playerState.tendAffliction != null;
         #endregion
 
         afflictionsAbove = 0;
@@ -491,7 +494,7 @@ public class HealthTab : HudPart
         afflictionsAboveLabel.isVisible = visible && afflictionsAbove > 0;
         afflictionsBelowLabel.isVisible = visible && afflictionsBelow > 0;
 
-        if (!visible || inspectedState == null)
+        if (!visible || playerState == null || inspectedState == null)
         {
             return;
         }
@@ -536,12 +539,10 @@ public class HealthTab : HudPart
         {
             float bloodLoss = cycleLength * (1 - inspectedState.bloodLoss) / (inspectedState.bloodLossPerCycle / 100);
 
-            string bloodLossTime = bloodLoss < 0 ? Mathf.Round(bloodLoss * 10000) / 100 + (Mathf.Round(bloodLoss * 10000) / 100 == 1 ? " second" : " seconds") : bloodLoss > 60 ? Mathf.Round(bloodLoss / 60 * 10) / 10 + (Mathf.Round(bloodLoss / 60 * 10) / 10 == 1 ? " hour" : " hours") : Mathf.Round(bloodLoss * 10) / 10 + (Mathf.Round(bloodLoss * 10) / 10 == 1 ? " minute" : " minutes");
-
             bloodLossPerCycle.color = Color.white;
             bloodLossPerCycle.x = DrawPos().x - 165;
             bloodLossPerCycle.y = DrawPos().y - 105;
-            bloodLossPerCycle.text = "Bleeding: " + Mathf.Round(inspectedState.bloodLossPerCycle) + "%/c (death in " + bloodLossTime + ")";
+            bloodLossPerCycle.text = "Bleeding: " + Mathf.Round(inspectedState.bloodLossPerCycle) + "%/c " + (bloodLoss > cycleLength ? "(no immediate danger)" : "(death in " + GetTimeString(bloodLoss) + ")");
         }
 
         for (int i = 0; i < capacityValueNames.Count; i++)
@@ -1425,7 +1426,7 @@ public class HealthTab : HudPart
 
                 if (inspectedState.wholeBodyAfflictions[selectedAffliction] is RWDisease disease)
                 {
-                    healthTabInfos[0].nameStatus.text = ": " + (Mathf.Round(disease.severity * 1000) / 10) + "%";
+                    healthTabInfos[0].nameStatus.text = ": " + Mathf.Clamp(Mathf.Round(disease.severity * 1000) / 10, 0, 100) + "%";
 
                     if (disease is RWFlu)
                     {
@@ -1433,24 +1434,21 @@ public class HealthTab : HudPart
 
                         if (disease.severity < 0.665f)
                         {
-                            healthTabInfos[0].description.text += "\n" +
-                                "\n" +
+                            healthTabInfos[0].description.text += "\n\n" +
                                 "  - Consciousness: -5%\n" +
                                 "  - Manipulation: -5%\n" +
                                 "  - Breathing: -10%\n";
                         }
                         else if (disease.severity < 0.832f)
                         {
-                            healthTabInfos[0].description.text += "\n" +
-                                "\n" +
+                            healthTabInfos[0].description.text += "\n\n" +
                                 "  - Consciousness: -10%\n" +
                                 "  - Manipulation: -10%\n" +
                                 "  - Breathing: -15%\n";
                         }
                         else
                         {
-                            healthTabInfos[0].description.text += "\n" +
-                                "\n" +
+                            healthTabInfos[0].description.text += "\n\n" +
                                 "  - Pain: +5%\n" +
                                 "  - Consciousness: -15%\n" +
                                 "  - Manipulation: -20%\n" +
@@ -1459,26 +1457,25 @@ public class HealthTab : HudPart
 
                         if (!disease.isTended)
                         {
-                            healthTabInfos[0].description.text += "\n" +
-                                "Needs tending now\n";
+                            healthTabInfos[0].description.text += "\nNeeds tending now\n";
                         }
                         else
                         {
-                            float tendedIn = disease.timeUntilTreatment;
+                            healthTabInfos[0].description.text += "\nTend quality: " + (Mathf.Round(disease.tendQuality * 1000) / 10) + "%\n";
 
-                            string canBeTendedIn = tendedIn < 0 ? Mathf.Round(tendedIn * 10000) / 100 + (Mathf.Round(tendedIn * 10000) / 100 == 1 ? " second" : " seconds") : tendedIn > 60 ? Mathf.Round(tendedIn / 60 * 10) / 10 + (Mathf.Round(tendedIn / 60 * 10) / 10 == 1 ? " hour" : " hours") : Mathf.Round(tendedIn * 10) / 10 + (Mathf.Round(tendedIn * 10) / 10 == 1 ? " minute" : " minutes");
+                            if (disease.timeUntilTreatment < 0)
+                            {
+                                healthTabInfos[0].description.text += "Needs tending now\n"; ;
+                            }
+                            else
+                            {
+                                healthTabInfos[0].description.text += "Can be tended in " + GetTimeString(disease.timeUntilTreatment) + "\n";
+                            }
 
-                            float expiresIn = disease.timeUntilTreatment + 3;
 
-                            string tendingExpiresIn = expiresIn < 0 ? Mathf.Round(expiresIn * 10000) / 100 + (Mathf.Round(expiresIn * 10000) / 100 == 1 ? " second" : " seconds") : expiresIn > 60 ? Mathf.Round(expiresIn / 60 * 10) / 10 + (Mathf.Round(expiresIn / 60 * 10) / 10 == 1 ? " hour" : " hours") : Mathf.Round(expiresIn * 10) / 10 + (Mathf.Round(expiresIn * 10) / 10 == 1 ? " minute" : " minutes");
-
-
-                            healthTabInfos[0].description.text += "\n" +
-                                "Tend quality: " + (Mathf.Round(disease.tendQuality * 1000) / 10) + "%\n" +
-                                "Can be tended in " + canBeTendedIn + "\n" +
-                                "Tending expires in " + tendingExpiresIn + "\n";
+                            healthTabInfos[0].description.text += "Tending expires in " + GetTimeString(disease.timeUntilTreatment + 3) + "\n";
                         }
-                        healthTabInfos[0].description.text += "Immunity: " + (Mathf.Round(disease.immunity * 1000) / 10) + "%";
+                        healthTabInfos[0].description.text += "Immunity: " + Mathf.Clamp(Mathf.Round(disease.immunity * 1000) / 10, 0, 100) + "%";
                     }
                 }
                 else if (inspectedState.wholeBodyAfflictions[selectedAffliction] is RWInformational informational)
@@ -1781,11 +1778,7 @@ public class HealthTab : HudPart
 
                         if (injury.isBleeding)
                         {
-                            description += "  - Bleeding: ";
-
-                            description += bleeding.ToString();
-
-                            description += "%/c";
+                            description += "  - Bleeding: " + bleeding.ToString() + "%/c";
                         }
 
                         float pain = Mathf.Round(injury.part.maxHealth * 2 * injury.healingDifficulty.pain / inspectedState.bodySizeFactor);
@@ -1797,17 +1790,12 @@ public class HealthTab : HudPart
                                 description += "\n";
                             }
 
-                            description += "  - Pain: +";
-
-                            description += pain.ToString();
-
-                            description += "%";
+                            description += "  - Pain: +" + pain.ToString() + "%";
                         }
 
                         if (description != "")
                         {
-                            description += "\n";
-                            description += "\n";
+                            description += "\n\n";
                         }
 
                         description += "Needs tending now";
@@ -1858,11 +1846,7 @@ public class HealthTab : HudPart
 
                         if (injury.isBleeding)
                         {
-                            description += "  - Bleeding: ";
-
-                            description += bleeding.ToString();
-
-                            description += "%/c";
+                            description += "  - Bleeding: " + bleeding.ToString() + "%/c";
                         }
 
                         float pain = Mathf.Round(injury.damage * injury.healingDifficulty.pain / inspectedState.bodySizeFactor);
@@ -1874,19 +1858,14 @@ public class HealthTab : HudPart
                                 description += "\n";
                             }
 
-                            description += "  - Pain: +";
-
-                            description += pain.ToString();
-
-                            description += "%";
+                            description += "  - Pain: +" + pain.ToString() + "%";
                         }
 
                         if (!injury.isTended)
                         {
                             if (description != "")
                             {
-                                description += "\n";
-                                description += "\n";
+                                description += "\n\n";
                             }
 
                             description += "Needs tending now";
@@ -1895,8 +1874,7 @@ public class HealthTab : HudPart
                         {
                             if (description != "")
                             {
-                                description += "\n";
-                                description += "\n";
+                                description += "\n\n";
                             }
 
                             if (healthTabBodyParts[selectedBodyPart].bodyPart.isSolid)
@@ -1932,27 +1910,23 @@ public class HealthTab : HudPart
 
                     if (disease.severity < 0.32f)
                     {
-                        healthTabInfos[1].description.text += "\n" +
-                            "\n" +
+                        healthTabInfos[1].description.text += "\n\n" +
                             "  - Pain: +5%\n";
                     }
                     else if (disease.severity < 0.77f)
                     {
-                        healthTabInfos[1].description.text += "\n" +
-                            "\n" +
+                        healthTabInfos[1].description.text += "\n\n" +
                             "  - Pain: +8%\n";
                     }
                     else if (disease.severity < 0.86f)
                     {
-                        healthTabInfos[1].description.text += "\n" +
-                            "\n" +
+                        healthTabInfos[1].description.text += "\n\n" +
                             "  - Pain: +12%\n" +
                             "  - Consciousness: -5%\n";
                     }
                     else
                     {
-                        healthTabInfos[1].description.text += "\n" +
-                            "\n" +
+                        healthTabInfos[1].description.text += "\n\n" +
                             "  - Pain: +12%\n" +
                             "  - Consciousness: -5%\n" +
                             "  - Breathing: -5%";
@@ -1960,28 +1934,42 @@ public class HealthTab : HudPart
 
                     if (!disease.isTended)
                     {
-                        healthTabInfos[1].description.text += "\n" +
-                            "Needs tending now\n";
+                        healthTabInfos[1].description.text += "\nNeeds tending now\n";
                     }
                     else
                     {
-                        float tendedIn = disease.timeUntilTreatment;
+                        healthTabInfos[1].description.text += "\nTend quality: " + (Mathf.Round(disease.tendQuality * 1000) / 10) + "%\n";
 
-                        string canBeTendedIn = tendedIn < 0 ? Mathf.Round(tendedIn * 10000) / 100 + (Mathf.Round(tendedIn * 10000) / 100 == 1 ? " second" : " seconds") : tendedIn > 60 ? Mathf.Round(tendedIn / 60 * 10) / 10 + (Mathf.Round(tendedIn / 60 * 10) / 10 == 1 ? " hour" : " hours") : Mathf.Round(tendedIn * 10) / 10 + (Mathf.Round(tendedIn * 10) / 10 == 1 ? " minute" : " minutes");
+                        if (disease.timeUntilTreatment < 0)
+                        {
+                            healthTabInfos[1].description.text += "Needs tending now\n"; ;
+                        }
+                        else
+                        {
+                            healthTabInfos[1].description.text += "Can be tended in " + GetTimeString(disease.timeUntilTreatment) + "\n";
+                        }
 
-                        float expiresIn = disease.timeUntilTreatment + 3;
 
-                        string tendingExpiresIn = expiresIn < 0 ? Mathf.Round(expiresIn * 10000) / 100 + (Mathf.Round(expiresIn * 10000) / 100 == 1 ? " second" : " seconds") : expiresIn > 60 ? Mathf.Round(expiresIn / 60 * 10) / 10 + (Mathf.Round(expiresIn / 60 * 10) / 10 == 1 ? " hour" : " hours") : Mathf.Round(expiresIn * 10) / 10 + (Mathf.Round(expiresIn * 10) / 10 == 1 ? " minute" : " minutes");
-
-
-                        healthTabInfos[1].description.text += "\n" +
-                            "Tend quality: " + (Mathf.Round(disease.tendQuality * 1000) / 10) + "%\n" +
-                            "Can be tended in " + canBeTendedIn + "\n" +
-                            "Tending expires in " + tendingExpiresIn + "\n";
+                        healthTabInfos[1].description.text += "Tending expires in " + GetTimeString(disease.timeUntilTreatment + 3) + "\n";
                     }
-                    healthTabInfos[1].description.text += "Immunity: " + (Mathf.Round(disease.immunity * 1000) / 10) + "%";
+                    healthTabInfos[1].description.text += "Immunity: " + Mathf.Clamp((Mathf.Round(disease.immunity * 1000) / 10), 0, 0) + "%";
                 }
             }  
+        }
+
+        string GetTimeString(float timeInMin)
+        {
+            string text;
+            if (timeInMin < 1)
+            {
+                text = Mathf.Max(Mathf.Round(timeInMin * 10000) / 100, 0) + (Mathf.Round(timeInMin * 10000) / 100 == 1 ? " second" : " seconds");
+            }
+            else
+            {
+                text = (Mathf.Round(timeInMin * 10) / 10) + (Mathf.Round(timeInMin * 10) / 10 == 1 ? " minute" : " minutes");
+            }
+
+            return text;
         }
     }
 
@@ -2044,7 +2032,7 @@ public class HealthTab : HudPart
         if (playerState != null)
             playerState.tendAffliction = null;
     }
-    void TriggeredOff()
+    public void TriggeredOff()
     {
         selected = false;
 
@@ -2064,8 +2052,8 @@ public class HealthTab : HudPart
     }
 
     #region Values
-    private readonly RWState playerState;
-    public readonly AbstractCreature player;
+    public RWState playerState;
+    public AbstractCreature player;
 
     public RWState inspectedState;
     private CreatureState inspectedCreatureState;

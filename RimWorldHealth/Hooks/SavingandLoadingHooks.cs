@@ -64,6 +64,8 @@ internal class SavingandLoadingHooks
             return;
         }
 
+        state.timeAbstracted = cycleTick;
+
         List<RWAffliction> diseasesToSave;
         List<RWDisease> diseasesToTend;
 
@@ -105,7 +107,7 @@ internal class SavingandLoadingHooks
 
                     foreach (RWDisease disease in diseasesToTend)
                     {
-                        UpdateDisease(disease, state, self);
+                        diseasesToSave = UpdateDisease(disease, state, self, diseasesToSave);
                     }
 
                     state.wholeBodyAfflictions = diseasesToSave;
@@ -188,7 +190,7 @@ internal class SavingandLoadingHooks
 
                 foreach (RWDisease disease in diseasesToTend)
                 {
-                    UpdateDisease(disease, state, self);
+                    diseasesToSave = UpdateDisease(disease, state, self, diseasesToSave);
                 }
 
                 foreach (RWAffliction disease in diseasesToSave)
@@ -197,7 +199,7 @@ internal class SavingandLoadingHooks
                 }
             }
 
-            UpdateInjuries(injuriesToTend, state);
+            afflictionsToSave = UpdateInjuries(injuriesToTend, state, afflictionsToSave, self.creature.world.game.GetStorySession.saveState.cycleNumber);
 
             foreach (var dic in afflictionsToSave)
             {
@@ -207,182 +209,6 @@ internal class SavingandLoadingHooks
             state.updateCapacities = true;
         }
         catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
-
-        void UpdateInjuries(List<RWInjury> healList, RWState state)
-        {
-            int cycleDifference = Mathf.Abs(state.lastCycle - self.creature.world.game.GetStorySession.saveState.cycleNumber);
-
-            float afterCycleTreatmentTime = (afterCycleLength * 6f * cycleDifference) + (cycleLength * 6 * (cycleDifference - 1));
-
-            foreach (RWInjury injury in healList)
-            {
-                if (!injury.isTended)
-                {
-                    injury.isTended = true;
-                    injury.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f, 0, 0.7f);
-                }
-            }
-
-            for (int i = 0; i < afterCycleTreatmentTime; i++)
-            {
-                if (healList.Count <= 0)
-                {
-                    return;
-                }
-
-                RWInjury injury = healList[UnityEngine.Random.Range(0, healList.Count)];
-
-                float healRate = 8;
-
-                if (injury.isTended)
-                {
-                    healRate += 4;
-
-                    healRate += Mathf.Round(injury.tendQuality) * 0.08f;
-                }
-
-                injury.damage -= healRate * 0.1f;
-
-                if (injury is RWScar scar)
-                {
-                    if (scar.damage <= scar.scarDamage)
-                    {
-                        scar.damage = scar.scarDamage;
-                        scar.isTended = true;
-                        scar.isBleeding = false;
-                        scar.isRevealed = true;
-
-                        afflictionsToSave[injury.part].Add(injury);
-                        healList.Remove(injury);
-                    }
-                }
-                else if (injury.damage <= 0)
-                {
-                    healList.Remove(injury);
-                }
-            }
-
-            for (int i = 0; i < healList.Count; i++)
-            {
-                afflictionsToSave[healList[i].part].Add(healList[i]);
-            }
-        }
-
-        void UpdateDisease(RWDisease disease, RWState state, CreatureState creatureState)
-        {
-            int cycleDifference = Mathf.Abs(state.lastCycle - self.creature.world.game.GetStorySession.saveState.cycleNumber);
-
-            float afterCycleTreatmentTime = (afterCycleLength * 60f * cycleDifference) + (cycleLength * 60 * (cycleDifference - 1));
-
-            if (disease.timeUntilTreatment <= 0 || !disease.isTended)
-            {
-                disease.isTended = true;
-                disease.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f, 0, 0.7f);
-                disease.timeUntilTreatment = cycleLength * disease.treatmentTimes;
-            }
-
-            float timeUntilTreatment = disease.timeUntilTreatment * 60f;
-
-            bool willUpdateTend = afterCycleTreatmentTime > timeUntilTreatment;
-
-            float treatmentTime = willUpdateTend ? afterCycleTreatmentTime : timeUntilTreatment;
-
-            bool willSeverityMax;
-            bool willImmunityMax;
-
-            float severityMaxTimer;
-            float immunityMaxTimer;
-
-            if (!willUpdateTend)
-            {
-                willSeverityMax = (disease.severity += disease.severityGain / (40 * 60 * cycleLength) * treatmentTime) >= 1;
-                willImmunityMax = (disease.immunity += disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(creatureState, state) / (40 * 60 * cycleLength) * treatmentTime) >= 1;
-
-                severityMaxTimer = willSeverityMax ? (disease.severity - 1) / disease.severityGain / (40 * 60 * cycleLength) * treatmentTime : 0;
-                immunityMaxTimer = willImmunityMax ? (disease.immunity - 1) / disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(creatureState, state) / (40 * 60 * cycleLength) * treatmentTime : 0;
-
-                if (willSeverityMax && willImmunityMax && severityMaxTimer > immunityMaxTimer)
-                {
-                    return;
-                }
-
-                if (willSeverityMax)
-                {
-                    return;
-                }
-                else if (willImmunityMax)
-                {
-                    treatmentTime -= immunityMaxTimer;
-
-                    disease.severity -= disease.severityLoss / (40 * 60 * cycleLength) * immunityMaxTimer;
-
-                    disease.severity -= disease.severityLoss / (40 * 60 * cycleLength) * treatmentTime;
-
-                    if (disease.severity > 0)
-                    {
-                        disease.timeUntilTreatment = treatmentTime / 60;
-
-                        diseasesToSave.Add(disease);
-                    }
-
-                    return;
-                }
-
-                disease.timeUntilTreatment = treatmentTime / 60;
-
-                diseasesToSave.Add(disease);
-
-                return;
-            }
-
-            willSeverityMax = (disease.severity += disease.severityGain / (40 * 60 * cycleLength) * timeUntilTreatment) >= 1;
-            willImmunityMax = (disease.immunity += disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(creatureState, state) / (40 * 60 * cycleLength) * timeUntilTreatment) >= 1;
-
-            severityMaxTimer = willSeverityMax ? (disease.severity - 1) / disease.severityGain / (40 * 60 * cycleLength) * timeUntilTreatment : 0;
-            immunityMaxTimer = willImmunityMax ? (disease.immunity - 1) / disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(creatureState, state) / (40 * 60 * cycleLength) * timeUntilTreatment : 0;
-
-            disease.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f, 0, 0.7f);
-            treatmentTime -= timeUntilTreatment;
-
-            willSeverityMax = (disease.severity += disease.severityGain / (40 * 60 * cycleLength) * treatmentTime) >= 1;
-            willImmunityMax = (disease.immunity += disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(creatureState, state) / (40 * 60 * cycleLength) * treatmentTime) >= 1;
-
-            severityMaxTimer = willSeverityMax ? (disease.severity - 1) / disease.severityGain / (40 * 60 * cycleLength) * treatmentTime : 0;
-            immunityMaxTimer = willImmunityMax ? (disease.immunity - 1) / disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(creatureState, state) / (40 * 60 * cycleLength) * treatmentTime : 0;
-
-            disease.timeUntilTreatment = (cycleLength * disease.treatmentTimes) - (treatmentTime / 60);
-
-            if (willSeverityMax && willImmunityMax && severityMaxTimer > immunityMaxTimer)
-            {
-                return;
-            }
-
-            if (willSeverityMax)
-            {
-                return;
-            }
-            else if (willImmunityMax)
-            {
-                treatmentTime -= immunityMaxTimer;
-
-                disease.severity -= disease.severityLoss / (40 * 60 * cycleLength) * immunityMaxTimer;
-
-                disease.severity -= disease.severityLoss / (40 * 60 * cycleLength) * treatmentTime;
-
-                if (disease.severity > 0)
-                {
-                    disease.timeUntilTreatment = treatmentTime / 60;
-
-                    diseasesToSave.Add(disease);
-                }
-
-                return;
-            }
-
-            disease.timeUntilTreatment = treatmentTime / 60;
-
-            diseasesToSave.Add(disease);
-        }
     }
     #endregion
 
@@ -708,6 +534,313 @@ internal class SavingandLoadingHooks
             disease.InfectionLuck = float.TryParse(afflictionInfo[7], out float InfectionLuck) ? InfectionLuck : 0f;
 
             return disease;
+        }
+    }
+
+    public static Dictionary<RWBodyPart, List<RWAffliction>> UpdateInjuries(List<RWInjury> healList, RWState state, Dictionary<RWBodyPart, List<RWAffliction>> afflictionsToSave, int cycleNumber = -1)
+    {
+        float treatmentTime;
+
+        if (cycleNumber == -1)
+        {
+            treatmentTime = afterCycleLength * 40f * 60f / 10;
+        }
+        else
+        {
+            int cycleDifference = Mathf.Abs(state.lastCycle - cycleNumber);
+
+            treatmentTime = (afterCycleLength * 40f * 60f * cycleDifference / 10) + (CycleLength() * (cycleDifference - 1) / 10);
+        }
+
+        if (cycleTick < CycleLength())
+        {
+            treatmentTime += CycleLength() - cycleTick;
+        }
+
+        foreach (RWInjury injury in healList)
+        {
+            if (!injury.isTended)
+            {
+                injury.isTended = true;
+                injury.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f, 0, 0.7f);
+            }
+        }
+
+        for (int i = 0; i < treatmentTime; i++)
+        {
+            if (healList.Count <= 0)
+            {
+                return afflictionsToSave;
+            }
+
+            RWInjury injury = healList[UnityEngine.Random.Range(0, healList.Count)];
+
+            float healRate = 8;
+
+            if (injury.isTended)
+            {
+                healRate += 4;
+
+                healRate += Mathf.Round(injury.tendQuality) * 0.08f;
+            }
+
+            injury.damage -= healRate * 0.1f;
+
+            if (injury is RWScar scar)
+            {
+                if (scar.damage <= scar.scarDamage)
+                {
+                    scar.damage = scar.scarDamage;
+                    scar.isTended = true;
+                    scar.isBleeding = false;
+                    scar.isRevealed = true;
+
+                    if (!afflictionsToSave.ContainsKey(injury.part))
+                    {
+                        afflictionsToSave.Add(injury.part, new());
+                    }
+
+                    afflictionsToSave[injury.part].Add(injury);
+                    healList.Remove(injury);
+                }
+            }
+            else if (injury.damage <= 0)
+            {
+                healList.Remove(injury);
+            }
+        }
+
+        foreach (RWInjury injury in healList)
+        {
+            if (!afflictionsToSave.ContainsKey(injury.part))
+            {
+                afflictionsToSave.Add(injury.part, new());
+            }
+
+            afflictionsToSave[injury.part].Add(injury);
+        }
+
+        return afflictionsToSave;
+    }
+
+    public static List<RWAffliction> UpdateDisease(RWDisease disease, RWState state, CreatureState creatureState, List<RWAffliction> diseasesToSave, bool isPlayer = false, int ticksPassed = -1)
+    {
+        float afterCycleTreatmentTime = 0;
+
+        if (ticksPassed != -1)
+        {
+            afterCycleTreatmentTime = ticksPassed;
+        }
+        else if (isPlayer)
+        {
+            afterCycleTreatmentTime = afterCycleLength * 40f * 60f; //multiply to turn into tics
+        }
+        else
+        {
+            int cycleDifference = Mathf.Abs(state.lastCycle - creatureState.creature.world.game.GetStorySession.saveState.cycleNumber);
+
+            if (cycleDifference > 0)
+            {
+                afterCycleTreatmentTime = (afterCycleLength * 40f * 60f * cycleDifference) + (CycleLength() * (cycleDifference - 1));
+            }
+        }
+
+        if (cycleTick < CycleLength())
+        {
+            afterCycleTreatmentTime += CycleLength() - cycleTick;
+        }
+
+        if (afterCycleTreatmentTime <= 0)
+        {
+            diseasesToSave.Add(disease);
+
+            return diseasesToSave;
+        }
+
+        if (ticksPassed != -1 && (disease.timeUntilTreatment <= 0 || !disease.isTended))
+        {
+            disease.isTended = true;
+            disease.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f, 0, 0.7f);
+            disease.timeUntilTreatment = cycleLength * disease.treatmentTimes;
+        }
+
+        //Debug.Log("Disease Saving Start");
+        //Debug.Log("Disease tendQuality " + disease.tendQuality);
+
+        float timeUntilTreatment = disease.timeUntilTreatment * 40f * 60; //multiply to turn into tics
+
+        bool willUpdateTend = afterCycleTreatmentTime > timeUntilTreatment;
+
+        //Debug.Log("willUpdateTend " + willUpdateTend);
+        //Debug.Log("afterCycleTreatmentTime " + afterCycleTreatmentTime);
+        //Debug.Log("timeUntilTreatment " + timeUntilTreatment);
+
+        float treatmentTime = willUpdateTend ? afterCycleTreatmentTime : timeUntilTreatment;
+
+        //Debug.Log("treatmentTime " + treatmentTime);
+
+        bool willSeverityMax;
+        bool willImmunityMax;
+
+        float severityMaxTimer;
+        float immunityMaxTimer;
+
+        //Debug.Log("pre severity " + disease.severity);
+        //Debug.Log("pre immunity " + disease.immunity);
+
+        if (disease.isTended)
+        {
+            disease.severity -= Tended();
+        }
+
+        willSeverityMax = (disease.severity += WillSeverityMax()) >= 1;
+        willImmunityMax = (disease.immunity += WillImmunityMax()) >= 1;
+
+        //Debug.Log("post severity " + disease.severity);
+        //Debug.Log("post immunity " + disease.immunity);
+
+        severityMaxTimer = SeverityMaxTimer();
+        immunityMaxTimer = ImmunityMaxTimer();
+
+        //Debug.Log("severityMaxTimer " + severityMaxTimer);
+        //Debug.Log("immunityMaxTimer " + immunityMaxTimer);
+
+        //Debug.Log("pre treatmentTime " + treatmentTime);
+
+        treatmentTime -= timeUntilTreatment;
+
+        if (!willUpdateTend)
+        {
+            goto willNotUpdateTend;
+        }
+
+        if (ticksPassed != -1)
+        {
+            //Add code to tend the disease if there are tends left
+
+            disease.isTended = false;
+            disease.tendQuality = 0;
+        }
+        else
+        {
+            disease.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f, 0, 0.7f);
+        }
+
+        //Debug.Log("Disease tendQuality " + disease.tendQuality);
+
+        //Debug.Log("post treatmentTime " + treatmentTime);
+
+        //Debug.Log("pre severity " + disease.severity);
+        //Debug.Log("pre immunity " + disease.immunity);
+
+        if (disease.isTended)
+        {
+            disease.severity -= Tended();
+        }
+
+        willSeverityMax = (disease.severity += WillSeverityMax()) >= 1;
+        willImmunityMax = (disease.immunity += WillImmunityMax()) >= 1;
+
+        //Debug.Log("post severity " + disease.severity);
+        //Debug.Log("post immunity " + disease.immunity);
+
+        severityMaxTimer = SeverityMaxTimer();
+        immunityMaxTimer = ImmunityMaxTimer();
+
+        //Debug.Log("severityMaxTimer " + severityMaxTimer);
+        //Debug.Log("immunityMaxTimer " + immunityMaxTimer);
+
+    willNotUpdateTend:
+
+        //Debug.Log("previous timeUntilTreatment in min " + disease.timeUntilTreatment);
+
+        disease.timeUntilTreatment = (cycleLength * disease.treatmentTimes) - (treatmentTime / 40 / 60);
+
+        //Debug.Log("timeUntilTreatment base in min " + (cycleLength * disease.treatmentTimes));
+
+        //Debug.Log("timeUntilTreatment treatmentTime " + treatmentTime);
+        //Debug.Log("timeUntilTreatment treatmentTime in min " + (treatmentTime / 40 / 60));
+
+        //Debug.Log("new timeUntilTreatment in min " + disease.timeUntilTreatment);
+
+        while (disease.timeUntilTreatment <= 0)
+        {
+            disease.timeUntilTreatment += cycleLength * disease.treatmentTimes;
+        }
+
+        //Debug.Log("new new timeUntilTreatment in min " + disease.timeUntilTreatment);
+
+        if (willSeverityMax && !willImmunityMax || willSeverityMax && willImmunityMax && severityMaxTimer > immunityMaxTimer)
+        {
+            //Debug.Log("severity won");
+            if (ticksPassed != -1)
+            {
+                KillOwner();
+            }
+            return diseasesToSave;
+        }
+        else if (willImmunityMax)
+        {
+            //Debug.Log("immunity won");
+            treatmentTime -= immunityMaxTimer;
+
+            //Debug.Log("treatmentTime " + treatmentTime);
+
+            disease.severity -= disease.severityLoss / CycleLength() * immunityMaxTimer; //subtract severity by the time immunity was at max
+
+            //Debug.Log("severity " + disease.severity);
+
+            disease.severity -= disease.severityLoss / CycleLength() * treatmentTime; //subtract severity by the time left in the treatment
+
+            //Debug.Log("severity " + disease.severity);
+
+            disease.immunity = 1;
+            disease.isImmune = true;
+
+            if (disease.severity > 0)
+            {
+                diseasesToSave.Add(disease);
+            }
+            else if (ticksPassed != -1)
+            {
+                disease.RemoveSelf();
+            }
+
+            return diseasesToSave;
+        }
+
+        diseasesToSave.Add(disease);
+
+        return diseasesToSave;
+
+        float WillSeverityMax()
+        {
+            return disease.severityGain / CycleLength() * timeUntilTreatment;
+        }
+        float WillImmunityMax()
+        {
+            return disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(creatureState, state) / CycleLength() * timeUntilTreatment;
+        }
+
+        float SeverityMaxTimer()
+        {
+            return willSeverityMax ? (disease.severity - 1) / disease.severityGain / CycleLength() * treatmentTime : 0;
+        }
+        float ImmunityMaxTimer()
+        {
+            return willImmunityMax ? (disease.immunity - 1) / disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(creatureState, state) / CycleLength() * treatmentTime : 0;
+        }
+
+        float Tended()
+        {
+            return disease.treatment * disease.tendQuality / CycleLength() * treatmentTime;
+        }
+
+        void KillOwner()
+        {
+            disease.severity = 1;
+
+            creatureState.Die();
         }
     }
 }

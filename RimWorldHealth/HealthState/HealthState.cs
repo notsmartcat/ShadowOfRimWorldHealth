@@ -361,6 +361,21 @@ public class RWHealthState
                     state.consciousnessSource = brain;
                 }
             }
+
+            foreach (int bodyChunk in bodyParts[i].connectedBodyChunks)
+            {
+                if (state.visualBleedAmount.Count < bodyChunk)
+                {
+                    for (int j = 0; j < bodyChunk - state.visualBleedAmount.Count; j++)
+                    {
+                        List<float> list = new(2)
+                        {
+                            0, 0
+                        };
+                        state.visualBleedAmount.Add(list);
+                    }
+                }
+            }
         }
 
         for (int i = 0; i < state.bodyParts.Count; i++)
@@ -474,6 +489,8 @@ public class RWHealthState
 
         List<RWAffliction> afflictionList = new(state.wholeBodyAfflictions);
 
+        state.visualDisease[0] = 0;
+
         foreach (RWAffliction affliction in afflictionList)
         {
             if (affliction is RWDisease disease)
@@ -575,7 +592,7 @@ public class RWHealthState
 
         if (state.bloodLossPerCycle == 0 && state.bloodLoss > 0)
         {
-            state.bloodLoss -= 0.333f / (40 * 60 * cycleLength);
+            state.bloodLoss -= 0.333f / CycleLength();
 
             if (updateBloodLoss())
             {
@@ -584,7 +601,7 @@ public class RWHealthState
         } //Replenishes 33.3% of blood per cycle if not bleeding
         else if (state.bloodLossPerCycle > 0)
         {
-            state.bloodLoss += state.bloodLossPerCycle / 100 / (40 * 60 * cycleLength);
+            state.bloodLoss += state.bloodLossPerCycle / 100 / CycleLength();
 
             if (updateBloodLoss())
             {
@@ -593,6 +610,11 @@ public class RWHealthState
         }
 
         state.bloodLoss = Mathf.Clamp(state.bloodLoss, 0, 1);
+
+        if (state.bloodLoss == 1)
+        {
+            self.Die();
+        }
 
     dead:
 
@@ -604,8 +626,11 @@ public class RWHealthState
 
         void Disease(RWDisease disease, RWBodyPart part = null)
         {
-            if (disease.severity >= 1)
+            if (disease.severity >= 1 && !disease.isImmune)
             {
+                if(disease.lethal)
+                    self.Die();
+
                 return;
             }
 
@@ -613,16 +638,21 @@ public class RWHealthState
 
             if (!disease.isImmune)
             {
-                disease.severity += disease.severityGain / (40 * 60 * cycleLength);
+                disease.severity += disease.severityGain / CycleLength();
 
                 if (disease.isTended)
                 {
-                    disease.severity -= disease.treatment * disease.tendQuality / (40 * 60 * cycleLength);
+                    disease.severity -= disease.treatment * disease.tendQuality / CycleLength();
                 }
 
-                disease.immunity += disease.immunityGain * disease.InfectionLuck * ImmunityGainSpeed(self, state) / (40 * 60 * cycleLength);
+                disease.immunity += disease.immunityGain * disease.InfectionLuck * ImmunityGainSpeed(self, state) / CycleLength();
 
-                disease.timeUntilTreatment -= 1 / (40 * 60 * cycleLength);
+                disease.timeUntilTreatment -= 1 / CycleLength();
+
+                if (disease.timeUntilTreatment <= 0 && state.visualDisease[0] < disease.severity)
+                {
+                    state.visualDisease[0] = disease.severity;
+                }
 
                 if (disease.timeUntilTreatment <= -3)
                 {
@@ -631,7 +661,7 @@ public class RWHealthState
             }
             else
             {
-                disease.severity -= disease.severityLoss / (40 * 60 * cycleLength);
+                disease.severity -= disease.severityLoss / CycleLength();
             }
 
             if (disease.isImmune && disease.severity <= 0)
@@ -853,6 +883,11 @@ public class RWHealthState
                 state.bloodFiltration = 0;
                 state.bloodPumping = 0;
                 state.digestion = 0;
+
+                foreach (List<float> floats in state.visualBleedAmount)
+                {
+                    floats[0] = 0;
+                }
             }
 
             List<RWAffliction> afflictionList;
@@ -929,7 +964,14 @@ public class RWHealthState
 
                     state.pain += affliction.pain;
 
-                    state.bloodLossPerCycle += injury.isBleeding && !injury.isTended ? injury.healingDifficulty.bleeding * injury.damage * state.bodySizeFactor * BloodLossMultiplier(part) : 0;
+                    float bloodLoss = injury.isBleeding && !injury.isTended ? injury.healingDifficulty.bleeding * injury.damage * state.bodySizeFactor * BloodLossMultiplier(part) : 0;
+
+                    foreach (int bodyChunk in injury.part.connectedBodyChunks)
+                    {
+                        state.visualBleedAmount[bodyChunk][0] += bloodLoss / injury.part.connectedBodyChunks.Count;
+                    }
+
+                    state.bloodLossPerCycle += bloodLoss;
                 }
 
             line1:

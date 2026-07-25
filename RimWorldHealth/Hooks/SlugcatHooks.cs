@@ -1,4 +1,6 @@
 ﻿using RWCustom;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 using static ShadowOfRimWorldHealth.RimWorldHealth;
@@ -28,6 +30,7 @@ internal class SlugcatHooks
 
         #region SlugNPCAI
         On.MoreSlugcats.SlugNPCAI.DecideBehavior += SlugNPCAIDecideBehavior;
+        On.MoreSlugcats.SlugNPCAI.Move += SlugNPCAIMove;
         #endregion
     }
 
@@ -36,7 +39,7 @@ internal class SlugcatHooks
     {
         orig(self, abstractCreature, world);
 
-        if (!healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
         {
             return;
         }
@@ -61,7 +64,7 @@ internal class SlugcatHooks
     {
         orig(self, add);
 
-        if (!healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
         {
             return;
         }
@@ -71,7 +74,7 @@ internal class SlugcatHooks
 
     static float PlayerDeathByBiteMultiplier(On.Player.orig_DeathByBiteMultiplier orig, Player self)
     {
-        if (!healthState.TryGetValue(self.State, out _))
+        if (self.State == null || !healthState.TryGetValue(self.State, out _))
         {
             return orig(self);
         }
@@ -83,7 +86,7 @@ internal class SlugcatHooks
     {
         orig(self, eu);
 
-        if (!healthState.TryGetValue(self.State, out RWState _))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState _))
         {
             return;
         }
@@ -91,21 +94,40 @@ internal class SlugcatHooks
         //???
     }
 
-    static void PlayerGraphicsDrawSprites(On.PlayerGraphics.orig_DrawSprites orig, PlayerGraphics self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
+    static void PlayerGraphicsModuleUpdated(On.Player.orig_GraphicsModuleUpdated orig, Player self, bool actuallyViewed, bool eu)
     {
-        orig(self, sLeaser, rCam, timeStacker, camPos);
+        orig(self, actuallyViewed, eu);
 
-        if (!healthState.TryGetValue(self.player.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || self.grasps[0] == null || ArmCheck(state) || !JawCheck(state))
         {
             return;
         }
 
-        if (!ArmCheck(state) && JawCheck(state) && self.player.grasps[0] != null)
+        Vector2 headPos = self.bodyChunks[0].pos;
+        if (self.graphicsModule != null)
         {
-            sLeaser.sprites[5].isVisible = false;
-            sLeaser.sprites[6].isVisible = false;
-            sLeaser.sprites[7].isVisible = false;
-            sLeaser.sprites[8].isVisible = false;
+            headPos = (self.graphicsModule as PlayerGraphics).head.pos - Custom.DirVec(self.bodyChunks[1].pos, headPos) * 4f + (self.graphicsModule as PlayerGraphics).lookDirection * 4f;
+        }
+
+        if (!self.HeavyCarry(self.grasps[0].grabbed) && actuallyViewed)
+        {
+            self.grasps[0].grabbed.firstChunk.vel = self.bodyChunks[0].vel;
+            self.grasps[0].grabbed.firstChunk.MoveFromOutsideMyUpdate(eu, headPos);
+
+            if (self.grasps[0].grabbed is Weapon weapon)
+            {
+                weapon.setRotation = new Vector2?(Custom.PerpendicularVector(Custom.DirVec(self.bodyChunks[1].pos, headPos) * -1f));
+                weapon.rotationSpeed = 0f;
+                weapon.ChangeOverlap(true);
+            }
+        }
+        else
+        {
+            if (!self.HeavyCarry(self.grasps[0].grabbed))
+            {
+                self.grasps[0].grabbed.firstChunk.pos = headPos;
+                self.grasps[0].grabbed.firstChunk.vel = self.mainBodyChunk.vel;
+            }
         }
     }
 
@@ -153,7 +175,7 @@ internal class SlugcatHooks
     {
         orig(self, edible);
 
-        if (!healthState.TryGetValue(self.State, out RWState state) || !ShadowOfOptions.karma_flower.Value || edible is not KarmaFlower || self.room.game.session is StoryGameSession && ShadowOfOptions.karma_flower.Value && !(self.room.game.session as StoryGameSession).saveState.deathPersistentSaveData.reinforcedKarma)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || !ShadowOfOptions.karma_flower.Value || edible is not KarmaFlower || self.room.game.session is StoryGameSession && ShadowOfOptions.karma_flower.Value && !(self.room.game.session as StoryGameSession).saveState.deathPersistentSaveData.reinforcedKarma)
         {
             return;
         }
@@ -165,7 +187,7 @@ internal class SlugcatHooks
     {
         orig(self);
 
-        if (!healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
         {
             return;
         }
@@ -177,7 +199,7 @@ internal class SlugcatHooks
     {
         orig(self, sub);
 
-        if (!healthState.TryGetValue(self.State, out RWState state) || self.playerState.foodInStomach > 0)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || self.playerState.foodInStomach > 0)
         {
             return;
         }
@@ -187,7 +209,7 @@ internal class SlugcatHooks
 
     static void PlayerUpdate(On.Player.orig_Update orig, Player self, bool eu)
     {
-        if (!healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
         {
             orig(self, eu);
             return;
@@ -207,14 +229,15 @@ internal class SlugcatHooks
 
         if (!ArmCheck(state))
         {
-            if (!JawCheck(state))
+            if (self.grasps.Length > 0 && !JawCheck(state))
             {
                 self.grasps[0]?.Release();
             }
 
-            self.grasps[1]?.Release();
+            if (self.grasps.Length > 1)
+                self.grasps[1]?.Release();
         }
-        else
+        else if (state.armSetNames.Count > 1)
         {
             if (state.armSet[state.armSetNames[0]].efficiency <= 0 && state.armSet[state.armSetNames[1]].efficiency > 0 && self.grasps[1] == null)
             {
@@ -231,44 +254,81 @@ internal class SlugcatHooks
                 }
             }
         }
-    }
-    #endregion
 
-    #region PlayerGraphics
-    static void PlayerGraphicsModuleUpdated(On.Player.orig_GraphicsModuleUpdated orig, Player self, bool actuallyViewed, bool eu)
-    {
-        orig(self, actuallyViewed, eu);
-
-        if (!healthState.TryGetValue(self.State, out RWState state) || self.grasps[0] == null || ArmCheck(state) || !JawCheck(state))
+        if (self.dead)
         {
             return;
         }
 
-        Vector2 headPos = self.bodyChunks[0].pos;
-        if (self.graphicsModule != null)
+        for (int i = 0; i < state.visualBleedAmount.Count; i++)
         {
-            headPos = (self.graphicsModule as PlayerGraphics).head.pos - Custom.DirVec(self.bodyChunks[1].pos, headPos) * 4f + (self.graphicsModule as PlayerGraphics).lookDirection * 4f;
-        }
+            List<float> bleedInfo = state.visualBleedAmount[i];
 
-        if (!self.HeavyCarry(self.grasps[0].grabbed) && actuallyViewed)
-        {
-            self.grasps[0].grabbed.firstChunk.vel = self.bodyChunks[0].vel;
-            self.grasps[0].grabbed.firstChunk.MoveFromOutsideMyUpdate(eu, headPos);
-
-            if (self.grasps[0].grabbed is Weapon weapon)
+            if (bleedInfo[0] > 0 && self.bodyChunks.Count() >= i)
             {
-                weapon.setRotation = new Vector2?(Custom.PerpendicularVector(Custom.DirVec(self.bodyChunks[1].pos, headPos) * -1f));
-                weapon.rotationSpeed = 0f;
-                weapon.ChangeOverlap(true);
+                bleedInfo[1]--;
+
+                if (bleedInfo[1] <= 0)
+                {
+                    self.room.AddObject(new BloodDrip(self.bodyChunks[i].pos + new Vector2(UnityEngine.Random.Range(-self.bodyChunks[i].rad, self.bodyChunks[i].rad), UnityEngine.Random.Range(-self.bodyChunks[i].rad, self.bodyChunks[i].rad)), default, false));
+
+                    bleedInfo[1] = Custom.LerpMap(bleedInfo[0], 0, 120, 25, 1);
+                }
             }
         }
-        else
+
+        if (state.visualDisease[0] > 0)
         {
-            if (!self.HeavyCarry(self.grasps[0].grabbed))
+            state.visualDisease[1]--;
+
+            if (state.visualDisease[1] <= 0)
             {
-                self.grasps[0].grabbed.firstChunk.pos = headPos;
-                self.grasps[0].grabbed.firstChunk.vel = self.mainBodyChunk.vel;
+                Vector2 pos = self.firstChunk.pos;
+                if (self.graphicsModule != null)
+                {
+                    PlayerGraphics playerGraphics = self.graphicsModule as PlayerGraphics;
+                    float num = Mathf.Sin(playerGraphics.breath * 3.1415927f * 2f);
+                    float num2 = Mathf.Sin(playerGraphics.lastBreath * 3.1415927f * 2f);
+                    if (playerGraphics != null && num < num2 && num < 0.5f && num > -0.5f)
+                    {
+                        Vector2 vector = playerGraphics.lookDirection * 8f;
+                        Vector2 b = new(0f, 5f);
+                        if (self.bodyMode == Player.BodyModeIndex.Crawl)
+                        {
+                            vector = playerGraphics.lookDirection * 16f;
+                            b.x = (float)self.flipDirection * 20f;
+                        }
+                        //self.room.AddObject(new MoreSlugcats.ColdRoom.ColdBreath(pos + b + vector, Custom.RNV() * 0.2f + vector * 0.1f + self.firstChunk.vel * 0.25f, UnityEngine.Random.value * 20f + 5f));
+                        DiseaseCloud sporeCloud = new(pos + b + vector, Custom.RNV() * 0.2f + vector * 0.1f + self.firstChunk.vel * 0.25f, new Color(0.2f, 1f, 0.2f), 1f, null, 20, null, self.abstractPhysicalObject.rippleLayer)
+                        {
+                            nonToxic = true
+                        };
+                        self.room.AddObject(sporeCloud);
+                    }
+                }
+
+                state.visualDisease[1] = Custom.LerpMap(state.visualDisease[0], 0, 100, 25, 1);
             }
+        }
+    }
+    #endregion
+
+    #region PlayerGraphics
+    static void PlayerGraphicsDrawSprites(On.PlayerGraphics.orig_DrawSprites orig, PlayerGraphics self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
+    {
+        orig(self, sLeaser, rCam, timeStacker, camPos);
+
+        if (sLeaser.deleteMeNextFrame || !healthState.TryGetValue(self.player.State, out RWState state))
+        {
+            return;
+        }
+
+        if (!ArmCheck(state)) //&& JawCheck(state) && self.player.grasps[0] != null
+        {
+            sLeaser.sprites[5].isVisible = false;
+            sLeaser.sprites[6].isVisible = false;
+            sLeaser.sprites[7].isVisible = false;
+            sLeaser.sprites[8].isVisible = false;
         }
     }
     #endregion
@@ -278,7 +338,7 @@ internal class SlugcatHooks
     {
         orig(self);
 
-        if (!healthState.TryGetValue(self.cat.State, out RWState state))
+        if (self.creature.controlled || !healthState.TryGetValue(self.cat.State, out RWState state))
         {
             return;
         }
@@ -543,6 +603,36 @@ internal class SlugcatHooks
             return false;
         }
     }
+    static void SlugNPCAIMove(On.MoreSlugcats.SlugNPCAI.orig_Move orig, MoreSlugcats.SlugNPCAI self)
+    {
+        orig(self);
+
+        if (!self.creature.controlled || healthTab == null || !healthTab.visible || !healthState.TryGetValue(self.cat.State, out _))
+        {
+            return;
+        }
+
+        Player.InputPackage inputPackage = default;
+
+        inputPackage.x = (self.cat.inputWithDiagonals != null) ? self.cat.inputWithDiagonals.Value.x : 0;
+        inputPackage.y = (self.cat.inputWithDiagonals != null) ? self.cat.inputWithDiagonals.Value.y : 0;
+        inputPackage.jmp = self.cat.inputWithDiagonals != null && self.cat.inputWithDiagonals.Value.jmp;
+        inputPackage.mp = self.cat.inputWithDiagonals != null && self.cat.inputWithDiagonals.Value.mp;
+        inputPackage.pckp = self.cat.inputWithDiagonals != null && self.cat.inputWithDiagonals.Value.pckp;
+        inputPackage.thrw = self.cat.inputWithDiagonals != null && self.cat.inputWithDiagonals.Value.thrw;
+
+        healthTab.input = inputPackage;
+
+        inputPackage.x = 0;
+        inputPackage.y = 0;
+        inputPackage.jmp = false;
+        inputPackage.mp = false;
+        inputPackage.pckp = false;
+        inputPackage.thrw = false;
+
+        self.cat.input[0] = inputPackage;
+    }
+
     #endregion
 
     static bool JawCheck(RWState state)

@@ -93,6 +93,10 @@ internal class ILHooks
         IL.LocustSystem.Swarm.Update += ILLocustSwarmUpdate;
         #endregion
 
+        #region Overseer
+        IL.OverseerAbstractAI.AbstractBehavior += OverseerAbstractAIAbstractBehavior;
+        #endregion
+
         #region Player
         IL.Player.GrabUpdate += ILPlayerGrabUpdate;
         IL.Player.LungUpdate += ILPlayerLungUpdate;
@@ -1820,6 +1824,69 @@ internal class ILHooks
     }
     #endregion
 
+    #region Overseer
+    static void OverseerAbstractAIAbstractBehavior(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdcI4(0),
+                x => x.MatchStfld<OverseerAbstractAI>("targetCreatureTime")
+            }))
+            {
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit<OverseerAbstractAI>(OpCodes.Ldfld, "targetCreature");
+                val.EmitDelegate(SafariControlCreature);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for OverseerAbstractAIAbstractBehavior control!");
+            }
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdcI4(0),
+                x => x.MatchStfld<OverseerAbstractAI>("targetCreatureTime")
+            }))
+            {
+                val.EmitDelegate(SafariUnControlCreature);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for OverseerAbstractAIAbstractBehavior un-control!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+
+    public static void SafariControlCreature(AbstractCreature self)
+    {
+        if (!healthState.TryGetValue(self.state, out RWState state))
+        {
+            return;
+        }
+
+        Debug.Log("SafariControlCreature");
+
+        healthTab.player = self;
+        healthTab.playerState = state;
+    }
+    public static void SafariUnControlCreature()
+    {
+        Debug.Log("SafariUnControlCreature");
+
+        healthTab.TriggeredOff();
+
+        healthTab.player = null;
+        healthTab.playerState = null;
+    }
+    #endregion
+
     #region Player
     static void ILPlayerGrabUpdate(ILContext il)
     {
@@ -3334,7 +3401,7 @@ internal class ILHooks
     {
         //Debug.Log(self.behaviorType);
 
-        if (!healthState.TryGetValue(self.cat.State, out RWState state) || (self.behaviorType != SlugTend && self.behaviorType != SlugSelfTend))
+        if (self.creature.controlled || !healthState.TryGetValue(self.cat.State, out RWState state) || (self.behaviorType != SlugTend && self.behaviorType != SlugSelfTend))
         {
             return destination;
         }

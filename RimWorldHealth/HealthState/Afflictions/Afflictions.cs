@@ -86,6 +86,15 @@ public class RWInjury : RWAffliction
     public float infectionTimer; //If the wound is injury bleeds and the Healing Difficulty has infection chance a random time between 4.17 and 12.5 minutes will be set, when the timer finishes the Infection will be rolled
 
     public RWHealingDifficulty healingDifficulty;
+
+    public void RemoveSelf()
+    {
+        part.afflictions.Remove(this);
+
+        state = null;
+        part = null;
+        healingDifficulty = null;
+    }
 }
 
 public class RWDisease(CreatureState state, RWBodyPart part) : RWAffliction(state, part)
@@ -110,6 +119,17 @@ public class RWDisease(CreatureState state, RWBodyPart part) : RWAffliction(stat
     public float totalTendQuality = 0; //Some diseases require the total tend quality to reach 300% before being treated
 
     public float InfectionLuck = UnityEngine.Random.Range(0.8f, 1.2f); //Infection luck ranges from 0.8 to 1.2 and it multiplies the severity gained/lost
+
+    public void RemoveSelf()
+    {
+        if (part != null)
+        {
+            part.afflictions.Remove(this);
+            part = null;
+        }
+
+        state = null;
+    }
 }
 
 public class RWInformational : RWAffliction

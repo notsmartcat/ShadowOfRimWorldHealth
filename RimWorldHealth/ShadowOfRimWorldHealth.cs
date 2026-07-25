@@ -38,6 +38,8 @@ public class RimWorldHealth : BaseUnityPlugin
 
         public bool forceUnconsciousness = false;
 
+        public int timeAbstracted = 0;
+
         #region Capacities
         public float consciousness = 1;
         public float moving = 1;
@@ -67,8 +69,8 @@ public class RimWorldHealth : BaseUnityPlugin
         public bool updateCapacities = false;
         #endregion
 
-        public int healingRateTics = 600;
-        public int healingRate = 600;
+        public int healingRateTics = 400; //1 second = 40 ticks, healing should heppen every 10 seconds
+        public int healingRate = 400;
 
         public bool hasEaten = false;
 
@@ -80,7 +82,7 @@ public class RimWorldHealth : BaseUnityPlugin
         #region Treatment
         public float tendTime = 10;
         public float tendTimeMax = 10;
-        public readonly float tendTimeBase = 60;
+        public readonly int tendTimeBase = 60; //1 second = 40 ticks, tending will take 1.5 seconds (couldn't find an official RimWorld base tend time)
         public Creature tendTarget = null;
 
         public RWAffliction tendAffliction = null;
@@ -91,6 +93,14 @@ public class RimWorldHealth : BaseUnityPlugin
         public float corridorClimbSpeedFac = 1f;
         public float runspeedFac = 1.27f;
         public float swimForceFac = 1f;
+        #endregion
+
+        #region Visual Data
+        public List<List<float>> visualBleedAmount = new();
+        public List<float> visualDisease = new(2)
+        {
+            0, 0
+        };
         #endregion
     }
 
@@ -120,12 +130,14 @@ public class RimWorldHealth : BaseUnityPlugin
 
     private bool init = false;
 
-    public HealthTab healthTab;
+    public static HealthTab healthTab;
     public bool buttonHeld = false;
     public bool tempButtonHeld = false;
 
+    public static int cycleTick = 0;
+
     public static float cycleLength = 13;
-    public static float afterCycleLength = 13;
+    public static float afterCycleLength = 5;
 
     internal static new ManualLogSource Logger;
 
@@ -139,12 +151,12 @@ public class RimWorldHealth : BaseUnityPlugin
         {
             Logger = base.Logger;
 
-            On.HUD.HUD.InitSinglePlayerHud += HUDInitSinglePlayerHud;
-            On.HUD.PlayerSpecificMultiplayerHud.ctor += NewPlayerSpecificMultiplayerHud;
-
             On.Player.Update += PlayerUpdate;
 
             On.Player.checkInput += PlayercheckInput;
+
+            On.RainCycle.ctor += NewRainCycle;
+            On.RainCycle.Update += RainCycleUpdate;
 
             rimWorldHealthHandler = new(["notsmartcat"], "rimworldhealth");
 
@@ -153,10 +165,26 @@ public class RimWorldHealth : BaseUnityPlugin
             SlugcatHooks.Apply();
             WeaponHooks.Apply();
             SavingandLoadingHooks.Apply();
+            HudHooks.Apply();
 
             On.RainWorld.OnModsInit += ModInit;
         }
         catch (Exception e) { Logger.LogError(e); }
+    }
+
+    void NewRainCycle(On.RainCycle.orig_ctor orig, RainCycle self, World world, float minutes)
+    {
+        orig(self, world, minutes);
+
+        cycleTick = 0;
+    }
+    void RainCycleUpdate(On.RainCycle.orig_Update orig, RainCycle self)
+    {
+        orig(self);
+
+        cycleTick++;
+
+        //Debug.Log("RainCycle tick = " + cycleTick);
     }
 
     void ModInit(On.RainWorld.orig_OnModsInit orig, RainWorld rainWorld)
@@ -194,42 +222,12 @@ public class RimWorldHealth : BaseUnityPlugin
         }
     }
 
-    void NewPlayerSpecificMultiplayerHud(On.HUD.PlayerSpecificMultiplayerHud.orig_ctor orig, HUD.PlayerSpecificMultiplayerHud self, HUD.HUD hud, ArenaGameSession session, AbstractCreature abstractPlayer)
-    {
-        orig(self, hud, session, abstractPlayer);
-
-        if (!healthState.TryGetValue(abstractPlayer.state, out _))
-        {
-            return;
-        }
-
-        healthTab = new HealthTab(hud, abstractPlayer);
-
-        self.hud.AddPart(healthTab);
-    }
-
-    void HUDInitSinglePlayerHud(On.HUD.HUD.orig_InitSinglePlayerHud orig, HUD.HUD self, RoomCamera cam)
-    {
-        orig(self, cam);
-
-        if (!healthState.TryGetValue((self.owner as Creature).State, out _))
-        {
-            return;
-        }
-
-        healthTab = new HealthTab(self, (self.owner as Creature).abstractCreature);
-
-        self.AddPart(healthTab);
-    }
-
     void PlayerUpdate(On.Player.orig_Update orig, Player self, bool eu)
     {
         orig(self, eu);
 
         if (healthState.TryGetValue(self.State, out RWState state))
         {
-            RWHealthState.Update(self.State, state);
-
             if (Input.GetKey("n"))
             {
                 //state.bloodLoss = 0.5f;
@@ -251,15 +249,15 @@ public class RimWorldHealth : BaseUnityPlugin
 
                             if (j == 0)
                             {
-                                RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest");
+                                RWHealthState.Damage(self.State, state, new RWCut(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest");
                             }
                             else if (j == 1)
                             {
-                                RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest");
+                                RWHealthState.Damage(self.State, state, new RWCut(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest");
                             }
                             else if (j == 2)
                             {
-                                RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
+                                RWHealthState.Damage(self.State, state, new RWCut(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
                             }
 
                             state.updateCapacities = true;
@@ -271,15 +269,15 @@ public class RimWorldHealth : BaseUnityPlugin
 
                         if (k == 0)
                         {
-                            RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest");
+                            RWHealthState.Damage(self.State, state, new RWCut(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest");
                         }
                         else if (k == 1)
                         {
-                            RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest");
+                            RWHealthState.Damage(self.State, state, new RWCut(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest");
                         }
                         else if (k == 2)
                         {
-                            RWHealthState.Damage(self.State, state, new RWBlunt(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
+                            RWHealthState.Damage(self.State, state, new RWCut(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
                         }
                     }
                 }
@@ -1788,5 +1786,273 @@ public class RimWorldHealth : BaseUnityPlugin
             return;
         }
         #endregion
+    }
+
+    public static void UpdateAfflictions(CreatureState self, RWState state, int ticksPassed)
+    {
+        List<RWDisease> diseasesToTend = new();
+        List<RWInjury> injuriesToTend = new();
+
+        try
+        {
+            #region Tend
+            int timesTended = ticksPassed / Mathf.RoundToInt(state.tendTimeBase / RWHealthState.MedicalTendSpeed(state));
+
+            for (int i = 0; i < timesTended; i++)
+            {
+                RWInjury bleeding = null;
+                RWDisease diseaseAffliction = null;
+                RWInjury untendedAffliction = null;
+
+                foreach (RWBodyPart part in state.bodyParts)
+                {
+                    foreach (RWAffliction affliction in part.afflictions)
+                    {
+                        if (!affliction.isTended)
+                        {
+                            if (affliction is RWInjury injury)
+                            {
+                                if (injury.isBleeding)
+                                {
+                                    if (bleeding != null)
+                                    {
+                                        if (injury.healingDifficulty.bleeding * injury.damage > bleeding.healingDifficulty.bleeding * bleeding.damage)
+                                        {
+                                            bleeding = injury;
+                                        }
+                                    }
+                                    else bleeding ??= injury;
+                                }
+                                else
+                                {
+                                    if (untendedAffliction != null)
+                                    {
+                                        if (injury.damage > untendedAffliction.damage)
+                                        {
+                                            untendedAffliction = injury;
+                                        }
+                                    }
+                                    else untendedAffliction ??= injury;
+
+                                }
+                            }
+                            else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                            {
+                                if (diseaseAffliction != null)
+                                {
+                                    if (disease.severity > diseaseAffliction.severity)
+                                    {
+                                        diseaseAffliction = disease;
+                                    }
+                                }
+                                else diseaseAffliction ??= disease;
+                            }
+                            else
+                            {
+                                Debug.Log("Error affliction " + affliction + " does not belong to any tendable check");
+                            }
+                        }
+                        else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                        {
+                            if (diseaseAffliction != null)
+                            {
+                                if (disease.severity > diseaseAffliction.severity)
+                                {
+                                    diseaseAffliction = disease;
+                                }
+                            }
+                            else diseaseAffliction ??= disease;
+                        }
+                    }
+                }
+
+                if (bleeding == null)
+                {
+                    foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+                    {
+                        if (affliction is not RWDisease disease || disease.timeUntilTreatment > 0)
+                        {
+                            continue;
+                        }
+
+                        if (diseaseAffliction != null)
+                        {
+                            if (disease.severity > diseaseAffliction.severity)
+                            {
+                                diseaseAffliction = disease;
+                            }
+                        }
+                        else diseaseAffliction ??= disease;
+                    }
+                }
+
+                if (bleeding != null)
+                {
+                    tend(bleeding);
+                }
+                else if (diseaseAffliction != null)
+                {
+                    tend(diseaseAffliction);
+                }
+                else if (untendedAffliction != null)
+                {
+                    tend(untendedAffliction);
+                }
+                else
+                {
+                    timesTended -= i;
+                    break;
+                }
+
+                void tend(RWAffliction tendAffliction)
+                {
+                    tendAffliction.isTended = true;
+                    tendAffliction.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f *UnityEngine.Random.Range(0.75f, 1.25f), 0, 0.7f);
+
+                    if (tendAffliction is RWInjury injury)
+                    {
+                        injury.isBleeding = false;
+
+                        if (injury is RWDestroyed destroyed)
+                        {
+                            destroyed.isFresh = false;
+                        }
+                    }
+                    else if (tendAffliction is RWDisease disease)
+                    {
+                        disease.timeUntilTreatment = cycleLength * disease.treatmentTimes;
+                        disease.totalTendQuality += disease.tendQuality;
+                    }
+                }
+            }
+            #endregion
+
+            #region WholeBody
+            foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+            {
+                if (affliction is RWDisease disease)
+                {
+                    diseasesToTend.Add(disease);
+                }
+            }
+            #endregion
+
+            foreach (RWBodyPart part in state.bodyParts)
+            {
+                foreach (RWAffliction affliction in part.afflictions)
+                {
+                    if (affliction.isCharacterSpecific)
+                    {
+                        continue;
+                    }
+
+                    if (affliction is RWInjury injury)
+                    {
+                        if (affliction is RWDestroyed || affliction is RWScar scar && (scar.isRevealed || scar.isPermanent))
+                        {
+                            continue;
+                        }
+
+                        injuriesToTend.Add(injury);
+                    }
+                    else if (affliction is RWDisease disease)
+                    {
+                        diseasesToTend.Add(disease);
+                    }
+                }
+            }
+
+            UpdateInjuries(injuriesToTend, state);
+
+            foreach (RWDisease disease in diseasesToTend)
+            {
+                SavingandLoadingHooks.UpdateDisease(disease, state, self, new(), false, ticksPassed);
+            }
+
+            state.updateCapacities = true;
+        }
+        catch (Exception e) { Logger.LogError(e); }
+
+        void UpdateInjuries(List<RWInjury> healList, RWState state)
+        {
+            state.healingRate -= ticksPassed;
+            int treatmentTime = 0;
+
+            while (treatmentTime < 0)
+            {
+                state.healingRate += state.healingRateTics;
+
+                treatmentTime++;
+            }
+
+            for (int i = 0; i < treatmentTime; i++)
+            {
+                if (healList.Count <= 0)
+                {
+                    return;
+                }
+
+                RWInjury injury = healList[UnityEngine.Random.Range(0, healList.Count)];
+
+                float healRate = 8;
+
+                if (injury.isTended)
+                {
+                    healRate += 4;
+
+                    healRate += Mathf.Round(injury.tendQuality) * 0.08f;
+                }
+
+                injury.damage -= healRate * 0.1f;
+
+                if (injury is RWScar scar)
+                {
+                    if (scar.damage <= scar.scarDamage)
+                    {
+                        scar.damage = scar.scarDamage;
+                        scar.isTended = true;
+                        scar.isBleeding = false;
+                        scar.isRevealed = true;
+
+                        healList.Remove(injury);
+                    }
+                }
+                else if (injury.damage <= 0)
+                {
+                    healList.Remove(injury);
+
+                    injury.RemoveSelf();
+                }
+            }
+        }
+    }
+
+    public static float CycleLength()
+    {
+        return 40 * 60 * cycleLength;
+    }
+}
+
+public class BloodDrip(Vector2 pos, Vector2 vel, bool waterColor) : WaterDrip(pos, vel, waterColor)
+{
+    public override void ApplyPalette(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, RoomPalette palette)
+    {
+        colors = new Color[]
+        {
+            new Color(1f, 0f, 0f),
+            new Color(1f, 0f, 0f),
+            new Color(1f, 0f, 0f)
+        };
+    }
+}
+
+public class DiseaseCloud : SporeCloud
+{
+    public DiseaseCloud(Vector2 pos, Vector2 vel, Color color, float size, AbstractCreature killTag, int checkInsectsDelay, InsectCoordinator smallInsects, int rippleLayer) : base(pos, vel, color, size, killTag, checkInsectsDelay, smallInsects, rippleLayer)
+    {
+        rad = Mathf.Lerp(0.2f, 0.6f, UnityEngine.Random.value) * size;
+        lifeTime = UnityEngine.Random.value * 20f + 25f;
+        this.pos = pos;
+        getToPos = pos + vel;
     }
 }

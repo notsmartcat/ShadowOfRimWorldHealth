@@ -1,7 +1,4 @@
 ﻿using RWCustom;
-using System;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using UnityEngine;
 
 using static ShadowOfRimWorldHealth.RimWorldHealth;
@@ -17,6 +14,9 @@ internal class CreatureHooks
         #endregion
 
         #region Creature
+        On.Creature.ctor += NewCreature;
+        On.Creature.Abstractize += CreatureAbstractize;
+        On.Creature.Update += CreatureUpdate;
         On.Creature.Violence += CreatureViolence;
         #endregion
 
@@ -28,6 +28,7 @@ internal class CreatureHooks
         On.StaticWorld.InitStaticWorld += StaticWorldInitStaticWorld;
         #endregion
     }
+
     #region AirBreatherCreature
     static void AirBreatherCreatureUpdate(On.AirBreatherCreature.orig_Update orig, AirBreatherCreature self, bool eu)
     {
@@ -71,6 +72,46 @@ internal class CreatureHooks
     #endregion
 
     #region Creature
+    static void NewCreature(On.Creature.orig_ctor orig, Creature self, AbstractCreature abstractCreature, World world)
+    {
+        orig(self, abstractCreature, world);
+
+        if (!healthState.TryGetValue(self.State, out RWState state))
+        {
+            return;
+        }
+
+        Debug.Log("Creating " + self + " time passed since being abstracted " + (cycleTick - state.timeAbstracted));
+
+        UpdateAfflictions(self.State, state, cycleTick - state.timeAbstracted);
+    }
+    static void CreatureAbstractize(On.Creature.orig_Abstractize orig, Creature self)
+    {
+        if (!healthState.TryGetValue(self.State, out RWState state))
+        {
+            orig(self);
+            return;
+        }
+
+        state.timeAbstracted = cycleTick;
+
+        Debug.Log("Abstracting " + self);
+
+        orig(self);
+    }
+    static void CreatureUpdate(On.Creature.orig_Update orig, Creature self, bool eu)
+    {
+        orig(self, eu);
+
+        if (!healthState.TryGetValue(self.State, out RWState state))
+        {
+            return;
+        }
+
+        RWHealthState.Update(self.State, state);
+
+        //Debug.Log("Creature Update tick");
+    }
     static void CreatureViolence(On.Creature.orig_Violence orig, Creature self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos hitAppendage, Creature.DamageType type, float damage, float stunBonus)
     {
         if (hitChunk == null || damage <= 0 || self.State == null || !healthState.TryGetValue(self.State, out RWState state))
