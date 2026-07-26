@@ -110,7 +110,7 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
                     {
                         if (affliction is RWDestroyed)
                         {
-                            if (dead && (part is Head || part is Brain || ))
+                            if (dead && RWHealthState.IsPartNecessary(part))
                             {
                                 partAfflictionDeleted = true;
 

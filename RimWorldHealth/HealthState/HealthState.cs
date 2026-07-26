@@ -2088,8 +2088,8 @@ public class RWHealthState
 
     public static bool IsPartNecessary(RWBodyPart part)
     {
-        return part.deathEffect == "Decapitation" || part.deathEffect == "Death" || part.deathEffect == "CutInHalf" ||
-            part is Skull || part is Spine || part is Pelvis || 
+        return part.deathEffect != "Destroy" ||
+            part is Spine ||
             part is RWOrgan;
     }
 }
