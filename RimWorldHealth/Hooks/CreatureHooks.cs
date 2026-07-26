@@ -81,8 +81,6 @@ internal class CreatureHooks
             return;
         }
 
-        Debug.Log("Creating " + self + " time passed since being abstracted " + (cycleTick - state.timeAbstracted));
-
         UpdateAfflictions(self.State, state, cycleTick - state.timeAbstracted);
     }
     static void CreatureAbstractize(On.Creature.orig_Abstractize orig, Creature self)
@@ -94,8 +92,6 @@ internal class CreatureHooks
         }
 
         state.timeAbstracted = cycleTick;
-
-        Debug.Log("Abstracting " + self);
 
         orig(self);
     }
@@ -109,8 +105,6 @@ internal class CreatureHooks
         }
 
         RWHealthState.Update(self.State, state);
-
-        //Debug.Log("Creature Update tick");
     }
     static void CreatureViolence(On.Creature.orig_Violence orig, Creature self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos hitAppendage, Creature.DamageType type, float damage, float stunBonus)
     {
@@ -565,8 +559,6 @@ internal class CreatureHooks
                 Override();
 
                 damage = Custom.LerpMap(lizard.lizardParams.maxMusclePower, 0, 16, 4, 22);
-
-                Debug.Log(damage);
 
                 RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
             }

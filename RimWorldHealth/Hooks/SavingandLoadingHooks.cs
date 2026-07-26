@@ -543,13 +543,13 @@ internal class SavingandLoadingHooks
 
         if (cycleNumber == -1)
         {
-            treatmentTime = afterCycleLength * 40f * 60f / 10;
+            treatmentTime = ShadowOfOptions.after_cycle_length.Value * 40f * 60f / 10;
         }
         else
         {
             int cycleDifference = Mathf.Abs(state.lastCycle - cycleNumber);
 
-            treatmentTime = (afterCycleLength * 40f * 60f * cycleDifference / 10) + (CycleLength() * (cycleDifference - 1) / 10);
+            treatmentTime = (ShadowOfOptions.after_cycle_length.Value * 40f * 60f * cycleDifference / 10) + (CycleLength() * (cycleDifference - 1) / 10);
         }
 
         if (cycleTick < CycleLength())
@@ -627,13 +627,20 @@ internal class SavingandLoadingHooks
     {
         float afterCycleTreatmentTime = 0;
 
+        if (disease.severity >= 1 && !disease.isImmune)
+        {
+            diseasesToSave.Add(disease);
+
+            return diseasesToSave;
+        }
+
         if (ticksPassed != -1)
         {
             afterCycleTreatmentTime = ticksPassed;
         }
         else if (isPlayer)
         {
-            afterCycleTreatmentTime = afterCycleLength * 40f * 60f; //multiply to turn into tics
+            afterCycleTreatmentTime = ShadowOfOptions.after_cycle_length.Value * 40f * 60f; //multiply to turn into tics
         }
         else
         {
@@ -641,7 +648,7 @@ internal class SavingandLoadingHooks
 
             if (cycleDifference > 0)
             {
-                afterCycleTreatmentTime = (afterCycleLength * 40f * 60f * cycleDifference) + (CycleLength() * (cycleDifference - 1));
+                afterCycleTreatmentTime = (ShadowOfOptions.after_cycle_length.Value * 40f * 60f * cycleDifference) + (CycleLength() * (cycleDifference - 1));
             }
         }
 
@@ -667,7 +674,7 @@ internal class SavingandLoadingHooks
         //Debug.Log("Disease Saving Start");
         //Debug.Log("Disease tendQuality " + disease.tendQuality);
 
-        float timeUntilTreatment = disease.timeUntilTreatment * 40f * 60; //multiply to turn into tics
+        float timeUntilTreatment = disease.timeUntilTreatment * 40f * 60f; //multiply to turn into tics
 
         bool willUpdateTend = afterCycleTreatmentTime > timeUntilTreatment;
 
@@ -723,6 +730,7 @@ internal class SavingandLoadingHooks
         }
         else
         {
+            disease.isTended = true;
             disease.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f, 0, 0.7f);
         }
 
@@ -754,7 +762,7 @@ internal class SavingandLoadingHooks
 
         //Debug.Log("previous timeUntilTreatment in min " + disease.timeUntilTreatment);
 
-        disease.timeUntilTreatment = (cycleLength * disease.treatmentTimes) - (treatmentTime / 40 / 60);
+        disease.timeUntilTreatment = (cycleLength * disease.treatmentTimes) - (treatmentTime / 40f / 60f);
 
         //Debug.Log("timeUntilTreatment base in min " + (cycleLength * disease.treatmentTimes));
 
@@ -763,7 +771,7 @@ internal class SavingandLoadingHooks
 
         //Debug.Log("new timeUntilTreatment in min " + disease.timeUntilTreatment);
 
-        while (disease.timeUntilTreatment <= 0)
+        while (ticksPassed != -1 && disease.timeUntilTreatment <= 0)
         {
             disease.timeUntilTreatment += cycleLength * disease.treatmentTimes;
         }
@@ -772,11 +780,14 @@ internal class SavingandLoadingHooks
 
         if (willSeverityMax && !willImmunityMax || willSeverityMax && willImmunityMax && severityMaxTimer > immunityMaxTimer)
         {
-            //Debug.Log("severity won");
+            if (ShadowOfOptions.debug_logs.Value)
+                Debug.Log(all + creatureState + "'s " + disease + "'s severity won");
+
             if (ticksPassed != -1)
             {
-                KillOwner();
+                RWHealthState.Kill(creatureState);
             }
+
             return diseasesToSave;
         }
         else if (willImmunityMax)
@@ -819,7 +830,7 @@ internal class SavingandLoadingHooks
         }
         float WillImmunityMax()
         {
-            return disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(creatureState, state) / CycleLength() * timeUntilTreatment;
+            return disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(creatureState, state, ticksPassed == -1) / CycleLength() * timeUntilTreatment;
         }
 
         float SeverityMaxTimer()
@@ -834,13 +845,6 @@ internal class SavingandLoadingHooks
         float Tended()
         {
             return disease.treatment * disease.tendQuality / CycleLength() * treatmentTime;
-        }
-
-        void KillOwner()
-        {
-            disease.severity = 1;
-
-            creatureState.Die();
         }
     }
 }

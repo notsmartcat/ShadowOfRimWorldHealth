@@ -613,7 +613,7 @@ public class RWHealthState
 
         if (state.bloodLoss == 1)
         {
-            self.Die();
+            Kill(self);
         }
 
     dead:
@@ -629,7 +629,7 @@ public class RWHealthState
             if (disease.severity >= 1 && !disease.isImmune)
             {
                 if(disease.lethal)
-                    self.Die();
+                    Kill(self);
 
                 return;
             }
@@ -1434,7 +1434,8 @@ public class RWHealthState
 
         if (health <= 0f)
         {
-            Debug.Log(focusedBodyPart + " was destroyed");
+            if (ShadowOfOptions.debug_logs.Value)
+                Debug.Log(all + self + "'s " + focusedBodyPart + " was destroyed");
 
             DestroyBodyPart();
 
@@ -1445,7 +1446,8 @@ public class RWHealthState
         }
         else
         {
-            Debug.Log(focusedBodyPart + " was damaged for " + damage);
+            if (ShadowOfOptions.debug_logs.Value)
+                Debug.Log(all + self + "'s " + focusedBodyPart + " was damaged for " + damage);
 
             focusedBodyPart.afflictions.Add(Scar(damage));
             focusedBodyPart.health = health;
@@ -1479,7 +1481,8 @@ public class RWHealthState
 
                         if (health <= 0f)
                         {
-                            Debug.Log("extra bodypart " + focusedBodyPart + " was destroyed");
+                            if (ShadowOfOptions.debug_logs.Value)
+                                Debug.Log(all + self + "'s extra bodypart " + focusedBodyPart + " was destroyed");
 
                             DestroyBodyPart();
                             extraDamage = health * -1;
@@ -1489,7 +1492,8 @@ public class RWHealthState
                         }
                         else
                         {
-                            Debug.Log("extra bodypart " + focusedBodyPart + " was damaged for " + tempDamage);
+                            if (ShadowOfOptions.debug_logs.Value)
+                                Debug.Log(all + self + "'s extra bodypart " + focusedBodyPart + " was damaged for " + tempDamage);
 
                             extraDamage = 0f;
 
@@ -1755,7 +1759,7 @@ public class RWHealthState
         }
     }
 
-    static void Kill(CreatureState self)
+    public static void Kill(CreatureState self)
     {
         if (self.creature == null)
         {
@@ -1773,22 +1777,11 @@ public class RWHealthState
 
     public static int BloodLossMultiplier(RWBodyPart part)
     {
-        int multiplier = 1;
-
-        if (part is Neck)
-        {
-            multiplier = 3;
-        }
-        else if (part is Heart)
-        {
-            multiplier = 5;
-        }
-
-        return multiplier;
+        return part is Heart ? 5 : part is Neck ? 3 : 1;
     }
 
     #region Stats
-    public static float ImmunityGainSpeed(CreatureState self, RWState state)
+    public static float ImmunityGainSpeed(CreatureState self, RWState state, bool hibernating = false)
     {
         float value = (state.bloodFiltration / 2) + 0.5f;
 
@@ -1804,6 +1797,12 @@ public class RWHealthState
         }
 
         value *= foodMultiplier;
+
+        if (hibernating) 
+        {
+            value *= 1.05f; //resting in a animal sleeping box
+            value *= 1.1f; //resting
+        }
 
         return value;
     }
@@ -2085,5 +2084,12 @@ public class RWHealthState
         }
 
         return bodyParts;
+    }
+
+    public static bool IsPartNecessary(RWBodyPart part)
+    {
+        return part.deathEffect == "Decapitation" || part.deathEffect == "Death" || part.deathEffect == "CutInHalf" ||
+            part is Skull || part is Spine || part is Pelvis || 
+            part is RWOrgan;
     }
 }

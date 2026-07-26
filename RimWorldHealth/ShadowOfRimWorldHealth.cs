@@ -137,7 +137,6 @@ public class RimWorldHealth : BaseUnityPlugin
     public static int cycleTick = 0;
 
     public static float cycleLength = 13;
-    public static float afterCycleLength = 5;
 
     internal static new ManualLogSource Logger;
 
@@ -226,7 +225,12 @@ public class RimWorldHealth : BaseUnityPlugin
     {
         orig(self, eu);
 
-        if (healthState.TryGetValue(self.State, out RWState state))
+        if (!healthState.TryGetValue(self.State, out RWState state))
+        {
+            return;
+        }
+
+        if (ShadowOfOptions.debug_keys.Value)
         {
             if (Input.GetKey("n"))
             {

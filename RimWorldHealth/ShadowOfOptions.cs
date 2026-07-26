@@ -9,10 +9,14 @@ public class ShadowOfOptions : OptionInterface
     public ShadowOfOptions(RimWorldHealth _)
     {
         debug_keys = config.Bind("debug_keys", false, new ConfigurableInfo("If turned On N deals a small amountt of damage to the player's head and M cut's off the players right arm and gives the player the Flu. (Default = false)", null, "", new object[1] { "Debug Keys" }));
-        debug_logs = config.Bind("debug_logs", false, new ConfigurableInfo("If turned On Messages that include a lot of info about Lizards will show up when you turn on Debug Logs, these will also appear in the 'consoleLog.txt' all logs from this mod start with 'ShadowOfRWHealth:' for easy locating. (Default = false)", null, "", new object[1] { "Debug Logs" }));
+        debug_logs = config.Bind("debug_logs", false, new ConfigurableInfo("If turned On messages that include a lot of info about Lizards will show up when you turn on Debug Logs, these will also appear in the 'consoleLog.txt' all logs from this mod start with 'ShadowOfRWHealth:' for easy locating. (Default = false)", null, "", new object[1] { "Debug Logs" }));
 
         karma_flower = config.Bind("karma_flower", true, new ConfigurableInfo("If turned On eating a Karma Flower will heal the most severe ailment the creature that eats it has. (Default = true)", null, "", new object[1] { "Karma Flower Healer" }));
-        karma_flower_reinforced = config.Bind("karma_flower_reinforced", true, new ConfigurableInfo("If turned On Karma Flowers eaten by a Slugcat or SLugpup will only heal if the Player has their Karma Reinforcement active. (Default = true)", null, "", new object[1] { "Karma Flower Reinforcement Required" }));
+        karma_flower_reinforced = config.Bind("karma_flower_reinforced", true, new ConfigurableInfo("If turned On Karma Flowers eaten by a Slugcat or Slugpup will only heal if the Player has their Karma Reinforcement active. (Default = true)", null, "", new object[1] { "Karma Flower Reinforcement Required" }));
+
+        after_cycle_length = config.Bind("after_cycle_length", 13, new ConfigurableInfo("How much time (in minutes) passes during hibernation, this time is used to heal afflictions of all creatures. (Default = 13)", new ConfigAcceptableRange<int>(0, 30), "", new object[1] { "Hibernation Time" }));
+
+        coop_dead_saving = config.Bind("coop_dead_saving", "Clear all afflictions or clear life threatening afflictions", new ConfigurableInfo("Dead Saving"));
     }
 
     #region Misc Values
@@ -48,16 +52,28 @@ public class ShadowOfOptions : OptionInterface
 
         AddNewLine();
         AddBox();
-        AddCheckBox(debug_keys, (string)debug_keys.info.Tags[0]);
-        AddCheckBox(debug_logs, (string)debug_logs.info.Tags[0]);
+        AddCheckBox(debug_keys);
+        AddCheckBox(debug_logs);
         DrawCheckBoxes(ref Tabs[0]);
         DrawBox(ref Tabs[0]);
 
         AddNewLine();
         AddBox();
-        AddCheckBox(karma_flower, (string)karma_flower.info.Tags[0]);
-        AddCheckBox(karma_flower_reinforced, (string)karma_flower_reinforced.info.Tags[0]);
+        AddCheckBox(karma_flower);
+        AddCheckBox(karma_flower_reinforced);
         DrawCheckBoxes(ref Tabs[0]);
+        DrawBox(ref Tabs[0]);
+
+        AddNewLine();
+        AddBox();
+        AddSlider(after_cycle_length);
+        DrawSliders(ref Tabs[0]);
+        DrawBox(ref Tabs[0]);
+
+        AddNewLine();
+        AddBox();
+        AddNewLine();
+        DrawComboBox(ref Tabs[0], coop_dead_saving, new List<string> { "Clear All Afflictions", "Clear Life Threatening Afflictions Only" });
         DrawBox(ref Tabs[0]);
         #endregion
     }
@@ -91,9 +107,12 @@ public class ShadowOfOptions : OptionInterface
         box_end_positions.RemoveAt(index);
     }
 
-    void AddCheckBox(Configurable<bool> configurable, string text)
+    void AddCheckBox(Configurable<bool> configurable, string text = null)
     {
         check_box_configurables.Add(configurable);
+
+        text ??= (string)configurable.info.Tags[0];
+
         check_boxes_text_labels.Add(new OpLabel(default, default, text, (FLabelAlignment)1, false, null));
     }
 
@@ -137,6 +156,35 @@ public class ShadowOfOptions : OptionInterface
         check_box_configurables.Clear();
         check_boxes_text_labels.Clear();
     }
+
+    void DrawComboBox(ref OpTab tab, Configurable<string> config, List<string> list)
+    {
+        float num = margin_x.y - margin_x.x;
+        float num2 = num * 0.5f * spacing;
+        float num3 = position.x;
+
+        List<ListItem> items = new();
+
+        for (int i = 0; i < list.Count; i++)
+        {
+            items.Add(new ListItem(list[i], i));
+        }
+
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        OpLabel val3 = new(default, default, config.info.description, (FLabelAlignment)1, true, null);
+        ((UIelement)val3).pos = new Vector2(num3, position.y + 4f);
+        val3.size = new Vector2(num2, font_height);
+        num3 += 150;
+        tab.AddItems((UIelement[])(object)new UIelement[1] { val3 });
+
+        ComboBox val2 = new(config, new Vector2(num3, position.y), 350, items);
+        tab.AddItems((UIelement[])(object)new UIelement[1] { val2 });
+    }
+
 
     void DrawCheckBoxAndSliderCombo(ref OpTab tab)
     {
@@ -198,9 +246,12 @@ public class ShadowOfOptions : OptionInterface
         slider_text_labels_right.Clear();
     }
 
-    void AddSlider(Configurable<int> configurable, string text, string sliderTextLeft = "", string sliderTextRight = "")
+    void AddSlider(Configurable<int> configurable, string text = null, string sliderTextLeft = "", string sliderTextRight = "")
     {
         slider_configurables.Add(configurable);
+
+        text ??= (string)configurable.info.Tags[0];
+
         slider_main_text_labels.Add(text);
         slider_text_labels_left.Add(new OpLabel(default, default, sliderTextLeft, (FLabelAlignment)2, false, null));
         slider_text_labels_right.Add(new OpLabel(default, default, sliderTextRight, (FLabelAlignment)1, false, null));
@@ -284,4 +335,34 @@ public class ShadowOfOptions : OptionInterface
 
     public static Configurable<bool> karma_flower;
     public static Configurable<bool> karma_flower_reinforced;
+
+    public static Configurable<int> after_cycle_length;
+
+    public static Configurable<string> coop_dead_saving;
+}
+internal class ComboBox : OpComboBox
+{
+    public const int BG_SPRITE_INDEX_RANGE = 9;
+
+    public ComboBox(Configurable<string> config, Vector2 pos, float width, string[] array) : base(config, pos, width, array)
+    {
+    }
+
+    public ComboBox(Configurable<string> config, Vector2 pos, float width, List<ListItem> list) : base(config, pos, width, list)
+    {
+    }
+
+    public override void GrafUpdate(float timeStacker)
+    {
+        base.GrafUpdate(timeStacker);
+        if (_rectList != null && !_rectList.isHidden)
+        {
+            myContainer.MoveToFront();
+
+            for (int i = 0; i < BG_SPRITE_INDEX_RANGE; i++)
+            {
+                _rectList.sprites[i].alpha = 1;
+            }
+        }
+    }
 }

@@ -368,10 +368,11 @@ public class HealthTab : HudPart
                         }
                         else
                         {
-                            Debug.Log("Error affliction " + affliction + " does not belong to any tendable check");
+                            Debug.Log(all + affliction + " does not belong to any tendable check");
+                            RimWorldHealth.Logger.LogError(all + affliction + " does not belong to any tendable check");
                         }
                     }
-                    else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                    else if (affliction is RWDisease disease && (disease.timeUntilTreatment <= 0 || !disease.isTended))
                     {
                         if (diseaseAffliction != null)
                         {
@@ -389,7 +390,7 @@ public class HealthTab : HudPart
             {
                 foreach (RWAffliction affliction in inspectedState.wholeBodyAfflictions)
                 {
-                    if (affliction is not RWDisease disease || disease.timeUntilTreatment > 0)
+                    if (affliction is not RWDisease disease || (disease.timeUntilTreatment > 0 && disease.isTended))
                     {
                         continue;
                     }
@@ -421,6 +422,8 @@ public class HealthTab : HudPart
 
         void startTending(RWAffliction affliction)
         {
+            Debug.Log("tending " + affliction);
+
             playerState.tendAffliction = affliction;
             playerState.tendTime = Mathf.Round(playerState.tendTimeBase / RWHealthState.MedicalTendSpeed(playerState));
             playerState.tendTimeMax = playerState.tendTime;
@@ -1254,7 +1257,8 @@ public class HealthTab : HudPart
                             }
                             else
                             {
-                                Debug.Log(affliction + " is not a valid type of disease");
+                                Debug.Log(all + affliction + " is not a valid type of disease");
+                                RimWorldHealth.Logger.LogError(all + affliction + " is not a valid type of disease");
                                 continue;
                             }
                         }
@@ -1340,7 +1344,8 @@ public class HealthTab : HudPart
                         }
                         else
                         {
-                            Debug.Log(affliction + " is not a valid type of affliction");
+                            Debug.Log(all + affliction + " is not a valid type of affliction");
+                            RimWorldHealth.Logger.LogError(all + affliction + " is not a valid type of affliction");
                             continue;
                         }
                     }

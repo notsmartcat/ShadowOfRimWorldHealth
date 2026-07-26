@@ -18,8 +18,6 @@ internal class HudHooks
     {
         orig(self, cam);
 
-        Debug.Log("HUDInitSafariHud");
-
         healthTab = new HealthTab(self, null);
 
         self.AddPart(healthTab);
@@ -27,8 +25,6 @@ internal class HudHooks
     static void HUDInitSinglePlayerHud(On.HUD.HUD.orig_InitSinglePlayerHud orig, HUD.HUD self, RoomCamera cam)
     {
         orig(self, cam);
-
-        Debug.Log("HUDInitSinglePlayerHud");
 
         if (!healthState.TryGetValue((self.owner as Creature).State, out _))
         {
@@ -43,8 +39,6 @@ internal class HudHooks
     static void NewPlayerSpecificMultiplayerHud(On.HUD.PlayerSpecificMultiplayerHud.orig_ctor orig, HUD.PlayerSpecificMultiplayerHud self, HUD.HUD hud, ArenaGameSession session, AbstractCreature abstractPlayer)
     {
         orig(self, hud, session, abstractPlayer);
-
-         Debug.Log("NewPlayerSpecificMultiplayerHud");
 
         if (!healthState.TryGetValue(abstractPlayer.state, out _))
         {

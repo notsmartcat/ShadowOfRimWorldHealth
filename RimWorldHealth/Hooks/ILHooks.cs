@@ -1871,15 +1871,11 @@ internal class ILHooks
             return;
         }
 
-        Debug.Log("SafariControlCreature");
-
         healthTab.player = self;
         healthTab.playerState = state;
     }
     public static void SafariUnControlCreature()
     {
-        Debug.Log("SafariUnControlCreature");
-
         healthTab.TriggeredOff();
 
         healthTab.player = null;
@@ -3399,8 +3395,6 @@ internal class ILHooks
     }
     public static WorldCoordinate SlugNPCAIUpdate(MoreSlugcats.SlugNPCAI self, WorldCoordinate destination)
     {
-        //Debug.Log(self.behaviorType);
-
         if (self.creature.controlled || !healthState.TryGetValue(self.cat.State, out RWState state) || (self.behaviorType != SlugTend && self.behaviorType != SlugSelfTend))
         {
             return destination;
@@ -3580,7 +3574,8 @@ internal class ILHooks
                     }
                     else
                     {
-                        Debug.Log("Error affliction " + affliction + " does not belong to any tendable check");
+                        Debug.Log(all + affliction + " does not belong to any tendable check");
+                        RimWorldHealth.Logger.LogError(all + affliction + " does not belong to any tendable check");
                     }
                 }
                 else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
