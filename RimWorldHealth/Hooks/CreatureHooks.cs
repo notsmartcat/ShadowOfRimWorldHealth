@@ -81,6 +81,11 @@ internal class CreatureHooks
             return;
         }
 
+        if (updatableCreatures.Contains(abstractCreature))
+        {
+            updatableCreatures.Remove(abstractCreature);
+        }
+
         UpdateAfflictions(self.State, state, cycleTick - state.timeAbstracted);
     }
     static void CreatureAbstractize(On.Creature.orig_Abstractize orig, Creature self)
@@ -93,7 +98,48 @@ internal class CreatureHooks
 
         state.timeAbstracted = cycleTick;
 
+        if (IsUpdatable())
+        {
+            updatableCreatures.Add(self.abstractCreature);
+        }
+
         orig(self);
+
+        bool IsUpdatable()
+        {
+            foreach (RWBodyPart part in state.bodyParts)
+            {
+                if (part.afflictions.Count == 0 || IsSubPartDestroyed(state, part))
+                {
+                    continue;
+                }
+
+                foreach (RWAffliction affliction in part.afflictions)
+                {
+                    if (affliction is not RWInjury injury)
+                    {
+                        if (affliction is RWDisease disease)
+                        {
+                            return true;
+                        }
+
+                        continue;
+                    }
+
+                    if (injury.infectionTimer > 0)
+                    {
+                        return true;
+                    }
+
+                    if (injury is not RWDestroyed && (injury is not RWScar scar || !scar.isRevealed))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
     }
     static void CreatureUpdate(On.Creature.orig_Update orig, Creature self, bool eu)
     {

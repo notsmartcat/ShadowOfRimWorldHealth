@@ -19,6 +19,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
         public float maxHealth = 0;
         public float bodySizeFactor = 1;
+        public float healthScale = 1; //lizards will have this be 1.2 reffer to https://rimworldwiki.com/wiki/Property:Health_Scale
 
         public List<RWBodyPart> bodyParts = new();
 
@@ -35,8 +36,10 @@ public class RimWorldHealth : BaseUnityPlugin
         public float bloodLossPerCycle = 0;
 
         public float pain = 0;
+        public float painShockThreshold = 0.8f;
 
         public bool forceUnconsciousness = false;
+        public int consciousState = 0; //0 = Conscious, 1 = Incapacitated, 2 = Pain Shock, 3 = Unconscious. in order of severity so more severe states will override
 
         public int timeAbstracted = 0;
 
@@ -130,9 +133,13 @@ public class RimWorldHealth : BaseUnityPlugin
 
     private bool init = false;
 
-    public static HealthTab healthTab;
-    public bool buttonHeld = false;
+    public static List<HealthTab> healthTabs = new(4) { null, null, null, null};
+    public List<bool> buttonHeld = new(4) { false, false, false, false };
     public bool tempButtonHeld = false;
+
+    public static bool singleplayerHud = true;
+
+    public static List<AbstractCreature> updatableCreatures = new();
 
     public static int cycleTick = 0;
 
@@ -183,6 +190,36 @@ public class RimWorldHealth : BaseUnityPlugin
 
         cycleTick++;
 
+        int divider = ShadowOfOptions.update_abstracted.Value switch
+        {
+            0 => -1,
+            1 => 200,
+            2 => 400,
+            3 => 1200,
+            4 => 2400,
+            5 => 4800,
+            _ => -1,
+        };
+
+        if (ShadowOfOptions.update_abstracted.Value != 0 && cycleTick % divider == 0)
+        {
+            List<AbstractCreature> tempUpdatableCreatures = updatableCreatures;
+
+            foreach (AbstractCreature creature in tempUpdatableCreatures)
+            {
+                if (creature is null || !healthState.TryGetValue(creature.state, out RWState state))
+                {
+                    updatableCreatures.Remove(creature);
+                    continue;
+                }
+
+                if (!UpdateAfflictions(creature.state, state, divider))
+                {
+                    updatableCreatures.Remove(creature);
+                }
+            }
+        }
+
         //Debug.Log("RainCycle tick = " + cycleTick);
     }
 
@@ -205,9 +242,11 @@ public class RimWorldHealth : BaseUnityPlugin
     {
         orig(self);
 
-        if (healthTab != null && healthTab.player == self.abstractCreature && healthTab.visible)
+        int playerNumber = ((PlayerState)self.State).playerNumber;
+
+        if (healthTabs.Count >= playerNumber + 1 && healthTabs[playerNumber] != null && healthTabs[playerNumber].player == self.abstractCreature && healthTabs[playerNumber].visible)
         {
-            healthTab.input = self.input[0];
+            healthTabs[playerNumber].input = self.input[0];
 
             self.input[0].x = 0;
             self.input[0].y = 0;
@@ -292,6 +331,18 @@ public class RimWorldHealth : BaseUnityPlugin
             }
             if (Input.GetKey("m"))
             {
+                for (int i = 0; i < state.bodyParts.Count; i++)
+                {
+                    if (state.bodyParts[i] is Leg part && !IsDestroyed(part))
+                    {
+                        RWHealthState.Damage(self.State, state, new RWPoke(), 999999f, 999, part, "oopsie");
+                    }
+                }
+
+                state.updateCapacities = true;
+
+                return;
+
                 if (state.wholeBodyAfflictions.Count == 0)
                 {
                     state.wholeBodyAfflictions.Add(new RWFlu(self.State, null));
@@ -339,14 +390,25 @@ public class RimWorldHealth : BaseUnityPlugin
             return;
         }
 
-        if (Input.GetKey("h") && healthTab != null)
+        int playerNumber = ((PlayerState)self.State).playerNumber;
+
+        KeyCode keyCode = playerNumber switch
         {
-            if (buttonHeld)
+            0 => ShadowOfOptions.player_1_key.Value,
+            1 => ShadowOfOptions.player_2_key.Value,
+            2 => ShadowOfOptions.player_3_key.Value,
+            3 => ShadowOfOptions.player_4_key.Value,
+            _ => throw new NotImplementedException()
+        };
+
+        if (Input.GetKey(keyCode) && healthTabs.Count >= playerNumber + 1 && healthTabs[playerNumber] != null)
+        {
+            if (buttonHeld[playerNumber])
             {
                 return;
             }
 
-            buttonHeld = true;
+            buttonHeld[playerNumber] = true;
 
             CreatureState healthTabCreatureState = self.State;
             RWState healthTabState = state;
@@ -360,11 +422,11 @@ public class RimWorldHealth : BaseUnityPlugin
                 }
             }
 
-            healthTab.ToggleVisibility(healthTabCreatureState, healthTabState);
+            healthTabs[playerNumber].ToggleVisibility(healthTabCreatureState, healthTabState);
         }
         else
         {
-            buttonHeld = false;
+            buttonHeld[playerNumber] = false;
         }
     }
 
@@ -403,7 +465,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
     public static bool LegCheck(RWState state)
     {
-        if (state.moving < 0.5f)
+        if (state.consciousState != 0)
         {
             return false;
         }
@@ -1273,6 +1335,11 @@ public class RimWorldHealth : BaseUnityPlugin
         else if (self is Player)
         {
             name = ((PlayerState)self.State).isPup ? "Slugpup" : "Slugcat";
+
+            if (!singleplayerHud && (!ModManager.MSC || self.State is not MoreSlugcats.PlayerNPCState))
+            {
+                name = "Player " + (((PlayerState)self.State).playerNumber + 1);
+            }
         } //Will add all non-modded Slugcats later
         else if (self is SkyWhale)
         {
@@ -1336,7 +1403,8 @@ public class RimWorldHealth : BaseUnityPlugin
         else
         {
             name = self.ToString();
-            Debug.Log(self + " is a unknown creature");
+            Debug.Log(all + self + " is a unknown creature");
+            Logger.LogError(all + self + " is a unknown creature");
         }
 
         return name;
@@ -1792,15 +1860,36 @@ public class RimWorldHealth : BaseUnityPlugin
         #endregion
     }
 
-    public static void UpdateAfflictions(CreatureState self, RWState state, int ticksPassed)
+    public static bool UpdateAfflictions(CreatureState self, RWState state, int ticksPassed)
     {
+        state.timeAbstracted = cycleTick;
+
+        bool keepUpdating = false;
+
         List<RWDisease> diseasesToTend = new();
         List<RWInjury> injuriesToTend = new();
 
         try
         {
+            if (state.consciousState > 0 && (ShadowOfOptions.downed_tend.Value != "Everyone" || state.consciousState == 3)) //if uncon do not automatically tend
+            {
+                goto skipTend;
+            }
+
             #region Tend
-            int timesTended = ticksPassed / Mathf.RoundToInt(state.tendTimeBase / RWHealthState.MedicalTendSpeed(state));
+            state.tendTime -= ticksPassed;
+
+            int timesTended = 0;
+
+            while (state.tendTime < 0)
+            {
+                Debug.Log("tend time was " + state.tendTime);
+                state.tendTime += Mathf.RoundToInt(state.tendTimeBase / RWHealthState.MedicalTendSpeed(state));
+                Debug.Log("new tend time " + state.tendTime);
+                timesTended++;
+            }
+
+            Debug.Log("tending times " + timesTended);
 
             for (int i = 0; i < timesTended; i++)
             {
@@ -1853,7 +1942,8 @@ public class RimWorldHealth : BaseUnityPlugin
                             }
                             else
                             {
-                                Debug.Log("Error affliction " + affliction + " does not belong to any tendable check");
+                                Debug.Log(all + affliction + " does not belong to any tendable check");
+                                Logger.LogError(all + affliction + " does not belong to any tendable check");
                             }
                         }
                         else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
@@ -1892,19 +1982,23 @@ public class RimWorldHealth : BaseUnityPlugin
 
                 if (bleeding != null)
                 {
+                    keepUpdating = true;
                     tend(bleeding);
                 }
                 else if (diseaseAffliction != null)
                 {
+                    keepUpdating = true;
                     tend(diseaseAffliction);
                 }
                 else if (untendedAffliction != null)
                 {
+                    keepUpdating = true;
                     tend(untendedAffliction);
                 }
                 else
                 {
-                    timesTended -= i;
+                    keepUpdating = false;
+                    timesTended = 0;
                     break;
                 }
 
@@ -1931,11 +2025,16 @@ public class RimWorldHealth : BaseUnityPlugin
             }
             #endregion
 
+        skipTend:
+
+            state.consciousState = 0;
+
             #region WholeBody
             foreach (RWAffliction affliction in state.wholeBodyAfflictions)
             {
                 if (affliction is RWDisease disease)
                 {
+                    keepUpdating = true;
                     diseasesToTend.Add(disease);
                 }
             }
@@ -1966,16 +2065,113 @@ public class RimWorldHealth : BaseUnityPlugin
                 }
             }
 
+            if (injuriesToTend.Count > 0)
+            {
+                keepUpdating = true;
+            }
+
             UpdateInjuries(injuriesToTend, state);
+
+            state.bloodLossPerCycle = 0;
+
+            foreach (RWBodyPart part in state.bodyParts)
+            {
+                if (IsSubPartDestroyed(state, part))
+                {
+                    continue;
+                }
+
+                List<RWAffliction> afflictionList = new(part.afflictions);
+                foreach (RWAffliction affliction in afflictionList)
+                {
+                    if (affliction is RWDestroyed destroyed)
+                    {
+                        part.health = 0;
+                        part.efficiency = 0;
+
+                        if (!destroyed.isTended)
+                        {
+                            state.bloodLossPerCycle += destroyed.isBleeding ? destroyed.healingDifficulty.bleeding * destroyed.part.maxHealth * 2 * state.bodySizeFactor * RWHealthState.BloodLossMultiplier(part) : 0;
+
+                            affliction.pain = destroyed.part.maxHealth * 2 * destroyed.healingDifficulty.pain / state.bodySizeFactor / 100;
+                        }
+
+                        break;
+                    }
+
+                    if (affliction is not RWInjury injury)
+                    {
+                        continue;
+                    }
+
+                    if (self.dead)
+                    {
+                        continue;
+                    }
+
+                    if (injury is RWScar scar && scar.isRevealed)
+                    {
+                        if (scar.painCategory == "painful")
+                        {
+                            affliction.pain = scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
+                        }
+                        else if (scar.painCategory == "aching")
+                        {
+                            affliction.pain = scar.scarDamage * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
+                        }
+                        else if (scar.painCategory == "itchy")
+                        {
+                            affliction.pain = scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
+                        }
+                    }
+                    else
+                    {
+                        affliction.pain = injury.damage * injury.healingDifficulty.pain / state.bodySizeFactor / 100;
+                    }
+
+                    state.pain += affliction.pain;
+
+                    float bloodLoss = injury.isBleeding && !injury.isTended ? injury.healingDifficulty.bleeding * injury.damage * state.bodySizeFactor * RWHealthState.BloodLossMultiplier(part) : 0;
+
+                    foreach (int bodyChunk in injury.part.connectedBodyChunks)
+                    {
+                        state.visualBleedAmount[bodyChunk][0] += bloodLoss / injury.part.connectedBodyChunks.Count;
+                    }
+
+                    state.bloodLossPerCycle += bloodLoss;
+                }
+            }
+
+            if (state.bloodLossPerCycle > 0)
+            {
+                state.bloodLoss += state.bloodLossPerCycle / 100 / CycleLength() * (ticksPassed / 40);
+            }
+
+            state.bloodLoss = Mathf.Clamp(state.bloodLoss, 0, 1);
+
+            if (state.bloodLoss == 1)
+            {
+                RWHealthState.Kill(self);
+
+                return false;
+            }
+            else if (state.bloodLoss > 0)
+            {
+                keepUpdating = true;
+            }
 
             foreach (RWDisease disease in diseasesToTend)
             {
                 SavingandLoadingHooks.UpdateDisease(disease, state, self, new(), false, ticksPassed);
             }
 
+            UpdateCapacities();
+
             state.updateCapacities = true;
         }
         catch (Exception e) { Logger.LogError(e); }
+
+        return keepUpdating;
 
         void UpdateInjuries(List<RWInjury> healList, RWState state)
         {
@@ -2026,6 +2222,506 @@ public class RimWorldHealth : BaseUnityPlugin
                     healList.Remove(injury);
 
                     injury.RemoveSelf();
+                }
+            }
+        }
+
+        void UpdateCapacities()
+        {
+            state.capacityAffectingAffliction.Clear();
+
+            state.forceUnconsciousness = false;
+
+            if (!self.dead)
+            {
+                state.bloodLossPerCycle = 0;
+                state.pain = 0;
+                state.consciousness = 0;
+                state.moving = 0;
+                state.manipulation = 0;
+                state.sight = 0;
+                state.hearing = 0;
+                state.breathing = 0;
+                state.bloodFiltration = 0;
+                state.bloodPumping = 0;
+
+                foreach (List<float> floats in state.visualBleedAmount)
+                {
+                    floats[0] = 0;
+                }
+            }
+
+            List<RWAffliction> afflictionList;
+
+            float totalDamage = 0;
+
+            foreach (RWBodyPart part in state.bodyParts)
+            {
+                part.health = part.maxHealth;
+                if (part.afflictions.Count == 0)
+                {
+                    goto line1;
+                }
+                else if (IsSubPartDestroyed(state, part))
+                {
+                    part.health = 0;
+                    part.efficiency = 0;
+
+                    goto line1;
+                }
+
+                afflictionList = new(part.afflictions);
+                foreach (RWAffliction affliction in afflictionList)
+                {
+                    if (affliction is RWDestroyed destroyed)
+                    {
+                        part.health = 0;
+                        part.efficiency = 0;
+
+                        if (!destroyed.isTended)
+                        {
+                            state.bloodLossPerCycle += destroyed.isBleeding ? destroyed.healingDifficulty.bleeding * destroyed.part.maxHealth * 2 * state.bodySizeFactor * RWHealthState.BloodLossMultiplier(part) : 0;
+
+                            affliction.pain = destroyed.part.maxHealth * 2 * destroyed.healingDifficulty.pain / state.bodySizeFactor / 100;
+                        }
+
+                        break;
+                    }
+
+                    if (affliction is not RWInjury injury)
+                    {
+                        if (!self.dead && affliction is RWDisease disease)
+                        {
+                            Disease(disease);
+                        }
+
+                        continue;
+                    }
+
+                    part.health -= injury.damage;
+
+                    totalDamage += injury.damage;
+
+                    if (self.dead)
+                    {
+                        continue;
+                    }
+
+                    if (injury is RWScar scar && scar.isRevealed)
+                    {
+                        if (scar.painCategory == "painful")
+                        {
+                            affliction.pain = scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
+                        }
+                        else if (scar.painCategory == "aching")
+                        {
+                            affliction.pain = scar.scarDamage * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
+                        }
+                        else if (scar.painCategory == "itchy")
+                        {
+                            affliction.pain = scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
+                        }
+                    }
+                    else
+                    {
+                        affliction.pain = injury.damage * injury.healingDifficulty.pain / state.bodySizeFactor / 100;
+                    }
+
+                    state.pain += affliction.pain;
+
+                    float bloodLoss = injury.isBleeding && !injury.isTended ? injury.healingDifficulty.bleeding * injury.damage * state.bodySizeFactor * RWHealthState.BloodLossMultiplier(part) : 0;
+
+                    foreach (int bodyChunk in injury.part.connectedBodyChunks)
+                    {
+                        state.visualBleedAmount[bodyChunk][0] += bloodLoss / injury.part.connectedBodyChunks.Count;
+                    }
+
+                    state.bloodLossPerCycle += bloodLoss;
+                }
+
+            line1:
+
+                part.efficiency = Mathf.Max(0, part.health / part.maxHealth);
+
+                if (part.health > 0 && part.health < 1 || part.deathEffect == "" && part.health < 1)
+                {
+                    part.health = 1;
+                    part.efficiency = 0;
+                }
+                else if (part is UpperTorso && part.health <= 0)
+                {
+                    part.health = 0;
+                    part.efficiency = 0;
+                }
+            }
+
+            if (totalDamage > 150 * state.healthScale)
+            {
+                RWHealthState.Kill(self);
+                return;
+            }
+
+            if (self is HealthState healthState)
+            {
+                healthState.health = state.consciousnessSource.efficiency;
+            }
+            else if (self is PlayerState playerState)
+            {
+                playerState.permanentDamageTracking = Mathf.Max(0, 1 - state.consciousnessSource.efficiency);
+            }
+
+            afflictionList = new(state.wholeBodyAfflictions);
+
+            foreach (RWAffliction affliction in afflictionList)
+            {
+                if (affliction is RWDisease disease)
+                {
+                    Disease(disease);
+                }
+                else if (affliction is RWInformational informational)
+                {
+                    Informational(informational);
+                }
+            }
+
+            state.pain = Mathf.Clamp(state.pain, 0, 1);
+
+            if (state.pain > state.painShockThreshold && state.consciousState < 2)
+            {
+                state.consciousState = 2;
+            }
+
+            if (state.bloodFiltrationBP.Count > 0)
+            {
+                float baseEfficiency = 0;
+                float offsets = state.bloodFiltration;
+                float postFactors = 1;
+
+                foreach (RWBodyPart part in state.bloodFiltrationBP)
+                {
+                    baseEfficiency += (part is Kidney ? (part.efficiency / 2) : part.efficiency) / (state.bloodFiltrationBP.Count != 1 ? state.bloodFiltrationBP.Count - 1 : state.bloodFiltrationBP.Count);
+                }
+
+                state.bloodFiltration = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
+            }
+            else
+            {
+                state.bloodFiltration = 0;
+            }
+
+            if (state.bloodPumpingBP.Count > 0)
+            {
+                float baseEfficiency = 0;
+                float offsets = state.bloodPumping;
+                float postFactors = 1;
+
+                foreach (RWBodyPart part in state.bloodPumpingBP)
+                {
+                    baseEfficiency += part.efficiency / state.bloodPumpingBP.Count;
+                }
+
+                state.bloodPumping = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
+            }
+            else
+            {
+                state.bloodPumping = 0;
+            }
+
+            if (state.breathingBP.Count > 0)
+            {
+                float baseEfficiency = 0;
+                float offsets = state.breathing;
+                float postFactors = 1;
+
+                foreach (RWBodyPart part in state.breathingBP)
+                {
+                    baseEfficiency += (part is Lung ? (part.efficiency / 2) : part.efficiency) / (state.breathingBP.Count != 1 ? (state.breathingBP.Count - 1) : state.breathingBP.Count);
+                }
+
+                state.breathing = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
+            }
+            else
+            {
+                state.breathing = 0;
+            }
+
+            float consciounessOffset = state.consciousness;
+
+            state.consciousness = ((state.consciousnessSource == null ? 1 : state.consciousnessSource.efficiency) * (1 - Mathf.Clamp((state.pain - 0.1f) * 4 / 9, 0, 0.4f)) * Mathf.Min(1, 1 - 0.2f * (1 - state.bloodPumping)) * Mathf.Min(1, 1 - 0.2f * (1 - state.breathing)) * Mathf.Min(1, 1 - 0.1f * (1 - state.bloodFiltration))) + consciounessOffset;
+
+            if (state.bloodLoss >= 0.6f)
+            {
+                state.consciousness -= 0.4f;
+
+                state.forceUnconsciousness = true;
+            }
+            else if (state.bloodLoss >= 0.45f)
+            {
+                state.consciousness -= 0.4f;
+            }
+            else if (state.bloodLoss >= 0.3f)
+            {
+                state.consciousness -= 0.2f;
+            }
+            else if (state.bloodLoss >= 0.15f)
+            {
+                state.consciousness -= 0.1f;
+            }
+
+            if (state.forceUnconsciousness)
+            {
+                state.consciousness = Mathf.Min(state.consciousness, 0.1f);
+            }
+
+            state.consciousness = Mathf.Max(state.consciousness, 0);
+
+            if (state.consciousness <= 0 || state.bloodFiltration <= 0 || state.bloodPumping <= 0 || state.breathing <= 0)
+            {
+                RWHealthState.Kill(self);
+                return;
+            }
+            else if (state.consciousness < 0.3f)
+            {
+                state.consciousState = 3;
+            }
+
+            if (state.hearingBP.Count > 0)
+            {
+                float baseEfficiency = 0;
+                float offsets = state.hearing;
+                float postFactors = 1;
+
+                if (state.hearingBP.Count == 1)
+                {
+                    baseEfficiency = state.hearingBP[0].efficiency;
+
+                    state.hearing = (baseEfficiency + offsets) * postFactors;
+                }
+                else
+                {
+                    float bestEfficiency = 0;
+
+                    foreach (RWBodyPart part in state.hearingBP)
+                    {
+                        baseEfficiency += part.efficiency / (state.hearingBP.Count * 2);
+
+                        if (part.efficiency > bestEfficiency)
+                        {
+                            bestEfficiency = part.efficiency;
+                        }
+                    }
+
+                    baseEfficiency += bestEfficiency / 2;
+
+                    state.hearing = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
+                }
+            }
+            else
+            {
+                state.hearing = 0;
+            }
+
+            if ((state.armSetNames.Count + state.manipulationBP.Count) > 0)
+            {
+                float baseEfficiency = 0;
+                float offsets = state.manipulation;
+                float postFactors = 1;
+                float otherEfficiency = 1;
+
+                foreach (RWBodyPart part in state.manipulationBP)
+                {
+                    otherEfficiency *= part.efficiency;
+                }
+
+                foreach (string setName in state.armSetNames)
+                {
+                    baseEfficiency += state.armSet[setName].Efficiency(state, offsets / state.armSetNames.Count, postFactors, otherEfficiency) / state.armSetNames.Count;
+                }
+
+                state.manipulation = Mathf.Max(0, baseEfficiency);
+            }
+            else
+            {
+                state.manipulation = 0;
+            }
+
+            if ((state.legSetNames.Count + state.movingBP.Count) > 0)
+            {
+                float baseEfficiency = 0;
+                float offsets = state.moving;
+                float postFactors = 1;
+                float otherEfficiency = 1;
+
+                foreach (RWBodyPart part in state.movingBP)
+                {
+                    otherEfficiency *= part.efficiency;
+                }
+
+                foreach (string setName in state.legSetNames)
+                {
+                    baseEfficiency += state.legSet[setName].Efficiency(state, offsets / state.legSetNames.Count, postFactors, otherEfficiency) / state.legSetNames.Count;
+                }
+
+                state.moving = Mathf.Max(0, baseEfficiency);
+            }
+            else
+            {
+                state.moving = 0;
+            }
+
+            if (state.moving <= 0.15f && state.consciousState < 1)
+            {
+                state.consciousState = 1;
+            }
+
+            if (state.sightBP.Count > 0)
+            {
+                float baseEfficiency = 0;
+                float offsets = state.sight;
+                float postFactors = 1;
+
+                if (state.sightBP.Count == 1)
+                {
+                    baseEfficiency = state.sightBP[0].efficiency;
+
+                    state.sight = (baseEfficiency + offsets) * postFactors;
+                }
+                else
+                {
+                    float bestEfficiency = 0;
+
+                    foreach (RWBodyPart part in state.sightBP)
+                    {
+                        baseEfficiency += part.efficiency / (state.sightBP.Count * 2);
+
+                        if (part.efficiency > bestEfficiency)
+                        {
+                            bestEfficiency = part.efficiency;
+                        }
+                    }
+
+                    baseEfficiency += bestEfficiency / 2;
+
+                    state.sight = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
+                }
+            }
+            else
+            {
+                state.sight = 0;
+            }
+
+            void Disease(RWDisease disease)
+            {
+                if (disease is RWFlu)
+                {
+                    state.capacityAffectingAffliction.Add(disease);
+
+                    switch (disease.severity)
+                    {
+                        case <= 0.665f:
+                            state.consciousness -= 0.05f;
+                            state.manipulation -= 0.05f;
+                            state.breathing -= 0.1f;
+                            break;
+                        case <= 0.832f:
+                            state.consciousness -= 0.1f;
+                            state.manipulation -= 0.1f;
+                            state.breathing -= 0.15f;
+                            break;
+                        default:
+                            state.pain += 0.05f;
+
+                            state.consciousness -= 0.15f;
+                            state.manipulation -= 0.2f;
+                            state.breathing -= 0.2f;
+                            break;
+                    }
+                }
+                else if (disease is RWInfection)
+                {
+                    switch (disease.severity)
+                    {
+                        case <= 0.32f:
+                            state.pain += 0.05f;
+                            break;
+                        case <= 0.77f:
+                            state.pain += 0.08f;
+                            break;
+                        case <= 0.86f:
+                            state.pain += 0.12f;
+
+                            state.consciousness -= 0.5f;
+
+                            state.capacityAffectingAffliction.Add(disease);
+                            break;
+                        default:
+                            state.forceUnconsciousness = true;
+
+                            state.pain += 0.85f;
+
+                            state.breathing -= 0.5f;
+
+                            state.capacityAffectingAffliction.Add(disease);
+                            break;
+                    }
+                }
+            }
+
+            void Informational(RWInformational informational)
+            {
+                if (informational is RWHypothermia)
+                {
+                    state.capacityAffectingAffliction.Add(informational);
+
+                    switch (informational.tendQuality)
+                    {
+                        case <= 0.2f:
+                            state.consciousness -= 0.05f;
+                            state.manipulation -= 0.08f;
+                            break;
+                        case <= 0.35f:
+                            state.consciousness -= 0.1f;
+                            state.manipulation -= 0.2f;
+                            state.moving -= 0.1f;
+                            break;
+                        case <= 0.62f:
+                            state.consciousness -= 0.2f;
+                            state.manipulation -= 0.5f;
+                            state.moving -= 0.3f;
+
+                            state.pain += 0.15f;
+                            break;
+                        default:
+                            state.forceUnconsciousness = true;
+
+                            state.pain += 0.3f;
+                            break;
+                    }
+                }
+                else if (informational is RWToxicBuildup)
+                {
+                    state.capacityAffectingAffliction.Add(informational);
+
+                    switch (informational.tendQuality)
+                    {
+                        case <= 0.2f:
+                            state.consciousness -= 0.05f;
+                            break;
+                        case <= 0.4f:
+                            state.consciousness -= 0.1f;
+                            break;
+                        case <= 0.6f:
+                            state.consciousness -= 0.15f;
+                            break;
+                        case <= 0.8f:
+                            state.consciousness -= 0.25f;
+                            break;
+                        default:
+                            state.forceUnconsciousness = true;
+
+                            state.consciousness -= 0.25f;
+                            break;
+                    }
                 }
             }
         }

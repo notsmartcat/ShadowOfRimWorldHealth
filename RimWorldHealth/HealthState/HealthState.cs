@@ -892,6 +892,8 @@ public class RWHealthState
 
             List<RWAffliction> afflictionList;
 
+            float totalDamage = 0;
+
             foreach (RWBodyPart part in state.bodyParts)
             {
                 part.health = part.maxHealth;
@@ -936,6 +938,8 @@ public class RWHealthState
                     }
 
                     part.health -= injury.damage;
+
+                    totalDamage += injury.damage;
 
                     if (self.dead)
                     {
@@ -990,18 +994,15 @@ public class RWHealthState
                 }
             }
 
-            if (self.dead)
+            if (totalDamage > 150 * state.healthScale)
             {
+                Kill(self);
                 return;
             }
 
-            if (self is HealthState healthState)
+            if (self.dead)
             {
-                healthState.health = state.consciousnessSource.efficiency;
-            }
-            else if (self is PlayerState playerState)
-            {
-                playerState.permanentDamageTracking = Mathf.Max(0, 1 - state.consciousnessSource.efficiency);
+                return;
             }
 
             afflictionList = new(state.wholeBodyAfflictions);
@@ -1019,6 +1020,11 @@ public class RWHealthState
             }
 
             state.pain = Mathf.Clamp(state.pain, 0, 1);
+
+            if (state.pain > state.painShockThreshold && state.consciousState < 2)
+            {
+                state.consciousState = 2;
+            }
 
             if (state.bloodFiltrationBP.Count > 0)
             {
@@ -1104,10 +1110,23 @@ public class RWHealthState
 
             state.consciousness = Mathf.Max(state.consciousness, 0);
 
-            if (state.consciousness <= 0)
+            if (state.consciousness <= 0 || state.bloodFiltration <= 0 || state.bloodPumping <= 0 || state.breathing <= 0)
             {
                 Kill(self);
                 return;
+            }
+            else if (state.consciousness < 0.3f)
+            {
+                state.consciousState = 3;
+            }
+
+            if (self is HealthState healthState)
+            {
+                healthState.health = Mathf.Clamp(state.consciousness > (1 - state.pain) ? state.consciousness : (1 - state.pain), 0.1f, 1);
+            }
+            else if (self is PlayerState playerState)
+            {
+                playerState.permanentDamageTracking = Mathf.Clamp((1 - state.consciousness) > state.pain ? (1 - state.consciousness) : state.pain, 0, 0.9f);
             }
 
             if (state.digestionBP.Count > 0)
@@ -1143,7 +1162,7 @@ public class RWHealthState
             }
             else
             {
-                state.eating = 0;
+                state.eating = 1;
             }
 
             if (state.hearingBP.Count > 0)
@@ -1230,6 +1249,11 @@ public class RWHealthState
                 state.moving = 0;
             }
 
+            if (state.moving <= 0.15f && state.consciousState < 1)
+            {
+                state.consciousState = 1;
+            }
+
             if (state.sightBP.Count > 0)
             {
                 float baseEfficiency = 0;
@@ -1289,10 +1313,13 @@ public class RWHealthState
                 return;
             }
 
-            player.slugcatStats.poleClimbSpeedFac = Mathf.Max(0.05f, state.poleClimbSpeedFac * (1 + (state.moving - 1f) * 0.4f) * (1 + (state.manipulation - 1f) * 0.6f));
-            player.slugcatStats.corridorClimbSpeedFac = Mathf.Max(0.05f, state.corridorClimbSpeedFac * (1 + (state.moving - 1f) * 0.6f) * (1 + (state.manipulation - 1f) * 0.4f));
-            player.slugcatStats.runspeedFac = Mathf.Max(0.05f, state.runspeedFac * state.moving);
-            player.slugcatStats.swimForceFac = Mathf.Max(0.05f, state.swimForceFac * (1 + (state.moving - 1f) * 0.4f) * (1 + (state.manipulation - 1f) * 0.6f));
+            float tempMoving = state.consciousState == 0 ? state.moving : 0;
+            float tempManipulation = state.consciousState == 0 ? state.manipulation : state.manipulation / 2;
+
+            player.slugcatStats.poleClimbSpeedFac = Mathf.Max(0.05f, state.poleClimbSpeedFac * (1 + (tempMoving - 1f) * 0.4f) * (1 + (tempManipulation - 1f) * 0.6f));
+            player.slugcatStats.corridorClimbSpeedFac = Mathf.Max(0.05f, state.corridorClimbSpeedFac * (1 + (tempMoving - 1f) * 0.6f) * (1 + (tempManipulation - 1f) * 0.4f));
+            player.slugcatStats.runspeedFac = Mathf.Max(0.05f, state.runspeedFac * tempMoving);
+            player.slugcatStats.swimForceFac = Mathf.Max(0.05f, state.swimForceFac * (1 + (tempMoving - 1f) * 0.4f) * (1 + (tempManipulation - 1f) * 0.6f));
 
             void Disease(RWDisease disease)
             {

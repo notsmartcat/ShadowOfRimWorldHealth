@@ -15,8 +15,21 @@ public class ShadowOfOptions : OptionInterface
         karma_flower_reinforced = config.Bind("karma_flower_reinforced", true, new ConfigurableInfo("If turned On Karma Flowers eaten by a Slugcat or Slugpup will only heal if the Player has their Karma Reinforcement active. (Default = true)", null, "", new object[1] { "Karma Flower Reinforcement Required" }));
 
         after_cycle_length = config.Bind("after_cycle_length", 13, new ConfigurableInfo("How much time (in minutes) passes during hibernation, this time is used to heal afflictions of all creatures. (Default = 13)", new ConfigAcceptableRange<int>(0, 30), "", new object[1] { "Hibernation Time" }));
+        update_abstracted = config.Bind("update_abstracted", 3, new ConfigurableInfo("How often (if at all) will abstracted creatures have their health info updated. (Default = 13)", new ConfigAcceptableRange<int>(0, 5), "", new object[1] { "Abstracted Update" }));
 
+        downed_tend = config.Bind("downed_tend", "None, Player only or All", new ConfigurableInfo("Tend when \nDowned"));
+        downed_combat = config.Bind("downed_combat", "None, Player only or All", new ConfigurableInfo("Combat when \nDowned"));
+
+        player_1_key = config.Bind("player_1_key", KeyCode.H);
+        player_2_key = config.Bind("player_2_key", KeyCode.G);
+        player_3_key = config.Bind("player_3_key", KeyCode.H);
+        player_4_key = config.Bind("player_4_key", KeyCode.H);
+
+        #region Player Specific
         coop_dead_saving = config.Bind("coop_dead_saving", "Clear all afflictions or clear life threatening afflictions", new ConfigurableInfo("Dead Saving"));
+
+        player_uncon_movement = config.Bind("player_uncon_movement", true, new ConfigurableInfo("If turned On Players will still be able to move while they are Unconscious (Consciousness less then 30%) at a significantly slower rate. (Default = true)", null, "", new object[1] { "Uncon Player Movement" }));
+        #endregion
     }
 
     #region Misc Values
@@ -44,7 +57,7 @@ public class ShadowOfOptions : OptionInterface
     public override void Initialize()
     {
         base.Initialize();
-        Tabs = new OpTab[1];
+        Tabs = new OpTab[2];
 
         #region Main Options
         Tabs[0] = new OpTab(this, "Main Options");
@@ -72,12 +85,62 @@ public class ShadowOfOptions : OptionInterface
 
         AddNewLine();
         AddBox();
-        AddNewLine();
-        DrawComboBox(ref Tabs[0], coop_dead_saving, new List<string> { "Clear All Afflictions", "Clear Life Threatening Afflictions Only" });
+        AddUpdateAbstractedSlider(ref Tabs[0]);
         DrawBox(ref Tabs[0]);
+
+        AddNewLine();
+        AddBox();
+        AddNewLine();
+        DrawComboBox(ref Tabs[0], downed_tend, new List<string> { "No one", "Player only", "Everyone" });
+        DrawBox(ref Tabs[0]);
+
+        AddNewLine();
+        AddBox();
+        AddNewLine();
+        DrawComboBox(ref Tabs[0], downed_combat, new List<string> { "No one", "Player only", "Everyone" });
+        DrawBox(ref Tabs[0]);
+        #endregion
+
+        #region Player Specific Options
+        Tabs[1] = new OpTab(this, "Player");
+        InitializeMarginAndPos();
+
+        AddNewLine();
+        AddBox();
+        AddCheckBox(player_uncon_movement);
+        DrawCheckBoxes(ref Tabs[1]);
+        DrawBox(ref Tabs[1]);
+
+        AddNewLine();
+        AddBox();
+        AddNewLine();
+        DrawComboBox(ref Tabs[1], coop_dead_saving, new List<string> { "Clear All Afflictions", "Clear Life Threatening Afflictions Only" });
+        DrawBox(ref Tabs[1]);
+
+        AddNewLine();
+        AddBox();
+        DrawKeyCodes(ref Tabs[1]);
+        DrawBox(ref Tabs[1]);
         #endregion
     }
 
+    public override void Update()
+    {
+        string text = update_abstracted.BoundUIconfig.value switch
+        {
+            "0" => "Never",
+            "1" => "5 seconds",
+            "2" => "10 seconds",
+            "3" => "30 seconds",
+            "4" => "1 Minute",
+            "5" => "2 Minutes",
+            _ => null,
+        };
+
+        OPupdateAbstractedSlider._label.text = text;
+    }
+
+    #region Functions
     void InitializeMarginAndPos()
     {
         margin_x = new Vector2(20f, 550f);
@@ -185,6 +248,62 @@ public class ShadowOfOptions : OptionInterface
         tab.AddItems((UIelement[])(object)new UIelement[1] { val2 });
     }
 
+    void DrawKeyCodes(ref OpTab tab)
+    {
+        float num = margin_x.y - margin_x.x;
+        float num2 = num * 0.5f * spacing;
+        float num3 = position.x;
+
+        AddNewLine();
+
+        OpLabel label = new(default, default, "Health Tab Hud Keybinds", 0, true, null);
+        ((UIelement)label).pos = new Vector2(num3 + 225, position.y + 10f);
+        label.size = new Vector2(num3, font_height);
+        tab.AddItems((UIelement[])(object)new UIelement[1] { label });
+
+        AddNewLine(1.5f);
+
+        OpKeyBinder keyBinder;
+        OpLabel playerNumberLabel;
+
+        Configurable<KeyCode> keyCode = null;
+        string playerNumber = "";
+
+        for (int i = 1; i < 5; i++)
+        {
+            switch (i)
+            {
+                case 1:
+                    keyCode = player_1_key;
+                    playerNumber = "Player 1";
+                    break;
+                case 2:
+                    keyCode = player_2_key;
+                    playerNumber = "Player 2";
+                    break;
+                case 3:
+                    keyCode = player_3_key;
+                    playerNumber = "Player 3";
+                    break;
+                case 4:
+                    keyCode = player_4_key;
+                    playerNumber = "Player 4";
+                    break;
+            }
+
+            keyBinder = new(keyCode, new Vector2(num3, position.y), new Vector2(15, 15));
+            tab.AddItems((UIelement[])(object)new UIelement[1] { keyBinder });
+
+            num3 += 40;
+
+            playerNumberLabel = new(default, default, playerNumber, (FLabelAlignment)1, false, null);
+            ((UIelement)playerNumberLabel).pos = new Vector2(num3, position.y + 5f);
+            playerNumberLabel.size = new Vector2(num2, font_height);
+            tab.AddItems((UIelement[])(object)new UIelement[1] { playerNumberLabel });
+
+            num3 += 100;
+        }
+    }
 
     void DrawCheckBoxAndSliderCombo(ref OpTab tab)
     {
@@ -269,7 +388,7 @@ public class ShadowOfOptions : OptionInterface
         float num4 = num - 2f * num3 - spacing;
         for (int i = 0; i < slider_configurables.Count; i++)
         {
-            AddNewLine(2f);
+            AddNewLine(1.5f);
             OpLabel val = slider_text_labels_left[i];
             ((UIelement)val).pos = new Vector2(margin_x.x, position.y + 5f);
             val.size = new Vector2(num3, font_height);
@@ -281,6 +400,51 @@ public class ShadowOfOptions : OptionInterface
                 description = (val2.info?.description ?? "")
             };
             tab.AddItems((UIelement[])(object)new UIelement[1] { val3 });
+            val = slider_text_labels_right[i];
+            ((UIelement)val).pos = new Vector2(num2 + 0.5f * num4 + 0.5f * spacing, position.y + 5f);
+            val.size = new Vector2(num3, font_height);
+            tab.AddItems((UIelement[])(object)new UIelement[1] { val });
+            AddTextLabel(slider_main_text_labels[i], 0);
+            DrawTextLabels(ref tab);
+            if (i < slider_configurables.Count - 1)
+            {
+                AddNewLine();
+            }
+        }
+        slider_configurables.Clear();
+        slider_main_text_labels.Clear();
+        slider_text_labels_left.Clear();
+        slider_text_labels_right.Clear();
+    }
+
+    void AddUpdateAbstractedSlider(ref OpTab tab)
+    {
+        slider_configurables.Add(update_abstracted);
+
+        string text = (string)update_abstracted.info.Tags[0];
+
+        slider_main_text_labels.Add(text);
+        slider_text_labels_left.Add(new OpLabel(default, default, "Never", (FLabelAlignment)2, false, null));
+        slider_text_labels_right.Add(new OpLabel(default, default, "2 Minutes", (FLabelAlignment)1, false, null));
+
+        float num = margin_x.y - margin_x.x;
+        float num2 = margin_x.x + 0.5f * num;
+        float num3 = 0.2f * num;
+        float num4 = num - 2f * num3 - spacing;
+        for (int i = 0; i < slider_configurables.Count; i++)
+        {
+            AddNewLine(1.5f);
+            OpLabel val = slider_text_labels_left[i];
+            ((UIelement)val).pos = new Vector2(margin_x.x, position.y + 5f);
+            val.size = new Vector2(num3, font_height);
+            tab.AddItems((UIelement[])(object)new UIelement[1] { val });
+            Configurable<int> val2 = slider_configurables[i];
+            OPupdateAbstractedSlider = new(val2, new Vector2(num2 - 0.5f * num4, position.y), (int)num4, false)
+            {
+                size = new Vector2(num4, font_height),
+                description = (val2.info?.description ?? "")
+            };
+            tab.AddItems((UIelement[])(object)new UIelement[1] { OPupdateAbstractedSlider });
             val = slider_text_labels_right[i];
             ((UIelement)val).pos = new Vector2(num2 + 0.5f * num4 + 0.5f * spacing, position.y + 5f);
             val.size = new Vector2(num3, font_height);
@@ -329,6 +493,7 @@ public class ShadowOfOptions : OptionInterface
         position.x = margin_x.x;
         text_labels.Clear();
     }
+    #endregion
 
     public static Configurable<bool> debug_keys;
     public static Configurable<bool> debug_logs;
@@ -338,7 +503,22 @@ public class ShadowOfOptions : OptionInterface
 
     public static Configurable<int> after_cycle_length;
 
+    public static Configurable<int> update_abstracted;
+    public OpSlider OPupdateAbstractedSlider;
+
+    public static Configurable<string> downed_tend;
+    public static Configurable<string> downed_combat;
+
+    public static Configurable<KeyCode> player_1_key;
+    public static Configurable<KeyCode> player_2_key;
+    public static Configurable<KeyCode> player_3_key;
+    public static Configurable<KeyCode> player_4_key;
+
+    #region Player Specific
     public static Configurable<string> coop_dead_saving;
+
+    public static Configurable<bool> player_uncon_movement;
+    #endregion
 }
 internal class ComboBox : OpComboBox
 {

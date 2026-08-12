@@ -21,6 +21,8 @@ internal class SlugcatHooks
         On.Player.ObjectEaten += PlayerObjectEaten;
         On.Player.PyroDeath += PlayerPyroDeath;
         On.Player.SubtractFood += PlayerSubtractFood;
+        On.Player.ThrownSpear += PlayerThrownSpear;
+        On.Player.ThrowObject += PlayerThrowObject;
         On.Player.Update += PlayerUpdate;
         #endregion
 
@@ -29,6 +31,7 @@ internal class SlugcatHooks
         #endregion
 
         #region SlugNPCAI
+        On.MoreSlugcats.SlugNPCAI.AttackingThreat += SlugNPCAIAttackingThreat;
         On.MoreSlugcats.SlugNPCAI.DecideBehavior += SlugNPCAIDecideBehavior;
         On.MoreSlugcats.SlugNPCAI.Move += SlugNPCAIMove;
         #endregion
@@ -44,20 +47,58 @@ internal class SlugcatHooks
             return;
         }
 
+        if (self.SlugCatClass.value == "Spear")
+        {
+            Tongue tongue = null;
+
+            foreach (RWBodyPart part in state.bodyParts)
+            {
+                if (part is Tongue tempTongue)
+                {
+                    tongue = tempTongue;
+                    state.talkingBP.Remove(tempTongue);
+                }
+                else if (part is Jaw jaw)
+                {
+                    jaw.capacity.Clear();
+                    state.eatingBP.Remove(jaw);
+                    state.talkingBP.Remove(jaw);
+                }
+                else if (part is Neck neck)
+                {
+                    neck.capacity.Remove("Eating");
+                    state.eatingBP.Remove(neck);
+                    neck.capacity.Remove("Talking");
+                    state.talkingBP.Remove(neck);
+                }
+            }
+
+            if (tongue != null)
+            {
+                state.bodyParts.Remove(tongue);
+            }
+        }
+
         state.poleClimbSpeedFac = self.slugcatStats.poleClimbSpeedFac;
         state.corridorClimbSpeedFac = self.slugcatStats.corridorClimbSpeedFac;
         state.runspeedFac = self.slugcatStats.runspeedFac;
         state.swimForceFac = self.slugcatStats.swimForceFac;
 
-        if (state.moving == 1 && state.manipulation == 1)
+        state.updateCapacities = true;
+        RWHealthState.Update(self.State, state);
+
+        if (state.moving == 1 && state.manipulation == 1 && state.consciousState == 0)
         {
             return;
         }
 
-        self.slugcatStats.poleClimbSpeedFac = Mathf.Max(0.1f, state.poleClimbSpeedFac * (1 + (state.moving - 1f) * 0.4f) * (1 + (state.manipulation - 1f) * 0.6f));
-        self.slugcatStats.corridorClimbSpeedFac = Mathf.Max(0.1f, state.corridorClimbSpeedFac * (1 + (state.moving - 1f) * 0.6f) * (1 + (state.manipulation - 1f) * 0.4f));
-        self.slugcatStats.runspeedFac = Mathf.Max(0.1f, state.runspeedFac * state.moving);
-        self.slugcatStats.swimForceFac = Mathf.Max(0.1f, state.swimForceFac * (1 + (state.moving - 1f) * 0.4f) * (1 + (state.manipulation - 1f) * 0.6f));
+        float tempMoving = state.consciousState == 0 ? state.moving : 0;
+        float tempManipulation = state.consciousState == 0 ? state.manipulation : state.manipulation / 2;
+
+        self.slugcatStats.poleClimbSpeedFac = Mathf.Max(0.05f, state.poleClimbSpeedFac * (1 + (tempMoving - 1f) * 0.4f) * (1 + (tempManipulation - 1f) * 0.6f));
+        self.slugcatStats.corridorClimbSpeedFac = Mathf.Max(0.05f, state.corridorClimbSpeedFac * (1 + (tempMoving - 1f) * 0.6f) * (1 + (tempManipulation - 1f) * 0.4f));
+        self.slugcatStats.runspeedFac = Mathf.Max(0.05f, state.runspeedFac * tempMoving);
+        self.slugcatStats.swimForceFac = Mathf.Max(0.05f, state.swimForceFac * (1 + (tempMoving - 1f) * 0.4f) * (1 + (tempManipulation - 1f) * 0.6f));
     }
 
     static void PlayerAddFood(On.Player.orig_AddFood orig, Player self, int add)
@@ -207,6 +248,123 @@ internal class SlugcatHooks
         state.hasEaten = false;
     }
 
+    static void PlayerThrownSpear(On.Player.orig_ThrownSpear orig, Player self, Spear spear)
+    {
+        orig(self, spear);
+
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.consciousState == 0)
+        {
+            return;
+        }
+
+        spear.spearDamageBonus /= 2;
+    }
+
+    static void PlayerThrowObject(On.Player.orig_ThrowObject orig, Player self, int grasp, bool eu)
+    {
+        if (self.grasps[grasp].grabbed is not Weapon || self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.consciousState == 0 || ShadowOfOptions.downed_combat.Value != "No one" || ShadowOfOptions.downed_combat.Value == "Player only" && ModManager.MSC && self.State is MoreSlugcats.PlayerNPCState || (state.consciousState == 3 && !ShadowOfOptions.player_uncon_movement.Value))
+        {
+            orig(self, grasp, eu);
+            return;
+        }
+
+        if (ModManager.MSC && self.SlugCatClass == MoreSlugcats.MoreSlugcatsEnums.SlugcatStatsName.Gourmand && self.grasps[grasp].grabbed is Spear)
+        {
+            self.aerobicLevel = 1f;
+        }
+        else
+        {
+            self.AerobicIncrease(0.75f);
+        }
+           
+        IntVector2 intVector = new(self.ThrowDirection, 0);
+        bool flag = self.input[0].y < 0;
+        if (ModManager.MMF && MoreSlugcats.MMF.cfgUpwardsSpearThrow.Value)
+        {
+            flag = (self.input[0].y != 0);
+        }
+        if (self.animation == Player.AnimationIndex.Flip && flag && self.input[0].x == 0)
+        {
+            intVector = new(0, (ModManager.MMF && MoreSlugcats.MMF.cfgUpwardsSpearThrow.Value) ? self.input[0].y : -1);
+        }
+        if (ModManager.MMF && self.bodyMode == Player.BodyModeIndex.ZeroG && MoreSlugcats.MMF.cfgUpwardsSpearThrow.Value)
+        {
+            int y = self.input[0].y;
+            if (y != 0)
+            {
+                intVector = new(0, y);
+            }
+            else
+            {
+                intVector = new(self.ThrowDirection, 0);
+            }
+        }
+
+        self.TossObject(grasp, eu);
+
+        self.ThrownSpear(self.grasps[grasp].grabbed as Spear);
+
+        if (self.animation == Player.AnimationIndex.BellySlide && self.rollCounter > 8 && self.rollCounter < 15)
+        {
+            if (intVector.x == self.rollDirection && self.slugcatStats.throwingSkill > 0)
+            {
+                self.grasps[grasp].grabbed.firstChunk.vel.x += (float)intVector.x * 15f;
+                if ((self.grasps[grasp].grabbed as Weapon).HeavyWeapon)
+                {
+                    (self.grasps[grasp].grabbed as Weapon).floorBounceFrames = 30;
+                    if (self.grasps[grasp].grabbed is Spear)
+                    {
+                        (self.grasps[grasp].grabbed as Spear).alwaysStickInWalls = true;
+                    }
+                    self.grasps[grasp].grabbed.firstChunk.goThroughFloors = false;
+                    self.grasps[grasp].grabbed.firstChunk.vel.y -= 5f;
+                }
+                (self.grasps[grasp].grabbed as Weapon).changeDirCounter = 0;
+            }
+            else if (intVector.x == -self.rollDirection && !self.longBellySlide)
+            {
+                self.grasps[grasp].grabbed.firstChunk.vel.y += ((self.grasps[grasp].grabbed is Spear) ? 3f : 5f);
+                (self.grasps[grasp].grabbed as Weapon).changeDirCounter = 0;
+                self.rollCounter = 8;
+                self.mainBodyChunk.pos.x += (float)self.rollDirection * 6f;
+                self.room.AddObject(new ExplosionSpikes(self.room, self.bodyChunks[1].pos + new Vector2((float)self.rollDirection * -40f, 0f), 6, 5.5f, 4f, 4.5f, 21f, new Color(1f, 1f, 1f, 0.25f)));
+                self.bodyChunks[1].pos.x += (float)self.rollDirection * 6f;
+                self.bodyChunks[1].pos.y += 17f;
+                self.mainBodyChunk.vel.x += (float)self.rollDirection * 16f;
+                self.bodyChunks[1].vel.x += (float)self.rollDirection * 16f;
+                self.room.PlaySound(SoundID.Slugcat_Rocket_Jump, self.mainBodyChunk, false, 1f, 1f);
+                self.exitBellySlideCounter = 0;
+                self.longBellySlide = true;
+            }
+        }
+        if (self.animation == Player.AnimationIndex.ClimbOnBeam && ModManager.MMF && MoreSlugcats.MMF.cfgClimbingGrip.Value)
+        {
+            self.bodyChunks[0].vel += intVector.ToVector2() * 2f;
+            self.bodyChunks[1].vel -= intVector.ToVector2() * 8f;
+        }
+        else
+        {
+            self.bodyChunks[0].vel += intVector.ToVector2() * 8f;
+            self.bodyChunks[1].vel -= intVector.ToVector2() * 4f;
+        }
+        if (self.graphicsModule != null)
+        {
+            (self.graphicsModule as PlayerGraphics).ThrowObject(grasp, self.grasps[grasp].grabbed);
+        }
+        self.Blink(15);
+
+        self.dontGrabStuff = (self.isNPC ? 45 : 15);
+        if (self.graphicsModule != null)
+        {
+            (self.graphicsModule as PlayerGraphics).LookAtObject(self.grasps[grasp].grabbed);
+        }
+        if (self.grasps[grasp].grabbed is PlayerCarryableItem)
+        {
+            (self.grasps[grasp].grabbed as PlayerCarryableItem).Forbid();
+        }
+        self.ReleaseGrasp(grasp);
+    }
+
     static void PlayerUpdate(On.Player.orig_Update orig, Player self, bool eu)
     {
         if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
@@ -334,13 +492,42 @@ internal class SlugcatHooks
     #endregion
 
     #region SlugNPCAI
+    static bool SlugNPCAIAttackingThreat(On.MoreSlugcats.SlugNPCAI.orig_AttackingThreat orig, MoreSlugcats.SlugNPCAI self)
+    {
+        if (self.cat.State != null && healthState.TryGetValue(self.cat.State, out RWState state) && state.consciousState != 0 && ShadowOfOptions.downed_combat.Value != "Everyone")
+        {
+            return false;
+        }
+
+        return orig(self);
+    }
     static void SlugNPCAIDecideBehavior(On.MoreSlugcats.SlugNPCAI.orig_DecideBehavior orig, MoreSlugcats.SlugNPCAI self)
     {
         orig(self);
 
-        if (self.creature.controlled || !healthState.TryGetValue(self.cat.State, out RWState state))
+        if (self.creature.controlled || !healthState.TryGetValue(self.cat.State, out RWState state) || state.consciousState == 3)
         {
             return;
+        }
+
+        if (state.consciousState != 0)
+        {
+            if (self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.Attacking && ShadowOfOptions.downed_combat.Value != "Everyone")
+            {
+                if (self.friendTracker.friend != null && self.abstractAI.toldToStay == null)
+                {
+                    self.behaviorType = MoreSlugcats.SlugNPCAI.BehaviorType.Following;
+                }
+                else
+                {
+                    self.behaviorType = MoreSlugcats.SlugNPCAI.BehaviorType.Idle;
+                }
+            }
+
+            if (ShadowOfOptions.downed_tend.Value != "Everyone")
+            {
+                return;
+            }
         }
 
         if (self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.BeingHeld || self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.OnHead || self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.Thrown && self.cat.bodyMode == Player.BodyModeIndex.Default || self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.Attacking || self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.Fleeing)
@@ -415,7 +602,8 @@ internal class SlugcatHooks
                     }
                     else
                     {
-                        Debug.Log("Error affliction " + affliction + " does not belong to any tendable check");
+                        Debug.Log(all + affliction + " does not belong to any tendable check");
+                        RimWorldHealth.Logger.LogError(all + affliction + " does not belong to any tendable check");
                     }
                 }
                 else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
@@ -564,6 +752,14 @@ internal class SlugcatHooks
             {
                 state.tendAffliction = null;
             }
+
+            foreach (var grasp in self.creature.realizedCreature.grasps)
+            {
+                if (grasp.grabbedChunk != null && grasp.grabbedChunk.owner != null && grasp.grabbedChunk.owner is Creature)
+                {
+                    (self.creature.realizedCreature as Player).ReleaseGrasp(grasp.graspUsed);
+                }
+            }
         }
         else
         {
@@ -607,7 +803,7 @@ internal class SlugcatHooks
     {
         orig(self);
 
-        if (!self.creature.controlled || healthTab == null || !healthTab.visible || !healthState.TryGetValue(self.cat.State, out _))
+        if (!self.creature.controlled || healthTabs.Count < 1 || healthTabs[0] == null || !healthTabs[0].visible || !healthState.TryGetValue(self.cat.State, out _))
         {
             return;
         }
@@ -621,7 +817,7 @@ internal class SlugcatHooks
         inputPackage.pckp = self.cat.inputWithDiagonals != null && self.cat.inputWithDiagonals.Value.pckp;
         inputPackage.thrw = self.cat.inputWithDiagonals != null && self.cat.inputWithDiagonals.Value.thrw;
 
-        healthTab.input = inputPackage;
+        healthTabs[0].input = inputPackage;
 
         inputPackage.x = 0;
         inputPackage.y = 0;
@@ -632,7 +828,6 @@ internal class SlugcatHooks
 
         self.cat.input[0] = inputPackage;
     }
-
     #endregion
 
     static bool JawCheck(RWState state)

@@ -57,6 +57,8 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
 
             saveData["LastCycle"] = game.GetStorySession.saveState.cycleNumber.ToString();
 
+            saveData["BloodLoss"] = state.bloodLoss.ToString();
+
             diseasesToSave = new();
             diseasesToTend = new();
 
@@ -97,8 +99,6 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
                 diseasesToSave = new();
                 diseasesToTend = new();
 
-                bool partAfflictionDeleted = false;
-
                 foreach (RWAffliction affliction in part.afflictions)
                 {
                     if (affliction.isCharacterSpecific)
@@ -112,8 +112,6 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
                         {
                             if (dead && RWHealthState.IsPartNecessary(part))
                             {
-                                partAfflictionDeleted = true;
-
                                 continue;
                             }
 

@@ -1871,15 +1871,15 @@ internal class ILHooks
             return;
         }
 
-        healthTab.player = self;
-        healthTab.playerState = state;
+        healthTabs[0].player = self;
+        healthTabs[0].playerState = state;
     }
     public static void SafariUnControlCreature()
     {
-        healthTab.TriggeredOff();
+        healthTabs[0].TriggeredOff();
 
-        healthTab.player = null;
-        healthTab.playerState = null;
+        healthTabs[0].player = null;
+        healthTabs[0].playerState = null;
     }
     #endregion
 

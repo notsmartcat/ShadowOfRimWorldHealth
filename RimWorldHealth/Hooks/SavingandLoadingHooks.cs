@@ -83,6 +83,16 @@ internal class SavingandLoadingHooks
                 savedData.Remove("ShadowOfRimWorldLastCycle");
             }
 
+            if (savedData.ContainsKey("ShadowOfRimWorldBloodLoss"))
+            {
+                state.bloodLoss = float.Parse(savedData["ShadowOfRimWorldBloodLoss"]); 
+                int cycleDifference = Mathf.Abs(state.lastCycle - self.creature.world.game.GetStorySession.saveState.cycleNumber);
+                float treatmentTime = (ShadowOfOptions.after_cycle_length.Value * 40f * 60f * cycleDifference / 10) + (CycleLength() * (cycleDifference - 1) / 10);
+                state.bloodLoss = state.bloodLoss -= 0.333f / CycleLength() * treatmentTime;
+                state.bloodLoss = Mathf.Clamp(state.bloodLoss, 0, 1);
+                savedData.Remove("ShadowOfRimWorldBloodLoss");
+            }
+
             diseasesToSave = new();
             diseasesToTend = new();
 
@@ -240,6 +250,8 @@ internal class SavingandLoadingHooks
 
             savedData["LastCycle"] = self.world.game.GetStorySession.saveState.cycleNumber.ToString();
 
+            savedData["ShadowOfRimWorldBloodLoss"] = state.bloodLoss.ToString();
+
             List<RWAffliction> afflictionsToSave = new();
 
             foreach (RWAffliction affliction in state.wholeBodyAfflictions)
@@ -306,6 +318,15 @@ internal class SavingandLoadingHooks
         if (savedData.ContainsKey("LastCycle"))
         {
             state.lastCycle = int.Parse(savedData["LastCycle"]);
+        }
+
+        if (savedData.ContainsKey("BloodLoss"))
+        {
+            state.bloodLoss = float.Parse(savedData["BloodLoss"]);
+            int cycleDifference = Mathf.Abs(state.lastCycle - self.creature.world.game.GetStorySession.saveState.cycleNumber);
+            float treatmentTime = (ShadowOfOptions.after_cycle_length.Value * 40f * 60f * cycleDifference / 10) + (CycleLength() * (cycleDifference - 1) / 10);
+            state.bloodLoss = state.bloodLoss -= 0.333f / CycleLength() * treatmentTime;
+            state.bloodLoss = Mathf.Clamp(state.bloodLoss, 0, 1);
         }
 
         if (savedData.TryGetValue("WholeBody", out string wholeBodyAfflictions))

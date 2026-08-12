@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-
-using static ShadowOfRimWorldHealth.RimWorldHealth;
+﻿using static ShadowOfRimWorldHealth.RimWorldHealth;
 
 namespace ShadowOfRimWorldHealth;
 
@@ -8,19 +6,35 @@ internal class HudHooks
 {
     public static void Apply()
     {
+        On.HUD.HUD.ClearAllSprites += HUDClearAllSprites;
+
         On.HUD.HUD.InitSafariHud += HUDInitSafariHud;
         On.HUD.HUD.InitSinglePlayerHud += HUDInitSinglePlayerHud;
 
         On.HUD.PlayerSpecificMultiplayerHud.ctor += NewPlayerSpecificMultiplayerHud;
     }
 
-    private static void HUDInitSafariHud(On.HUD.HUD.orig_InitSafariHud orig, HUD.HUD self, RoomCamera cam)
+    static void HUDClearAllSprites(On.HUD.HUD.orig_ClearAllSprites orig, HUD.HUD self)
+    {
+        orig(self);
+
+        singleplayerHud = true;
+
+        for (int i = 0; i < healthTabs.Count; i++)
+        {
+            healthTabs[i] = null;
+        }
+    }
+
+    static void HUDInitSafariHud(On.HUD.HUD.orig_InitSafariHud orig, HUD.HUD self, RoomCamera cam)
     {
         orig(self, cam);
 
-        healthTab = new HealthTab(self, null);
+        singleplayerHud = true;
 
-        self.AddPart(healthTab);
+        healthTabs[0] = new HealthTab(self, null);
+
+        self.AddPart(healthTabs[0]);
     }
     static void HUDInitSinglePlayerHud(On.HUD.HUD.orig_InitSinglePlayerHud orig, HUD.HUD self, RoomCamera cam)
     {
@@ -31,9 +45,11 @@ internal class HudHooks
             return;
         }
 
-        healthTab = new HealthTab(self, (self.owner as Creature).abstractCreature);
+        singleplayerHud = true;
 
-        self.AddPart(healthTab);
+        healthTabs[0] = new HealthTab(self, (self.owner as Creature).abstractCreature);
+
+        self.AddPart(healthTabs[0]);
     }
 
     static void NewPlayerSpecificMultiplayerHud(On.HUD.PlayerSpecificMultiplayerHud.orig_ctor orig, HUD.PlayerSpecificMultiplayerHud self, HUD.HUD hud, ArenaGameSession session, AbstractCreature abstractPlayer)
@@ -45,7 +61,16 @@ internal class HudHooks
             return;
         }
 
-        healthTab = new HealthTab(hud, abstractPlayer);
+        int playerNumber = ((PlayerState)abstractPlayer.state).playerNumber;
+
+        if (playerNumber != 0)
+        {
+            singleplayerHud = false;
+        }
+
+        HealthTab healthTab = new(hud, abstractPlayer);
+
+        healthTabs[playerNumber] = healthTab;
 
         self.hud.AddPart(healthTab);
     }
