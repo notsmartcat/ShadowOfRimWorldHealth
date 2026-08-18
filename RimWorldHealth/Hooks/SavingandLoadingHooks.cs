@@ -12,7 +12,6 @@ internal class SavingandLoadingHooks
     public static void Apply()
     {
         #region CreatureState
-        On.CreatureState.ctor += NewCreatureState;
         On.CreatureState.LoadFromString += CreatureStateLoadFromString;
         #endregion
 
@@ -37,24 +36,6 @@ internal class SavingandLoadingHooks
     }
 
     #region CreatureState
-    static void NewCreatureState(On.CreatureState.orig_ctor orig, CreatureState self, AbstractCreature creature)
-    {
-        orig(self, creature);
-
-        if (creature.creatureTemplate.type != CreatureTemplate.Type.Slugcat && (!ModManager.MSC || creature.creatureTemplate.type != MoreSlugcats.MoreSlugcatsEnums.CreatureTemplateType.SlugNPC))
-        {
-            return;
-        }
-
-        if (!healthState.TryGetValue(self, out RWState state))
-        {
-            healthState.Add(self, new RWState());
-            healthState.TryGetValue(self, out state);
-        }
-
-        RWHealthState.NewRWHealthState(self, state);
-    }
-
     static void CreatureStateLoadFromString(On.CreatureState.orig_LoadFromString orig, CreatureState self, string[] s)
     {
         orig(self, s);

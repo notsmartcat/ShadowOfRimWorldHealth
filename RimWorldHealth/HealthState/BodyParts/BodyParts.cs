@@ -89,7 +89,7 @@ public class LowerTorso : RWBodyPart
 
         deathEffect = "CutInHalf";
     }
-}
+} //LowerTorse is meant for creatures with more then 1 BodyChunk that is meant for the body
 
 public class Neck : RWBodyPart
 {

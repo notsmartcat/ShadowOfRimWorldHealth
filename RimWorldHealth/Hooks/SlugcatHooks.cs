@@ -42,9 +42,12 @@ internal class SlugcatHooks
     {
         orig(self, abstractCreature, world);
 
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (!healthState.TryGetValue(self.State, out RWState state))
         {
-            return;
+            healthState.Add(self.State, new RWState());
+            healthState.TryGetValue(self.State, out state);
+
+            RWHealthState.NewRWHealthState(self, state);
         }
 
         if (self.SlugCatClass.value == "Spear")
@@ -75,6 +78,7 @@ internal class SlugcatHooks
 
             if (tongue != null)
             {
+                tongue.state = null;
                 state.bodyParts.Remove(tongue);
             }
         }
@@ -553,6 +557,21 @@ internal class SlugcatHooks
             return;
         }
 
+        if (state.onFire)
+        {
+            self.behaviorType = SlugSelfTend;
+
+            if (state.tendAffliction == burningAffliction)
+            {
+                return;
+            }
+
+            state.tendAffliction = burningAffliction;
+            state.tendTime = 10;
+            state.tendTimeMax = state.tendTime;
+            return;
+        }
+
         RWInjury bleeding = null;
         RWDisease diseaseAffliction = null;
         RWInjury untendedAffliction = null;
@@ -658,6 +677,12 @@ internal class SlugcatHooks
 
         if (self.friendTracker.friend != null && !self.friendTracker.friend.dead && self.friendTracker.friend.Stunned && (grabbedByThis(self.friendTracker.friend) || self.friendTracker.friend.grabbedBy.Count == 0) && self.friendTracker.friend.State != null && healthState.TryGetValue(self.friendTracker.friend.State, out RWState otherState))
         {
+            if (otherState.onFire)
+            {
+                tendOther(self.friendTracker.friend);
+                return;
+            }
+
             foreach (RWBodyPart part in otherState.bodyParts)
             {
                 foreach (RWAffliction affliction in part.afflictions)
@@ -707,6 +732,12 @@ internal class SlugcatHooks
             if (creature == null || creature.dead || !creature.Stunned || (creature.grabbedBy.Count != 0 && !grabbedByThis(creature)) || creature.State == null || !healthState.TryGetValue(creature.State, out otherState) || (creature is not Player && (creature is not Lizard lizard || lizard.AI == null || lizard.AI.friendTracker.friend == null || lizard.AI.friendTracker.friend is not Player)) || (tendTarget != null && Custom.WorldCoordFloatDist(tendTarget.abstractCreature.pos, self.cat.abstractCreature.pos) > Custom.WorldCoordFloatDist(creature.abstractCreature.pos, self.cat.abstractCreature.pos)))
             {
                 continue;
+            }
+
+            if (otherState.onFire)
+            {
+                tendTarget = creature;
+                break;
             }
 
             foreach (RWBodyPart part in otherState.bodyParts)

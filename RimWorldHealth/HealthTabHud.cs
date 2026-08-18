@@ -4,6 +4,7 @@ using UnityEngine;
 using RWCustom;
 
 using static ShadowOfRimWorldHealth.RimWorldHealth;
+using System.Runtime.InteropServices;
 
 namespace ShadowOfRimWorldHealth;
 
@@ -190,7 +191,7 @@ public class HealthTab : HudPart
             healthTabInfos[i].Update();
         }
 
-        if (inspectedState == null || !visible)
+        if (player == null || inspectedState == null || !visible)
         {
             return;
         }
@@ -344,6 +345,31 @@ public class HealthTab : HudPart
         {
             playerState.tendTime--;
 
+            if (playerState.tendAffliction == burningAffliction)
+            {
+                if (!inspectedState.onFire)
+                {
+                    playerState.tendAffliction = null;
+                }
+                else if (playerState.tendTime <= 0)
+                {
+                    inspectedState.fireSize -= 0.1f;
+
+                    if (inspectedState.fireSize <= 0)
+                    {
+                        inspectedState.onFire = false;
+
+                        playerState.tendAffliction = null;
+                    }
+                    else
+                    {
+                        playerState.tendTime = 10;
+                        playerState.tendTimeMax = playerState.tendTime;
+                    }
+                }
+                return;
+            }
+
             if (playerState.tendAffliction.state == null || playerState.tendAffliction.isTended && (playerState.tendAffliction is not RWDisease tendedDisease || tendedDisease.timeUntilTreatment > 0))
             {
                 playerState.tendAffliction = null;
@@ -378,6 +404,14 @@ public class HealthTab : HudPart
 
         if (input.pckp && (playerState.consciousState == 0 || ShadowOfOptions.downed_tend.Value != "No one") && (playerState.consciousState != 3 || ShadowOfOptions.player_uncon_movement.Value))
         {
+            if (inspectedState.onFire)
+            {
+                playerState.tendAffliction = burningAffliction;
+                playerState.tendTime = 10;
+                playerState.tendTimeMax = playerState.tendTime;
+                return;
+            }
+
             RWInjury bleeding = null;
             RWDisease diseaseAffliction = null;
             RWInjury untendedAffliction = null;
@@ -534,7 +568,7 @@ public class HealthTab : HudPart
         selectedSprite.isVisible = visible && selected;
         selectedSprite.alpha = SetTransparency();
 
-        treatedSprite.isVisible = visible && playerState != null && playerState.tendAffliction != null;
+        treatedSprite.isVisible = visible && playerState != null && playerState.tendAffliction != null && playerState.tendAffliction != burningAffliction;
         treatedSprite.alpha = SetTransparency();
         #endregion
 
@@ -1696,7 +1730,7 @@ public class HealthTab : HudPart
 
             for (int j = 0; j < healthTabBodyParts[selectedBodyPart].combinedAfflictions.Count; j++)
             {
-                if (healthTabBodyParts[selectedBodyPart].combinedAfflictions.TryGetValue(healthTabBodyParts[selectedBodyPart].CombinedAfflictionName(healthTabBodyParts[selectedBodyPart].bodyPart, j), out List<RWAffliction> list) && list.Contains(affliction))
+                if (healthTabBodyParts[selectedBodyPart].combinedAfflictions.TryGetValue(healthTabBodyParts[selectedBodyPart].CombinedAfflictionName(healthTabBodyParts[selectedBodyPart].allAfflictions, selectedAffliction), out List<RWAffliction> list) && list.Contains(affliction))
                 {
                     for (int k = 0; k < list.Count; k++)
                     {
@@ -2035,7 +2069,7 @@ public class HealthTab : HudPart
 
                         healthTabInfos[1].description.text += "Tending expires in " + GetTimeString(disease.timeUntilTreatment + 3) + "\n";
                     }
-                    healthTabInfos[1].description.text += "Immunity: " + Mathf.Clamp((Mathf.Round(disease.immunity * 1000) / 10), 0, 0) + "%";
+                    healthTabInfos[1].description.text += "Immunity: " + Mathf.Clamp(Mathf.Round(disease.immunity * 1000) / 10, 0, 100) + "%";
                 }
             }  
         }
@@ -2603,6 +2637,21 @@ public class HealthTabBodyPart
             name = injury.healingDifficulty.name + injury.attackName + injury.isTended;
         }
         else if (bodyPart.afflictions[i] is RWDisease disease)
+        {
+            name = disease.name;
+        }
+
+        return name;
+    }
+    public string CombinedAfflictionName(List<RWAffliction> bodyPart, int i)
+    {
+        string name = "";
+
+        if (bodyPart[i] is RWInjury injury)
+        {
+            name = injury.healingDifficulty.name + injury.attackName + injury.isTended;
+        }
+        else if (bodyPart[i] is RWDisease disease)
         {
             name = disease.name;
         }
@@ -3376,7 +3425,7 @@ public class HealthTabInfo
         backgrounds[0].alpha = owner.SetTransparency();
         backgrounds[1].alpha = owner.SetTransparency();
 
-        borderCorrection = backgrounds[0].y - (backgrounds[0].scaleY / 2) < 0 ? Mathf.Abs(backgrounds[0].y - (backgrounds[0].scaleY / 2)) : 0;
+        borderCorrection = Mathf.CeilToInt(backgrounds[0].y - (backgrounds[0].scaleY / 2) < 0 ? Mathf.Abs(backgrounds[0].y - (backgrounds[0].scaleY / 2)) : 0);
 
         if (borderCorrection > 0)
         {
@@ -3422,6 +3471,6 @@ public class HealthTabInfo
 
     public bool slatedForDeletion = false;
 
-    public float borderCorrection = 0;
+    public int borderCorrection = 0;
     #endregion
 }

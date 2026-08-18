@@ -1275,6 +1275,10 @@ internal class ILHooks
         else if (ModManager.MSC && sourceObj is MoreSlugcats.FireEgg)
         {
             attackName = "Fire egg";
+
+            BombDamage(self.State, state, damage * BombDamageMultiplier(self.State is HealthState, false), attackName, attackerName);
+            RWHealthState.Damage(self.State, state, new RWFlame(), 5, 0, GetHitBodyPart(state), attackName, attackerName);
+            return false;
         }
         else if (ModManager.MSC && sourceObj is MoreSlugcats.SingularityBomb)
         {
@@ -3406,6 +3410,31 @@ internal class ILHooks
             {
                 state.tendTime--;
 
+                if (state.tendAffliction == burningAffliction)
+                {
+                    if (!state.onFire)
+                    {
+                        state.tendAffliction = null;
+                    }
+                    else if (state.tendTime <= 0)
+                    {
+                        state.fireSize -= 0.1f;
+
+                        if (state.fireSize <= 0)
+                        {
+                            state.onFire = false;
+
+                            state.tendAffliction = null;
+                        }
+                        else
+                        {
+                            state.tendTime = 10;
+                            state.tendTimeMax = state.tendTime;
+                        }
+                    }
+                    return self.cat.abstractCreature.pos;
+                }
+
                 if (state.tendAffliction.isTended || state.tendAffliction.part == null && state.tendAffliction is not RWDisease)
                 {
                     state.tendAffliction = null;
@@ -3483,6 +3512,31 @@ internal class ILHooks
         {
             state.tendTime--;
 
+            if (state.tendAffliction == burningAffliction)
+            {
+                if (!otherState.onFire)
+                {
+                    state.tendAffliction = null;
+                }
+                else if (state.tendTime <= 0)
+                {
+                    otherState.fireSize -= 0.1f;
+
+                    if (otherState.fireSize <= 0)
+                    {
+                        otherState.onFire = false;
+
+                        state.tendAffliction = null;
+                    }
+                    else
+                    {
+                        state.tendTime = 10;
+                        state.tendTimeMax = state.tendTime;
+                    }
+                }
+                return self.cat.abstractCreature.pos;
+            }
+
             if (state.tendAffliction.isTended || state.tendAffliction.part == null && state.tendAffliction is not RWDisease)
             {
                 state.tendAffliction = null;
@@ -3522,6 +3576,14 @@ internal class ILHooks
                 }
             }
 
+            return self.cat.abstractCreature.pos;
+        }
+
+        if (otherState.onFire)
+        {
+            state.tendAffliction = burningAffliction;
+            state.tendTime = 10;
+            state.tendTimeMax = state.tendTime;
             return self.cat.abstractCreature.pos;
         }
 

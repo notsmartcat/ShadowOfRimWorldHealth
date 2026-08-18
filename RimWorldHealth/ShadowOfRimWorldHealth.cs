@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using RWCustom;
 
 namespace ShadowOfRimWorldHealth;
 
@@ -40,6 +41,10 @@ public class RimWorldHealth : BaseUnityPlugin
 
         public bool forceUnconsciousness = false;
         public int consciousState = 0; //0 = Conscious, 1 = Incapacitated, 2 = Pain Shock, 3 = Unconscious. in order of severity so more severe states will override
+
+        public bool onFire = false;
+        public float fireSize = 0;
+        public int fireRate = 40;
 
         public int timeAbstracted = 0;
 
@@ -104,6 +109,8 @@ public class RimWorldHealth : BaseUnityPlugin
         {
             0, 0
         };
+        public RWFireSmoke visualFire = null;
+        public LightSource lightSource = null;
         #endregion
     }
 
@@ -151,6 +158,8 @@ public class RimWorldHealth : BaseUnityPlugin
 
     public static RimWorldHealthHandler rimWorldHealthHandler;
 
+    public static RWAffliction burningAffliction = new(null, null);
+
     public void OnEnable()
     {
         try
@@ -164,6 +173,8 @@ public class RimWorldHealth : BaseUnityPlugin
             On.RainCycle.ctor += NewRainCycle;
             On.RainCycle.Update += RainCycleUpdate;
 
+            On.UpdatableAndDeletable.Destroy += UpdatableAndDeletableDestroy;
+
             rimWorldHealthHandler = new(["notsmartcat"], "rimworldhealth");
 
             ILHooks.Apply();
@@ -176,6 +187,19 @@ public class RimWorldHealth : BaseUnityPlugin
             On.RainWorld.OnModsInit += ModInit;
         }
         catch (Exception e) { Logger.LogError(e); }
+    }
+
+    void UpdatableAndDeletableDestroy(On.UpdatableAndDeletable.orig_Destroy orig, UpdatableAndDeletable self)
+    {
+        if (self is Player player && player.State != null)
+        {
+            if (player.State is PlayerState state && (!ModManager.MSC || player.State is not MoreSlugcats.PlayerNPCState))
+            {
+                healthTabs[state.playerNumber].visible = false;
+            }
+        }
+
+        orig(self);
     }
 
     void NewRainCycle(On.RainCycle.orig_ctor orig, RainCycle self, World world, float minutes)
@@ -286,7 +310,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 {
                     if (true)
                     {
-                        if (state.bodyParts[i] is Head)
+                        if (state.bodyParts[i] is Tail)
                         {
                             int j = UnityEngine.Random.Range(0, 3);
 
@@ -331,6 +355,15 @@ public class RimWorldHealth : BaseUnityPlugin
             }
             if (Input.GetKey("m"))
             {
+                if (!state.onFire)
+                {
+                    state.fireRate = 40;
+                    state.onFire = true;
+                    state.fireSize = UnityEngine.Random.Range(0.15f, 0.25f);
+                }
+
+                return;
+
                 for (int i = 0; i < state.bodyParts.Count; i++)
                 {
                     if (state.bodyParts[i] is Leg part && !IsDestroyed(part))
@@ -1012,7 +1045,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
         if (self.creature.Room.realizedRoom.roomSettings.GetEffect(RoomSettings.RoomEffect.Type.LavaSurface) != null)
         {
-            damageType = new RWBurn();
+            damageType = new RWFlame();
             attackName = "Lava";
         }
         else
@@ -1035,7 +1068,7 @@ public class RimWorldHealth : BaseUnityPlugin
     {
         RWBodyPart part = GetHitBodyPart(state, self.bodyChunks[hitChunk], null, false, true);
 
-        part ??= GetHitBodyPart(state);
+        part ??= GetHitBodyPart(state, null, null, false, true);
 
         float damage;
 
@@ -1195,7 +1228,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
         if (focusedBodyPart == null)
         {
-            Debug.Log("Error, hit bodypart is null");
+            Debug.Log(all + "Error, hit bodypart is null");
             RimWorldHealth.Logger.LogInfo(all + "Error, hit bodypart is null");
         }
 
@@ -1871,6 +1904,21 @@ public class RimWorldHealth : BaseUnityPlugin
 
         try
         {
+            if (state.onFire)
+            {
+                state.fireRate -= ticksPassed;
+
+                while (state.fireRate <= 0)
+                {
+                    state.fireRate += 40;
+
+                    RWHealthState.Damage(self, state, new RWBurn(), 2, 0, GetHitBodyPart(state));
+                }
+
+                state.onFire = false;
+                state.fireSize = 0;
+            }
+
             if (state.consciousState > 0 && (ShadowOfOptions.downed_tend.Value != "Everyone" || state.consciousState == 3)) //if uncon do not automatically tend
             {
                 goto skipTend;
@@ -2358,6 +2406,11 @@ public class RimWorldHealth : BaseUnityPlugin
             if (totalDamage > 150 * state.healthScale)
             {
                 RWHealthState.Kill(self);
+
+                if (state.onFire)
+                {
+                    RWHealthState.DestroyBurn(self);
+                }
                 return;
             }
 
@@ -2754,5 +2807,126 @@ public class DiseaseCloud : SporeCloud
         lifeTime = UnityEngine.Random.value * 20f + 25f;
         this.pos = pos;
         getToPos = pos + vel;
+    }
+}
+
+public class RWFireSmoke(Room room, RimWorldHealth.RWState state, Creature creature) : Smoke.FireSmoke(room)
+{
+    public override SmokeSystemParticle CreateParticle()
+    {
+        return new RWFireSmokeParticle();
+    }
+
+    public void RWEmitSmoke()
+    {
+        if (creature == null || state == null || !state.onFire)
+        {
+            return;
+        }
+
+        Vector2 pos = creature.mainBodyChunk.pos + new Vector2(UnityEngine.Random.Range(-creature.mainBodyChunk.rad, creature.mainBodyChunk.rad), UnityEngine.Random.Range(-creature.mainBodyChunk.rad, creature.mainBodyChunk.rad));
+
+        if (AddParticle(pos, Custom.RNV(), Mathf.Lerp(10f, 40f, UnityEngine.Random.value)) is RWFireSmokeParticle fireSmokeParticle)
+        {
+            fireSmokeParticle.effectColor = Color.yellow;
+            fireSmokeParticle.colorFadeTime = 25;
+            fireSmokeParticle.state = state;
+            fireSmokeParticle.rad = Mathf.Lerp(Custom.LerpMap(state.fireSize, 0, 2.5f, 16f, 42f), Custom.LerpMap(state.fireSize, 0, 2.5f, 34f, 62f), UnityEngine.Random.value);
+        }
+    }
+
+    public class RWFireSmokeParticle : FireSmokeParticle
+    {
+        public override void Reset(Smoke.SmokeSystem newOwner, Vector2 pos, Vector2 vel, float lifeTime)
+        {
+            base.Reset(newOwner, pos, vel, lifeTime);
+            col = 0f;
+            lastCol = 0f;
+            rad = Mathf.Lerp(28f, 46f, UnityEngine.Random.value);
+            moveDir = 0;
+        }
+
+        public override void Update(bool eu)
+        {
+            base.Update(eu);
+            if (resting)
+            {
+                return;
+            }
+
+            moveDir = 0;
+
+            vel *= Custom.LerpMap(state.fireSize, 0, 2.5f, 0.5f, 1f);
+
+            //vel *= 0.7f + 0.3f / Mathf.Pow(vel.magnitude, 0.5f);
+            //moveDir += Mathf.Lerp(-0.05f, 0.05f, UnityEngine.Random.value) * 10f;
+            //vel += Custom.DegToVec(0) * (0.6f * Mathf.Lerp(vel.magnitude, 1f, 0.6f));
+            if (room.PointSubmerged(pos))
+            {
+                pos.y = room.FloatWaterLevel(pos);
+            }
+            lastCol = col;
+            col += 1f;
+            if (room.GetTile(pos).Solid && !room.GetTile(lastPos).Solid)
+            {
+                IntVector2? intVector = SharedPhysics.RayTraceTilesForTerrainReturnFirstSolid(room, room.GetTilePosition(lastPos), room.GetTilePosition(pos));
+                FloatRect floatRect = Custom.RectCollision(pos, lastPos, room.TileRect(intVector.Value).Grow(2f));
+                pos = floatRect.GetCorner(FloatRect.CornerLabel.D);
+                if (floatRect.GetCorner(FloatRect.CornerLabel.B).x < 0f)
+                {
+                    vel.x = Mathf.Abs(vel.x);
+                    return;
+                }
+                if (floatRect.GetCorner(FloatRect.CornerLabel.B).x > 0f)
+                {
+                    vel.x = -Mathf.Abs(vel.x);
+                    return;
+                }
+                if (floatRect.GetCorner(FloatRect.CornerLabel.B).y < 0f)
+                {
+                    vel.y = Mathf.Abs(vel.y);
+                    return;
+                }
+                if (floatRect.GetCorner(FloatRect.CornerLabel.B).y > 0f)
+                {
+                    vel.y = -Mathf.Abs(vel.y);
+                }
+            }
+        }
+
+        public override void DrawSprites(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
+        {
+            base.DrawSprites(sLeaser, rCam, timeStacker, camPos);
+            if (resting)
+            {
+                return;
+            }
+            float currentLife = Mathf.Lerp(lastLife, life, timeStacker);
+            float t = Mathf.InverseLerp((float)colorFadeTime, 0.5f, Mathf.Lerp(lastCol, col, timeStacker));
+
+            if (currentLife < 0.3f)
+            {
+                sLeaser.sprites[0].color = colorB;
+                sLeaser.sprites[1].color = colorB;
+            }
+            else
+            {
+                sLeaser.sprites[0].color = Color.Lerp(colorA, effectColor, t);
+                sLeaser.sprites[1].color = Color.Lerp(colorA, effectColor, t);
+            }
+
+            sLeaser.sprites[0].alpha = Mathf.Pow(currentLife, 0.25f) * (1f - stretched);
+            sLeaser.sprites[1].alpha = 0.3f + Mathf.Pow(Mathf.Sin(currentLife * 3.1415927f), 0.7f) * 0.65f * (1f - stretched);
+        }
+
+        public override void ApplyPalette(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, RoomPalette palette)
+        {
+            colorA = Color.Lerp(Color.red, palette.fogColor, 0.2f);
+            colorB = Color.Lerp(palette.blackColor, palette.fogColor, 0.2f);
+        }
+
+        private Color colorB;
+
+        public RimWorldHealth.RWState state;
     }
 }

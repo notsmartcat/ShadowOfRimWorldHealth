@@ -151,6 +151,60 @@ internal class CreatureHooks
         }
 
         RWHealthState.Update(self.State, state);
+
+        if (state.onFire)
+        {
+            state.visualFire ??= new(self.room, state, self);
+
+            if (state.lightSource != null)
+            {
+                state.lightSource.stayAlive = true;
+                state.lightSource.setPos = self.mainBodyChunk.pos;
+                state.lightSource.setRad = Mathf.Max(Random.Range(35f, 45f), Random.Range(40f, 60f) * state.fireSize);
+
+                state.lightSource.setAlpha = 0.6f;
+                state.lightSource.color = Color.red;
+
+                if (state.lightSource.slatedForDeletetion)
+                {
+                    state.lightSource = null;
+                }
+            }
+            else
+            {
+                state.lightSource = new(self.mainBodyChunk.pos, false, Color.red, self)
+                {
+                    requireUpKeep = true
+                };
+                self.room.AddObject(state.lightSource);
+            }
+        }
+        else if (state.visualFire != null)
+        {
+            state.visualFire = null;
+
+            for (int k = 0; k < 2; k++)
+            {
+                Smoke.Smolder smolder = new(self.room, self.mainBodyChunk.pos, self.mainBodyChunk, null);
+
+                if (smolder != null)
+                {
+                    self.room.AddObject(smolder);
+                }
+            }
+        }
+        if (state.visualFire != null)
+        {
+            state.visualFire.Update(eu);
+            if (self.room.ViewedByAnyCamera(self.firstChunk.pos, 300f))
+            {
+                state.visualFire.RWEmitSmoke();
+            }
+            if (state.visualFire.Dead)
+            {
+                state.visualFire = null;
+            }
+        }
     }
     static void CreatureViolence(On.Creature.orig_Violence orig, Creature self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos hitAppendage, Creature.DamageType type, float damage, float stunBonus)
     {
@@ -214,6 +268,23 @@ internal class CreatureHooks
                 attackName = "Explosion";
 
                 Override();
+
+                if (attackerName == "Lightning")
+                {
+                    damage = 10;
+
+                    RWHealthState.Damage(self.State, state, new RWFlame(), damage, AP, GetHitBodyPart(state), attackName, attackerName);
+
+                    return;
+                }                
+                else if (attackerName == "Flame Jet")
+                {
+                    damage = 10;
+
+                    RWHealthState.Damage(self.State, state, new RWFlame(), damage, AP, GetHitBodyPart(state), attackName, attackerName);
+
+                    return;
+                }
 
                 BombDamage(self.State, state, damage * BombDamageMultiplier(self.State is HealthState, false), attackName);
             }
@@ -323,6 +394,8 @@ internal class CreatureHooks
 
                 damage = 25f;
 
+                AP = 50;
+
                 BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
             }
             else if (attacker is Rock rock)
@@ -388,7 +461,7 @@ internal class CreatureHooks
 
                     RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
 
-                    RWHealthState.Damage(self.State, state, new RWBurn(), 5, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                    RWHealthState.Damage(self.State, state, new RWFlame(), 5, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
 
                     return;
                 }
@@ -606,6 +679,8 @@ internal class CreatureHooks
 
                 damage = Custom.LerpMap(lizard.lizardParams.maxMusclePower, 0, 16, 4, 22);
 
+                AP = 33;
+
                 RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
             }
         }
@@ -785,7 +860,7 @@ internal class CreatureHooks
 
             Override();
 
-            damage = 0.5f;
+            damage = 1f;
 
             BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
         }

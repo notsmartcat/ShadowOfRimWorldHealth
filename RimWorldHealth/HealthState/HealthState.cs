@@ -7,11 +7,24 @@ namespace ShadowOfRimWorldHealth;
 
 public class RWHealthState
 {
-    public static void NewRWHealthState(CreatureState self, RWState state)
+    public static void NewRWHealthState(Creature self, RWState state)
     {
         state.bodySizeFactor = 1;
 
+        CreatureState creatureState = self.State;
+
         List<RWBodyPart> bodyParts = BodyPartSet(self);
+
+        bool hasLowerTorso = false;
+
+        foreach (RWBodyPart part in bodyParts)
+        {
+            if (part is LowerTorso)
+            {
+                hasLowerTorso = true;
+                break;
+            }
+        }
 
         for (int i = 0; i < bodyParts.Count; i++)
         {
@@ -21,16 +34,16 @@ public class RWHealthState
 
                 if (bodyParts[i] is Eye)
                 {
-                    bodyPart = new Eye(self);
+                    bodyPart = new Eye(creatureState);
                 }
                 else if (bodyParts[i] is Ear)
                 {
-                    bodyPart = new Ear(self);
+                    bodyPart = new Ear(creatureState);
                 }
 
                 else if (bodyParts[i] is Shoulder)
                 {
-                    bodyPart = new Shoulder(self);
+                    bodyPart = new Shoulder(creatureState);
 
                     if (!state.armSetNames.Contains("Right"))
                     {
@@ -61,7 +74,7 @@ public class RWHealthState
                 }
                 else if (bodyParts[i] is Arm)
                 {
-                    bodyPart = new Arm(self);
+                    bodyPart = new Arm(creatureState);
 
                     if (state.armSet.TryGetValue("Right", out ArmSet rightSet))
                     {
@@ -74,7 +87,7 @@ public class RWHealthState
                 }
                 else if (bodyParts[i] is Hand)
                 {
-                    bodyPart = new Hand(self);
+                    bodyPart = new Hand(creatureState);
 
                     if (state.armSet.TryGetValue("Right", out ArmSet rightSet))
                     {
@@ -88,7 +101,7 @@ public class RWHealthState
 
                 else if (bodyParts[i] is Leg)
                 {
-                    bodyPart = new Leg(self);
+                    bodyPart = new Leg(creatureState);
 
                     if (!state.legSetNames.Contains("Right"))
                     {
@@ -133,7 +146,7 @@ public class RWHealthState
 
                 else if (bodyParts[i] is Clavicle)
                 {
-                    bodyPart = new Clavicle(self);
+                    bodyPart = new Clavicle(creatureState);
 
                     if (state.armSet.TryGetValue("Right", out ArmSet rightSet))
                     {
@@ -146,7 +159,7 @@ public class RWHealthState
                 }
                 else if (bodyParts[i] is Humerus)
                 {
-                    bodyPart = new Humerus(self);
+                    bodyPart = new Humerus(creatureState);
 
                     if (state.armSet.TryGetValue("Right", out ArmSet rightSet))
                     {
@@ -159,7 +172,7 @@ public class RWHealthState
                 }
                 else if (bodyParts[i] is Radius)
                 {
-                    bodyPart = new Radius(self);
+                    bodyPart = new Radius(creatureState);
 
                     if (state.armSet.TryGetValue("Right", out ArmSet rightSet))
                     {
@@ -173,7 +186,7 @@ public class RWHealthState
 
                 else if (bodyParts[i] is Femur)
                 {
-                    bodyPart = new Femur(self);
+                    bodyPart = new Femur(creatureState);
 
                     if (state.legSet.TryGetValue("Right", out LegSet rightSet))
                     {
@@ -186,7 +199,7 @@ public class RWHealthState
                 }
                 else if (bodyParts[i] is Tibia)
                 {
-                    bodyPart = new Tibia(self);
+                    bodyPart = new Tibia(creatureState);
 
                     if (state.legSet.TryGetValue("Right", out LegSet rightSet))
                     {
@@ -200,21 +213,26 @@ public class RWHealthState
 
                 else if (bodyParts[i] is Lung)
                 {
-                    bodyPart = new Lung(self);
+                    bodyPart = new Lung(creatureState);
                 }
                 else if (bodyParts[i] is Kidney)
                 {
-                    bodyPart = new Kidney(self);
+                    bodyPart = new Kidney(creatureState);
                 }
 
                 if (bodyPart != null)
                 {
                     bodyPart.subName = "Left";
 
+                    BodyPartChanges(bodyPart);
+
                     state.bodyParts.Add(bodyPart);
                 }
 
                 bodyParts[i].subName = "Right";
+
+                BodyPartChanges(bodyParts[i]);
+
                 state.bodyParts.Add(bodyParts[i]);
             }
             else if (bodyParts[i] is Finger finger)
@@ -282,6 +300,8 @@ public class RWHealthState
                             set.fingers.Add(finger);
                         }
 
+                        BodyPartChanges(finger);
+
                         state.bodyParts.Add(finger);
 
                         finger = null;
@@ -346,6 +366,8 @@ public class RWHealthState
                             set.toes.Add(toe);
                         }
 
+                        BodyPartChanges(toe);
+
                         state.bodyParts.Add(toe);
 
                         toe = null;
@@ -354,6 +376,25 @@ public class RWHealthState
             }
             else
             {
+                if (self is Player player && player.SlugCatClass.value == "Spear")
+                {
+                    if (bodyParts[i] is Jaw jaw)
+                    {
+                        jaw.capacity.Clear();
+                        state.eatingBP.Remove(jaw);
+                        state.talkingBP.Remove(jaw);
+                    }
+                    else if (bodyParts[i] is Neck neck)
+                    {
+                        neck.capacity.Remove("Eating");
+                        state.eatingBP.Remove(neck);
+                        neck.capacity.Remove("Talking");
+                        state.talkingBP.Remove(neck);
+                    }
+                }
+
+                BodyPartChanges(bodyParts[i]);
+
                 state.bodyParts.Add(bodyParts[i]);
 
                 if (bodyParts[i] is Brain brain)
@@ -361,21 +402,15 @@ public class RWHealthState
                     state.consciousnessSource = brain;
                 }
             }
+        }
 
-            foreach (int bodyChunk in bodyParts[i].connectedBodyChunks)
-            {
-                if (state.visualBleedAmount.Count < bodyChunk)
+        for (int i = 0; i < self.bodyChunks.Length; i++)
+        {
+            List<float> list = new(2)
                 {
-                    for (int j = 0; j < bodyChunk - state.visualBleedAmount.Count; j++)
-                    {
-                        List<float> list = new(2)
-                        {
-                            0, 0
-                        };
-                        state.visualBleedAmount.Add(list);
-                    }
-                }
-            }
+                    0, 0
+                };
+            state.visualBleedAmount.Add(list);
         }
 
         for (int i = 0; i < state.bodyParts.Count; i++)
@@ -435,8 +470,8 @@ public class RWHealthState
             {
                 part = part switch
                 {
-                    SlugcatFinger => new SlugcatFinger(self),
-                    _ => new Finger(self),
+                    SlugcatFinger => new SlugcatFinger(creatureState),
+                    _ => new Finger(creatureState),
                 };
 
                 return part;
@@ -445,8 +480,8 @@ public class RWHealthState
             {
                 part = part switch
                 {
-                    SlugcatToe => new SlugcatToe(self),
-                    _ => new Toe(self),
+                    SlugcatToe => new SlugcatToe(creatureState),
+                    _ => new Toe(creatureState),
                 };
 
                 return part;
@@ -455,14 +490,77 @@ public class RWHealthState
             {
                 part = part switch
                 {
-                    SlugcatPaw => new SlugcatPaw(self),
-                    _ => new Foot(self),
+                    SlugcatPaw => new SlugcatPaw(creatureState),
+                    _ => new Foot(creatureState),
                 };
 
                 return part;
             }
 
-            return new RWBodyPart(self);
+            return new RWBodyPart(creatureState);
+        }
+
+        void BodyPartChanges(RWBodyPart part)
+        {
+            ConnectionChanges();
+
+            if (!hasLowerTorso)
+            {
+                if (part is UpperTorso)
+                {
+                    part.name = "Torso";
+
+                    part.group.Remove("upperTorso");
+                    part.group.Add("torso");
+
+                    return;
+                }
+                
+                if (part.group.Contains("upperTorso"))
+                {
+                    part.group.Remove("upperTorso");
+                    part.group.Add("torso");
+                }
+                if (part.group.Contains("lowerTorso"))
+                {
+                    part.group.Remove("lowerTorso");
+                    part.group.Add("torso");
+                }
+                if (part.subPartOf == "Upper Torso" || part.subPartOf == "Lower Torso")
+                {
+                    part.subPartOf = "Torso";
+                }
+            }
+
+            void ConnectionChanges()
+            {
+                int bodyChunkAmount = self.bodyChunks.Length - 1;
+
+                bool containsLowestConnection = false;
+
+                List<int> tempList = part.connectedBodyChunks;
+
+                for (int i = 0; i < tempList.Count; i++)
+                {
+                    if (tempList[i] == bodyChunkAmount)
+                    {
+                        containsLowestConnection = true;
+                        continue;
+                    }
+
+                    if (tempList[i] > bodyChunkAmount)
+                    {
+                        part.connectedBodyChunks.Remove(tempList[i]);
+
+                        if (!containsLowestConnection)
+                        {
+                            containsLowestConnection = true;
+
+                            part.connectedBodyChunks.Add(1);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -483,6 +581,22 @@ public class RWHealthState
         if (heal)
         {
             state.healingRate = state.healingRateTics;
+        }
+
+        if (state.onFire)
+        {
+            state.fireRate--;
+
+            if (state.fireRate <= 0)
+            {
+                state.fireRate = 40;
+
+                state.fireSize = Mathf.Min(!self.dead && state.consciousState == 0 ? 1.25f : 2.5f, state.fireSize + 0.125f);
+
+                Damage(self, state, new RWBurn(), 2, 0, GetHitBodyPart(state));
+
+                state.updateCapacities = true;
+            }
         }
 
         List<RWInjury> healList = new();
@@ -910,6 +1024,7 @@ public class RWHealthState
                 }
 
                 afflictionList = new(part.afflictions);
+
                 foreach (RWAffliction affliction in afflictionList)
                 {
                     if (affliction is RWDestroyed destroyed)
@@ -993,10 +1108,14 @@ public class RWHealthState
                     part.efficiency = 0;
                 }
             }
-
             if (totalDamage > 150 * state.healthScale)
             {
                 Kill(self);
+
+                if (state.onFire)
+                {
+                    DestroyBurn(self);
+                }
                 return;
             }
 
@@ -1459,10 +1578,17 @@ public class RWHealthState
             return;
         }
 
+        if (damageType is RWFlame && !state.onFire) //currently chance to be set on fire is guaranteed as noting reduces flamability so I never added the flamability stat
+        {
+            state.fireRate = 40;
+            state.onFire = true;
+            state.fireSize = Random.Range(0.15f, 0.25f);
+        }
+
         if (health <= 0f)
         {
             if (ShadowOfOptions.debug_logs.Value)
-                Debug.Log(all + self + "'s " + focusedBodyPart + " was destroyed");
+                Debug.Log(all + self.creature + "'s " + focusedBodyPart.name + " was destroyed");
 
             DestroyBodyPart();
 
@@ -1474,7 +1600,7 @@ public class RWHealthState
         else
         {
             if (ShadowOfOptions.debug_logs.Value)
-                Debug.Log(all + self + "'s " + focusedBodyPart + " was damaged for " + damage);
+                Debug.Log(all + self.creature + "'s " + focusedBodyPart.name + " was damaged for " + damage);
 
             focusedBodyPart.afflictions.Add(Scar(damage));
             focusedBodyPart.health = health;
@@ -1801,6 +1927,22 @@ public class RWHealthState
             self.creature.realizedCreature.Die();
         }
     }
+    public static void DestroyBurn(CreatureState self)
+    {
+        if (self.creature == null)
+        {
+            return;
+        }
+        else if (self.creature.realizedCreature == null)
+        {
+            self.creature.Destroy();
+        }
+        else
+        {
+            self.creature.realizedCreature.Destroy();
+            self.creature.Destroy();
+        }
+    }
 
     public static int BloodLossMultiplier(RWBodyPart part)
     {
@@ -2007,106 +2149,156 @@ public class RWHealthState
     #endregion
     #endregion
 
-    public static List<RWBodyPart> BodyPartSet(CreatureState self)
+    public static List<RWBodyPart> BodyPartSet(Creature self)
     {
+        CreatureState creatureState = self.State;
+
         List<RWBodyPart> bodyParts;
 
-        CreatureTemplate.Type template = self.creature.creatureTemplate.type;
+        //CreatureTemplate.Type template = self.abstractCreature.creatureTemplate.type;
 
-        if (template == CreatureTemplate.Type.Slugcat || (ModManager.MSC && template == MoreSlugcats.MoreSlugcatsEnums.CreatureTemplateType.SlugNPC))
+        if (self is Player player)
         {
-            bodyParts = new(33) {
-                new UpperTorso(self),
-                new LowerTorso(self),
+            if (player.SlugCatClass.value == "Spear")
+            {
+                bodyParts = new(31) {
+                    new UpperTorso(creatureState),
 
-                new Neck(self),
-                new Head(self),
-                new Eye(self),
-                new Ear(self),
-                new Nose(self),
-                new Jaw(self),
-                new Tongue(self),
+                    new Neck(creatureState),
+                    new Head(creatureState),
+                    new Eye(creatureState),
+                    new Ear(creatureState),
+                    new Nose(creatureState),
+                    new Jaw(creatureState),
 
-                new Shoulder(self),
-                new Arm(self),
-                new Hand(self),
-                new SlugcatFinger(self),
+                    new Shoulder(creatureState),
+                    new Arm(creatureState),
+                    new Hand(creatureState),
+                    new SlugcatFinger(creatureState),
 
-                new Leg(self),
-                new SlugcatPaw(self),
-                new SlugcatToe(self),
+                    new Leg(creatureState),
+                    new SlugcatPaw(creatureState),
+                    new SlugcatToe(creatureState),
 
-                new Tail(self),
+                    new Tail(creatureState),
 
-                new Skull(self),
+                    new Skull(creatureState),
 
-                new Spine(self),
-                new Ribcage(self),
-                new Sternum(self),
+                    new Spine(creatureState),
+                    new Ribcage(creatureState),
+                    new Sternum(creatureState),
 
-                new Clavicle(self),
-                new Humerus(self),
-                new Radius(self),
+                    new Clavicle(creatureState),
+                    new Humerus(creatureState),
+                    new Radius(creatureState),
 
-                new Pelvis(self),
+                    new Pelvis(creatureState),
 
-                new Femur(self),
-                new Tibia(self),
+                    new Femur(creatureState),
+                    new Tibia(creatureState),
 
-                new Brain(self),
+                    new Brain(creatureState),
 
-                new Stomach(self),
-                new Heart(self),
-                new Lung(self),
-                new Kidney(self),
-                new Liver(self),
-            };
+                    new Stomach(creatureState),
+                    new Heart(creatureState),
+                    new Lung(creatureState),
+                    new Kidney(creatureState),
+                    new Liver(creatureState),
+                };
+            }
+            else
+            {
+                                bodyParts = new(32) {
+                    new UpperTorso(creatureState),
+
+                    new Neck(creatureState),
+                    new Head(creatureState),
+                    new Eye(creatureState),
+                    new Ear(creatureState),
+                    new Nose(creatureState),
+                    new Jaw(creatureState),
+                    new Tongue(creatureState),
+
+                    new Shoulder(creatureState),
+                    new Arm(creatureState),
+                    new Hand(creatureState),
+                    new SlugcatFinger(creatureState),
+
+                    new Leg(creatureState),
+                    new SlugcatPaw(creatureState),
+                    new SlugcatToe(creatureState),
+
+                    new Tail(creatureState),
+
+                    new Skull(creatureState),
+
+                    new Spine(creatureState),
+                    new Ribcage(creatureState),
+                    new Sternum(creatureState),
+
+                    new Clavicle(creatureState),
+                    new Humerus(creatureState),
+                    new Radius(creatureState),
+
+                    new Pelvis(creatureState),
+
+                    new Femur(creatureState),
+                    new Tibia(creatureState),
+
+                    new Brain(creatureState),
+
+                    new Stomach(creatureState),
+                    new Heart(creatureState),
+                    new Lung(creatureState),
+                    new Kidney(creatureState),
+                    new Liver(creatureState),
+                };
+            }
         }
         else
         {
-            bodyParts = new(32) {
-                new UpperTorso(self),
-                new LowerTorso(self),
+            bodyParts = new(31) {
+                new UpperTorso(creatureState),
 
-                new Neck(self),
-                new Head(self),
-                new Eye(self),
-                new Ear(self),
-                new Nose(self),
-                new Jaw(self),
-                new Tongue(self),
+                new Neck(creatureState),
+                new Head(creatureState),
+                new Eye(creatureState),
+                new Ear(creatureState),
+                new Nose(creatureState),
+                new Jaw(creatureState),
+                new Tongue(creatureState),
 
-                new Shoulder(self),
-                new Arm(self),
-                new Hand(self),
-                new Finger(self),
+                new Shoulder(creatureState),
+                new Arm(creatureState),
+                new Hand(creatureState),
+                new Finger(creatureState),
 
-                new Leg(self),
-                new Foot(self),
-                new Toe(self),
+                new Leg(creatureState),
+                new Foot(creatureState),
+                new Toe(creatureState),
 
-                new Skull(self),
+                new Skull(creatureState),
 
-                new Spine(self),
-                new Ribcage(self),
-                new Sternum(self),
+                new Spine(creatureState),
+                new Ribcage(creatureState),
+                new Sternum(creatureState),
 
-                new Clavicle(self),
-                new Humerus(self),
-                new Radius(self),
+                new Clavicle(creatureState),
+                new Humerus(creatureState),
+                new Radius(creatureState),
 
-                new Pelvis(self),
+                new Pelvis(creatureState),
 
-                new Femur(self),
-                new Tibia(self),
+                new Femur(creatureState),
+                new Tibia(creatureState),
 
-                new Brain(self),
+                new Brain(creatureState),
 
-                new Stomach(self),
-                new Heart(self),
-                new Lung(self),
-                new Kidney(self),
-                new Liver(self),
+                new Stomach(creatureState),
+                new Heart(creatureState),
+                new Lung(creatureState),
+                new Kidney(creatureState),
+                new Liver(creatureState),
             };
         }
 
