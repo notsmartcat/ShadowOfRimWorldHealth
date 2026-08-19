@@ -402,6 +402,14 @@ public class RWHealthState
                     state.consciousnessSource = brain;
                 }
             }
+
+            foreach (string group in state.bodyParts[i].group)
+            {
+                if (!state.clothingArmour.ContainsKey(group))
+                {
+                    state.clothingArmour[group] = new(3) { 0, 0, 0 };
+                }
+            }
         }
 
         for (int i = 0; i < self.bodyChunks.Length; i++)
@@ -1562,9 +1570,91 @@ public class RWHealthState
         }
     }
 
-    public static void Damage(CreatureState self, RWState state, RWDamageType damageType, float damage, float AP, RWBodyPart bodyPart, string attackName = "", string attackerName = "")
+    public static void Damage(CreatureState self, RWState state, RWDamageType damageType, float damage, float AP, RWBodyPart bodyPart, string attackName = "", string attackerName = "", RWWeaponStats weapon = null)
     {
+        #region Armour
+        List<List<float>> armour = new(1) { bodyPart.armour };
+
+        RWBodyPart focusedArmourPart = bodyPart;
+
+        while (bodyPart.isInternal)
+        {
+            RWBodyPart lastFocusedPart = focusedArmourPart;
+
+            foreach (RWBodyPart part in state.bodyParts)
+            {
+                if (IsSubPartName(focusedArmourPart, part))
+                {
+                    armour.Add(part.armour);
+
+                    if (part.isInternal)
+                    {
+                        focusedArmourPart = part;
+                    }
+
+                    break;
+                }
+            }
+
+            if (lastFocusedPart == focusedArmourPart)
+            {
+                break;
+            }
+        }
+
         RWBodyPart focusedBodyPart = bodyPart;
+
+        foreach (string group in focusedBodyPart.group)
+        {
+            if (state.clothingArmour.TryGetValue(group, out List<float> clothingArmour))
+            {
+                armour.Add(clothingArmour);
+            }
+        }
+
+        int armourCategory = damageType.category == "Sharp" ? 0 : damageType.category == "Blunt" ? 1 : 2;
+
+        bool armourEffective = false;
+
+        foreach (List<float> armourList in armour)
+        {
+            float armourRating = armourList[armourCategory] - AP;
+
+            float random = Random.value;
+
+            if (armourRating <= 0 || random > armourRating)
+            {
+                continue;
+            }
+
+            if (random < armourRating / 2)
+            {
+                if (weapon != null)
+                {
+                    weapon.wasDeflected = true;
+                }
+
+                damage = 0;
+
+                break;
+            } //deflects harmlessly
+            else
+            {
+                damage /= 2;
+                armourEffective = true;
+            }
+        }
+
+        if (damage <= 0)
+        {
+            return;
+        }
+
+        if (armourEffective && damageType.category == "Sharp")
+        {
+            damageType = new RWBlunt();
+        }
+        #endregion
 
         float health = focusedBodyPart.health;
         health -= damage;
@@ -1578,11 +1668,9 @@ public class RWHealthState
             return;
         }
 
-        if (damageType is RWFlame && !state.onFire) //currently chance to be set on fire is guaranteed as noting reduces flamability so I never added the flamability stat
+        if (damageType is RWFlame )
         {
-            state.fireRate = 40;
-            state.onFire = true;
-            state.fireSize = Random.Range(0.15f, 0.25f);
+            Burn(state);
         }
 
         if (health <= 0f)
@@ -1765,6 +1853,11 @@ public class RWHealthState
                 return;
             }
 
+            if (weapon != null)
+            {
+                weapon.destroyedPart = true;
+            }
+
             List<RWBodyPart> subParts = new()
                 {
                     focusedBodyPart
@@ -1825,13 +1918,18 @@ public class RWHealthState
                 return;
             }
 
-            float overkillPercentage = health * -1 / focusedBodyPart.maxHealth * 100;
+            float overkillPercentage = (damage - focusedBodyPart.health) / focusedArmourPart.maxHealth;
 
             float chanceToDestroy = (overkillPercentage - damageType.overkillMin) / (damageType.overkillMax - damageType.overkillMin);
 
-            if (Random.value > chanceToDestroy)
+            float rand = Random.value;
+
+            if (ShadowOfOptions.debug_logs.Value)
+                Debug.Log(all + "OverkillPrevention for " + bodyPart.name + " overkillPercentage: " + overkillPercentage + " chanceToDestroy: " + chanceToDestroy + " rand: " + rand);
+
+            if (rand > chanceToDestroy)
             {
-                damage = (damage + health) - 1;
+                damage = damage + health - 1;
                 health = 1;
             }
         }
@@ -1941,6 +2039,16 @@ public class RWHealthState
         {
             self.creature.realizedCreature.Destroy();
             self.creature.Destroy();
+        }
+    }
+
+    public static void Burn(RWState state)
+    {
+        if (!state.onFire) //currently chance to be set on fire is guaranteed as noting reduces flamability so I never added the flamability stat
+        {
+            state.fireRate = 40;
+            state.onFire = true;
+            state.fireSize = Random.Range(0.15f, 0.25f);
         }
     }
 

@@ -394,7 +394,7 @@ internal class CreatureHooks
 
                 damage = 25f;
 
-                AP = 50;
+                AP = 0.5f;
 
                 BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
             }
@@ -438,19 +438,21 @@ internal class CreatureHooks
                     attackerName = GetCreatureName(spear.thrownBy);
                 }
 
+                if (weaponstat.TryGetValue(spear.abstractPhysicalObject, out RWWeaponStats weaponState)) {}
+
                 if (type != Creature.DamageType.Explosion)
                 {
-                    if (weaponstat.TryGetValue(spear.abstractPhysicalObject, out RWWeaponStats weaponState))
+                    if (weaponState != null)
                     {
                         damage = weaponState.damage;
                         AP = weaponState.AP;
                     }
                     else
                     {
-                        damage = 8.3f; //1/3 of the RimWorld pila damage due to the spear not having a long cooldown like the pila does
+                        damage = 25f; //Taken from RimWOrld's Pila
                     }
 
-                    damage *= spear.spearDamageBonus; //if thrown by the non-exhausted Gourmand the damage will match the RimWorld damage
+                    damage *= spear.spearDamageBonus; //if thrown by the non-exhausted Gourmand the damage will be 75
                 }
 
                 if (spear.bugSpear)
@@ -459,9 +461,9 @@ internal class CreatureHooks
 
                     Override();
 
-                    RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                    RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName, weaponState);
 
-                    RWHealthState.Damage(self.State, state, new RWFlame(), 5, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                    RWHealthState.Burn(state);
 
                     return;
                 }
@@ -477,7 +479,7 @@ internal class CreatureHooks
                     }
                     else
                     {
-                        RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                        RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName, weaponState);
                     }
 
                     return;
@@ -494,7 +496,7 @@ internal class CreatureHooks
                     }
                     else
                     {
-                        RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                        RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName, weaponState);
                     }
 
                     return;
@@ -504,7 +506,7 @@ internal class CreatureHooks
 
                 Override();
 
-                RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName, weaponState);
             }
             else if (ModManager.MSC && attacker is MoreSlugcats.Bullet bullet)
             {
@@ -515,7 +517,7 @@ internal class CreatureHooks
 
                 damage = 18;
 
-                AP = 27;
+                AP = 0.27f;
 
                 if (bullet.abstractBullet.bulletType == JokeRifle.AbstractRifle.AmmoType.Rock)
                 {
@@ -588,7 +590,7 @@ internal class CreatureHooks
             Override();
 
             damage = 25;
-            AP = 20;
+            AP = 0.2f;
 
             RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
@@ -601,7 +603,7 @@ internal class CreatureHooks
             Override();
 
             damage = 10;
-            AP = 10;
+            AP = 0.1f;
 
             RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
@@ -614,7 +616,7 @@ internal class CreatureHooks
             Override();
 
             damage = 10;
-            AP = 10;
+            AP = 0.1f;
 
             RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
@@ -627,7 +629,7 @@ internal class CreatureHooks
             Override();
 
             damage = 5;
-            AP = 10;
+            AP = 0.1f;
 
             RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
@@ -652,7 +654,7 @@ internal class CreatureHooks
             Override();
 
             damage = 0.5f;
-            AP = 10;
+            AP = 0.1f;
 
             RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
         }
@@ -667,7 +669,7 @@ internal class CreatureHooks
                 Override();
 
                 damage = 5f;
-                AP = 10;
+                AP = 0.1f;
 
                 RWHealthState.Damage(self.State, state, new RWFrostbite(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
             }
@@ -679,7 +681,7 @@ internal class CreatureHooks
 
                 damage = Custom.LerpMap(lizard.lizardParams.maxMusclePower, 0, 16, 4, 22);
 
-                AP = 33;
+                AP = 0.33f;
 
                 RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
             }
@@ -693,7 +695,7 @@ internal class CreatureHooks
             Override();
 
             damage = 30;
-            AP = 50;
+            AP = 0.5f;
 
             RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
@@ -708,14 +710,14 @@ internal class CreatureHooks
                     attackName = attackerName + " - Roll";
 
                     damage = 3;
-                    AP = 4;
+                    AP = 0.04f;
                 }
                 else
                 {
                     attackName = attackerName + " - Slam";
 
                     damage = 10;
-                    AP = 10;
+                    AP = 0.1f;
                 }
 
                 Override();
@@ -729,7 +731,7 @@ internal class CreatureHooks
                 Override();
 
                 damage = 7;
-                AP = 10;
+                AP = 0.1f;
 
                 RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
             }
@@ -744,7 +746,7 @@ internal class CreatureHooks
             Override();
 
             damage = 10;
-            AP = 10;
+            AP = 0.1f;
 
             BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
         }
@@ -757,7 +759,7 @@ internal class CreatureHooks
             Override();
 
             damage = 10;
-            AP = 10;
+            AP = 0.1f;
 
             RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
@@ -770,7 +772,7 @@ internal class CreatureHooks
             Override();
 
             damage = 1;
-            AP = 10;
+            AP = 0.1f;
 
             RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
         }
@@ -783,7 +785,7 @@ internal class CreatureHooks
             Override();
 
             damage = 6;
-            AP = 10;
+            AP = 0.1f;
 
             RWHealthState.Damage(self.State, state, new RWBurn(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
         }
@@ -796,7 +798,7 @@ internal class CreatureHooks
             Override();
 
             damage = 7;
-            AP = 10;
+            AP = 0.1f;
 
             CutDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
         }
@@ -811,7 +813,7 @@ internal class CreatureHooks
                 Override();
 
                 damage = 1;
-                AP = 10;
+                AP = 0.1f;
 
                 RWHealthState.Damage(self.State, state, new RWStab(), AP, damage, GetHitBodyPart(state, hitChunk), attackName, attackerName);
             }
@@ -835,7 +837,7 @@ internal class CreatureHooks
             Override();
 
             damage = 5;
-            AP = 10;
+            AP = 0.1f;
 
             BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
         }
@@ -848,7 +850,7 @@ internal class CreatureHooks
             Override();
 
             damage = 2f;
-            AP = 3;
+            AP = 0.03f;
 
             BluntDamage(self.State, state, hitChunk, damage, AP, attackName, attackerName);
         }

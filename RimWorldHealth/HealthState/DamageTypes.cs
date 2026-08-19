@@ -12,8 +12,8 @@ public class RWDamageType
 
     public string armourCategory;
 
-    public int overkillMin;
-    public int overkillMax;
+    public float overkillMin;
+    public float overkillMax;
 
     public List<string> headiffs = new();
 
@@ -60,7 +60,7 @@ public class RWCut : RWDamageType
         armourCategory = "Sharp";
 
         overkillMin = 0;
-        overkillMax = 10;
+        overkillMax = 0.1f;
 
         headiffs.Add("Cut");
         headiffs.Add("");
@@ -78,8 +78,8 @@ public class RWCrush : RWDamageType
 
         armourCategory = "Blunt";
 
-        overkillMin = 40;
-        overkillMax = 100;
+        overkillMin = 0.4f;
+        overkillMax = 1;
 
         headiffs.Add("Crush");
         headiffs.Add("Cut");
@@ -96,8 +96,8 @@ public class RWBlunt : RWDamageType
 
         armourCategory = "Blunt";
 
-        overkillMin = 40;
-        overkillMax = 100;
+        overkillMin = 0.4f;
+        overkillMax = 1;
 
         headiffs.Add("Crush");
         headiffs.Add("Bruise");
@@ -114,8 +114,8 @@ public class RWPoke : RWDamageType
 
         armourCategory = "Blunt";
 
-        overkillMin = 40;
-        overkillMax = 100;
+        overkillMin = 0.4f;
+        overkillMax = 1;
 
         headiffs.Add("Crush");
         headiffs.Add("Bruise");
@@ -132,8 +132,8 @@ public class RWDemolish : RWDamageType
 
         armourCategory = "Blunt";
 
-        overkillMin = 40;
-        overkillMax = 100;
+        overkillMin = 0.4f;
+        overkillMax = 1;
 
         headiffs.Add("Crush");
         headiffs.Add("Bruise");
@@ -151,8 +151,8 @@ public class RWStab : RWDamageType
 
         armourCategory = "Sharp";
 
-        overkillMin = 40;
-        overkillMax = 100;
+        overkillMin = 0.4f;
+        overkillMax = 1;
 
         headiffs.Add("Stab");
         headiffs.Add("");
@@ -171,7 +171,7 @@ public class RWBullet : RWDamageType
         armourCategory = "Sharp";
 
         overkillMin = 0;
-        overkillMax = 70;
+        overkillMax = 0.7f;
 
         headiffs.Add("Gunshot");
     }
@@ -188,7 +188,7 @@ public class RWScratch : RWDamageType
         armourCategory = "Sharp";
 
         overkillMin = 0;
-        overkillMax = 70;
+        overkillMax = 0.7f;
 
         headiffs.Add("Scratch");
         headiffs.Add("");
@@ -206,7 +206,7 @@ public class RWBite : RWDamageType
         armourCategory = "Sharp";
 
         overkillMin = 0;
-        overkillMax = 10;
+        overkillMax = 0.1f;
 
         headiffs.Add("Bite");
         headiffs.Add("");
@@ -225,7 +225,7 @@ public class RWBomb : RWDamageType
         armourCategory = "Sharp";
 
         overkillMin = 0;
-        overkillMax = 70;
+        overkillMax = 0.7f;
 
         headiffs.Add("Shredded");
         headiffs.Add("");
@@ -343,7 +343,7 @@ public class RWSurgicalCut : RWDamageType
         armourCategory = "";
 
         overkillMin = 0;
-        overkillMax = 10;
+        overkillMax = 0.1f;
 
         headiffs.Add("Surgical cut");
     }

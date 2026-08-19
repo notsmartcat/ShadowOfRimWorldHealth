@@ -4,7 +4,6 @@ using UnityEngine;
 using RWCustom;
 
 using static ShadowOfRimWorldHealth.RimWorldHealth;
-using System.Runtime.InteropServices;
 
 namespace ShadowOfRimWorldHealth;
 

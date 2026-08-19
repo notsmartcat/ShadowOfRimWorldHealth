@@ -50,6 +50,9 @@ public class RWBodyPart(CreatureState state)
     //what stats this bodypart affects whenever damaged or destroyed
     public List<string> capacity = new();
 
+    //Armour categories for the limb, clothing Armour will be stored to the clothing and added to the appropierate 'group'. in the List first is Sharp, then Blunt and last Heat. These values will be used by this limb and any internal limbs that are connected to this limb
+    public List<float> armour = new(3) { 0, 0, 0 };
+
     //if a bodypart has a special function whenever destroyed, such as cutting in half or decapitation
     public string deathEffect = "Destroy";
 

@@ -39,6 +39,8 @@ public class RimWorldHealth : BaseUnityPlugin
         public float pain = 0;
         public float painShockThreshold = 0.8f;
 
+        public Dictionary<string, List<float>> clothingArmour = new();
+
         public bool forceUnconsciousness = false;
         public int consciousState = 0; //0 = Conscious, 1 = Incapacitated, 2 = Pain Shock, 3 = Unconscious. in order of severity so more severe states will override
 
@@ -125,7 +127,12 @@ public class RimWorldHealth : BaseUnityPlugin
 
         public float damage = 1;
         public float AP = 0;
-    }    
+
+        #region Weapons that can stick to creatures specific (Spear and DartMaggot)
+        public bool wasDeflected = false;
+        public bool destroyedPart = false;
+        #endregion
+    }
 
     public static readonly ConditionalWeakTable<CreatureState, RWState> healthState = new();
 

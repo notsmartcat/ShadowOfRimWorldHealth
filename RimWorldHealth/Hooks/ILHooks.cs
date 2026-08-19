@@ -1228,7 +1228,7 @@ internal class ILHooks
 
         data.creatures.Add(self);
 
-        bool isSuper = ModManager.MSC && obj.sourceObject != null && (obj.sourceObject is MoreSlugcats.EnergyCell || obj.sourceObject is MoreSlugcats.SingularityBomb);
+        bool isSuper = false;
 
         PhysicalObject sourceObj = obj.sourceObject ?? null;
 
@@ -1271,18 +1271,29 @@ internal class ILHooks
         else if (ModManager.MSC && sourceObj is MoreSlugcats.EnergyCell)
         {
             attackName = "Energy cell";
+
+            isSuper = true;
         }
         else if (ModManager.MSC && sourceObj is MoreSlugcats.FireEgg)
         {
             attackName = "Fire egg";
 
-            BombDamage(self.State, state, damage * BombDamageMultiplier(self.State is HealthState, false), attackName, attackerName);
-            RWHealthState.Damage(self.State, state, new RWFlame(), 5, 0, GetHitBodyPart(state), attackName, attackerName);
+            damage *= BombDamageMultiplier(self.State is HealthState, isSuper);
+
+            BombDamage(self.State, state, damage, attackName, attackerName);
+
+            if (damage >= 10)
+            {
+                RWHealthState.Burn(state);
+            }
+
             return false;
         }
         else if (ModManager.MSC && sourceObj is MoreSlugcats.SingularityBomb)
         {
             attackName = "Singularity bomb";
+
+            isSuper = true;
         }
         else if (sourceObj is Oracle)
         {
