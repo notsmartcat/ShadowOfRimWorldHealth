@@ -198,6 +198,8 @@ internal class SavingandLoadingHooks
             }
 
             state.updateCapacities = true;
+
+            UpdateTemplate(self, state);
         }
         catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
     }
@@ -358,6 +360,8 @@ internal class SavingandLoadingHooks
         }
 
         state.updateCapacities = true;
+
+        UpdateTemplate(self, state);
     }
     #endregion
 

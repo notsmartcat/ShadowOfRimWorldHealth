@@ -46,6 +46,7 @@ public class Spine : RWBone
         group.Add("upperTorso");
 
         capacity.Add("Moving");
+        capacityImportance.Add(1);
     }
 }
 public class Ribcage : RWBone
@@ -64,6 +65,7 @@ public class Ribcage : RWBone
         group.Add("upperTorso");
 
         capacity.Add("Breathing");
+        capacityImportance.Add(0.5f);
 
         deathEffect = "";
     }
@@ -84,6 +86,7 @@ public class Sternum : RWBone
         group.Add("upperTorso");
 
         capacity.Add("Breathing");
+        capacityImportance.Add(0.5f);
 
         deathEffect = "";
     }
@@ -171,9 +174,10 @@ public class Pelvis : RWBone
 
         subPartOf = "Lower Torso";
 
-        group.Add("lowerTotso");
+        group.Add("lowerTorso");
 
         capacity.Add("Moving");
+        capacityImportance.Add(1);
 
         deathEffect = "";
     }

@@ -15,7 +15,7 @@ public class ShadowOfOptions : OptionInterface
         karma_flower_reinforced = config.Bind("karma_flower_reinforced", true, new ConfigurableInfo("If turned On Karma Flowers eaten by a Slugcat or Slugpup will only heal if the Player has their Karma Reinforcement active. (Default = true)", null, "", new object[1] { "Karma Flower Reinforcement Required" }));
 
         after_cycle_length = config.Bind("after_cycle_length", 13, new ConfigurableInfo("How much time (in minutes) passes during hibernation, this time is used to heal afflictions of all creatures. (Default = 13)", new ConfigAcceptableRange<int>(0, 30), "", new object[1] { "Hibernation Time" }));
-        update_abstracted = config.Bind("update_abstracted", 3, new ConfigurableInfo("How often (if at all) will abstracted creatures have their health info updated. (Default = 13)", new ConfigAcceptableRange<int>(0, 5), "", new object[1] { "Abstracted Update" }));
+        update_abstracted = config.Bind("update_abstracted", 3, new ConfigurableInfo("How often (if at all) will abstracted creatures have their health info updated. (Default = 30 seconds)", new ConfigAcceptableRange<int>(0, 5), "", new object[1] { "Abstracted Update" }));
 
         downed_tend = config.Bind("downed_tend", "None, Player only or All", new ConfigurableInfo("Tend when \nDowned"));
         downed_combat = config.Bind("downed_combat", "None, Player only or All", new ConfigurableInfo("Combat when \nDowned"));

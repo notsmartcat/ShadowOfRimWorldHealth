@@ -20,7 +20,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
         public float maxHealth = 0;
         public float bodySizeFactor = 1;
-        public float healthScale = 1; //lizards will have this be 1.2 reffer to https://rimworldwiki.com/wiki/Property:Health_Scale
+        public float healthScale = 1; //Reffer to https://rimworldwiki.com/wiki/Property:Health_Scale when possible (lizards will have this be 1.2 due to the Alligator)
 
         public List<RWBodyPart> bodyParts = new();
 
@@ -41,12 +41,13 @@ public class RimWorldHealth : BaseUnityPlugin
 
         public Dictionary<string, List<float>> clothingArmour = new();
 
-        public bool forceUnconsciousness = false;
+        public bool forceUnconsciousness = false; //If true the creatures consiousness will be maximum 10%
         public int consciousState = 0; //0 = Conscious, 1 = Incapacitated, 2 = Pain Shock, 3 = Unconscious. in order of severity so more severe states will override
 
         public bool onFire = false;
         public float fireSize = 0;
         public int fireRate = 40;
+        public int onFireMentalBreak = 0;
 
         public int timeAbstracted = 0;
 
@@ -79,17 +80,19 @@ public class RimWorldHealth : BaseUnityPlugin
         public bool updateCapacities = false;
         #endregion
 
-        public int healingRateTics = 400; //1 second = 40 ticks, healing should heppen every 10 seconds
-        public int healingRate = 400;
+        public List<int> missingBodyChunks = new();
 
         public bool hasEaten = false;
-
-        public int medicalSkill = 0;
 
         public string violenceAttackOverride = "";
         public string violenceAttackerOverride = "";
 
-        #region Treatment
+        #region Medical
+        public int medicalSkill = 0;
+
+        public int healingRateTics = 400; //1 second = 40 ticks, healing should heppen every 10 seconds
+        public int healingRate = 400;
+
         public float tendTime = 10;
         public float tendTimeMax = 10;
         public readonly int tendTimeBase = 60; //1 second = 40 ticks, tending will take 1.5 seconds (couldn't find an official RimWorld base tend time)
@@ -99,9 +102,6 @@ public class RimWorldHealth : BaseUnityPlugin
         #endregion
 
         #region Slugcat Specific Variables
-        public float poleClimbSpeedFac = 1f;
-        public float corridorClimbSpeedFac = 1f;
-        public float runspeedFac = 1.27f;
         public float swimForceFac = 1f;
         #endregion
 
@@ -128,7 +128,7 @@ public class RimWorldHealth : BaseUnityPlugin
         public float damage = 1;
         public float AP = 0;
 
-        #region Weapons that can stick to creatures specific (Spear and DartMaggot)
+        #region Weapons that can stick to creatures (Spear and DartMaggot)
         public bool wasDeflected = false;
         public bool destroyedPart = false;
         #endregion
@@ -142,6 +142,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
     public static readonly MoreSlugcats.SlugNPCAI.BehaviorType SlugTend = new("SlugTend", true);
     public static readonly MoreSlugcats.SlugNPCAI.BehaviorType SlugSelfTend = new("SlugSelfTend", true);
+    public static readonly MoreSlugcats.SlugNPCAI.BehaviorType SlugOnFire = new("SlugOnFire", true);
 
     public static string all = "ShadowOfRWHealth: ";
 
@@ -165,7 +166,9 @@ public class RimWorldHealth : BaseUnityPlugin
 
     public static RimWorldHealthHandler rimWorldHealthHandler;
 
-    public static RWAffliction burningAffliction = new(null, null);
+    public static RWAffliction burningAffliction = new(null, null); //generic affliction not connected to anything and used to make tending target burn as the act of burning is not a actual affliction
+
+    public static List<CreatureTemplate> customTemplates = new();
 
     public void OnEnable()
     {
@@ -354,6 +357,16 @@ public class RimWorldHealth : BaseUnityPlugin
                             RWHealthState.Damage(self.State, state, new RWCut(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
                         }
                     }
+
+                    for (int k = 0; k < state.bodyParts.Count; k++)
+                    {
+                        if (state.bodyParts[k] is Leg part && !IsDestroyed(part))
+                        {
+                            RWHealthState.Damage(self.State, state, new RWPoke(), 999999f, 999, part, "oopsie");
+
+                            break;
+                        }
+                    }
                 }
             }
             else
@@ -362,11 +375,16 @@ public class RimWorldHealth : BaseUnityPlugin
             }
             if (Input.GetKey("m"))
             {
-                if (!state.onFire)
+                //RWHealthState.Burn(state);
+
+                for (int i = 0; i < state.bodyParts.Count; i++)
                 {
-                    state.fireRate = 40;
-                    state.onFire = true;
-                    state.fireSize = UnityEngine.Random.Range(0.15f, 0.25f);
+                    if (state.bodyParts[i] is Arm part && !IsDestroyed(part))
+                    {
+                        RWHealthState.Damage(self.State, state, new RWPoke(), 999999f, 999, part, "oopsie");
+
+                        break;
+                    }
                 }
 
                 return;
@@ -400,15 +418,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
                 return;
 
-                for (int i = 0; i < state.bodyParts.Count; i++)
-                {
-                    if (state.bodyParts[i] is Arm part && !IsDestroyed(part) && part.subName == "Right")
-                    {
-                        RWHealthState.Damage(self.State, state, new RWPoke(), 999999f, 999, part, "oopsie");
 
-                        break;
-                    }
-                }
 
                 for (int i = 0; i < state.bodyParts.Count; i++)
                 {
@@ -658,7 +668,7 @@ public class RimWorldHealth : BaseUnityPlugin
             {
                 RWDamageType damageType = isSuper ? new RWSuperBomb() : new RWBomb();
 
-                RWHealthState.Damage(self, state, damageType, damage / amount, 10, focusedBodyPart, attackName, attackerName);
+                RWHealthState.Damage(self, state, damageType, damage / amount, 0.1f, focusedBodyPart, attackName, attackerName);
             }
         }
     }
@@ -1638,6 +1648,8 @@ public class RimWorldHealth : BaseUnityPlugin
 
             state.armSet[mainBodypartNames[randomNumber]].KarmaFlowerHeal(state, mainBodyparts[mainBodypartNames[randomNumber]]);
 
+            UpdateTemplate();
+
             return;
         }
 
@@ -1837,7 +1849,7 @@ public class RimWorldHealth : BaseUnityPlugin
         }
         #endregion
 
-        //Tier 6 Ailments in other parts (currently there are none, this is wher the eyes and ears list would be used)
+        //Tier 6 Ailments in other parts (currently there are none, this is where the eyes and ears list would be used)
 
         //Tier 7 Drug addictions (there might never be any)
 
@@ -1898,6 +1910,31 @@ public class RimWorldHealth : BaseUnityPlugin
             return;
         }
         #endregion
+
+        void UpdateTemplate()
+        {
+            if (!customTemplates.Contains(self.abstractCreature.creatureTemplate))
+            {
+                return;
+            }
+
+            foreach (string setName in state.armSetNames)
+            {
+                state.armSet[setName].ForceUpdateEfficiency(state);
+
+                Debug.Log(setName + " " + state.armSet[setName].efficiency);
+            }
+
+            if (!ArmCheck(state))
+            {
+                return;
+            }
+
+            self.abstractCreature.creatureTemplate = StaticWorld.GetCreatureTemplate(self.abstractCreature.creatureTemplate.type);
+
+            if (self.room != null && self.abstractCreature.abstractAI != null && self.abstractCreature.abstractAI.RealAI != null && self.abstractCreature.abstractAI.RealAI.pathFinder != null)
+                self.abstractCreature.abstractAI.RealAI.pathFinder.Reset(self.room);
+        }
     }
 
     public static bool UpdateAfflictions(CreatureState self, RWState state, int ticksPassed)
@@ -2453,13 +2490,13 @@ public class RimWorldHealth : BaseUnityPlugin
 
             if (state.bloodFiltrationBP.Count > 0)
             {
-                float baseEfficiency = 0;
+                float baseEfficiency = 1;
                 float offsets = state.bloodFiltration;
                 float postFactors = 1;
 
                 foreach (RWBodyPart part in state.bloodFiltrationBP)
                 {
-                    baseEfficiency += (part is Kidney ? (part.efficiency / 2) : part.efficiency) / (state.bloodFiltrationBP.Count != 1 ? state.bloodFiltrationBP.Count - 1 : state.bloodFiltrationBP.Count);
+                    baseEfficiency *= 1 - part.capacityImportance[part.capacity.IndexOf("Blood Filtration")] * (1 - part.efficiency);
                 }
 
                 state.bloodFiltration = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
@@ -2471,13 +2508,13 @@ public class RimWorldHealth : BaseUnityPlugin
 
             if (state.bloodPumpingBP.Count > 0)
             {
-                float baseEfficiency = 0;
+                float baseEfficiency = 1;
                 float offsets = state.bloodPumping;
                 float postFactors = 1;
 
                 foreach (RWBodyPart part in state.bloodPumpingBP)
                 {
-                    baseEfficiency += part.efficiency / state.bloodPumpingBP.Count;
+                    baseEfficiency *= 1 - part.capacityImportance[part.capacity.IndexOf("Blood Pumping")] * (1 - part.efficiency);
                 }
 
                 state.bloodPumping = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
@@ -2489,13 +2526,13 @@ public class RimWorldHealth : BaseUnityPlugin
 
             if (state.breathingBP.Count > 0)
             {
-                float baseEfficiency = 0;
+                float baseEfficiency = 1;
                 float offsets = state.breathing;
                 float postFactors = 1;
 
                 foreach (RWBodyPart part in state.breathingBP)
                 {
-                    baseEfficiency += (part is Lung ? (part.efficiency / 2) : part.efficiency) / (state.breathingBP.Count != 1 ? (state.breathingBP.Count - 1) : state.breathingBP.Count);
+                    baseEfficiency *= 1 - part.capacityImportance[part.capacity.IndexOf("Breathing")] * (1 - part.efficiency);
                 }
 
                 state.breathing = Mathf.Max(0, (baseEfficiency + offsets) * postFactors);
@@ -2590,7 +2627,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
                 foreach (RWBodyPart part in state.manipulationBP)
                 {
-                    otherEfficiency *= part.efficiency;
+                    otherEfficiency *= 1 - part.capacityImportance[part.capacity.IndexOf("Manipulation")] * (1 - part.efficiency);
                 }
 
                 foreach (string setName in state.armSetNames)
@@ -2614,7 +2651,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
                 foreach (RWBodyPart part in state.movingBP)
                 {
-                    otherEfficiency *= part.efficiency;
+                    otherEfficiency *= 1 - part.capacityImportance[part.capacity.IndexOf("Moving")] * (1 - part.efficiency);
                 }
 
                 foreach (string setName in state.legSetNames)
@@ -2785,6 +2822,51 @@ public class RimWorldHealth : BaseUnityPlugin
                 }
             }
         }
+    }
+
+    public static void UpdateTemplate(CreatureState self, RWState state)
+    {
+        if (customTemplates.Contains(self.creature.creatureTemplate))
+        {
+            return;
+        }
+
+        foreach (string setName in state.armSetNames)
+        {
+            state.armSet[setName].ForceUpdateEfficiency(state);
+
+            Debug.Log(setName + " " + state.armSet[setName].efficiency);
+        }
+
+        if (ArmCheck(state))
+        {
+            return;
+        }
+
+        CreatureTemplate creatureTemplate = null;
+
+        for (int k = 0; k < customTemplates.Count; k++)
+        {
+            if (customTemplates[k].type == self.creature.creatureTemplate.type)
+            {
+                creatureTemplate = customTemplates[k];
+                break;
+            }
+        }
+
+        if (creatureTemplate == null)
+        {
+            creatureTemplate = new CreatureTemplate(self.creature.creatureTemplate);
+
+            creatureTemplate.pathingPreferencesTiles[(int)AItile.Accessibility.Climb].legality = PathCost.Legality.IllegalTile;
+
+            customTemplates.Add(creatureTemplate);
+        }
+
+        self.creature.creatureTemplate = creatureTemplate;
+
+        if (self.creature.realizedCreature != null && self.creature.realizedCreature.room != null && self.creature.abstractAI.RealAI != null && self.creature.abstractAI.RealAI != null && self.creature.abstractAI.RealAI.pathFinder != null)
+            self.creature.abstractAI.RealAI.pathFinder.Reset(self.creature.realizedCreature.room);
     }
 
     public static float CycleLength()

@@ -152,6 +152,21 @@ internal class CreatureHooks
 
         RWHealthState.Update(self.State, state);
 
+        if (self.Submersion > 0.5f)
+        {
+            state.onFire = false;
+        }
+
+        if (state.onFireMentalBreak > 0)
+        {
+            state.onFireMentalBreak--;
+
+            if (!state.onFire)
+            {
+                state.onFireMentalBreak = 0;
+            }
+        }
+
         if (state.onFire)
         {
             state.visualFire ??= new(self.room, state, self);
@@ -366,7 +381,9 @@ internal class CreatureHooks
 
                 damage = 0.5f;
 
-                RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                if (weaponstat.TryGetValue(dartMaggot.abstractPhysicalObject, out RWWeaponStats weaponState)) {} //curently not sure if I should add damage stats to the dartmaggot
+
+                RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName, weaponState);
             }
             else if (attacker is JellyFish jellyFish)
             {

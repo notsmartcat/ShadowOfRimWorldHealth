@@ -30,6 +30,19 @@ public class ArmSet
         return efficiency;
     }
 
+    public void ForceUpdateEfficiency(RWState state)
+    {
+        float postFactors = 1;
+        float otherEfficiency = 1;
+
+        foreach (RWBodyPart part in state.manipulationBP)
+        {
+            otherEfficiency *= 1 - part.capacityImportance[part.capacity.IndexOf("Manipulation")] * (1 - part.efficiency);
+        }
+
+        Efficiency(state, 0, postFactors, otherEfficiency);
+    }
+
     public string CapacityAffectingAffliction()
     {
         string description = "";
@@ -90,34 +103,34 @@ public class ArmSet
     {
         List<RWBodyPart> list = new();
 
-        if (shoulder != null && shoulder.afflictions.Count == 1 && shoulder.afflictions[0] is RWDestroyed)
+        if (shoulder != null && IsDestroyed(shoulder))
         {
             list.Add(shoulder);
             dic.Add(key, list);
             return dic;
         }
-        else if (clavicle != null && clavicle.afflictions.Count == 1 && clavicle.afflictions[0] is RWDestroyed)
+        else if (clavicle != null && IsDestroyed(clavicle))
         {
             list.Add(clavicle);
             dic.Add(key, list);
             return dic;
         }
-        else if (arm != null && arm.afflictions.Count == 1 && arm.afflictions[0] is RWDestroyed)
+        else if (arm != null && IsDestroyed(arm))
         {
             list.Add(arm);
             dic.Add(key, list);
             return dic;
         }
 
-        if (humerus != null && humerus.afflictions.Count == 1 && humerus.afflictions[0] is RWDestroyed)
+        if (humerus != null && IsDestroyed(humerus))
         {
             list.Add(humerus);
         }
-        if (radius != null && radius.afflictions.Count == 1 && radius.afflictions[0] is RWDestroyed)
+        if (radius != null && IsDestroyed(radius))
         {
             list.Add(radius);
         }
-        if (hand != null && hand.afflictions.Count == 1 && hand.afflictions[0] is RWDestroyed)
+        if (hand != null && IsDestroyed(hand))
         {
             list.Add(hand);
         }
@@ -135,41 +148,101 @@ public class ArmSet
         if (part == shoulder)
         {
             shoulder.afflictions.Clear();
+            shoulder.health = 1;
+            shoulder.efficiency = 1;
+
             arm.afflictions.Clear();
+            arm.health = 1;
+            arm.efficiency = 1;
+
             hand.afflictions.Clear();
+            hand.health = 1;
+            hand.efficiency = 1;
+
             foreach (Finger finger in fingers)
             {
                 finger.afflictions.Clear();
+                finger.health = 1;
+                finger.efficiency = 1;
             }
+
             clavicle.afflictions.Clear();
+            clavicle.health = 1;
+            clavicle.efficiency = 1;
+
             humerus.afflictions.Clear();
+            humerus.health = 1;
+            humerus.efficiency = 1;
+
             radius.afflictions.Clear();
+            radius.health = 1;
+            radius.efficiency = 1;
         }
         else if (part == arm)
         {
             arm.afflictions.Clear();
+            arm.health = 1;
+            arm.efficiency = 1;
+
             hand.afflictions.Clear();
+            hand.health = 1;
+            hand.efficiency = 1;
+
             foreach (Finger finger in fingers)
             {
                 finger.afflictions.Clear();
+                finger.health = 1;
+                finger.efficiency = 1;
             }
             humerus.afflictions.Clear();
+            humerus.health = 1;
+            humerus.efficiency = 1;
+
             radius.afflictions.Clear();
+            radius.health = 1;
+            radius.efficiency = 1;
         }
         else if (part == hand)
         {
             hand.afflictions.Clear();
+            hand.health = 1;
+            hand.efficiency = 1;
+
             foreach (Finger finger in fingers)
             {
                 finger.afflictions.Clear();
+                finger.health = 1;
+                finger.efficiency = 1;
             }
         }
         else
         {
             part.afflictions.Clear();
+
+            part.health = 1;
+            part.efficiency = 1;
         }
 
         state.updateCapacities = true;
+    }
+
+    public bool BelongsToThis(Shoulder shoulder)
+    {
+        return this.shoulder == shoulder;
+    }
+
+    public RWBodyPart EatPart()
+    {
+        if (hand != null && !IsDestroyed(hand))
+        {
+            return hand;
+        }
+        else if (arm != null && !IsDestroyed(arm))
+        {
+            return arm;
+        }
+
+        return shoulder;
     }
 
     public Shoulder shoulder;
@@ -183,6 +256,7 @@ public class ArmSet
 
     public float efficiency = 1;
 
+    //used for all sets
     public static string SetDescription(RWBodyPart part)
     {
         string name = part.name;
@@ -261,22 +335,22 @@ public class LegSet
     {
         List<RWBodyPart> list = new();
 
-        if (leg != null && leg.afflictions.Count == 1 && leg.afflictions[0] is RWDestroyed)
+        if (leg != null && IsDestroyed(leg))
         {
             list.Add(leg);
             dic.Add(key, list);
             return dic;
         }
 
-        if (femur != null && femur.afflictions.Count == 1 && femur.afflictions[0] is RWDestroyed)
+        if (femur != null && IsDestroyed(femur))
         {
             list.Add(femur);
         }
-        if (tibia != null && tibia.afflictions.Count == 1 && tibia.afflictions[0] is RWDestroyed)
+        if (tibia != null && IsDestroyed(tibia))
         {
             list.Add(tibia);
         }
-        if (foot != null && foot.afflictions.Count == 1 && foot.afflictions[0] is RWDestroyed)
+        if (foot != null && IsDestroyed(foot))
         {
             list.Add(foot);
         }
@@ -316,6 +390,21 @@ public class LegSet
         }
 
         state.updateCapacities = true;
+    }
+
+    public bool BelongsToThis(Leg leg)
+    {
+        return this.leg == leg;
+    }
+
+    public RWBodyPart EatPart()
+    {
+        if (foot != null && !IsDestroyed(foot))
+        {
+            return foot;
+        }
+
+        return leg;
     }
 
     public Leg leg;

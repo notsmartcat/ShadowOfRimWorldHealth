@@ -50,6 +50,9 @@ public class RWBodyPart(CreatureState state)
     //what stats this bodypart affects whenever damaged or destroyed
     public List<string> capacity = new();
 
+    //the importance this bodypart has on each capacity it affects, 1 importance means that the value is directly multiplied by the efficiency while 0.5 importance means that the capacity will go down 0.5 if this bodyparts efficiency is 0
+    public List<float> capacityImportance = new();
+
     //Armour categories for the limb, clothing Armour will be stored to the clothing and added to the appropierate 'group'. in the List first is Sharp, then Blunt and last Heat. These values will be used by this limb and any internal limbs that are connected to this limb
     public List<float> armour = new(3) { 0, 0, 0 };
 
@@ -59,6 +62,8 @@ public class RWBodyPart(CreatureState state)
     public float efficiency = 1;
 
     public List<RWAffliction> afflictions = new();
+
+    public bool edible = false;
 }
 
 public class UpperTorso : RWBodyPart
@@ -75,6 +80,8 @@ public class UpperTorso : RWBodyPart
         group.Add("upperTorso");
 
         deathEffect = "Death";
+
+        edible = true;
     }
 }
 public class LowerTorso : RWBodyPart
@@ -91,6 +98,8 @@ public class LowerTorso : RWBodyPart
         group.Add("lowerTorso");
 
         deathEffect = "CutInHalf";
+
+        edible = true;
     }
 } //LowerTorse is meant for creatures with more then 1 BodyChunk that is meant for the body
 
@@ -111,10 +120,15 @@ public class Neck : RWBodyPart
         group.Add("Neck");
 
         capacity.Add("Eating");
+        capacityImportance.Add(1);
         capacity.Add("Talking");
+        capacityImportance.Add(1);
         capacity.Add("Breathing");
+        capacityImportance.Add(1);
 
         deathEffect = "Decapitation";
+
+        edible = true;
     }
 }
 public class Head : RWBodyPart
@@ -223,7 +237,9 @@ public class Jaw : RWBodyPart
         group.Add("Mouth");
 
         capacity.Add("Eating");
+        capacityImportance.Add(1);
         capacity.Add("Talking");
+        capacityImportance.Add(1);
     }
 }
 public class Tongue : RWBodyPart
@@ -241,7 +257,10 @@ public class Tongue : RWBodyPart
         group.Add("FullHead");
         //group.Add("Mouth");
 
+        capacity.Add("Eating");
+        capacityImportance.Add(0.5f);
         capacity.Add("Talking");
+        capacityImportance.Add(1);
     }
 }
 
@@ -265,6 +284,8 @@ public class Shoulder : RWBodyPart
         group.Add("Shoulders");
 
         capacity.Add("Manipulation");
+
+        edible = true;
     }
 }
 public class Arm : RWBodyPart
@@ -361,6 +382,8 @@ public class Leg : RWBodyPart
         group.Add("Legs");
 
         capacity.Add("Moving");
+
+        edible = true;
     }
 }
 public class Foot : RWBodyPart
@@ -428,5 +451,7 @@ public class Tail : RWBodyPart
         subPartOf = "Lower Torso";
 
         group.Add("lowerTorso");
+
+        edible = true;
     }
 }

@@ -9,14 +9,26 @@ internal class WeaponHooks
 {
     public static void Apply()
     {
+        #region AbstractPhysicalObject
         On.AbstractPhysicalObject.ctor += NewAbstractPhysicalObject;
+        #endregion
 
+        #region DartMaggot
+        On.DartMaggot.ChangeMode += DartMaggotChangeMode;
+        #endregion
+
+        #region Explosion
         On.Explosion.ctor += NewExplosion;
+        #endregion
 
+        #region Spear
+        On.Spear.HitSomething += SpearHitSomething; ;
         On.Spear.ChangeMode += SpearChangeMode;
         On.Spear.LodgeInCreature_CollisionResult_bool_bool += SpearLodgeInCreature;
+        #endregion
     }
 
+    #region AbstractPhysicalObject
     static void NewAbstractPhysicalObject(On.AbstractPhysicalObject.orig_ctor orig, AbstractPhysicalObject self, World world, AbstractPhysicalObject.AbstractObjectType type, PhysicalObject realizedObject, WorldCoordinate pos, EntityID ID)
     {
         orig(self, world, type, realizedObject, pos, ID);
@@ -34,6 +46,7 @@ internal class WeaponHooks
         {
             return type == AbstractPhysicalObject.AbstractObjectType.Spear ||
                 type == AbstractPhysicalObject.AbstractObjectType.Rock ||
+                type == AbstractPhysicalObject.AbstractObjectType.DartMaggot ||
                 (ModManager.DLCShared && type == DLCSharedEnums.AbstractObjectType.LillyPuck) ||
                 (ModManager.Watcher && type == Watcher.WatcherEnums.AbstractObjectType.Boomerang);
         }
@@ -77,13 +90,13 @@ internal class WeaponHooks
 
             if (type == AbstractPhysicalObject.AbstractObjectType.Spear)
             {
-                state.damage = 25f * qualityMult; //Taken from RimWOrld's Pila, might make this slower due to the speed at which it can be thrown
+                state.damage = 25f * qualityMult; //Taken from RimWOrld's Pila, might make this lower due to the speed at which it can be thrown
                 state.AP = 0.1f * qualityMult;
             }
             else if (type == AbstractPhysicalObject.AbstractObjectType.Rock)
             {
                 state.damage = 12f * qualityMult;
-                state.AP = 0.05f;
+                state.AP = 0.05f * qualityMult;
             }
             else if (ModManager.DLCShared && type == DLCSharedEnums.AbstractObjectType.LillyPuck)
             {
@@ -97,7 +110,24 @@ internal class WeaponHooks
             }
         }
     }
+    #endregion
 
+    #region DartMaggot
+    static void DartMaggotChangeMode(On.DartMaggot.orig_ChangeMode orig, DartMaggot self, DartMaggot.Mode newMode)
+    {
+        orig(self, newMode);
+
+        if (!weaponstat.TryGetValue(self.abstractPhysicalObject, out RWWeaponStats weaponState))
+        {
+            return;
+        }
+
+        weaponState.wasDeflected = false;
+        weaponState.destroyedPart = false;
+    }
+    #endregion
+
+    #region Explosion
     static void NewExplosion(On.Explosion.orig_ctor orig, Explosion self, Room room, PhysicalObject sourceObject, Vector2 pos, int lifeTime, float rad, float force, float damage, float stun, float deafen, Creature killTagHolder, float killTagHolderDmgFactor, float minStun, float backgroundNoise)
     {
         orig(self, room, sourceObject, pos, lifeTime, rad, force, damage, stun, deafen, killTagHolder, killTagHolderDmgFactor, minStun, backgroundNoise);
@@ -107,7 +137,18 @@ internal class WeaponHooks
             singleExplosion.Add(self, new());
         }
     }
+    #endregion
 
+    #region Spear
+    static bool SpearHitSomething(On.Spear.orig_HitSomething orig, Spear self, SharedPhysics.CollisionResult result, bool eu)
+    {
+        if (result.chunk == null || result.chunk.owner == null || result.chunk.owner is not Creature creature || !healthState.TryGetValue(creature.State, out RWState state) || !state.missingBodyChunks.Contains(result.chunk.index))
+        {
+            return orig(self, result, eu);
+        }
+
+        return false;
+    }
     static void SpearChangeMode(On.Spear.orig_ChangeMode orig, Spear self, Weapon.Mode newMode)
     {
         orig(self, newMode);
@@ -128,9 +169,6 @@ internal class WeaponHooks
             return;
         }
 
-        self.ChangeMode(Weapon.Mode.Free);
-        self.stuckInObject = null;
-
         if (weaponState.wasDeflected)
         {
             self.room.AddObject(new Spark(result.chunk.pos + Custom.DegToVec(Random.value * 360f) * (5f * Random.value), self.firstChunk.vel * -0.1f + Custom.DegToVec(Random.value * 360f) * (Mathf.Lerp(0.2f, 0.4f, Random.value) * self.firstChunk.vel.magnitude), new Color(1f, 1f, 1f), null, 10, 170));
@@ -139,5 +177,9 @@ internal class WeaponHooks
             self.firstChunk.vel = self.firstChunk.vel * -0.5f + Custom.DegToVec(Random.value * 360f) * (Mathf.Lerp(0.1f, 0.4f, Random.value) * self.firstChunk.vel.magnitude);
             self.SetRandomSpin();
         }
+
+        self.ChangeMode(Weapon.Mode.Free);
+        self.stuckInObject = null;
     }
+    #endregion
 }

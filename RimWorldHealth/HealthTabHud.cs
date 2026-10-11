@@ -119,7 +119,7 @@ public class HealthTab : HudPart
             visible = false;
         }
 
-        if (singleplayerHud && visible)
+        if (!singleplayerHud && visible)
         {
             transparencyTimer++;
 
@@ -2224,7 +2224,7 @@ public class HealthTab : HudPart
     public AbstractCreature player;
 
     public RWState inspectedState;
-    private CreatureState inspectedCreatureState;
+    public CreatureState inspectedCreatureState;
 
     private readonly FLabel capacityName;
 
@@ -2448,6 +2448,8 @@ public class HealthTabBodyPart
                         IsVisible(i);
 
                         afflictionVisuals[i].icon.color = injury.isTended ? Color.white : injury.isBleeding ? Color.red : Color.blue;
+
+                        afflictionVisuals[i].icon.isVisible = isVisible && (injury.isTended || !owner.inspectedCreatureState.dead && injury.isBleeding);
                     }
 
                     allAfflictions.Add(bodyPart.afflictions[j]);
@@ -2484,6 +2486,8 @@ public class HealthTabBodyPart
                         IsVisible(i);
 
                         afflictionVisuals[i].icon.color = injury.isTended ? Color.white : injury.isBleeding ? Color.red : Color.blue;
+
+                        afflictionVisuals[i].icon.isVisible = isVisible && (injury.isTended || !owner.inspectedCreatureState.dead && injury.isBleeding);
                     }
                     else if (bodyPart.afflictions[j] is RWDisease disease)
                     {

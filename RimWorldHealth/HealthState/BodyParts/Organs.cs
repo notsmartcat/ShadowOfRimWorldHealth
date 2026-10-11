@@ -49,6 +49,7 @@ public class Stomach : RWOrgan
         group.Add("upperTorso");
 
         capacity.Add("Digestion");
+        capacityImportance.Add(0.5f);
     }
 }
 public class Heart : RWOrgan
@@ -67,6 +68,7 @@ public class Heart : RWOrgan
         group.Add("upperTorso");
 
         capacity.Add("Blood Pumping");
+        capacityImportance.Add(1);
 
         deathEffect = "Death";
     }
@@ -89,6 +91,7 @@ public class Lung : RWOrgan
         group.Add("upperTorso");
 
         capacity.Add("Breathing");
+        capacityImportance.Add(0.5f);
     }
 }
 public class Kidney : RWOrgan
@@ -109,6 +112,7 @@ public class Kidney : RWOrgan
         group.Add("upperTorso");
 
         capacity.Add("Blood Filtration");
+        capacityImportance.Add(0.5f);
     }
 }
 public class Liver : RWOrgan
@@ -127,7 +131,9 @@ public class Liver : RWOrgan
         group.Add("upperTorso");
 
         capacity.Add("Digestion");
+        capacityImportance.Add(0.5f);
         capacity.Add("Blood Filtration");
+        capacityImportance.Add(1);
 
         deathEffect = "Death"; //might make this one not cause death and slowly regenerate
     }

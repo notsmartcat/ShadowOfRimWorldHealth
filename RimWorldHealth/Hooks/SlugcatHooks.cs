@@ -50,45 +50,12 @@ internal class SlugcatHooks
             RWHealthState.NewRWHealthState(self, state);
         }
 
-        if (self.SlugCatClass.value == "Spear")
-        {
-            Tongue tongue = null;
+        RWHealthState.UpdateMissingChunks(state, self);
 
-            foreach (RWBodyPart part in state.bodyParts)
-            {
-                if (part is Tongue tempTongue)
-                {
-                    tongue = tempTongue;
-                    state.talkingBP.Remove(tempTongue);
-                }
-                else if (part is Jaw jaw)
-                {
-                    jaw.capacity.Clear();
-                    state.eatingBP.Remove(jaw);
-                    state.talkingBP.Remove(jaw);
-                }
-                else if (part is Neck neck)
-                {
-                    neck.capacity.Remove("Eating");
-                    state.eatingBP.Remove(neck);
-                    neck.capacity.Remove("Talking");
-                    state.talkingBP.Remove(neck);
-                }
-            }
-
-            if (tongue != null)
-            {
-                tongue.state = null;
-                state.bodyParts.Remove(tongue);
-            }
-        }
-
-        state.poleClimbSpeedFac = self.slugcatStats.poleClimbSpeedFac;
-        state.corridorClimbSpeedFac = self.slugcatStats.corridorClimbSpeedFac;
-        state.runspeedFac = self.slugcatStats.runspeedFac;
         state.swimForceFac = self.slugcatStats.swimForceFac;
 
         state.updateCapacities = true;
+
         RWHealthState.Update(self.State, state);
 
         if (state.moving == 1 && state.manipulation == 1 && state.consciousState == 0)
@@ -99,12 +66,8 @@ internal class SlugcatHooks
         float tempMoving = state.consciousState == 0 ? state.moving : 0;
         float tempManipulation = state.consciousState == 0 ? state.manipulation : state.manipulation / 2;
 
-        self.slugcatStats.poleClimbSpeedFac = Mathf.Max(0.05f, state.poleClimbSpeedFac * (1 + (tempMoving - 1f) * 0.4f) * (1 + (tempManipulation - 1f) * 0.6f));
-        self.slugcatStats.corridorClimbSpeedFac = Mathf.Max(0.05f, state.corridorClimbSpeedFac * (1 + (tempMoving - 1f) * 0.6f) * (1 + (tempManipulation - 1f) * 0.4f));
-        self.slugcatStats.runspeedFac = Mathf.Max(0.05f, state.runspeedFac * tempMoving);
         self.slugcatStats.swimForceFac = Mathf.Max(0.05f, state.swimForceFac * (1 + (tempMoving - 1f) * 0.4f) * (1 + (tempManipulation - 1f) * 0.6f));
     }
-
     static void PlayerAddFood(On.Player.orig_AddFood orig, Player self, int add)
     {
         orig(self, add);
@@ -116,7 +79,6 @@ internal class SlugcatHooks
 
         state.hasEaten = true;
     }
-
     static float PlayerDeathByBiteMultiplier(On.Player.orig_DeathByBiteMultiplier orig, Player self)
     {
         if (self.State == null || !healthState.TryGetValue(self.State, out _))
@@ -126,7 +88,6 @@ internal class SlugcatHooks
 
         return 1;
     }
-
     static void PlayerGrabUpdate(On.Player.orig_GrabUpdate orig, Player self, bool eu)
     {
         orig(self, eu);
@@ -138,7 +99,6 @@ internal class SlugcatHooks
 
         //???
     }
-
     static void PlayerGraphicsModuleUpdated(On.Player.orig_GraphicsModuleUpdated orig, Player self, bool actuallyViewed, bool eu)
     {
         orig(self, actuallyViewed, eu);
@@ -175,7 +135,6 @@ internal class SlugcatHooks
             }
         }
     }
-
     static void PlayerLungUpdate(On.Player.orig_LungUpdate orig, Player self)
     {
         orig(self);
@@ -215,7 +174,6 @@ internal class SlugcatHooks
             }
         }
     }
-
     static void PlayerObjectEaten(On.Player.orig_ObjectEaten orig, Player self, IPlayerEdible edible)
     {
         orig(self, edible);
@@ -227,7 +185,6 @@ internal class SlugcatHooks
 
         KarmaFlowerHeal(self, state);
     }
-
     static void PlayerPyroDeath(On.Player.orig_PyroDeath orig, Player self)
     {
         orig(self);
@@ -239,7 +196,6 @@ internal class SlugcatHooks
 
         ArtiLungExplosion(self.State, state);
     }
-
     static void PlayerSubtractFood(On.Player.orig_SubtractFood orig, Player self, int sub)
     {
         orig(self, sub);
@@ -251,7 +207,6 @@ internal class SlugcatHooks
 
         state.hasEaten = false;
     }
-
     static void PlayerThrownSpear(On.Player.orig_ThrownSpear orig, Player self, Spear spear)
     {
         orig(self, spear);
@@ -263,10 +218,12 @@ internal class SlugcatHooks
 
         spear.spearDamageBonus /= 2;
     }
-
     static void PlayerThrowObject(On.Player.orig_ThrowObject orig, Player self, int grasp, bool eu)
     {
-        if (self.grasps[grasp].grabbed is not Weapon || self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.consciousState == 0 || ShadowOfOptions.downed_combat.Value != "No one" || ShadowOfOptions.downed_combat.Value == "Player only" && ModManager.MSC && self.State is MoreSlugcats.PlayerNPCState || (state.consciousState == 3 && !ShadowOfOptions.player_uncon_movement.Value))
+        if (self.grasps[grasp].grabbed is not Weapon || self.State == null || !healthState.TryGetValue(self.State, out RWState state) || 
+            state.consciousState == 0 || 
+            state.consciousState == 3 && ModManager.MSC && self.State is MoreSlugcats.PlayerNPCState && ShadowOfOptions.player_uncon_movement.Value && ShadowOfOptions.downed_combat.Value != "No one" ||
+            state.consciousState != 3 && (ShadowOfOptions.downed_combat.Value == "Everyone") || ModManager.MSC && self.State is MoreSlugcats.PlayerNPCState && ShadowOfOptions.downed_combat.Value != "No one")
         {
             orig(self, grasp, eu);
             return;
@@ -368,7 +325,6 @@ internal class SlugcatHooks
         }
         self.ReleaseGrasp(grasp);
     }
-
     static void PlayerUpdate(On.Player.orig_Update orig, Player self, bool eu)
     {
         if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
@@ -381,10 +337,30 @@ internal class SlugcatHooks
         {
             self.standing = false;
 
-            if (self.animation == Player.AnimationIndex.StandOnBeam)
+            if (self.animation == Player.AnimationIndex.StandOnBeam || self.animation == Player.AnimationIndex.GetUpOnBeam || self.animation == Player.AnimationIndex.GetUpToBeamTip || self.animation == Player.AnimationIndex.BeamTip)
             {
                 self.animation = Player.AnimationIndex.ClimbOnBeam;
             }
+        }
+        if (!ArmCheck(state))
+        {
+            if (self.animation == Player.AnimationIndex.HangFromBeam || 
+                self.animation == Player.AnimationIndex.GetUpOnBeam || 
+                self.animation == Player.AnimationIndex.ClimbOnBeam ||
+                self.animation == Player.AnimationIndex.GetUpToBeamTip ||
+                self.animation == Player.AnimationIndex.HangUnderVerticalBeam ||
+                self.animation == Player.AnimationIndex.BeamTip)
+            {
+                self.animation = Player.AnimationIndex.None;
+            }
+            else if (self.animation == Player.AnimationIndex.ZeroGPoleGrab)
+            {
+                self.animation = Player.AnimationIndex.ZeroGSwim;
+            }
+        }
+        else if (!ArmCheck(state) && self.animation == Player.AnimationIndex.ZeroGPoleGrab)
+        {
+            self.animation = Player.AnimationIndex.ZeroGSwim;
         }
 
         orig(self, eu);
@@ -492,6 +468,12 @@ internal class SlugcatHooks
             sLeaser.sprites[7].isVisible = false;
             sLeaser.sprites[8].isVisible = false;
         }
+
+        if (state.missingBodyChunks.Contains(0))
+        {
+            sLeaser.sprites[3].isVisible = false;
+            sLeaser.sprites[9].isVisible = false;
+        }
     }
     #endregion
 
@@ -514,98 +496,141 @@ internal class SlugcatHooks
             return;
         }
 
-        if (state.consciousState != 0)
+        try
         {
-            if (self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.Attacking && ShadowOfOptions.downed_combat.Value != "Everyone")
+            if (state.consciousState != 0)
             {
-                if (self.friendTracker.friend != null && self.abstractAI.toldToStay == null)
+                if (self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.Attacking && ShadowOfOptions.downed_combat.Value != "Everyone")
                 {
-                    self.behaviorType = MoreSlugcats.SlugNPCAI.BehaviorType.Following;
+                    if (self.friendTracker.friend != null && self.abstractAI.toldToStay == null)
+                    {
+                        self.behaviorType = MoreSlugcats.SlugNPCAI.BehaviorType.Following;
+                    }
+                    else
+                    {
+                        self.behaviorType = MoreSlugcats.SlugNPCAI.BehaviorType.Idle;
+                    }
                 }
-                else
+                else if (self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.Attacking)
                 {
                     self.behaviorType = MoreSlugcats.SlugNPCAI.BehaviorType.Idle;
                 }
-            }
 
-            if (ShadowOfOptions.downed_tend.Value != "Everyone")
-            {
-                return;
-            }
-        }
-
-        if (self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.BeingHeld || self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.OnHead || self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.Thrown && self.cat.bodyMode == Player.BodyModeIndex.Default || self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.Attacking || self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.Fleeing)
-        {
-            if (state.tendAffliction != null)
-            {
-                state.tendAffliction = null;
-            }
-
-            foreach (var grasp in self.creature.realizedCreature.grasps)
-            {
-                if (grasp.grabbedChunk != null && grasp.grabbedChunk.owner != null && grasp.grabbedChunk.owner is Creature)
+                if (ShadowOfOptions.downed_tend.Value != "Everyone")
                 {
-                    (self.creature.realizedCreature as Player).ReleaseGrasp(grasp.graspUsed);
+                    return;
                 }
             }
 
-            return;
-        }
+            if (self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.BeingHeld || self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.OnHead || self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.Thrown && self.cat.bodyMode == Player.BodyModeIndex.Default)
+            {
+                state.tendAffliction = null;
 
-        if (self.behaviorType == SlugTend || self.behaviorType == SlugSelfTend)
-        {
-            return;
-        }
+                foreach (var grasp in self.creature.realizedCreature.grasps)
+                {
+                    if (grasp != null && grasp.grabbedChunk != null && grasp.grabbedChunk.owner != null && grasp.grabbedChunk.owner is Creature)
+                    {
+                        (self.creature.realizedCreature as Player).ReleaseGrasp(grasp.graspUsed);
+                    }
+                }
 
-        if (state.onFire)
-        {
-            self.behaviorType = SlugSelfTend;
+                return;
+            }
 
-            if (state.tendAffliction == burningAffliction)
+            if (state.onFireMentalBreak > 0)
+            {
+                self.behaviorType = SlugOnFire;
+
+                state.tendAffliction = null;
+                return;
+            }
+
+            if (self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.Attacking || self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.Fleeing)
+            {
+                state.tendAffliction = null;
+
+                foreach (var grasp in self.creature.realizedCreature.grasps)
+                {
+                    if (grasp != null && grasp.grabbedChunk != null && grasp.grabbedChunk.owner != null && grasp.grabbedChunk.owner is Creature)
+                    {
+                        (self.creature.realizedCreature as Player).ReleaseGrasp(grasp.graspUsed);
+                    }
+                }
+
+                return;
+            }
+
+            if (self.behaviorType == SlugTend || self.behaviorType == SlugSelfTend)
             {
                 return;
             }
 
-            state.tendAffliction = burningAffliction;
-            state.tendTime = 10;
-            state.tendTimeMax = state.tendTime;
-            return;
-        }
-
-        RWInjury bleeding = null;
-        RWDisease diseaseAffliction = null;
-        RWInjury untendedAffliction = null;
-
-        foreach (RWBodyPart part in state.bodyParts)
-        {
-            foreach (RWAffliction affliction in part.afflictions)
+            if (state.onFire)
             {
-                if (!affliction.isTended)
+                self.behaviorType = SlugSelfTend;
+
+                if (state.tendAffliction == burningAffliction)
                 {
-                    if (affliction is RWInjury injury)
+                    return;
+                }
+
+                state.tendAffliction = burningAffliction;
+                state.tendTime = 10;
+                state.tendTimeMax = state.tendTime;
+                return;
+            }
+
+            RWInjury bleeding = null;
+            RWDisease diseaseAffliction = null;
+            RWInjury untendedAffliction = null;
+
+            foreach (RWBodyPart part in state.bodyParts)
+            {
+                foreach (RWAffliction affliction in part.afflictions)
+                {
+                    if (!affliction.isTended)
                     {
-                        if (injury.isBleeding)
+                        if (affliction is RWInjury injury)
                         {
-                            if (bleeding != null)
+                            if (injury.isBleeding)
                             {
-                                if (injury.healingDifficulty.bleeding * injury.damage > bleeding.healingDifficulty.bleeding * bleeding.damage)
+                                if (bleeding != null)
                                 {
-                                    bleeding = injury;
+                                    if (injury.healingDifficulty.bleeding * injury.damage > bleeding.healingDifficulty.bleeding * bleeding.damage)
+                                    {
+                                        bleeding = injury;
+                                    }
+                                }
+                                else bleeding ??= injury;
+                            }
+                            else
+                            {
+                                if (untendedAffliction != null)
+                                {
+                                    if (injury.damage > untendedAffliction.damage)
+                                    {
+                                        untendedAffliction = injury;
+                                    }
+                                }
+                                else untendedAffliction ??= injury;
+
+                            }
+                        }
+                        else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                        {
+                            if (diseaseAffliction != null)
+                            {
+                                if (disease.severity > diseaseAffliction.severity)
+                                {
+                                    diseaseAffliction = disease;
                                 }
                             }
-                            else bleeding ??= injury;
+                            else diseaseAffliction ??= disease;
                         }
                         else
                         {
-                            if (untendedAffliction != null)
-                            {
-                                if (injury.damage > untendedAffliction.damage)
-                                {
-                                    untendedAffliction = injury;
-                                }
-                            }
-                            else untendedAffliction ??= injury;
-
+                            Debug.Log(all + affliction + " does not belong to any tendable check");
+                            RimWorldHealth.Logger.LogError(all + affliction + " does not belong to any tendable check");
                         }
                     }
                     else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
@@ -619,183 +644,160 @@ internal class SlugcatHooks
                         }
                         else diseaseAffliction ??= disease;
                     }
-                    else
-                    {
-                        Debug.Log(all + affliction + " does not belong to any tendable check");
-                        RimWorldHealth.Logger.LogError(all + affliction + " does not belong to any tendable check");
-                    }
-                }
-                else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
-                {
-                    if (diseaseAffliction != null)
-                    {
-                        if (disease.severity > diseaseAffliction.severity)
-                        {
-                            diseaseAffliction = disease;
-                        }
-                    }
-                    else diseaseAffliction ??= disease;
                 }
             }
-        }
 
-        if (bleeding == null)
-        {
-            foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+            if (bleeding == null)
             {
-                if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                foreach (RWAffliction affliction in state.wholeBodyAfflictions)
                 {
-                    if (diseaseAffliction != null)
+                    if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
                     {
-                        if (disease.severity > diseaseAffliction.severity)
+                        if (diseaseAffliction != null)
                         {
-                            diseaseAffliction = disease;
+                            if (disease.severity > diseaseAffliction.severity)
+                            {
+                                diseaseAffliction = disease;
+                            }
                         }
+                        else diseaseAffliction ??= disease;
                     }
-                    else diseaseAffliction ??= disease;
                 }
             }
-        }
 
-        if (bleeding != null)
-        {
-            startSelfTend(bleeding);
-            return;
-        }
-        else if (diseaseAffliction != null)
-        {
-            startSelfTend(diseaseAffliction);
-            return;
-        }
-        else if (untendedAffliction != null)
-        {
-            startSelfTend(untendedAffliction);
-            return;
-        }
-
-        Creature tendTarget = null;
-
-        if (self.friendTracker.friend != null && !self.friendTracker.friend.dead && self.friendTracker.friend.Stunned && (grabbedByThis(self.friendTracker.friend) || self.friendTracker.friend.grabbedBy.Count == 0) && self.friendTracker.friend.State != null && healthState.TryGetValue(self.friendTracker.friend.State, out RWState otherState))
-        {
-            if (otherState.onFire)
+            if (bleeding != null)
             {
-                tendOther(self.friendTracker.friend);
+                startSelfTend(bleeding);
+                return;
+            }
+            else if (diseaseAffliction != null)
+            {
+                startSelfTend(diseaseAffliction);
+                return;
+            }
+            else if (untendedAffliction != null)
+            {
+                startSelfTend(untendedAffliction);
                 return;
             }
 
-            foreach (RWBodyPart part in otherState.bodyParts)
+            if (self.friendTracker.friend != null && !self.friendTracker.friend.dead && self.friendTracker.friend.Stunned && (grabbedByThis(self.friendTracker.friend) || self.friendTracker.friend.grabbedBy.Count == 0) && self.friendTracker.friend.State != null && healthState.TryGetValue(self.friendTracker.friend.State, out RWState otherState))
             {
-                foreach (RWAffliction affliction in part.afflictions)
-                {
-                    if (!affliction.isTended)
-                    {
-                        tendOther(self.friendTracker.friend);
-                        return;
-                    }
-                    else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
-                    {
-                        tendOther(self.friendTracker.friend);
-                        return;
-                    }
-                }
-            }
-
-            foreach (RWAffliction affliction in state.wholeBodyAfflictions)
-            {
-                if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                if (otherState.onFire)
                 {
                     tendOther(self.friendTracker.friend);
                     return;
                 }
-            }
-        }
 
-        if (self.friendTracker.friend != null && self.friendTracker.friend.room != self.cat.room)
-        {
-            if (state.tendAffliction != null)
-            {
-                state.tendAffliction = null;
-            }
-
-            return;
-        }
-
-        foreach (AbstractCreature abstrCrit in self.creature.Room.creatures)
-        {
-            if (abstrCrit.realizedCreature == null)
-            {
-                continue;
-            }
-
-            Creature creature = abstrCrit.realizedCreature;
-
-            if (creature == null || creature.dead || !creature.Stunned || (creature.grabbedBy.Count != 0 && !grabbedByThis(creature)) || creature.State == null || !healthState.TryGetValue(creature.State, out otherState) || (creature is not Player && (creature is not Lizard lizard || lizard.AI == null || lizard.AI.friendTracker.friend == null || lizard.AI.friendTracker.friend is not Player)) || (tendTarget != null && Custom.WorldCoordFloatDist(tendTarget.abstractCreature.pos, self.cat.abstractCreature.pos) > Custom.WorldCoordFloatDist(creature.abstractCreature.pos, self.cat.abstractCreature.pos)))
-            {
-                continue;
-            }
-
-            if (otherState.onFire)
-            {
-                tendTarget = creature;
-                break;
-            }
-
-            foreach (RWBodyPart part in otherState.bodyParts)
-            {
-                foreach (RWAffliction affliction in part.afflictions)
+                foreach (RWBodyPart part in otherState.bodyParts)
                 {
-                    if (!affliction.isTended)
+                    foreach (RWAffliction affliction in part.afflictions)
                     {
-                        tendTarget = creature;
-                        break;
-                    }
-                    else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
-                    {
-                        tendTarget = creature;
-                        break;
+                        if (!affliction.isTended)
+                        {
+                            tendOther(self.friendTracker.friend);
+                            return;
+                        }
+                        else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                        {
+                            tendOther(self.friendTracker.friend);
+                            return;
+                        }
                     }
                 }
 
-                if (tendTarget == creature)
+                foreach (RWAffliction affliction in state.wholeBodyAfflictions)
                 {
-                    break;
+                    if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                    {
+                        tendOther(self.friendTracker.friend);
+                        return;
+                    }
                 }
             }
 
-            foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+            if (self.friendTracker.friend != null && self.friendTracker.friend.room != self.cat.room)
             {
-                if (tendTarget == creature)
+                if (state.tendAffliction != null)
                 {
-                    break;
+                    state.tendAffliction = null;
                 }
 
-                if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                return;
+            }
+
+            Creature tendTarget = null;
+
+            foreach (AbstractCreature abstrCrit in self.creature.Room.creatures)
+            {
+                if (abstrCrit.realizedCreature == null)
+                {
+                    continue;
+                }
+
+                Creature creature = abstrCrit.realizedCreature;
+
+                if (creature == null || creature.dead || !creature.Stunned || (creature.grabbedBy.Count != 0 && !grabbedByThis(creature)) || creature.State == null || !healthState.TryGetValue(creature.State, out otherState) || (creature is not Player && (creature is not Lizard lizard || lizard.AI == null || lizard.AI.friendTracker.friend == null || lizard.AI.friendTracker.friend is not Player)) || (tendTarget != null && Custom.WorldCoordFloatDist(tendTarget.abstractCreature.pos, self.cat.abstractCreature.pos) > Custom.WorldCoordFloatDist(creature.abstractCreature.pos, self.cat.abstractCreature.pos)))
+                {
+                    continue;
+                }
+
+                if (otherState.onFire)
                 {
                     tendTarget = creature;
                     break;
                 }
-            }
-        }
 
-        if (tendTarget == null)
-        {
-            if (state.tendAffliction != null)
-            {
-                state.tendAffliction = null;
-            }
-
-            foreach (var grasp in self.creature.realizedCreature.grasps)
-            {
-                if (grasp.grabbedChunk != null && grasp.grabbedChunk.owner != null && grasp.grabbedChunk.owner is Creature)
+                foreach (RWBodyPart part in otherState.bodyParts)
                 {
-                    (self.creature.realizedCreature as Player).ReleaseGrasp(grasp.graspUsed);
+                    foreach (RWAffliction affliction in part.afflictions)
+                    {
+                        if (!affliction.isTended)
+                        {
+                            tendTarget = creature;
+                            break;
+                        }
+                        else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                        {
+                            tendTarget = creature;
+                            break;
+                        }
+                    }
+
+                    if (tendTarget == creature)
+                    {
+                        break;
+                    }
+                }
+
+                foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+                {
+                    if (tendTarget == creature)
+                    {
+                        break;
+                    }
+
+                    if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                    {
+                        tendTarget = creature;
+                        break;
+                    }
                 }
             }
+
+            if (tendTarget == null)
+            {
+                if (state.tendAffliction != null)
+                {
+                    state.tendAffliction = null;
+                }
+            }
+            else
+            {
+                tendOther(tendTarget);
+            }
         }
-        else
-        {
-            tendOther(tendTarget);
-        }
+        catch (System.Exception e) { RimWorldHealth.Logger.LogError(e); }
 
         void startSelfTend(RWAffliction affliction)
         {
@@ -883,5 +885,13 @@ internal class SlugcatHooks
                 RWHealthState.Damage(self, state, new RWBomb(), 999999f, 999, part, "Artificer - Explosion", "Artificer");
             }
         }
+    }
+
+    public static float GetPlayerMovementSpeedMultiplier(RWState state, float manipulationWeight)
+    {
+        float tempMoving = state.consciousState == 0 ? state.moving : 0;
+        float tempManipulation = state.consciousState == 0 ? state.manipulation : state.manipulation * 0.75f;
+
+        return Mathf.Max(0.05f, (1 + (tempMoving - 1f) * (1 - manipulationWeight)) * (1 + (tempManipulation - 1f) * manipulationWeight));
     }
 }

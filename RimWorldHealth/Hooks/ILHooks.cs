@@ -1,10 +1,10 @@
 ﻿using Mono.Cecil.Cil;
 using MonoMod.Cil;
+using RWCustom;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
-using RWCustom;
 
 using static ShadowOfRimWorldHealth.RimWorldHealth;
 
@@ -42,6 +42,10 @@ internal class ILHooks
         #region Creature
         IL.Creature.HypothermiaUpdate += ILCreatureHypothermiaUpdate;
         IL.Creature.Update += ILCreatureUpdate;
+        #endregion
+
+        #region DartMaggot
+        IL.DartMaggot.ShotUpdate += ILDartMaggotShotUpdate;
         #endregion
 
         #region DropBug
@@ -98,9 +102,14 @@ internal class ILHooks
         #endregion
 
         #region Player
+        IL.Player.checkInput += ILPlayercheckInput;
+        IL.Player.EatMeatUpdate += ILPlayerEatMeatUpdate;
         IL.Player.GrabUpdate += ILPlayerGrabUpdate;
         IL.Player.LungUpdate += ILPlayerLungUpdate;
+        IL.Player.MovementUpdate += ILPlayerMovementUpdate;
         IL.Player.TerrainImpact += ILPlayerTerrainImpact;
+        IL.Player.UpdateAnimation += ILPlayerUpdateAnimation;
+        IL.Player.UpdateBodyMode += ILPlayerUpdateBodyMode;
         IL.Player.Tongue.Update += ILPlayerTongueUpdate;
         #endregion
 
@@ -1066,6 +1075,107 @@ internal class ILHooks
     }
     #endregion
 
+    #region DartMaggot
+    static void ILDartMaggotShotUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+            ILLabel target = null;
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[4]
+            {
+                x => x.MatchBr(out _),
+                x => x.MatchLdloc(5),
+                x => x.MatchLdfld<SharedPhysics.CollisionResult>("chunk"),
+                x => x.MatchBrfalse(out target)
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit(OpCodes.Ldloc, 5);
+                val.Emit<SharedPhysics.CollisionResult>(OpCodes.Ldfld, "chunk");
+                val.EmitDelegate(DartMaggotShotUpdateHitCheck);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILDartMaggotShotUpdate HitCheck!");
+            }
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<PhysicalObject>("get_firstChunk"),
+                x => x.MatchLdflda<BodyChunk>("vel")
+            }))
+            {
+                val.MoveAfterLabels();
+
+                target = val.MarkLabel();
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILDartMaggotShotUpdate target!");
+            }
+
+            if (val.TryGotoPrev(MoveType.Before, new Func<Instruction, bool>[4]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<PhysicalObject>("abstractPhysicalObject"),
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<DartMaggot>("stuckInChunk")
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit(OpCodes.Ldloc, 5);
+                val.Emit<SharedPhysics.CollisionResult>(OpCodes.Ldfld, "chunk");
+                val.EmitDelegate(DartMaggotShotUpdate);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILDartMaggotShotUpdate!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+
+    public static bool DartMaggotShotUpdateHitCheck(DartMaggot self, BodyChunk chunk)
+    {
+        if (chunk.owner == null || chunk.owner is not Creature creature || !healthState.TryGetValue(creature.State, out RWState state) || !state.missingBodyChunks.Contains(chunk.index))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    public static bool DartMaggotShotUpdate(DartMaggot self, BodyChunk chunk)
+    {
+        if (!weaponstat.TryGetValue(self.abstractPhysicalObject, out RWWeaponStats weaponState) || (!weaponState.wasDeflected && !weaponState.destroyedPart))
+        {
+            return true;
+        }
+
+        if (weaponState.wasDeflected)
+        {
+            self.room.AddObject(new Spark(chunk.pos + Custom.DegToVec(UnityEngine.Random.value * 360f) * (5f * UnityEngine.Random.value), self.firstChunk.vel * -0.1f + Custom.DegToVec(UnityEngine.Random.value * 360f) * (Mathf.Lerp(0.2f, 0.4f, UnityEngine.Random.value) * self.firstChunk.vel.magnitude), new Color(1f, 1f, 1f), null, 10, 170));
+            self.room.PlaySound(SoundID.Spear_Bounce_Off_Creauture_Shell, self.firstChunk);
+
+            self.firstChunk.vel = self.firstChunk.vel * -0.5f + Custom.DegToVec(UnityEngine.Random.value * 360f) * (Mathf.Lerp(0.1f, 0.4f, UnityEngine.Random.value) * self.firstChunk.vel.magnitude);
+        }
+
+        self.ChangeMode(DartMaggot.Mode.Free);
+        self.stuckInChunk = null;
+
+        return false;
+    }
+    #endregion
+
     #region DropBug
     static void ILDropBugUpdate(ILContext il)
     {
@@ -1899,6 +2009,177 @@ internal class ILHooks
     #endregion
 
     #region Player
+    static void ILPlayercheckInput(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+            ILLabel target = null;
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Creature>("get_stun"),
+                x => x.MatchBrtrue(out target)
+            }))
+            {
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(PlayercheckInput);
+                val.Emit(OpCodes.Brtrue, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayercheckInput bite!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    public static bool PlayercheckInput(Player self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) ||
+            state.consciousState != 3 ||
+            ModManager.MSC && self.State is MoreSlugcats.PlayerNPCState && ShadowOfOptions.player_uncon_movement.Value)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    static void ILPlayerEatMeatUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<UpdatableAndDeletable>("room"),
+                x => x.MatchLdsfld<SoundID>("Slugcat_Eat_Meat_A")
+            })) {}
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerEatMeatUpdate skip!");
+            }
+
+            if (val.TryGotoPrev(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<UpdatableAndDeletable>("room"),
+                x => x.MatchLdsfld<SoundID>("Slugcat_Eat_Meat_B")
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit<Creature>(OpCodes.Call, "get_grasps");
+                val.Emit(OpCodes.Ldarg_1);
+                val.Emit(OpCodes.Ldelem_Ref);
+                val.Emit<Creature.Grasp>(OpCodes.Ldfld, "grabbed");
+                val.Emit(OpCodes.Isinst, typeof(Creature));
+                val.EmitDelegate(PlayerEatMeatUpdate);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerEatMeatUpdate!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    public static void PlayerEatMeatUpdate(Player self, Creature creature)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || creature.State == null || !healthState.TryGetValue(creature.State, out RWState otherState))
+        {
+            return;
+        }
+
+        List<RWBodyPart> ediblebodyParts = new();
+        RWBodyPart focusedBodyPart;
+        
+        foreach (RWBodyPart part in otherState.bodyParts)
+        {
+            if (IsDestroyed(part) || !part.edible)
+            {
+                continue;
+            }
+
+            ediblebodyParts.Add(part);
+        }
+
+        while (true)
+        {
+            focusedBodyPart = ediblebodyParts[UnityEngine.Random.Range(0, ediblebodyParts.Count)];
+
+            if (focusedBodyPart is UpperTorso && ediblebodyParts.Count > 1)
+            {
+                ediblebodyParts.Remove(focusedBodyPart);
+
+                focusedBodyPart = null;
+            }
+            else if (focusedBodyPart is Neck)
+            {
+                bool containsHead = false;
+
+                foreach (RWBodyPart part in ediblebodyParts)
+                {
+                    if (part is Head)
+                    {
+                        containsHead = true;
+                        break;
+                    }
+                }
+
+                if (containsHead)
+                {
+                    ediblebodyParts.Remove(focusedBodyPart);
+
+                    focusedBodyPart = null;
+                }
+            }
+            else if (focusedBodyPart is Shoulder shoulder)
+            {
+                for (int i = 0; i < state.armSetNames.Count; i++)
+                {
+                    if (!state.armSet[state.armSetNames[i]].BelongsToThis(shoulder))
+                    {
+                        continue;
+                    }
+
+                    focusedBodyPart = state.armSet[state.armSetNames[i]].EatPart();
+                    break;
+                }
+            }
+            else if (focusedBodyPart is Leg leg)
+            {
+                for (int i = 0; i < state.legSetNames.Count; i++)
+                {
+                    if (!state.legSet[state.legSetNames[i]].BelongsToThis(leg))
+                    {
+                        continue;
+                    }
+
+                    focusedBodyPart = state.legSet[state.legSetNames[i]].EatPart();
+                    break;
+                }
+            }
+
+            if (focusedBodyPart != null)
+            {
+                break;
+            }
+        }
+
+        if (focusedBodyPart is UpperTorso)
+        {
+            creature.Destroy();
+            return;
+        }
+
+        RWHealthState.Damage(creature.State, otherState, new RWBite(), 999999f, 999, focusedBodyPart, GetCreatureName(self) + " - Teeth", GetCreatureName(self));
+    }
+
     static void ILPlayerGrabUpdate(ILContext il)
     {
         try
@@ -2026,6 +2307,114 @@ internal class ILHooks
         SlugcatHooks.ArtiLungExplosion(self.State, state);
     }
 
+    static void ILPlayerMovementUpdate(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+            ILLabel target = null;
+
+            #region Pole grab
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[6]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Player>("wantToGrab"),
+                x => x.MatchLdcI4(0),
+                x => x.MatchBle(out target),
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Player>("noGrabCounter")
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(PlayerCanGrabPole);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerMovementUpdate pole grab!");
+            }
+            #endregion
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[9]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<UpdatableAndDeletable>("room"),
+                x => x.MatchLdfld<Room>("aimap"),
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Creature>("get_mainBodyChunk"),
+                x => x.MatchLdfld<BodyChunk>("pos"),
+                x => x.MatchCallvirt<AImap>("getAItile"),
+                x => x.MatchLdfld<AItile>("narrowSpace"),
+                x => x.MatchBrfalse(out target)
+            })) 
+            {
+                val.MoveBeforeLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(PlayerMovementUpdateNarrow);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerMovementUpdate narrow!");
+            }
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[5]
+            {
+                x => x.MatchLdelemRef(),
+                x => x.MatchLdfld<BodyChunk>("pos"),
+                x => x.MatchCallvirt<AImap>("getAItile"),
+                x => x.MatchLdfld<AItile>("narrowSpace"),
+                x => x.MatchBrfalse(out target)
+            }))
+            {
+                val.MoveBeforeLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.Emit(OpCodes.Ldloc, 29);
+                val.EmitDelegate(PlayerMovementUpdateNarrowBoddyChunk);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerMovementUpdate narrow bodychynks!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    public static bool PlayerMovementUpdateNarrow(Player self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.manipulation == 1 && state.moving == 1 && state.consciousState == 0)
+        {
+            return true;
+        }
+
+        float multiplyer = SlugcatHooks.GetPlayerMovementSpeedMultiplier(state, 0.4f);
+
+        self.grasps[0].grabbedChunk.vel += self.input[0].IntVec.ToVector2().normalized * (self.slugcatStats.corridorClimbSpeedFac * 4f) / Mathf.Max(0.75f, self.grasps[0].grabbed.TotalMass) * multiplyer;
+        
+        return false;
+    }
+    public static bool PlayerMovementUpdateNarrowBoddyChunk(Player self, int n)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.manipulation == 1 && state.moving == 1 && state.consciousState == 0)
+        {
+            return true;
+        }
+
+        float multiplyer = SlugcatHooks.GetPlayerMovementSpeedMultiplier(state, 0.4f);
+
+        self.grasps[0].grabbed.bodyChunks[n].vel *= 0.8f;
+
+        self.grasps[0].grabbed.bodyChunks[n].vel.y += self.EffectiveRoomGravity * self.grasps[0].grabbed.gravity * 0.85f;
+        self.grasps[0].grabbed.bodyChunks[n].vel += self.input[0].IntVec.ToVector2().normalized * (self.slugcatStats.corridorClimbSpeedFac * 1.5f) / ((float)self.grasps[0].grabbed.bodyChunks.Length * Mathf.Max(1f, (self.grasps[0].grabbed.TotalMass + 1f) / 2f)) * multiplyer;
+        self.grasps[0].grabbed.bodyChunks[n].pos += self.input[0].IntVec.ToVector2().normalized * (self.slugcatStats.corridorClimbSpeedFac * 1.1f) / ((float)self.grasps[0].grabbed.bodyChunks.Length * Mathf.Max(1f, (self.grasps[0].grabbed.TotalMass + 2f) / 3f)) * multiplyer;
+
+        return false;
+    }
+
     static void ILPlayerTerrainImpact(ILContext il)
     {
         try
@@ -2142,6 +2531,570 @@ internal class ILHooks
         return false;
     }
 
+    static void ILPlayerUpdateAnimation(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+            ILLabel target = null;
+
+            #region Hang from beam
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Player>("animation"),
+                x => x.MatchLdsfld<Player.AnimationIndex>("HangFromBeam")
+            })) {}
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateAnimation hang from beam skip!");
+            }
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[12]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<PhysicalObject>("get_bodyChunks"),
+                x => x.MatchLdcI4(1),
+                x => x.MatchLdelemRef(),
+                x => x.MatchCallvirt<BodyChunk>("get_ContactPoint"),
+                x => x.MatchLdfld<RWCustom.IntVector2>("x"),
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Player>("get_input"),
+                x => x.MatchLdcI4(0),
+                x => x.MatchLdelema<Player.InputPackage>(),
+                x => x.MatchLdfld<Player.InputPackage>("x"),
+                x => x.MatchBeq(out target)
+            }))
+            {
+                val.MoveBeforeLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(PlayerUpdateAnimationHangFromBeam);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateAnimation hang from beam!");
+            }
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[4]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Player>("get_animationFrame"),
+                x => x.MatchLdcI4(10),
+                x => x.MatchBle(out target)
+            })) {}
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateAnimation hang from beam target 2!");
+            }
+
+            if (val.TryGotoPrev(MoveType.Before, new Func<Instruction, bool>[2]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<PhysicalObject>("get_bodyChunks"),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(PlayerUpdateAnimationHangFromBeam2);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateAnimation hang from beam 2!");
+            }
+            #endregion
+
+            #region Stand on beam
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[9]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Player>("dynamicRunSpeed"),
+                x => x.MatchLdcI4(1),
+                x => x.MatchLdcR4(2.1f),
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Player>("get_slugcatStats"),
+                x => x.MatchLdfld<SlugcatStats>("runspeedFac"),
+                x => x.MatchMul(),
+                x => x.MatchStelemR4()
+            }))
+            {
+                val.MoveBeforeLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(PlayerUpdateStandSpeed);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateAnimation stand on beam!");
+            }
+            #endregion
+
+            #region Climb on beam
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Player>("animation"),
+                x => x.MatchLdsfld<Player.AnimationIndex>("ClimbOnBeam")
+            })) {}
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateAnimation climb on beam skip!");
+            }
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[7]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Player>("get_input"),
+                x => x.MatchLdcI4(0),
+                x => x.MatchLdelema<Player.InputPackage>(),
+                x => x.MatchLdfld<Player.InputPackage>("y"),
+                x => x.MatchLdcI4(0),
+                x => x.MatchBge(out target)
+            })) {}
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateAnimation climb on beam target!");
+            }
+
+            if (val.TryGotoPrev(MoveType.Before, new Func<Instruction, bool>[2]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<PhysicalObject>("get_bodyChunks"),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(PlayerUpdateAnimationClimbOnBeam);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateAnimation climb on beam!");
+            }
+            #endregion
+
+            #region Zero G pole grab
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[1]
+            {
+                x => x.MatchLdsfld<Player.AnimationIndex>("ZeroGPoleGrab")
+            })) { }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateAnimation 0 g pole grab skip!");
+            }
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchCall<Player.InputPackage>("get_ZeroGGamePadIntVec"),
+                x => x.MatchLdfld<RWCustom.IntVector2>("x"),
+                x => x.MatchBrfalse(out target)
+            })) { }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateAnimation 0 g pole grab target!");
+            }
+
+            if (val.TryGotoPrev(MoveType.After, new Func<Instruction, bool>[2]
+            {
+                x => x.MatchStfld<Player>("curcuitJumpMeter"),
+                x => x.MatchBr(out _),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(PlayerCanGrabPole);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateAnimation 0 g pole grab!");
+            }
+            #endregion
+
+            #region Zero G pole grab stand
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Player>("animation"),
+                x => x.MatchLdsfld<Player.AnimationIndex>("ZeroGPoleGrab")
+            })) { }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateAnimation 0 g pole grab stand skip!");
+            }
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<UpdatableAndDeletable>("room"),
+                x => x.MatchLdsfld<SoundID>("Slugcat_Climb_Up_Vertical_Beam")
+            })) {}
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateAnimation 0 g pole grab stand skip 2!");
+            }
+
+            if (val.TryGotoPrev(MoveType.After, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Player>("get_animationFrame"),
+                x => x.MatchStloc(1)
+            })) 
+            {
+                val.MoveAfterLabels();
+
+                target = val.MarkLabel();
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateAnimation 0 g pole grab stand label!");
+            }
+
+            if (val.TryGotoPrev(MoveType.Before, new Func<Instruction, bool>[2]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Creature>("get_mainBodyChunk"),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(PlayerUpdateAnimation0GStand);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateAnimation 0 g pole stand grab!");
+            }
+            #endregion
+
+            #region Zero G pole grab crawl
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<UpdatableAndDeletable>("room"),
+                x => x.MatchLdsfld<SoundID>("Slugcat_Climb_Up_Vertical_Beam")
+            })) {}
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateAnimation 0 g pole grab crawl skip!");
+            }
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Player>("get_animationFrame"),
+                x => x.MatchStloc(1)
+            }))
+            {
+                val.MoveAfterLabels();
+
+                target = val.MarkLabel();
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateAnimation 0 g pole grab crawl label!");
+            }
+
+            if (val.TryGotoPrev(MoveType.Before, new Func<Instruction, bool>[2]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Creature>("get_mainBodyChunk"),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(PlayerUpdateAnimation0GCrawl);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateAnimation 0 g pole grab crawl!");
+            }
+            #endregion
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    public static bool PlayerUpdateAnimationHangFromBeam(Player self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.manipulation == 1 && state.consciousState == 0)
+        {
+            return true;
+        }
+
+        float multiplyer = SlugcatHooks.GetPlayerMovementSpeedMultiplier(state, 1f);
+
+        self.bodyChunks[0].vel.x += (float)self.input[0].x * Mathf.Lerp(1.2f, 1.4f, self.Adrenaline) * self.slugcatStats.poleClimbSpeedFac * Custom.LerpMap((float)self.slowMovementStun, 0f, 10f, 1f, 0.5f) * multiplyer;
+
+        return false;
+    }
+    public static bool PlayerUpdateAnimationHangFromBeam2(Player self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.manipulation == 1 && state.consciousState == 0)
+        {
+            return true;
+        }
+
+        float multiplyer = SlugcatHooks.GetPlayerMovementSpeedMultiplier(state, 1f);
+
+        self.bodyChunks[1].vel.x += (float)self.flipDirection * (0.5f + 0.5f * Mathf.Sin((float)self.animationFrame / 20f * 3.1415927f * 2f)) * -0.5f * multiplyer;
+
+        return false;
+    }
+    public static bool PlayerUpdateAnimationClimbOnBeam(Player self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.manipulation == 1 && state.moving == 1 && state.consciousState == 0)
+        {
+            return true;
+        }
+
+        float multiplyer = SlugcatHooks.GetPlayerMovementSpeedMultiplier(state, 0.7f);
+
+        self.bodyChunks[0].vel.y += Mathf.Lerp(1f, 1.4f, self.Adrenaline) * self.slugcatStats.poleClimbSpeedFac * Custom.LerpMap((float)self.slowMovementStun, 0f, 10f, 1f, 0.2f) * multiplyer;
+
+        return false;
+    }
+    public static bool PlayerUpdateAnimation0GStand(Player self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.manipulation == 1 && state.consciousState == 0)
+        {
+            return true;
+        }
+
+        float multiplyer = SlugcatHooks.GetPlayerMovementSpeedMultiplier(state, 1f);
+
+        self.mainBodyChunk.vel.y += (float)self.input[0].ZeroGGamePadIntVec.y * 1.05f * self.slugcatStats.poleClimbSpeedFac * multiplyer;
+        
+        return false;
+    }
+    public static bool PlayerUpdateAnimation0GCrawl(Player self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.manipulation == 1 && state.consciousState == 0)
+        {
+            return true;
+        }
+
+        float multiplyer = SlugcatHooks.GetPlayerMovementSpeedMultiplier(state, 1f);
+
+        self.mainBodyChunk.vel.x += (float)self.input[0].ZeroGGamePadIntVec.x * 1.05f * self.slugcatStats.poleClimbSpeedFac * multiplyer;
+
+        return false;
+    }
+
+    static void ILPlayerUpdateBodyMode(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+            ILLabel target = null;
+
+            #region Multiply default stance movement speed
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[5]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Player>("dynamicRunSpeed"),
+                x => x.MatchLdcI4(1),
+                x => x.MatchLdcR4(2),
+                x => x.MatchStelemR4(),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(PlayerUpdateStandSpeed);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateBodyMode default stand!");
+            }
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[5]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Player>("dynamicRunSpeed"),
+                x => x.MatchLdcI4(0),
+                x => x.MatchLdcR4(2.5f),
+                x => x.MatchStelemR4(),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(PlayerUpdateCrawlSpeed);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateBodyMode default crouch!");
+            }
+            #endregion
+
+            #region Prevent default stance pole grabbing
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[2]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdflda<Player>("dropGrabTile")
+            })) {}
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateBodyMode default pole grab skip!");
+            }
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[1]
+            {
+                x => x.MatchBrfalse(out target)
+            })) {}
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateBodyMode default pole grab target!");
+            }
+
+            if (val.TryGotoPrev(MoveType.Before, new Func<Instruction, bool>[2]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdflda<Player>("dropGrabTile")
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(PlayerCanGrabPole);
+                val.Emit(OpCodes.Brfalse_S, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateBodyMode default pole grab!");
+            }
+            #endregion
+
+            #region Multiply stance movement speed
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[5]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Player>("dynamicRunSpeed"),
+                x => x.MatchLdcI4(0),
+                x => x.MatchLdcR4(1),
+                x => x.MatchStelemR4(),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(PlayerUpdateCrawlSpeed);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateBodyMode crawl!");
+            }
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[5]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Player>("dynamicRunSpeed"),
+                x => x.MatchLdcI4(1),
+                x => x.MatchLdcR4(2),
+                x => x.MatchStelemR4(),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(PlayerUpdateStandSpeed);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateBodyMode stand!");
+            }
+
+            if (val.TryGotoNext(MoveType.After, new Func<Instruction, bool>[12]
+            {
+                x => x.MatchLdloc(12),
+                x => x.MatchLdcR4(0.1f),
+                x => x.MatchLdcR4(1),
+                x => x.MatchLdcR4(10),
+                x => x.MatchLdcR4(0.0f),
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Player>("slowMovementStun"),
+                x => x.MatchConvR4(),
+                x => x.MatchCall<UnityEngine.Mathf>("InverseLerp"),
+                x => x.MatchCall<UnityEngine.Mathf>("Lerp"),
+                x => x.MatchMul(),
+                x => x.MatchStloc(12)
+            }))
+            {
+                val.MoveBeforeLabels();
+
+                val.Emit(OpCodes.Ldloc, 12);
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(PlayerUpdateCorridorMult);
+                val.Emit(OpCodes.Mul);
+                val.Emit(OpCodes.Stloc, 12);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateBodyMode corridor!");
+            }
+            #endregion
+
+            #region Prevent pole grabbing
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[1]
+            {
+                x => x.MatchLdsfld<Player.AnimationIndex>("ClimbOnBeam")
+            })) {}
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateBodyMode sorridor pole grab skip!");
+            }
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[1]
+            {
+                x => x.MatchBrfalse(out target)
+            })) {}
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateBodyMode sorridor pole grab target!");
+            }
+
+            if (val.TryGotoPrev(MoveType.Before, new Func<Instruction, bool>[5]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Player>("get_input"),
+                x => x.MatchLdcI4(0),
+                x => x.MatchLdelema<Player.InputPackage>(),
+                x => x.MatchLdfld<Player.InputPackage>("y")
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(PlayerCanGrabPole);
+                val.Emit(OpCodes.Brfalse_S, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerUpdateBodyMode!");
+            }
+            #endregion
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+    public static float PlayerUpdateCorridorMult(Player self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.manipulation == 1 && state.moving == 1 && state.consciousState == 0)
+        {
+            return 1;
+        }
+
+        float multiplyer = SlugcatHooks.GetPlayerMovementSpeedMultiplier(state, 0.4f);
+
+        return multiplyer;
+    }
+
     static void ILPlayerTongueUpdate(ILContext il)
     {
         ILCursor val = new(il);
@@ -2188,6 +3141,41 @@ internal class ILHooks
         }
 
         TongueElectricDamage(self.State, state);
+
+        return false;
+    }
+
+    public static void PlayerUpdateStandSpeed(Player self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.moving == 1 && state.consciousState == 0)
+        {
+            return;
+        }
+
+        float multiplyer = SlugcatHooks.GetPlayerMovementSpeedMultiplier(state, 0f);
+
+        self.dynamicRunSpeed[0] *= multiplyer;
+        self.dynamicRunSpeed[1] *= multiplyer;
+    }
+    public static void PlayerUpdateCrawlSpeed(Player self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.manipulation == 1 && state.moving == 1 && state.consciousState == 0)
+        {
+            return;
+        }
+
+        float multiplyer = SlugcatHooks.GetPlayerMovementSpeedMultiplier(state, 0.5f);
+
+        self.dynamicRunSpeed[0] *= multiplyer;
+        self.dynamicRunSpeed[1] *= multiplyer;
+    }
+
+    public static bool PlayerCanGrabPole(Player self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || ArmCheck(state))
+        {
+            return true;
+        }
 
         return false;
     }
@@ -2448,8 +3436,53 @@ internal class ILHooks
             {
                 RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILSpearHitSomething!");
             }
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[4]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdarg(1),
+                x => x.MatchLdarg(2),
+                x => x.MatchCall<Spear>("LodgeInCreature"),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                target = val.MarkLabel();
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILSpearHitSomething sound target!");
+            }
+
+            if (val.TryGotoPrev(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<UpdatableAndDeletable>("room"),
+                x => x.MatchLdsfld<SoundID>("Spear_Stick_In_Creature"),
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(SpearHitSomethingSound);
+                val.Emit(OpCodes.Brfalse, target);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILSpearHitSomething sound!");
+            }
         }
         catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+
+    public static bool SpearHitSomethingSound(Spear self)
+    {
+        if (!weaponstat.TryGetValue(self.abstractPhysicalObject, out RWWeaponStats weaponState) || !weaponState.wasDeflected)
+        {
+            return true;
+        }
+
+        return false;
     }
     #endregion
 
@@ -3410,7 +4443,22 @@ internal class ILHooks
     }
     public static WorldCoordinate SlugNPCAIUpdate(MoreSlugcats.SlugNPCAI self, WorldCoordinate destination)
     {
-        if (self.creature.controlled || !healthState.TryGetValue(self.cat.State, out RWState state) || (self.behaviorType != SlugTend && self.behaviorType != SlugSelfTend))
+        if (self.creature.controlled || !healthState.TryGetValue(self.cat.State, out RWState state))
+        {
+            return destination;
+        }
+
+        if (self.behaviorType == SlugOnFire)
+        {
+            for (int i = 0; i < self.cat.grasps.Length; i++)
+            {
+                self.cat.ReleaseGrasp(i);
+            }
+
+            return new WorldCoordinate(self.cat.abstractCreature.pos.room, self.cat.abstractCreature.pos.x + (UnityEngine.Random.value > 0.5f ? 2 : -2), self.cat.abstractCreature.pos.y, self.cat.abstractCreature.pos.abstractNode);
+        }
+
+        if (self.behaviorType != SlugTend && self.behaviorType != SlugSelfTend)
         {
             return destination;
         }

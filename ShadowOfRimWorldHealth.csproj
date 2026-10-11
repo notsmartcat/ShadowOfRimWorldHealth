@@ -92,6 +92,6 @@
     </Reference>
   </ItemGroup>
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Exec Command="copy &quot;C:\Users\User\OneDrive\Dokumenty\ShadowOfRimWorldHealth\bin\Release\net48\ShadowOfRainWorldHealth.dll&quot; &quot;C:\Program Files (x86)\Steam\steamapps\common\Rain World\RainWorld_Data\StreamingAssets\mods\Shadow of RimWorld Like Health\plugins\ShadowOfRainWorldHealth.dll&quot;" />
+		<Exec Command="copy &quot;C:\Users\User\Documents\ShadowOfRimWorldHealth\bin\Release\net48\ShadowOfRainWorldHealth.dll&quot; &quot;C:\Program Files (x86)\Steam\steamapps\common\Rain World\RainWorld_Data\StreamingAssets\mods\Shadow of RimWorld Like Health\plugins\ShadowOfRainWorldHealth.dll&quot;" />
 	</Target>
 </Project>
