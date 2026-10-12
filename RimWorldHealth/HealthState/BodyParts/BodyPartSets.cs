@@ -30,19 +30,6 @@ public class ArmSet
         return efficiency;
     }
 
-    public void ForceUpdateEfficiency(RWState state)
-    {
-        float postFactors = 1;
-        float otherEfficiency = 1;
-
-        foreach (RWBodyPart part in state.manipulationBP)
-        {
-            otherEfficiency *= 1 - part.capacityImportance[part.capacity.IndexOf("Manipulation")] * (1 - part.efficiency);
-        }
-
-        Efficiency(state, 0, postFactors, otherEfficiency);
-    }
-
     public string CapacityAffectingAffliction()
     {
         string description = "";

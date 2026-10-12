@@ -87,6 +87,8 @@ public class RimWorldHealth : BaseUnityPlugin
         public string violenceAttackOverride = "";
         public string violenceAttackerOverride = "";
 
+        public bool wasLastBehaviourTend = false;
+
         #region Medical
         public int medicalSkill = 0;
 
@@ -379,7 +381,19 @@ public class RimWorldHealth : BaseUnityPlugin
 
                 for (int i = 0; i < state.bodyParts.Count; i++)
                 {
-                    if (state.bodyParts[i] is Arm part && !IsDestroyed(part))
+                    if (state.bodyParts[i] is Arm part && !IsDestroyed(part) && part.subName == "Right")
+                    {
+                        RWHealthState.Damage(self.State, state, new RWPoke(), 999999f, 999, part, "oopsie");
+
+                        break;
+                    }
+                }
+
+                return;
+
+                for (int i = 0; i < state.bodyParts.Count; i++)
+                {
+                    if (state.bodyParts[i] is Jaw part && !IsDestroyed(part))
                     {
                         RWHealthState.Damage(self.State, state, new RWPoke(), 999999f, 999, part, "oopsie");
 
@@ -535,7 +549,7 @@ public class RimWorldHealth : BaseUnityPlugin
         return workingLegs >= maxWorkingLegs / 2;
     }
 
-    public static bool ArmCheck(RWState state)
+    public static int WorkingArms(RWState state)
     {
         int workingArms = 0;
 
@@ -548,7 +562,7 @@ public class RimWorldHealth : BaseUnityPlugin
             }
         }
 
-        return workingArms > 0;
+        return workingArms;
     }
 
     #region Custom Damages
@@ -726,11 +740,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
                     for (int i = 0; i < state.bodyParts.Count; i++)
                     {
-                        if (IsDestroyed(state.bodyParts[i]) || subPartOf == state.bodyParts[i])
-                        {
-                            continue;
-                        }
-                        else if (!IsSubPartName(state.bodyParts[i], subPartOf))
+                        if (IsDestroyed(state.bodyParts[i]) || subPartOf == state.bodyParts[i] || !IsSubPartName(state.bodyParts[i], subPartOf) || state.bodyParts[i] is Eye)
                         {
                             continue;
                         }
@@ -1193,15 +1203,9 @@ public class RimWorldHealth : BaseUnityPlugin
             }
             else if (subPartOf == null)
             {
-                if (hitChunk != null && !state.bodyParts[i].connectedBodyChunks.Contains(hitChunk.index) || hitChunk == null && state.bodyParts[i].connectedBodyChunks.Count == 0)
-                {
-                    continue;
-                }
-                else if (state.bodyParts[i].isInternal && (isBlunt || !canHitInternal))
-                {
-                    continue;
-                }
-                else if (isBlunt && state.bodyParts[i] is Eye)
+                if (hitChunk != null && !state.bodyParts[i].connectedBodyChunks.Contains(hitChunk.index) || hitChunk == null && state.bodyParts[i].connectedBodyChunks.Count == 0 || 
+                    state.bodyParts[i].isInternal && (isBlunt || !canHitInternal) || 
+                    isBlunt && state.bodyParts[i] is Eye)
                 {
                     continue;
                 }
@@ -1648,8 +1652,6 @@ public class RimWorldHealth : BaseUnityPlugin
 
             state.armSet[mainBodypartNames[randomNumber]].KarmaFlowerHeal(state, mainBodyparts[mainBodypartNames[randomNumber]]);
 
-            UpdateTemplate();
-
             return;
         }
 
@@ -1910,31 +1912,6 @@ public class RimWorldHealth : BaseUnityPlugin
             return;
         }
         #endregion
-
-        void UpdateTemplate()
-        {
-            if (!customTemplates.Contains(self.abstractCreature.creatureTemplate))
-            {
-                return;
-            }
-
-            foreach (string setName in state.armSetNames)
-            {
-                state.armSet[setName].ForceUpdateEfficiency(state);
-
-                Debug.Log(setName + " " + state.armSet[setName].efficiency);
-            }
-
-            if (!ArmCheck(state))
-            {
-                return;
-            }
-
-            self.abstractCreature.creatureTemplate = StaticWorld.GetCreatureTemplate(self.abstractCreature.creatureTemplate.type);
-
-            if (self.room != null && self.abstractCreature.abstractAI != null && self.abstractCreature.abstractAI.RealAI != null && self.abstractCreature.abstractAI.RealAI.pathFinder != null)
-                self.abstractCreature.abstractAI.RealAI.pathFinder.Reset(self.room);
-        }
     }
 
     public static bool UpdateAfflictions(CreatureState self, RWState state, int ticksPassed)
@@ -2822,51 +2799,6 @@ public class RimWorldHealth : BaseUnityPlugin
                 }
             }
         }
-    }
-
-    public static void UpdateTemplate(CreatureState self, RWState state)
-    {
-        if (customTemplates.Contains(self.creature.creatureTemplate))
-        {
-            return;
-        }
-
-        foreach (string setName in state.armSetNames)
-        {
-            state.armSet[setName].ForceUpdateEfficiency(state);
-
-            Debug.Log(setName + " " + state.armSet[setName].efficiency);
-        }
-
-        if (ArmCheck(state))
-        {
-            return;
-        }
-
-        CreatureTemplate creatureTemplate = null;
-
-        for (int k = 0; k < customTemplates.Count; k++)
-        {
-            if (customTemplates[k].type == self.creature.creatureTemplate.type)
-            {
-                creatureTemplate = customTemplates[k];
-                break;
-            }
-        }
-
-        if (creatureTemplate == null)
-        {
-            creatureTemplate = new CreatureTemplate(self.creature.creatureTemplate);
-
-            creatureTemplate.pathingPreferencesTiles[(int)AItile.Accessibility.Climb].legality = PathCost.Legality.IllegalTile;
-
-            customTemplates.Add(creatureTemplate);
-        }
-
-        self.creature.creatureTemplate = creatureTemplate;
-
-        if (self.creature.realizedCreature != null && self.creature.realizedCreature.room != null && self.creature.abstractAI.RealAI != null && self.creature.abstractAI.RealAI != null && self.creature.abstractAI.RealAI.pathFinder != null)
-            self.creature.abstractAI.RealAI.pathFinder.Reset(self.creature.realizedCreature.room);
     }
 
     public static float CycleLength()

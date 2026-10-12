@@ -106,10 +106,12 @@ internal class ILHooks
         IL.Player.EatMeatUpdate += ILPlayerEatMeatUpdate;
         IL.Player.GrabUpdate += ILPlayerGrabUpdate;
         IL.Player.LungUpdate += ILPlayerLungUpdate;
+        IL.Player.Jump += ILPlayerJump;
         IL.Player.MovementUpdate += ILPlayerMovementUpdate;
         IL.Player.TerrainImpact += ILPlayerTerrainImpact;
         IL.Player.UpdateAnimation += ILPlayerUpdateAnimation;
         IL.Player.UpdateBodyMode += ILPlayerUpdateBodyMode;
+        IL.Player.WallJump += ILPlayerWallJump;
         IL.Player.Tongue.Update += ILPlayerTongueUpdate;
         #endregion
 
@@ -2307,6 +2309,35 @@ internal class ILHooks
         SlugcatHooks.ArtiLungExplosion(self.State, state);
     }
 
+    static void ILPlayerJump(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdarg(0),
+                x => x.MatchCall<Player>("get_isGourmand")
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldloc, 0);
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(PlayerJump);
+                val.Emit(OpCodes.Mul);
+                val.Emit(OpCodes.Stloc, 0);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerJump!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+
     static void ILPlayerMovementUpdate(ILContext il)
     {
         try
@@ -3145,6 +3176,47 @@ internal class ILHooks
         return false;
     }
 
+    static void ILPlayerWallJump(ILContext il)
+    {
+        try
+        {
+            ILCursor val = new(il);
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[3]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchLdfld<Player>("exhausted"),
+                x => x.MatchBrfalse(out _)
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldloc, 0);
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(PlayerJump);
+                val.Emit(OpCodes.Mul);
+                val.Emit(OpCodes.Stloc, 0);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILPlayerWallJump!");
+            }
+        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+    }
+
+    public static float PlayerJump(Player self)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.manipulation == 1 && state.moving == 1 && state.consciousState == 0)
+        {
+            return 1;
+        }
+
+        float multiplyer = SlugcatHooks.GetPlayerMovementSpeedMultiplier(state, 0.1f);
+
+        return multiplyer;
+    }
+
     public static void PlayerUpdateStandSpeed(Player self)
     {
         if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.moving == 1 && state.consciousState == 0)
@@ -3172,7 +3244,7 @@ internal class ILHooks
 
     public static bool PlayerCanGrabPole(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || ArmCheck(state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || WorkingArms(state) > 0)
         {
             return true;
         }
@@ -4524,39 +4596,17 @@ internal class ILHooks
                 }
             }
 
-            if (self.HoldingThis(state.tendTarget))
-            {
-                for (int i = 0; i < self.cat.grasps.Length; i++)
-                {
-                    self.cat.ReleaseGrasp(i);
-                }
-            }
-
             return self.cat.abstractCreature.pos;
         }
 
         if (state.tendTarget == null || state.tendTarget.State == null || !healthState.TryGetValue(state.tendTarget.State, out RWState otherState))
         {
-            if (state.tendTarget != null)
-            {
-                state.tendTarget = null;
-            }
-
-            for (int i = 0; i < self.cat.grasps.Length; i++)
-            {
-                if (self.cat.grasps[i].grabbedChunk != null && self.cat.grasps[i].grabbedChunk.owner != null && (self.cat.grasps[i].grabbedChunk.owner is Player || self.cat.grasps[i].grabbedChunk.owner is Lizard))
-                {
-                    self.cat.ReleaseGrasp(i);
-                }
-            }
+            stopTend();
 
             return destination;
         }
 
-        if (self.grabTarget != null)
-        {
-            self.grabTarget = null;
-        }
+        self.grabTarget = null;
 
         if (!self.HoldingThis(state.tendTarget))
         {
@@ -4600,10 +4650,7 @@ internal class ILHooks
             {
                 state.tendAffliction = null;
 
-                for (int i = 0; i < self.cat.grasps.Length; i++)
-                {
-                    self.cat.ReleaseGrasp(i);
-                }
+                stopTend();
             }
             else if (state.tendTime <= 0)
             {
@@ -4629,10 +4676,7 @@ internal class ILHooks
 
                 otherState.updateCapacities = true;
 
-                for (int i = 0; i < self.cat.grasps.Length; i++)
-                {
-                    self.cat.ReleaseGrasp(i);
-                }
+                stopTend();
             }
 
             return self.cat.abstractCreature.pos;
@@ -4774,6 +4818,26 @@ internal class ILHooks
                 }
             }
             return Custom.DistLess(self.cat.bodyChunks[0].pos, item.bodyChunks[num].pos, item.bodyChunks[num].rad + 40f) && (Custom.DistLess(self.cat.bodyChunks[0].pos, item.bodyChunks[num].pos, item.bodyChunks[num].rad + 20f) || self.cat.room.VisualContact(self.cat.bodyChunks[0].pos, item.bodyChunks[num].pos));
+        }
+
+        void stopTend()
+        {
+            state.wasLastBehaviourTend = false;
+
+            state.tendAffliction = null;
+
+            if (state.tendTarget != null)
+            {
+                foreach (var grasp in self.creature.realizedCreature.grasps)
+                {
+                    if (grasp != null && grasp.grabbedChunk != null && grasp.grabbedChunk.owner != null && grasp.grabbedChunk.owner == state.tendTarget)
+                    {
+                        (self.creature.realizedCreature as Player).ReleaseGrasp(grasp.graspUsed);
+                    }
+                }
+            }
+
+            state.tendTarget = null;
         }
     }
     #endregion

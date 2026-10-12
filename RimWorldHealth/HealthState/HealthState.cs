@@ -1435,6 +1435,8 @@ public class RWHealthState
                 state.talking = 0;
             }
 
+            UpdateTemplate();
+
             if (self.creature == null || self.creature.realizedCreature == null || self.creature.realizedCreature is not Player player)
             {
                 return;
@@ -1555,6 +1557,46 @@ public class RWHealthState
                             break;
                     }
                 }
+            }
+
+            void UpdateTemplate()
+            {
+                if (WorkingArms(state) == 0 && customTemplates.Contains(self.creature.creatureTemplate) || WorkingArms(state) > 0 && !customTemplates.Contains(self.creature.creatureTemplate))
+                {
+                    return;
+                }
+
+                CreatureTemplate creatureTemplate = null;
+
+                if (WorkingArms(state) == 0)
+                {
+                    for (int k = 0; k < customTemplates.Count; k++)
+                    {
+                        if (customTemplates[k].type == self.creature.creatureTemplate.type)
+                        {
+                            creatureTemplate = customTemplates[k];
+                            break;
+                        }
+                    }
+
+                    if (creatureTemplate == null)
+                    {
+                        creatureTemplate = new CreatureTemplate(self.creature.creatureTemplate);
+
+                        creatureTemplate.pathingPreferencesTiles[(int)AItile.Accessibility.Climb].legality = PathCost.Legality.IllegalTile;
+
+                        customTemplates.Add(creatureTemplate);
+                    }
+                }
+                else
+                {
+                    creatureTemplate = StaticWorld.GetCreatureTemplate(self.creature.creatureTemplate.type);
+                }
+
+                self.creature.creatureTemplate = creatureTemplate;
+
+                if (self.creature.abstractAI != null && self.creature.realizedCreature != null && self.creature.realizedCreature.room != null && self.creature.abstractAI.RealAI != null && self.creature.abstractAI.RealAI != null && self.creature.abstractAI.RealAI.pathFinder != null)
+                    self.creature.abstractAI.RealAI.pathFinder.Reset(self.creature.realizedCreature.room);
             }
         }
 
@@ -1693,8 +1735,6 @@ public class RWHealthState
             focusedBodyPart.health = health;
         }
 
-        state.updateCapacities = true;
-
         while (extraDamage > 0 || damage > 0)
         {
             bool bodypartHit = false;
@@ -1739,8 +1779,6 @@ public class RWHealthState
                             focusedBodyPart.health = health;
                         }
 
-                        state.updateCapacities = true;
-
                         bodypartHit = true;
 
                         break;
@@ -1777,8 +1815,6 @@ public class RWHealthState
                             focusedBodyPart.afflictions.Add(Scar(tempDamage));
                             focusedBodyPart.health = health;
                         }
-
-                        state.updateCapacities = true;
 
                         bodypartHit = true;
 
@@ -1817,8 +1853,6 @@ public class RWHealthState
                             focusedBodyPart.health = health;
                         }
 
-                        state.updateCapacities = true;
-
                         bodypartHit = true;
 
                         break;
@@ -1836,6 +1870,8 @@ public class RWHealthState
             }
         }
 
+        state.updateCapacities = true;
+
         void DestroyBodyPart()
         {
             if (focusedBodyPart == null || focusedBodyPart.deathEffect == "")
@@ -1849,8 +1885,6 @@ public class RWHealthState
                 Kill(self);
                 return;
             }
-
-            bool destroyedArm = focusedBodyPart is Shoulder || focusedBodyPart is Arm || focusedBodyPart is Clavicle || focusedBodyPart is Humerus || focusedBodyPart is Radius;
 
             if (weapon != null)
             {
@@ -1897,8 +1931,6 @@ public class RWHealthState
                 subParts[j].afflictions.Clear();
                 subParts[j].afflictions.Add(new RWDestroyed(self, subParts[j], j == 0 ? 1f : 0f, damageType, attackName, attackerName));
 
-                destroyedArm = destroyedArm || subParts[j] is Shoulder || subParts[j] is Arm || subParts[j] is Clavicle || subParts[j] is Humerus || subParts[j] is Radius;
-
                 subParts[j].health = 0;
                 subParts[j].efficiency = 0;
 
@@ -1919,11 +1951,6 @@ public class RWHealthState
             if (self.creature.realizedCreature != null)
             {
                 UpdateMissingChunks(state, self.creature.realizedCreature);
-            }
-
-            if (destroyedArm)
-            {
-                UpdateTemplate(self, state);
             }
         }
 
@@ -2091,13 +2118,13 @@ public class RWHealthState
 
     public static void Burn(RWState state)
     {
-        if (!state.onFire) //currently chance to be set on fire is guaranteed as noting reduces flamability so I never added the flamability stat
+        if (!state.onFire) //currently chance to be set on fire is guaranteed as nothing reduces flamability so I never added the flamability stat
         {
             state.fireRate = 40;
             state.onFire = true;
             state.fireSize = Random.Range(0.15f, 0.25f);
 
-            state.onFireMentalBreak = Random.Range(100, 250);
+            state.onFireMentalBreak = Random.Range(100, 250); //I couldn't find a exact number of ticks the onFire Mental Break lasts in RimWorld so this is just a guess, it is also just a temporary number
         }
     }
 

@@ -14,6 +14,7 @@ internal class SlugcatHooks
         #region Player
         On.Player.ctor += NewPlayer;
         On.Player.AddFood += PlayerAddFood;
+        On.Player.CanIPickThisUp += PlayerCanIPickThisUp;
         On.Player.DeathByBiteMultiplier += PlayerDeathByBiteMultiplier;
         On.Player.GrabUpdate += PlayerGrabUpdate;
         On.Player.GraphicsModuleUpdated += PlayerGraphicsModuleUpdated;
@@ -32,6 +33,7 @@ internal class SlugcatHooks
 
         #region SlugNPCAI
         On.MoreSlugcats.SlugNPCAI.AttackingThreat += SlugNPCAIAttackingThreat;
+        On.MoreSlugcats.SlugNPCAI.CanGrabItem += SlugNPCAICanGrabItem;
         On.MoreSlugcats.SlugNPCAI.DecideBehavior += SlugNPCAIDecideBehavior;
         On.MoreSlugcats.SlugNPCAI.Move += SlugNPCAIMove;
         #endregion
@@ -79,6 +81,15 @@ internal class SlugcatHooks
 
         state.hasEaten = true;
     }
+    static bool PlayerCanIPickThisUp(On.Player.orig_CanIPickThisUp orig, Player self, PhysicalObject obj)
+    {
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || WorkingArms(state) > 0 || JawCheck(state) && self.grasps[0] == null)
+        {
+            return orig(self, obj);
+        }
+
+        return false;
+    }
     static float PlayerDeathByBiteMultiplier(On.Player.orig_DeathByBiteMultiplier orig, Player self)
     {
         if (self.State == null || !healthState.TryGetValue(self.State, out _))
@@ -103,7 +114,7 @@ internal class SlugcatHooks
     {
         orig(self, actuallyViewed, eu);
 
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || self.grasps[0] == null || ArmCheck(state) || !JawCheck(state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || self.grasps[0] == null || WorkingArms(state) > 0 || !JawCheck(state))
         {
             return;
         }
@@ -342,7 +353,7 @@ internal class SlugcatHooks
                 self.animation = Player.AnimationIndex.ClimbOnBeam;
             }
         }
-        if (!ArmCheck(state))
+        if (WorkingArms(state) == 0)
         {
             if (self.animation == Player.AnimationIndex.HangFromBeam || 
                 self.animation == Player.AnimationIndex.GetUpOnBeam || 
@@ -358,14 +369,14 @@ internal class SlugcatHooks
                 self.animation = Player.AnimationIndex.ZeroGSwim;
             }
         }
-        else if (!ArmCheck(state) && self.animation == Player.AnimationIndex.ZeroGPoleGrab)
+        else if (WorkingArms(state) == 0 && self.animation == Player.AnimationIndex.ZeroGPoleGrab)
         {
             self.animation = Player.AnimationIndex.ZeroGSwim;
         }
 
         orig(self, eu);
 
-        if (!ArmCheck(state))
+        if (WorkingArms(state) == 0)
         {
             if (self.grasps.Length > 0 && !JawCheck(state))
             {
@@ -461,7 +472,7 @@ internal class SlugcatHooks
             return;
         }
 
-        if (!ArmCheck(state)) //&& JawCheck(state) && self.player.grasps[0] != null
+        if (WorkingArms(state) == 0)
         {
             sLeaser.sprites[5].isVisible = false;
             sLeaser.sprites[6].isVisible = false;
@@ -486,6 +497,15 @@ internal class SlugcatHooks
         }
 
         return orig(self);
+    }
+    static bool SlugNPCAICanGrabItem(On.MoreSlugcats.SlugNPCAI.orig_CanGrabItem orig, MoreSlugcats.SlugNPCAI self, PhysicalObject obj)
+    {
+        if (self.cat.State != null && healthState.TryGetValue(self.cat.State, out RWState state) && WorkingArms(state) == 0 && !JawCheck(state))
+        {
+            return false;
+        }
+
+        return orig(self, obj);
     }
     static void SlugNPCAIDecideBehavior(On.MoreSlugcats.SlugNPCAI.orig_DecideBehavior orig, MoreSlugcats.SlugNPCAI self)
     {
@@ -518,21 +538,15 @@ internal class SlugcatHooks
 
                 if (ShadowOfOptions.downed_tend.Value != "Everyone")
                 {
+                    stopTend();
+
                     return;
                 }
             }
 
             if (self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.BeingHeld || self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.OnHead || self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.Thrown && self.cat.bodyMode == Player.BodyModeIndex.Default)
             {
-                state.tendAffliction = null;
-
-                foreach (var grasp in self.creature.realizedCreature.grasps)
-                {
-                    if (grasp != null && grasp.grabbedChunk != null && grasp.grabbedChunk.owner != null && grasp.grabbedChunk.owner is Creature)
-                    {
-                        (self.creature.realizedCreature as Player).ReleaseGrasp(grasp.graspUsed);
-                    }
-                }
+                stopTend();
 
                 return;
             }
@@ -541,21 +555,16 @@ internal class SlugcatHooks
             {
                 self.behaviorType = SlugOnFire;
 
-                state.tendAffliction = null;
+                stopBehaviour();
+
+                stopTend();
+
                 return;
             }
 
             if (self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.Attacking || self.behaviorType == MoreSlugcats.SlugNPCAI.BehaviorType.Fleeing)
             {
-                state.tendAffliction = null;
-
-                foreach (var grasp in self.creature.realizedCreature.grasps)
-                {
-                    if (grasp != null && grasp.grabbedChunk != null && grasp.grabbedChunk.owner != null && grasp.grabbedChunk.owner is Creature)
-                    {
-                        (self.creature.realizedCreature as Player).ReleaseGrasp(grasp.graspUsed);
-                    }
-                }
+                stopTend();
 
                 return;
             }
@@ -577,6 +586,11 @@ internal class SlugcatHooks
                 state.tendAffliction = burningAffliction;
                 state.tendTime = 10;
                 state.tendTimeMax = state.tendTime;
+                return;
+            }
+
+            if (!state.wasLastBehaviourTend && Random.value > 0.015f)
+            {
                 return;
             }
 
@@ -718,10 +732,7 @@ internal class SlugcatHooks
 
             if (self.friendTracker.friend != null && self.friendTracker.friend.room != self.cat.room)
             {
-                if (state.tendAffliction != null)
-                {
-                    state.tendAffliction = null;
-                }
+                stopTend();
 
                 return;
             }
@@ -787,10 +798,7 @@ internal class SlugcatHooks
 
             if (tendTarget == null)
             {
-                if (state.tendAffliction != null)
-                {
-                    state.tendAffliction = null;
-                }
+                stopTend();
             }
             else
             {
@@ -801,6 +809,10 @@ internal class SlugcatHooks
 
         void startSelfTend(RWAffliction affliction)
         {
+            stopBehaviour();
+
+            state.wasLastBehaviourTend = true;
+
             self.behaviorType = SlugSelfTend;
 
             if (state.tendAffliction == affliction)
@@ -815,8 +827,43 @@ internal class SlugcatHooks
 
         void tendOther(Creature creature)
         {
+            stopBehaviour();
+
+            state.wasLastBehaviourTend = true;
+
+            if (state.tendTarget != null && state.tendTarget != creature)
+            {
+                foreach (var grasp in self.creature.realizedCreature.grasps)
+                {
+                    if (grasp != null && grasp.grabbedChunk != null && grasp.grabbedChunk.owner != null && grasp.grabbedChunk.owner == state.tendTarget)
+                    {
+                        (self.creature.realizedCreature as Player).ReleaseGrasp(grasp.graspUsed);
+                    }
+                }
+            }
             state.tendTarget = creature;
+
             self.behaviorType = SlugTend;
+        }
+
+        void stopTend()
+        {
+            state.wasLastBehaviourTend = false;
+
+            state.tendAffliction = null;
+
+            if (state.tendTarget != null)
+            {
+                foreach (var grasp in self.creature.realizedCreature.grasps)
+                {
+                    if (grasp != null && grasp.grabbedChunk != null && grasp.grabbedChunk.owner != null && grasp.grabbedChunk.owner == state.tendTarget)
+                    {
+                        (self.creature.realizedCreature as Player).ReleaseGrasp(grasp.graspUsed);
+                    }
+                }
+            }
+
+            state.tendTarget = null;
         }
 
         bool grabbedByThis(Creature creature)
@@ -830,6 +877,19 @@ internal class SlugcatHooks
             }
 
             return false;
+        }
+
+        void stopBehaviour()
+        {
+            self.toldToPlay = Mathf.Min(self.toldToPlay, -2000);
+
+            self.playWithItem = false;
+            self.nap = false;
+            self.foodReaction = 0;
+
+            self.forceJump = 0;
+            self.catchDelay = 0;
+            self.turnDelay = 0;
         }
     }
     static void SlugNPCAIMove(On.MoreSlugcats.SlugNPCAI.orig_Move orig, MoreSlugcats.SlugNPCAI self)
