@@ -4537,65 +4537,6 @@ internal class ILHooks
 
         if (self.behaviorType == SlugSelfTend)
         {
-            if (state.tendAffliction != null)
-            {
-                state.tendTime--;
-
-                if (state.tendAffliction == burningAffliction)
-                {
-                    if (!state.onFire)
-                    {
-                        state.tendAffliction = null;
-                    }
-                    else if (state.tendTime <= 0)
-                    {
-                        state.fireSize -= 0.1f;
-
-                        if (state.fireSize <= 0)
-                        {
-                            state.onFire = false;
-
-                            state.tendAffliction = null;
-                        }
-                        else
-                        {
-                            state.tendTime = 10;
-                            state.tendTimeMax = state.tendTime;
-                        }
-                    }
-                    return self.cat.abstractCreature.pos;
-                }
-
-                if (state.tendAffliction.isTended || state.tendAffliction.part == null && state.tendAffliction is not RWDisease)
-                {
-                    state.tendAffliction = null;
-                }
-                else if (state.tendTime <= 0)
-                {
-                    state.tendAffliction.isTended = true;
-                    state.tendAffliction.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f * UnityEngine.Random.Range(0.75f, 1.25f), 0, 0.7f);
-
-                    if (state.tendAffliction is RWInjury injury)
-                    {
-                        injury.isBleeding = false;
-
-                        if (injury is RWDestroyed destroyed)
-                        {
-                            destroyed.isFresh = false;
-                        }
-                    }
-                    else if (state.tendAffliction is RWDisease disease)
-                    {
-                        disease.timeUntilTreatment = cycleLength * disease.treatmentTimes;
-                        disease.totalTendQuality += disease.tendQuality;
-                    }
-
-                    state.tendAffliction = null;
-
-                    state.updateCapacities = true;
-                }
-            }
-
             return self.cat.abstractCreature.pos;
         }
 
@@ -4619,62 +4560,9 @@ internal class ILHooks
 
         if (state.tendAffliction != null)
         {
-            state.tendTime--;
-
-            if (state.tendAffliction == burningAffliction)
-            {
-                if (!otherState.onFire)
-                {
-                    state.tendAffliction = null;
-                }
-                else if (state.tendTime <= 0)
-                {
-                    otherState.fireSize -= 0.1f;
-
-                    if (otherState.fireSize <= 0)
-                    {
-                        otherState.onFire = false;
-
-                        state.tendAffliction = null;
-                    }
-                    else
-                    {
-                        state.tendTime = 10;
-                        state.tendTimeMax = state.tendTime;
-                    }
-                }
-                return self.cat.abstractCreature.pos;
-            }
-
             if (state.tendAffliction.isTended || state.tendAffliction.part == null && state.tendAffliction is not RWDisease)
             {
                 state.tendAffliction = null;
-
-                stopTend();
-            }
-            else if (state.tendTime <= 0)
-            {
-                state.tendAffliction.isTended = true;
-                state.tendAffliction.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * UnityEngine.Random.Range(0.75f, 1.25f), 0, 0.7f);
-
-                if (state.tendAffliction is RWInjury injury)
-                {
-                    injury.isBleeding = false;
-
-                    if (injury is RWDestroyed destroyed)
-                    {
-                        destroyed.isFresh = false;
-                    }
-                }
-                else if (state.tendAffliction is RWDisease disease)
-                {
-                    disease.timeUntilTreatment = cycleLength * disease.treatmentTimes;
-                    disease.totalTendQuality += disease.tendQuality;
-                }
-
-                state.tendAffliction = null;
-
-                otherState.updateCapacities = true;
 
                 stopTend();
             }
@@ -4684,8 +4572,8 @@ internal class ILHooks
 
         if (otherState.onFire)
         {
-            state.tendAffliction = burningAffliction;
             state.tendTime = 10;
+            state.tendAffliction = burningAffliction;
             state.tendTimeMax = state.tendTime;
             return self.cat.abstractCreature.pos;
         }

@@ -1762,7 +1762,7 @@ public class RWHealthState
                         if (health <= 0f)
                         {
                             if (ShadowOfOptions.debug_logs.Value)
-                                Debug.Log(all + self + "'s extra bodypart " + focusedBodyPart + " was destroyed");
+                                Debug.Log(all + self.creature + "'s extra bodypart " + focusedBodyPart + " was destroyed");
 
                             DestroyBodyPart();
                             extraDamage = health * -1;
@@ -1771,7 +1771,7 @@ public class RWHealthState
                         else
                         {
                             if (ShadowOfOptions.debug_logs.Value)
-                                Debug.Log(all + self + "'s extra bodypart " + focusedBodyPart + " was damaged for " + tempDamage);
+                                Debug.Log(all + self.creature + "'s extra bodypart " + focusedBodyPart + " was damaged for " + tempDamage);
 
                             extraDamage = 0f;
 
@@ -2176,74 +2176,31 @@ public class RWHealthState
     }
     public static float MedicalSurgerySuccessChance(RWState state)
     {
-        float value = 1;
-
-        switch (state.medicalSkill)
+        float value = state.medicalSkill switch
         {
-            case 0:
-                value = 0.1f;
-                break;
-            case 1:
-                value = 0.2f;
-                break;
-            case 2:
-                value = 0.3f;
-                break;
-            case 3:
-                value = 0.4f;
-                break;
-            case 4:
-                value = 0.5f;
-                break;
-            case 5:
-                value = 0.6f;
-                break;
-            case 6:
-                value = 0.7f;
-                break;
-            case 7:
-                value = 0.75f;
-                break;
-            case 8:
-                value = 0.8f;
-                break;
-            case 9:
-                value = 0.85f;
-                break;
-            case 10:
-                value = 0.9f;
-                break;
-            case 11:
-                value = 0.92f;
-                break;
-            case 12:
-                value = 0.94f;
-                break;
-            case 13:
-                value = 0.96f;
-                break;
-            case 14:
-                value = 0.98f;
-                break;
-            case 15:
-                value = 1f;
-                break;
-            case 16:
-                value = 1.02f;
-                break;
-            case 17:
-                value = 1.04f;
-                break;
-            case 18:
-                value = 1.06f;
-                break;
-            case 19:
-                value = 1.08f;
-                break;
-            case 20:
-                value = 1.1f;
-                break;
-        }
+            0 => 0.1f,
+            1 => 0.2f,
+            2 => 0.3f,
+            3 => 0.4f,
+            4 => 0.5f,
+            5 => 0.6f,
+            6 => 0.7f,
+            7 => 0.75f,
+            8 => 0.8f,
+            9 => 0.85f,
+            10 => 0.9f,
+            11 => 0.92f,
+            12 => 0.94f,
+            13 => 0.96f,
+            14 => 0.98f,
+            15 => 1f,
+            16 => 1.02f,
+            17 => 1.04f,
+            18 => 1.06f,
+            19 => 1.08f,
+            20 => 1.1f,
+            _ => 0
+        };
 
         value *= (1 + (state.manipulation - 1f)) * Mathf.Min(1, 1 + (state.sight - 1f) * 0.4f);
 
@@ -2251,74 +2208,31 @@ public class RWHealthState
     }
     public static float MedicalTendQuality(RWState state)
     {
-        float value = 1;
-
-        switch (state.medicalSkill)
+        float value = state.medicalSkill switch
         {
-            case 0:
-                value = 0.2f;
-                break;
-            case 1:
-                value = 0.3f;
-                break;
-            case 2:
-                value = 0.4f;
-                break;
-            case 3:
-                value = 0.5f;
-                break;
-            case 4:
-                value = 0.6f;
-                break;
-            case 5:
-                value = 0.7f;
-                break;
-            case 6:
-                value = 0.8f;
-                break;
-            case 7:
-                value = 0.9f;
-                break;
-            case 8:
-                value = 1f;
-                break;
-            case 9:
-                value = 1.05f;
-                break;
-            case 10:
-                value = 1.1f;
-                break;
-            case 11:
-                value = 1.15f;
-                break;
-            case 12:
-                value = 1.2f;
-                break;
-            case 13:
-                value = 1.25f;
-                break;
-            case 14:
-                value = 1.3f;
-                break;
-            case 15:
-                value = 1.35f;
-                break;
-            case 16:
-                value = 1.4f;
-                break;
-            case 17:
-                value = 1.45f;
-                break;
-            case 18:
-                value = 1.5f;
-                break;
-            case 19:
-                value = 1.525f;
-                break;
-            case 20:
-                value = 1.55f;
-                break;
-        }
+            0 => 0.2f,
+            1 => 0.3f,
+            2 => 0.4f,
+            3 => 0.5f,
+            4 => 0.6f,
+            5 => 0.7f,
+            6 => 0.8f,
+            7 => 0.9f,
+            8 => 1f,
+            9 => 1.05f,
+            10 => 1.1f,
+            11 => 1.15f,
+            12 => 1.2f,
+            13 => 1.25f,
+            14 => 1.3f,
+            15 => 1.35f,
+            16 => 1.4f,
+            17 => 1.45f,
+            18 => 1.5f,
+            19 => 1.525f,
+            20 => 1.55f,
+            _ => 0
+        };
 
         value *= Mathf.Min(1.4f, 1 + (state.manipulation - 1f)) * Mathf.Min(1.4f, 1 + (state.sight - 1f) * 0.7f);
 
@@ -2329,6 +2243,15 @@ public class RWHealthState
         float value = Mathf.Max(0.1f, (0.4f + (0.06f * state.medicalSkill)) * state.manipulation * Mathf.Min(1.3f, 1 + (state.sight - 1f) * 0.8f));
 
         return value;
+    }
+
+    public static void TendAffliction(RWState state, CreatureState tender, CreatureState tendee)
+    {
+        state.tendAffliction.tendQuality = Mathf.Clamp(MedicalTendQuality(state) * 0.3f * (tender == tendee ? 0.7f : 1) * Random.Range(0.75f, 1.25f), 0, 0.7f);
+    }
+    public static void TendAffliction(RWState state, RWAffliction affliction)
+    {
+        affliction.tendQuality = Mathf.Clamp(MedicalTendQuality(state) * 0.3f * 0.7f, 0, 0.7f);
     }
     #endregion
     #endregion

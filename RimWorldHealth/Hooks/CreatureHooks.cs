@@ -152,6 +152,81 @@ internal class CreatureHooks
 
         RWHealthState.Update(self.State, state);
 
+        if (state.tendAffliction != null)
+        {
+            RWState inspectedState = null;
+
+            if (state.tendAffliction != burningAffliction && (state.tendAffliction.state == null || !healthState.TryGetValue(state.tendAffliction.state, out inspectedState)))
+            {
+                state.tendAffliction = null;
+                goto skipTend;
+            }
+
+            if (inspectedState == null)
+            {
+                inspectedState = state;
+            }
+
+            state.tendTime--;
+
+            if (state.tendAffliction == burningAffliction)
+            {
+                if (!inspectedState.onFire)
+                {
+                    state.tendAffliction = null;
+                }
+                else if (state.tendTime <= 0)
+                {
+                    inspectedState.fireSize -= 0.1f;
+
+                    if (inspectedState.fireSize <= 0)
+                    {
+                        inspectedState.onFire = false;
+
+                        state.tendAffliction = null;
+                    }
+                    else
+                    {
+                        state.tendTime = 10;
+                        state.tendTimeMax = state.tendTime;
+                    }
+                }
+                goto skipTend;
+            }
+
+            if (state.tendAffliction.isTended && (state.tendAffliction is not RWDisease tendedDisease || tendedDisease.timeUntilTreatment > 0))
+            {
+                state.tendAffliction = null;
+            }
+            else if (state.tendTime <= 0)
+            {
+                state.tendAffliction.isTended = true;
+
+                RWHealthState.TendAffliction(state, self.State, state.tendAffliction.state);
+
+                if (state.tendAffliction is RWInjury injury)
+                {
+                    injury.isBleeding = false;
+
+                    if (injury is RWDestroyed destroyed)
+                    {
+                        destroyed.isFresh = false;
+                    }
+                }
+                else if (state.tendAffliction is RWDisease disease)
+                {
+                    disease.timeUntilTreatment = cycleLength * disease.treatmentTimes;
+                    disease.totalTendQuality += disease.tendQuality;
+                }
+
+                state.tendAffliction = null;
+
+                inspectedState.updateCapacities = true;
+            }
+        }
+
+    skipTend:
+
         if (self.Submersion > 0.5f)
         {
             state.onFire = false;

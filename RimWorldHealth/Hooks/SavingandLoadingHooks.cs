@@ -564,7 +564,7 @@ internal class SavingandLoadingHooks
             if (!injury.isTended)
             {
                 injury.isTended = true;
-                injury.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f, 0, 0.7f);
+                RWHealthState.TendAffliction(state, injury);
             }
         }
 
@@ -669,7 +669,9 @@ internal class SavingandLoadingHooks
         if (ticksPassed != -1 && (disease.timeUntilTreatment <= 0 || !disease.isTended))
         {
             disease.isTended = true;
-            disease.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f, 0, 0.7f);
+
+            RWHealthState.TendAffliction(state, disease);
+
             disease.timeUntilTreatment = cycleLength * disease.treatmentTimes;
         }
 
@@ -733,7 +735,7 @@ internal class SavingandLoadingHooks
         else
         {
             disease.isTended = true;
-            disease.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f, 0, 0.7f);
+            RWHealthState.TendAffliction(state, disease);
         }
 
         //Debug.Log("Disease tendQuality " + disease.tendQuality);

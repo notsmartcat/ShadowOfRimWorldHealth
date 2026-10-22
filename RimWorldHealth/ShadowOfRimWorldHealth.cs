@@ -18,9 +18,9 @@ public class RimWorldHealth : BaseUnityPlugin
         public int lastCycle = -1; //This refers to the last cycle the creature was saved so whenever it is loaded the afflictions are properily calculated
         #endregion
 
-        public float maxHealth = 0;
+        public float maxHealth = 0; //Everytime a Bodypart is created it's max health is added to this. Currently unused. forgot waht the purpase was but I will see if it is necessary later.
         public float bodySizeFactor = 1;
-        public float healthScale = 1; //Reffer to https://rimworldwiki.com/wiki/Property:Health_Scale when possible (lizards will have this be 1.2 due to the Alligator)
+        public float healthScale = 1; //Reffer to https://rimworldwiki.com/wiki/Property:Health_Scale when possible (lizards would have this be 1.2 due to the Alligator, however I will need to scale it as currently the slugcat is scaled as if it was a human, and the 1.2 is based on the human being 1. It will also need to be scaled based on the actual lizard scale)
 
         public List<RWBodyPart> bodyParts = new();
 
@@ -101,6 +101,8 @@ public class RimWorldHealth : BaseUnityPlugin
         public Creature tendTarget = null;
 
         public RWAffliction tendAffliction = null;
+
+        public List<RWOperation> operationsList = new();
         #endregion
 
         #region Slugcat Specific Variables
@@ -467,13 +469,14 @@ public class RimWorldHealth : BaseUnityPlugin
 
         if (Input.GetKey(keyCode) && healthTabs.Count >= playerNumber + 1 && healthTabs[playerNumber] != null)
         {
-            if (buttonHeld[playerNumber])
+            if (buttonHeld[playerNumber] || !self.dead && self.Stunned)
             {
                 return;
             }
 
             buttonHeld[playerNumber] = true;
 
+            AbstractCreature creature = null;
             CreatureState healthTabCreatureState = self.State;
             RWState healthTabState = state;
 
@@ -481,12 +484,13 @@ public class RimWorldHealth : BaseUnityPlugin
             {
                 if (grasp != null && grasp.grabbedChunk != null && grasp.grabbedChunk.owner != null && grasp.grabbedChunk.owner is Creature crit && crit.State != null && healthState.TryGetValue(crit.State, out healthTabState))
                 {
+                    creature = crit.abstractCreature;
                     healthTabCreatureState = crit.State;
                     break;
                 }
             }
 
-            healthTabs[playerNumber].ToggleVisibility(healthTabCreatureState, healthTabState);
+            healthTabs[playerNumber].ToggleVisibility(creature, healthTabCreatureState, healthTabState);
         }
         else
         {
@@ -2074,7 +2078,8 @@ public class RimWorldHealth : BaseUnityPlugin
                 void tend(RWAffliction tendAffliction)
                 {
                     tendAffliction.isTended = true;
-                    tendAffliction.tendQuality = Mathf.Clamp(RWHealthState.MedicalTendQuality(state) * 0.3f * 0.7f *UnityEngine.Random.Range(0.75f, 1.25f), 0, 0.7f);
+
+                    RWHealthState.TendAffliction(state, self, state.tendAffliction.state);
 
                     if (tendAffliction is RWInjury injury)
                     {
