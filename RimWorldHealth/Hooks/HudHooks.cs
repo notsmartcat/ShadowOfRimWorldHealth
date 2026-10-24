@@ -45,6 +45,20 @@ internal class HudHooks
             return;
         }
 
+        if (ModManager.CoopAvailable && cam.room.game.session.Players.Count > 1)
+        {
+            singleplayerHud = false;
+
+            for (int k = 0; k < cam.room.game.session.Players.Count; k++)
+            {
+                healthTabs[k] = new HealthTab(self, cam.room.game.session.Players[k]);
+
+                self.AddPart(healthTabs[k]);
+            }
+
+            return;
+        }
+
         singleplayerHud = true;
 
         healthTabs[0] = new HealthTab(self, (self.owner as Creature).abstractCreature);
@@ -54,6 +68,11 @@ internal class HudHooks
 
     static void NewPlayerSpecificMultiplayerHud(On.HUD.PlayerSpecificMultiplayerHud.orig_ctor orig, HUD.PlayerSpecificMultiplayerHud self, HUD.HUD hud, ArenaGameSession session, AbstractCreature abstractPlayer)
     {
+        if (session.Players.Count > 1)
+        {
+            singleplayerHud = false;
+        }
+
         orig(self, hud, session, abstractPlayer);
 
         if (!healthState.TryGetValue(abstractPlayer.state, out _))
@@ -61,14 +80,9 @@ internal class HudHooks
             return;
         }
 
-        int playerNumber = ((PlayerState)abstractPlayer.state).playerNumber;
-
-        if (playerNumber != 0)
-        {
-            singleplayerHud = false;
-        }
-
         HealthTab healthTab = new(hud, abstractPlayer);
+
+        int playerNumber = ((PlayerState)abstractPlayer.state).playerNumber;
 
         healthTabs[playerNumber] = healthTab;
 

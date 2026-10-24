@@ -476,7 +476,6 @@ public class RimWorldHealth : BaseUnityPlugin
 
             buttonHeld[playerNumber] = true;
 
-            AbstractCreature creature = null;
             CreatureState healthTabCreatureState = self.State;
             RWState healthTabState = state;
 
@@ -484,13 +483,12 @@ public class RimWorldHealth : BaseUnityPlugin
             {
                 if (grasp != null && grasp.grabbedChunk != null && grasp.grabbedChunk.owner != null && grasp.grabbedChunk.owner is Creature crit && crit.State != null && healthState.TryGetValue(crit.State, out healthTabState))
                 {
-                    creature = crit.abstractCreature;
                     healthTabCreatureState = crit.State;
                     break;
                 }
             }
 
-            healthTabs[playerNumber].ToggleVisibility(creature, healthTabCreatureState, healthTabState);
+            healthTabs[playerNumber].ToggleVisibility(healthTabCreatureState, healthTabState);
         }
         else
         {

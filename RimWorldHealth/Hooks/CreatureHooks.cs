@@ -162,10 +162,7 @@ internal class CreatureHooks
                 goto skipTend;
             }
 
-            if (inspectedState == null)
-            {
-                inspectedState = state;
-            }
+            inspectedState ??= state;
 
             state.tendTime--;
 

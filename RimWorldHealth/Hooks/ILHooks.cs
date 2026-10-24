@@ -4573,8 +4573,9 @@ internal class ILHooks
         if (otherState.onFire)
         {
             state.tendTime = 10;
-            state.tendAffliction = burningAffliction;
             state.tendTimeMax = state.tendTime;
+            state.tendAffliction = burningAffliction;
+
             return self.cat.abstractCreature.pos;
         }
 
@@ -4680,9 +4681,9 @@ internal class ILHooks
 
         void startTending(RWAffliction affliction)
         {
-            state.tendAffliction = affliction;
             state.tendTime = Mathf.Round(state.tendTimeBase / RWHealthState.MedicalTendSpeed(state));
             state.tendTimeMax = state.tendTime;
+            state.tendAffliction = affliction;
         }
 
         bool NPCGrabCheck(PhysicalObject item)

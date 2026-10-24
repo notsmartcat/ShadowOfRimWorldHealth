@@ -20,14 +20,29 @@ public class HealthTab : HudPart
         }
 
         sprites = new FSprite[2];
-        for (int i = 0; i < sprites.Length; i++)
+        sprites[0] = new FSprite("pixel", true)
         {
-            sprites[i] = new FSprite("pixel", true);
-            hud.fContainers[1].AddChild(sprites[i]);
-        }
+            x = DrawPos().x,
+            y = DrawPos().y,
+            scaleX = 350,
+            scaleY = 250,
+            color = Color.gray
+        };
+        hud.fContainers[1].AddChild(sprites[0]);
+        sprites[1] = new FSprite("pixel", true)
+        {
+            x = DrawPos().x - 250,
+            y = DrawPos().y,
+            scaleX = 150,
+            scaleY = 250,
+            color = Color.black
+        };
+        hud.fContainers[1].AddChild(sprites[1]);
 
         capacityName = new(Custom.GetFont(), "Name")
         {
+            x = DrawPos().x - 250,
+            y = DrawPos().y - 107,
             alignment = FLabelAlignment.Center,
             anchorX = 0.5f,
             anchorY = 1f
@@ -36,6 +51,8 @@ public class HealthTab : HudPart
 
         bloodLossPerCycle = new(Custom.GetFont(), "Blood loss")
         {
+            x = DrawPos().x - 165,
+            y = DrawPos().y - 105,
             alignment = FLabelAlignment.Left,
             anchorX = 0f,
             anchorY = 1f
@@ -45,12 +62,14 @@ public class HealthTab : HudPart
         for (int i = 0; i < 12; i++)
         {
             capacityValueNames.Add(new FLabel(Custom.GetFont(), "Capacity name"));
+            capacityValueNames[i].x = DrawPos().x - 320;
             capacityValueNames[i].alignment = FLabelAlignment.Left;
             capacityValueNames[i].anchorX = 0f;
             capacityValueNames[i].anchorY = 1f;
             hud.fContainers[1].AddChild(capacityValueNames[i]);
 
             capacityValues.Add(new FLabel(Custom.GetFont(), "Stat value"));
+            capacityValues[i].x = DrawPos().x - 180;
             capacityValues[i].alignment = FLabelAlignment.Left;
             capacityValues[i].anchorX = 1f;
             capacityValues[i].anchorY = 1f;
@@ -59,11 +78,11 @@ public class HealthTab : HudPart
 
         selectedSprite = new FSprite("pixel", true);
         hud.fContainers[1].AddChild(selectedSprite);
-        treatedSprite = new FSprite("pixel", true);
-        hud.fContainers[1].AddChild(treatedSprite);
 
         afflictionsAboveLabel = new(Custom.GetFont(), "Aflictions above: 0")
         {
+            x = DrawPos().x + 170,
+            y = DrawPos().y + 125,
             alignment = FLabelAlignment.Right,
             anchorX = 1f,
             anchorY = 1f
@@ -72,6 +91,8 @@ public class HealthTab : HudPart
 
         afflictionsBelowLabel = new(Custom.GetFont(), "Aflictions below: 0")
         {
+            x = DrawPos().x + 170,
+            y = DrawPos().y - 105,
             alignment = FLabelAlignment.Right,
             anchorX = 1f,
             anchorY = 1f
@@ -80,6 +101,8 @@ public class HealthTab : HudPart
 
         overviewLabel = new(Custom.GetFont(), "Overview")
         {
+            x = DrawPos().x - 287.5f,
+            y = DrawPos().y + 120,
             alignment = FLabelAlignment.Center,
             anchorX = 0.5f,
             anchorY = 1f
@@ -88,6 +111,8 @@ public class HealthTab : HudPart
 
         operationsLabel = new(Custom.GetFont(), "Operations")
         {
+            x = DrawPos().x - 212.5f,
+            y = DrawPos().y + 120,
             alignment = FLabelAlignment.Center,
             anchorX = 0.5f,
             anchorY = 1f
@@ -96,12 +121,18 @@ public class HealthTab : HudPart
 
         addBillSprite = new FSprite("pixel", true)
         {
+            x = DrawPos().x - 260,
+            y = DrawPos().y + 82,
+            scaleX = 120,
+            scaleY = 20,
             color = Color.green
         };
         hud.fContainers[1].AddChild(addBillSprite);
 
         addBillLabel = new(Custom.GetFont(), "Add bill")
         {
+            x = DrawPos().x - 260,
+            y = DrawPos().y + 90,
             alignment = FLabelAlignment.Center,
             anchorX = 0.5f,
             anchorY = 1f
@@ -113,6 +144,10 @@ public class HealthTab : HudPart
         {
             operationBackgrounds[i] = new FSprite("pixel", true)
             {
+                x = DrawPos().x - 255,
+                y = DrawPos().y + 45 - (45 * i),
+                scaleX = 132,
+                scaleY = 40,
                 color = Color.grey
             };
             hud.fContainers[1].AddChild(operationBackgrounds[i]);
@@ -121,6 +156,8 @@ public class HealthTab : HudPart
         for (int i = 0; i < 4; i++)
         {
             operationNames.Add(new FLabel(Custom.GetFont(), "Operation " + i));
+            operationNames[i].x = DrawPos().x - 305;
+            operationNames[i].y = DrawPos().y + 65 - (45 * i);
             operationNames[i].alignment = FLabelAlignment.Left;
             operationNames[i].anchorX = 0f;
             operationNames[i].anchorY = 1f;
@@ -130,8 +167,21 @@ public class HealthTab : HudPart
         operationReorders = new FSprite[6];
         for (int i = 0; i < operationReorders.Length; i++)
         {
+            float yOffset = i switch
+            {
+                1 => 25,
+                2 => 45,
+                3 => 70,
+                4 => 90,
+                5 => 115,
+                _ => 0,
+            };
+
             operationReorders[i] = new FSprite("pixel", true)
             {
+                x = DrawPos().x - 313,
+                y = DrawPos().y + 35 - yOffset,
+                scale = 14,
                 color = Color.yellow
             };
             hud.fContainers[1].AddChild(operationReorders[i]);
@@ -142,6 +192,9 @@ public class HealthTab : HudPart
         {
             operationSuspends[i] = new FSprite("pixel", true)
             {
+                x = DrawPos().x - 197,
+                y = DrawPos().y + 35 - (45 * i),
+                scale = 14,
                 color = Color.red
             };
             hud.fContainers[1].AddChild(operationSuspends[i]);
@@ -152,6 +205,11 @@ public class HealthTab : HudPart
         {
             operationDeletes[i] = new FSprite("pixel", true)
             {
+
+                x = DrawPos().x - 197,
+                y = DrawPos().y + 55 - (45 * i),
+
+                scale = 14,
                 color = Color.black
             };
             hud.fContainers[1].AddChild(operationDeletes[i]);
@@ -160,12 +218,20 @@ public class HealthTab : HudPart
         for (int i = 0; i < 4; i++)
         {
             operationSuspendLabels.Add(new FLabel(Custom.GetFont(), "SUSPENDED"));
+            operationSuspendLabels[i].x = DrawPos().x - 255;
+            operationSuspendLabels[i].y = DrawPos().y + 53 - (45 * i);
             operationSuspendLabels[i].alignment = FLabelAlignment.Center;
             operationSuspendLabels[i].anchorX = 0.5f;
             operationSuspendLabels[i].anchorY = 1f;
             operationSuspendLabels[i].scale = 1.2f;
             hud.fContainers[1].AddChild(operationSuspendLabels[i]);
         }
+
+        treatedSprite = new FSprite("pixel", true)
+        {
+            color = Color.yellow
+        };
+        hud.fContainers[1].AddChild(treatedSprite);
 
         healthTabWholeBody = new HealthTabWholeBody(this);
     }
@@ -201,21 +267,24 @@ public class HealthTab : HudPart
             visible = false;
         }
 
-        if (visible && inspectedCreature != null && player != inspectedCreature && inspectedCreature.realizedCreature != null)
+        if (visible && inspectedCreatureState.creature != null && player != inspectedCreatureState.creature)
         {
             bool stillHoolding = false;
 
-            foreach (Creature.Grasp grasp in player.realizedCreature.grasps)
+            if (inspectedCreatureState.creature.realizedCreature != null)
             {
-                if (grasp != null && grasp.grabbedChunk != null && grasp.grabbedChunk.owner == inspectedCreature.realizedCreature)
+                foreach (Creature.Grasp grasp in player.realizedCreature.grasps)
                 {
-                    stillHoolding = true;
+                    if (grasp != null && grasp.grabbedChunk != null && grasp.grabbedChunk.owner == inspectedCreatureState.creature.realizedCreature)
+                    {
+                        stillHoolding = true;
+                    }
                 }
             }
 
             if (!stillHoolding)
             {
-                ToggleVisibility(null, null, null);
+                ToggleVisibility();
             }
         }
 
@@ -261,9 +330,10 @@ public class HealthTab : HudPart
             transparent = false;
         }
 
+        #region Clearing add-ons
         for (int i = healthTabBodyParts.Count - 1; i >= 0; i--)
         {
-            if (healthTabBodyParts[i].slatedForDeletion || inspectedState == null || !visible)
+            if (!visible || healthTabBodyParts[i].slatedForDeletion || inspectedState == null)
             {
                 healthTabBodyParts[i].ClearSprites();
                 healthTabBodyParts.RemoveAt(i);
@@ -271,7 +341,7 @@ public class HealthTab : HudPart
         }
         for (int i = healthTabInfos.Count - 1; i >= 0; i--)
         {
-            if (healthTabInfos[i].slatedForDeletion || inspectedState == null || !visible)
+            if (!visible || healthTabInfos[i].slatedForDeletion || inspectedState == null)
             {
                 healthTabInfos[i].ClearSprites();
                 healthTabInfos.RemoveAt(i);
@@ -279,18 +349,20 @@ public class HealthTab : HudPart
         }
         for (int i = operationList.Count - 1; i >= 0; i--)
         {
-            if (operationList[i].slatedForDeletion || !isOperationListActive || !visible)
+            if (!visible || operationList[i].slatedForDeletion || !isOperationListActive)
             {
                 operationList[i].ClearSprites();
                 operationList.RemoveAt(i);
             }
         }
+        #endregion
 
+        #region Updates
         healthTabWholeBody.Update();
 
-        foreach (HealthTabBodyPart part in healthTabBodyParts)
+        foreach (HealthTabBodyPart healthTabBodyPart in healthTabBodyParts)
         {
-            part.Update();
+            healthTabBodyPart.Update();
         }
 
         foreach (HealthTabInfo healthTabInfo in healthTabInfos)
@@ -298,10 +370,11 @@ public class HealthTab : HudPart
             healthTabInfo.Update();
         }
 
-        foreach (OperationSelection operation in operationList)
+        foreach (OperationSelection operationSelection in operationList)
         {
-            operation.Update();
+            operationSelection.Update();
         }
+        #endregion
 
         if (player == null || inspectedState == null || !visible)
         {
@@ -735,14 +808,7 @@ public class HealthTab : HudPart
 
             if (selectedVertical >= maxVertical)
             {
-                if (selectedHorizontal != 2 && !positiveInput)
-                {
-                    selectedVertical = 1;
-                }
-                else
-                {
-                    selectedVertical = 0;
-                }
+                selectedVertical = selectedHorizontal != 2 && !positiveInput ? 1 : 0;
 
                 if (selectedHorizontal == 0.9f || selectedHorizontal == 1.1f)
                 {
@@ -796,7 +862,7 @@ public class HealthTab : HudPart
             }
             else
             {
-                ToggleVisibility(null, null, null);
+                ToggleVisibility();
                 return;
             }
         }
@@ -807,7 +873,7 @@ public class HealthTab : HudPart
 
     skipCancel:
 
-        if (input.jmp)
+        if (input.jmp || input.pckp)
         {
             if (interactOnce)
             { 
@@ -849,106 +915,99 @@ public class HealthTab : HudPart
             {
                 if (selectedVertical == 0)
                 {
-                    if (selectedHorizontal == 0)
-                    {
-                        overviewTab = 0;
-                        return;
-                    }
-                    else
-                    {
-                        overviewTab = 1;
-                        return;
-                    }
+                    overviewTab = selectedHorizontal == 0 ? 0 : 1;
                 }
                 else if (selectedVertical == 1)
                 {
-                    Debug.Log("Shown Operation List");
-
                     isOperationListActive = true;
 
                     SpawnOperationList();
                 }
                 else if (selectedHorizontal == 1.1f)
                 {
-                    if (selectedVertical == 2)
+                    switch (selectedVertical)
                     {
-                        inspectedState.operationsList.RemoveAt(0);
+                        case 2:
+                            inspectedState.operationsList.RemoveAt(0);
 
-                        if (inspectedState.operationsList.Count == 0)
-                        {
-                            selectedHorizontal = 1;
-                            selectedVertical = 1;
-                        }
-                    }
-                    else if (selectedVertical == 3)
-                    {
-                        inspectedState.operationsList[0].isSuspended = !inspectedState.operationsList[0].isSuspended;
-                    }
-                    else if(selectedVertical == 4)
-                    {
-                        inspectedState.operationsList.RemoveAt(1);
-                        selectedVertical = 3;
-                    }
-                    else if (selectedVertical == 5)
-                    {
-                        inspectedState.operationsList[1].isSuspended = !inspectedState.operationsList[1].isSuspended;
-                    }
-                    else if (selectedVertical == 6)
-                    {
-                        inspectedState.operationsList.RemoveAt(2);
-                        selectedVertical = 5;
-                    }
-                    else if (selectedVertical == 7)
-                    {
-                        inspectedState.operationsList[2].isSuspended = !inspectedState.operationsList[2].isSuspended;
-                    }
-                    else if (selectedVertical == 8)
-                    {
-                        inspectedState.operationsList.RemoveAt(3);
-                        selectedVertical = 7;
-                    }
-                    else if (selectedVertical == 9)
-                    {
-                        inspectedState.operationsList[3].isSuspended = !inspectedState.operationsList[3].isSuspended;
+                            if (inspectedState.operationsList.Count == 0)
+                            {
+                                selectedHorizontal = 1;
+                                selectedVertical = 1;
+                            }
+                            break;
+                        case 3:
+                            inspectedState.operationsList[0].isSuspended = !inspectedState.operationsList[0].isSuspended;
+                            break;
+                        case 4:
+                            inspectedState.operationsList.RemoveAt(1);
+                            selectedVertical = 3;
+                            break;
+                        case 5:
+                            inspectedState.operationsList[1].isSuspended = !inspectedState.operationsList[1].isSuspended;
+                            break;
+                        case 6:
+                            inspectedState.operationsList.RemoveAt(2);
+                            selectedVertical = 5;
+                            break;
+                        case 7:
+                            inspectedState.operationsList[2].isSuspended = !inspectedState.operationsList[2].isSuspended;
+                            break;
+                        case 8:
+                            inspectedState.operationsList.RemoveAt(3);
+                            selectedVertical = 7;
+                            break;
+                        case 9:
+                            inspectedState.operationsList[3].isSuspended = !inspectedState.operationsList[3].isSuspended;
+                            break;
                     }
                 }
                 else if (selectedHorizontal == 0.9f)
                 {
-                    if (selectedVertical == 2 || selectedVertical == 3)
+                    List<RWOperation> list;
+                    List<int> order;
+
+                    switch (selectedVertical)
                     {
-                        List<RWOperation> list = inspectedState.operationsList;
+                        case <= 3:
+                            list = inspectedState.operationsList;
 
-                        List<int> order = new() { 1, 0 };
-                        if (inspectedState.operationsList.Count == 3)
-                        {
-                            order = new List<int> { 1, 0, 2 };
-                        }
-                        else if (inspectedState.operationsList.Count == 4)
-                        {
-                            order = new List<int> { 1, 0, 2, 3 };
-                        }
+                            if (inspectedState.operationsList.Count == 2)
+                            {
+                                order = new List<int> { 1, 0 };
+                            }
+                            if (inspectedState.operationsList.Count == 3)
+                            {
+                                order = new List<int> { 1, 0, 2 };
+                            }
+                            else
+                            {
+                                order = new List<int> { 1, 0, 2, 3 };
+                            }
 
-                        inspectedState.operationsList = order.Select(i => list[i]).ToList();
-                    }
-                    else if (selectedVertical == 4 || selectedVertical == 5)
-                    {
-                        List<RWOperation> list = inspectedState.operationsList;
+                            inspectedState.operationsList = order.Select(i => list[i]).ToList();
+                            break;
+                        case <= 5:
+                            list = inspectedState.operationsList;
 
-                        List<int> order = new() { 0, 2, 1 };
-                        if (inspectedState.operationsList.Count == 4)
-                        {
-                            order = new List<int> { 0, 2, 1, 3 };
-                        }
+                            if (inspectedState.operationsList.Count == 3)
+                            {
+                                order = new() { 0, 2, 1 };
+                            }
+                            else
+                            {
+                                order = new List<int> { 0, 2, 1, 3 };
+                            }
 
-                        inspectedState.operationsList = order.Select(i => list[i]).ToList();
-                    }
-                    else if (selectedVertical == 6 || selectedVertical == 7)
-                    {
-                        List<RWOperation> list = inspectedState.operationsList;
+                            inspectedState.operationsList = order.Select(i => list[i]).ToList();
+                            break;
+                        case <= 7:
+                            list = inspectedState.operationsList;
 
-                        List<int> order = new() { 0, 1, 3, 2 };
+                            order = new() { 0, 1, 3, 2 };
 
-                        inspectedState.operationsList = order.Select(i => list[i]).ToList();
+                            inspectedState.operationsList = order.Select(i => list[i]).ToList();
+                            break;
                     }
                 }
 
@@ -962,12 +1021,13 @@ public class HealthTab : HudPart
                 return;
             }
 
-            //Tending Code
+            #region Tending
             if (inspectedState.onFire)
             {
                 playerState.tendTime = 10;
-                playerState.tendAffliction = burningAffliction;   
                 playerState.tendTimeMax = playerState.tendTime;
+                playerState.tendAffliction = burningAffliction;   
+
                 return;
             }
 
@@ -1070,6 +1130,7 @@ public class HealthTab : HudPart
             {
                 startTending(untendedAffliction);
             }
+            #endregion
         }
         else
         {
@@ -1079,8 +1140,8 @@ public class HealthTab : HudPart
         void startTending(RWAffliction affliction)
         {
             playerState.tendTime = Mathf.Round(playerState.tendTimeBase / RWHealthState.MedicalTendSpeed(playerState));
-            playerState.tendAffliction = affliction;    
             playerState.tendTimeMax = playerState.tendTime;
+            playerState.tendAffliction = affliction;
         }
 
         void SpawnOperationList()
@@ -1131,9 +1192,6 @@ public class HealthTab : HudPart
 
                 operationList.Add(operationSelection);
             }
-
-            //Debug.Log("horizontal = " + operationListMaxHorizontal);
-            //Debug.Log("max vertical = " + operationListMaxVertical);
         }
 
         int getMaxVertical()
@@ -1150,7 +1208,7 @@ public class HealthTab : HudPart
             int numberOfOperations = inspectedState.operationsList.Count;
             int additional = 0;
 
-            if (selectedHorizontal == 0.9f) //left side, reorder buttons, 
+            if (selectedHorizontal == 0.9f)
             {
                 additional = numberOfOperations switch
                 {
@@ -1163,41 +1221,14 @@ public class HealthTab : HudPart
 
                 return 2 + additional;
             }
-            else if (selectedHorizontal == 1) //middle normal
+            else if (selectedHorizontal == 1)
             {
                 return 2 + numberOfOperations;
             }
-            else //right side, delete and suspend buttons
+            else
             {
                 return 2 + (numberOfOperations * 2);
             }    
-        }
-    }
-
-    public void ToggleVisibility(AbstractCreature creature, CreatureState self, RWState state)
-    {
-        visible = !visible && player != null;
-
-        if (visible)
-        {
-            inspectedCreature = creature;
-
-            inspectedState = state ?? playerState;
-            inspectedCreatureState = self ?? player.state;
-
-            TriggeredOn();
-        }
-        else
-        {
-            if (playerState != null)
-                playerState.tendAffliction = null;
-
-            inspectedCreature = null;
-
-            inspectedState = null;
-            inspectedCreatureState = null;
-
-            TriggeredOff();
         }
     }
 
@@ -1209,6 +1240,7 @@ public class HealthTab : HudPart
         foreach (FSprite sprite in sprites)
         {
             sprite.isVisible = visible;
+            sprite.alpha = SetTransparency();
         }
 
         for (int i = 0; i < capacityValueNames.Count; i++)
@@ -1218,34 +1250,24 @@ public class HealthTab : HudPart
         }
 
         capacityName.isVisible = visible && overviewTab == 0;
-        capacityName.alpha = SetTransparency();
 
         bloodLossPerCycle.isVisible = visible && inspectedState != null && inspectedState.bloodLossPerCycle >= 1 && inspectedState.bloodLoss < 1 && inspectedCreatureState != null && !inspectedCreatureState.dead;
-        bloodLossPerCycle.alpha = SetTransparency();
 
         selectedSprite.isVisible = visible && selected;
-        selectedSprite.alpha = SetTransparency();
 
         treatedSprite.isVisible = visible && playerState != null && playerState.tendAffliction != null && playerState.tendAffliction != burningAffliction;
-        treatedSprite.alpha = SetTransparency();
 
         afflictionsAboveLabel.isVisible = visible && afflictionsAbove > 0;
-        afflictionsAboveLabel.alpha = SetTransparency();
 
         afflictionsBelowLabel.isVisible = visible && afflictionsBelow > 0;
-        afflictionsBelowLabel.alpha = SetTransparency();
 
         overviewLabel.isVisible = visible;
-        overviewLabel.alpha = SetTransparency();
 
         operationsLabel.isVisible = visible;
-        operationsLabel.alpha = SetTransparency();
 
         addBillLabel.isVisible = visible && overviewTab == 1;
-        addBillLabel.alpha = SetTransparency();
 
         addBillSprite.isVisible = visible && overviewTab == 1;
-        addBillSprite.alpha = SetTransparency();
 
         foreach (FSprite sprite in operationBackgrounds)
         {
@@ -1305,77 +1327,34 @@ public class HealthTab : HudPart
             return;
         }
 
-        if (!isOperationListActive)
-        {
-            //Debug.Log("horizontal " + selectedHorizontal);
-            //Debug.Log("vertical " + selectedVertical);
-        }
-        else
-        {
-            //Debug.Log("horizontal " + operationListHorizontal);
-            //Debug.Log("vertical " + operationListVertical);
-            //Debug.Log("vertical max " + operationListMaxVertical);
-            //Debug.Log("vertical last max " + operationListMaxVerticalLast);
-        }
-
-        if ( !inspectedCreatureState.dead)
-        {
-            capacityValueNamesNames = new(12) { "Pain", "Consiousness", "Moving", "Manipulation", "Talking", "Eating", "Sight", "Hearing", "Breathing", "Blood filtrarion", "Blood pumping", "Digestion" };
-        }
-        else
-        {
-            capacityValueNamesNames = new(1) { "Pain" };
-        }
-
-        #region Background Sprites
-        sprites[0].x = DrawPos().x;
-        sprites[0].y = DrawPos().y;
-        sprites[0].scaleX = 350;
-        sprites[0].scaleY = 250;
-        sprites[0].color = Color.gray;
-        sprites[0].alpha = SetTransparency();
-
-        sprites[1].x = DrawPos().x - 250;
-        sprites[1].y = DrawPos().y;
-        sprites[1].scaleX = 150;
-        sprites[1].scaleY = 250;
-        sprites[1].color = Color.black;
-        sprites[1].alpha = SetTransparency();
-        #endregion
-
         #region AfflictionLabels
-        afflictionsAboveLabel.color = Color.white;
-        afflictionsAboveLabel.x = DrawPos().x + 170;
-        afflictionsAboveLabel.y = DrawPos().y + 125;
-        afflictionsAboveLabel.text = "Aflictions above: " + afflictionsAbove;
+        if (afflictionsAboveLabel.isVisible)
+        {
+            afflictionsAboveLabel.text = "Aflictions above: " + afflictionsAbove;
+            afflictionsAboveLabel.alpha = SetTransparency();
+        }
 
-        afflictionsBelowLabel.color = Color.white;
-        afflictionsBelowLabel.x = DrawPos().x + 170;
-        afflictionsBelowLabel.y = DrawPos().y - 105;
-        afflictionsBelowLabel.text = "Aflictions below: " + afflictionsBelow;
+        if (afflictionsBelowLabel.isVisible)
+        {
+            afflictionsBelowLabel.text = "Aflictions below: " + afflictionsBelow;
+            afflictionsBelowLabel.alpha = SetTransparency();
+        }
         #endregion
 
         if (bloodLossPerCycle.isVisible)
         {
             float bloodLoss = cycleLength * (1 - inspectedState.bloodLoss) / (inspectedState.bloodLossPerCycle / 100);
 
-            bloodLossPerCycle.color = Color.white;
-            bloodLossPerCycle.x = DrawPos().x - 165;
-            bloodLossPerCycle.y = DrawPos().y - 105;
             bloodLossPerCycle.text = "Bleeding: " + Mathf.Round(inspectedState.bloodLossPerCycle) + "%/c " + (bloodLoss > cycleLength ? "(no immediate danger)" : "(death in " + GetTimeString(bloodLoss) + ")");
             bloodLossPerCycle.alpha = SetTransparency();
         }
 
-        #region overviewLabel
+        #region tabLabels
         overviewLabel.color = Color.white;
-        overviewLabel.x = DrawPos().x - 287.5f;
-        overviewLabel.y = DrawPos().y + 120;
-        #endregion
+        overviewLabel.alpha = SetTransparency();
 
-        #region operationsLabel
         operationsLabel.color = Color.white;
-        operationsLabel.x = DrawPos().x - 212.5f;
-        operationsLabel.y = DrawPos().y + 120;
+        operationsLabel.alpha = SetTransparency();
         #endregion
 
         if (selectedVertical == 0 && selectedHorizontal != 2)
@@ -1395,12 +1374,17 @@ public class HealthTab : HudPart
 
         if (overviewTab == 0)
         {
-            #region capacityName
-            capacityName.color = Color.white;
-            capacityName.x = DrawPos().x - 250;
-            capacityName.y = DrawPos().y - 107;
             capacityName.text = GetCreatureName(inspectedCreatureState.creature.realizedCreature);
-            #endregion
+            capacityName.alpha = SetTransparency();
+
+            if (!inspectedCreatureState.dead)
+            {
+                capacityValueNamesNames = new(12) { "Pain", "Consiousness", "Moving", "Manipulation", "Talking", "Eating", "Sight", "Hearing", "Breathing", "Blood filtrarion", "Blood pumping", "Digestion" };
+            }
+            else
+            {
+                capacityValueNamesNames = new(1) { "Pain" };
+            }
 
             for (int i = 0; i < capacityValueNames.Count; i++)
             {
@@ -1411,17 +1395,11 @@ public class HealthTab : HudPart
                     continue;
                 }
 
-                capacityValueNames[i].color = Color.white;
-                capacityValueNames[i].x = DrawPos().x - 320;
                 capacityValueNames[i].y = DrawPos().y + 95 - (17 * i);
-
                 capacityValueNames[i].alpha = SetTransparency();
-
                 capacityValueNames[i].text = capacityValueNamesNames[i];
 
-                capacityValues[i].x = DrawPos().x - 180;
                 capacityValues[i].y = DrawPos().y + 95 - (17 * i);
-
                 capacityValues[i].alpha = SetTransparency();
 
                 float value = capacityValueNamesNames[i] switch
@@ -1493,14 +1471,9 @@ public class HealthTab : HudPart
             }
 
             #region addBill
-            addBillSprite.x = DrawPos().x - 260;
-            addBillSprite.y = DrawPos().y + 82;
-            addBillSprite.scaleX = 120;
-            addBillSprite.scaleY = 20;
             addBillSprite.color = selectedHorizontal == 1 && selectedVertical == 1 ? Color.magenta : Color.green;
-
-            addBillLabel.x = DrawPos().x - 260;
-            addBillLabel.y = DrawPos().y + 90;
+            addBillLabel.alpha = SetTransparency();
+            addBillSprite.alpha = SetTransparency();
             #endregion
 
             int numberOfOperations = inspectedState.operationsList.Count - 1;
@@ -1514,13 +1487,8 @@ public class HealthTab : HudPart
                     continue;
                 }
 
-                operationBackgrounds[i].x = DrawPos().x - 255;
-                operationBackgrounds[i].y = DrawPos().y + 45 - (45 * i);
-
-                operationBackgrounds[i].scaleX = 132;
-                operationBackgrounds[i].scaleY = 40;
-
                 operationBackgrounds[i].color = selectedHorizontal == 1 && selectedVertical == (2 + i) ? Color.white : Color.grey;
+                operationBackgrounds[i].alpha = SetTransparency();
             }
 
             for (int i = 0; i < operationNames.Count; i++)
@@ -1531,12 +1499,9 @@ public class HealthTab : HudPart
                     continue;
                 }
 
-                operationNames[i].x = DrawPos().x - 305;
-                operationNames[i].y = DrawPos().y + 65 - (45 * i);
-
                 operationNames[i].text = inspectedState.operationsList[i].name;
-
                 Menu.MenuLabel.WordWrapLabel(operationNames[i], 100);
+                operationNames[i].alpha = SetTransparency();
             }
 
             for (int i = 0; i < operationReorders.Length; i++)
@@ -1547,23 +1512,8 @@ public class HealthTab : HudPart
                     continue;
                 }
 
-                operationReorders[i].x = DrawPos().x - 313;
-
-                float yOffset = i switch
-                {
-                    1 => 25,
-                    2 => 45,
-                    3 => 70,
-                    4 => 90,
-                    5 => 115,
-                    _ => 0,
-                };
-
-                operationReorders[i].y = DrawPos().y + 35 - yOffset;
-
-                operationReorders[i].scale = 14;
-
                 operationReorders[i].color = selectedHorizontal == 0.9f && selectedVertical == (2 + i) ? Color.magenta : Color.red;
+                operationReorders[i].alpha = SetTransparency();
             }
 
             for (int i = 0; i < operationDeletes.Length; i++)
@@ -1573,11 +1523,6 @@ public class HealthTab : HudPart
                     operationDeletes[i].isVisible = false;
                     continue;
                 }
-
-                operationDeletes[i].x = DrawPos().x - 197;
-                operationDeletes[i].y = DrawPos().y + 55 - (45 * i);
-
-                operationDeletes[i].scale = 14;
 
                 int currentVertical = i switch
                 {
@@ -1589,6 +1534,7 @@ public class HealthTab : HudPart
                 };
 
                 operationDeletes[i].color = selectedHorizontal == 1.1f && selectedVertical == currentVertical ? Color.white : Color.black;
+                operationDeletes[i].alpha = SetTransparency();
             }
 
             for (int i = 0; i < operationSuspends.Length; i++)
@@ -1598,11 +1544,6 @@ public class HealthTab : HudPart
                     operationSuspends[i].isVisible = false;
                     continue;
                 }
-
-                operationSuspends[i].x = DrawPos().x - 197;
-                operationSuspends[i].y = DrawPos().y + 35 - (45 * i);
-
-                operationSuspends[i].scale = 14;
 
                 int currentVertical = i switch
                 {
@@ -1614,6 +1555,7 @@ public class HealthTab : HudPart
                 };
 
                 operationSuspends[i].color = selectedHorizontal == 1.1f && selectedVertical == currentVertical ? Color.white : Color.red;
+                operationSuspends[i].alpha = SetTransparency();
             }
 
             for (int i = 0; i < operationSuspendLabels.Count; i++)
@@ -1624,8 +1566,7 @@ public class HealthTab : HudPart
                     continue;
                 }
 
-                operationSuspendLabels[i].x = DrawPos().x - 255;
-                operationSuspendLabels[i].y = DrawPos().y + 53 - (45 * i);
+                operationSuspendLabels[i].alpha = SetTransparency();
             }
             #endregion
         }
@@ -1636,7 +1577,6 @@ public class HealthTab : HudPart
 
             treatedSprite.x = Mathf.Lerp(DrawPos().x - 50, DrawPos().x + 60, tendProgress);
             treatedSprite.alpha = transparent ? 0.3f : 0.6f;
-            treatedSprite.color = Color.yellow;
 
             treatedSprite.scaleX = Mathf.Lerp(0, 220, tendProgress);
             treatedSprite.scaleY = 20;
@@ -2226,18 +2166,12 @@ public class HealthTab : HudPart
 
                                 string text = "  " + disease.name;
 
-                                if (disease.severity < 0.665f)
+                                description += disease.severity switch
                                 {
-                                    description += text + " (minor)\n";
-                                }
-                                else if (disease.severity < 0.832f)
-                                {
-                                    description += text + " (major)\n";
-                                }
-                                else
-                                {
-                                    description += text + " (extreme)\n";
-                                }
+                                    < 0.665f => text + " (minor)\n",
+                                    < 0.832f => text + " (major)\n",
+                                    _ => text + " (extreme)\n"
+                                };
 
                                 continue;
                             }
@@ -2329,26 +2263,14 @@ public class HealthTab : HudPart
 
                                 isCapacityAffected = true;
 
-                                if (informational.tendQuality < 0.2f)
-                                {                           
-                                    description += "  Toxic buildup (initial)\n";
-                                }
-                                else if (informational.tendQuality < 0.4f)
+                                description += informational.tendQuality switch
                                 {
-                                    description += "  Toxic buildup (minor)\n";
-                                }
-                                else if (informational.tendQuality < 0.6f)
-                                {
-                                    description += "  Toxic buildup (moderate)\n";
-                                }
-                                else if (informational.tendQuality < 0.8f)
-                                {
-                                    description += "  Toxic buildup (serious)\n";
-                                }
-                                else
-                                {
-                                    description += "  Toxic buildup (extreme)\n";
-                                }
+                                    < 0.2f => "  Toxic buildup (initial)\n",
+                                    < 0.4f => "  Toxic buildup (minor)\n",
+                                    < 0.6f => "  Toxic buildup (moderate)\n",
+                                    < 0.8f => "  Toxic buildup (serious)\n",
+                                    _ => "  Toxic buildup (extreme)\n"
+                                };
 
                                 continue;
                             }
@@ -2395,39 +2317,16 @@ public class HealthTab : HudPart
                     "\n" +
                     "Blood loss naturally recovers over time\n" +
                     "as the body slowly regenerates its blood\n" +
-                    "supply.";
+                    "supply.\n\n";
 
-                if (inspectedState.bloodLoss >= 1)
+                healthTabInfos[0].description.text += inspectedState.bloodLoss switch
                 {
-
-                }
-                else if (inspectedState.bloodLoss >= 0.6f)
-                {
-                    healthTabInfos[0].description.text += "\n" +
-                        "\n" +
-                        "  - Consciousness: -40%";
-
-                    healthTabInfos[0].description.text += "\n" +
-                        "  - Consciousness: Max 10%";
-                }
-                else if (inspectedState.bloodLoss >= 0.45f)
-                {
-                    healthTabInfos[0].description.text += "\n" +
-                        "\n" +
-                        "  - Consciousness: -40%";
-                }
-                else if (inspectedState.bloodLoss >= 0.3f)
-                {
-                    healthTabInfos[0].description.text += "\n" +
-                        "\n" +
-                        "  - Consciousness: -20%";
-                }
-                else if (inspectedState.bloodLoss >= 0.15f)
-                {
-                    healthTabInfos[0].description.text += "\n" +
-                        "\n" +
-                        "  - Consciousness: -10%";
-                }
+                    < 0.3f => "  - Consciousness: -10%",
+                    < 0.45f => "  - Consciousness: -20%",
+                    < 0.6f => "  - Consciousness: -40%",
+                    _ => "  - Consciousness: -40%\n" +
+                        "  - Consciousness: Max 10%"
+                };
             }
             else
             {
@@ -2446,38 +2345,29 @@ public class HealthTab : HudPart
 
                     if (disease is RWFlu)
                     {
-                        healthTabInfos[0].description.text = "An infectious disease.";
+                        healthTabInfos[0].description.text = "An infectious disease.\n\n";
 
-                        if (disease.severity < 0.665f)
+                        healthTabInfos[0].description.text += disease.severity switch
                         {
-                            healthTabInfos[0].description.text += "\n\n" +
-                                "  - Consciousness: -5%\n" +
+                            < 0.665f => "  - Consciousness: -5%\n" +
                                 "  - Manipulation: -5%\n" +
-                                "  - Breathing: -10%\n";
-                        }
-                        else if (disease.severity < 0.832f)
-                        {
-                            healthTabInfos[0].description.text += "\n\n" +
-                                "  - Consciousness: -10%\n" +
+                                "  - Breathing: -10%\n",
+                            < 0.832f => "  - Consciousness: -10%\n" +
                                 "  - Manipulation: -10%\n" +
-                                "  - Breathing: -15%\n";
-                        }
-                        else
-                        {
-                            healthTabInfos[0].description.text += "\n\n" +
-                                "  - Pain: +5%\n" +
+                                "  - Breathing: -15%\n",
+                            _ => "  - Pain: +5%\n" +
                                 "  - Consciousness: -15%\n" +
                                 "  - Manipulation: -20%\n" +
-                                "  - Breathing: -20%\n";
-                        }
+                                "  - Breathing: -20%\n\n"
+                        };
 
                         if (!disease.isTended)
                         {
-                            healthTabInfos[0].description.text += "\nNeeds tending now\n";
+                            healthTabInfos[0].description.text += "Needs tending now\n";
                         }
                         else
                         {
-                            healthTabInfos[0].description.text += "\nTend quality: " + (Mathf.Round(disease.tendQuality * 1000) / 10) + "%\n";
+                            healthTabInfos[0].description.text += "Tend quality: " + (Mathf.Round(disease.tendQuality * 1000) / 10) + "%\n";
 
                             if (disease.timeUntilTreatment < 0)
                             {
@@ -2488,9 +2378,9 @@ public class HealthTab : HudPart
                                 healthTabInfos[0].description.text += "Can be tended in " + GetTimeString(disease.timeUntilTreatment) + "\n";
                             }
 
-
                             healthTabInfos[0].description.text += "Tending expires in " + GetTimeString(disease.timeUntilTreatment + 3) + "\n";
                         }
+                        
                         healthTabInfos[0].description.text += "Immunity: " + Mathf.Clamp(Mathf.Round(disease.immunity * 1000) / 10, 0, 100) + "%";
                     }
                 }
@@ -2510,39 +2400,22 @@ public class HealthTab : HudPart
                         healthTabInfos[0].description.text = "Dangerously low core body temperature.\n" +
                             "Unless re-warmed, hypothermia gets\n" +
                             "worse and ends in death. Recovery is\n" +
-                            "quick once the victim is re-warmed.";
+                            "quick once the victim is re-warmed.\n\n";
 
-                        if (informational.tendQuality < 0.2f)
+                        healthTabInfos[0].description.text += informational.tendQuality switch
                         {
-                            healthTabInfos[0].description.text += "\n" +
-                                "\n" +
-                                "  - Consciousness: -5%\n" +
-                                "  - Manipulation: -8%\n";
-                        }
-                        else if (informational.tendQuality < 0.35f)
-                        {
-                            healthTabInfos[0].description.text += "\n" +
-                                "\n" +
-                                "  - Consciousness: -10%\n" +
+                            < 0.2f => "  - Consciousness: -5%\n" +
+                                "  - Manipulation: -8%\n",
+                            < 0.35f => "  - Consciousness: -10%\n" +
                                 "  - Manipulation: -20%\n" +
-                                "  - Moving: -10%\n";
-                        }
-                        else if (informational.tendQuality < 0.62f)
-                        {
-                            healthTabInfos[0].description.text += "\n" +
-                                "\n" +
-                                "  - Consciousness: -20%\n" +
+                                "  - Moving: -10%\n",
+                            < 0.62f => "  - Consciousness: -20%\n" +
                                 "  - Manipulation: -50%\n" +
                                 "  - Moving: -30%\n" +
-                                "  - Pain: +15%\n";
-                        }
-                        else
-                        {
-                            healthTabInfos[0].description.text += "\n" +
-                                "\n" +
-                                "  - Consciousness: Max 10%\n" +
-                                "  - Pain: +30%";
-                        }
+                                "  - Pain: +15%\n",
+                            _ => "  - Consciousness: Max 10%\n" +
+                                "  - Pain: +30%"
+                        };
 
                         healthTabInfos[0].nameStatus.text = ": " + Mathf.Round(informational.tendQuality * 100) + "%";
                     }
@@ -2560,39 +2433,17 @@ public class HealthTab : HudPart
                             "If a creature dies with toxic buildup,\n" +
                             "there's a chance that they cannot be\n" +
                             "eaten. The higher the toxic buildup, the\n" +
-                            "higher the chance.";
+                            "higher the chance.\n\n";
 
-                        if (informational.tendQuality < 0.2f)
+                        healthTabInfos[0].description.text += informational.tendQuality switch
                         {
-                            healthTabInfos[0].description.text += "\n" +
-                                "\n" +
-                                "  - Consciousness: -5%\n";
-                        }
-                        else if (informational.tendQuality < 0.4f)
-                        {
-                            healthTabInfos[0].description.text += "\n" +
-                                "\n" +
-                                "  - Consciousness: -10%\n";
-                        }
-                        else if (informational.tendQuality < 0.6f)
-                        {
-                            healthTabInfos[0].description.text += "\n" +
-                                "\n" +
-                                "  - Consciousness: -15%\n";
-                        }
-                        else if (informational.tendQuality < 0.8f)
-                        {
-                            healthTabInfos[0].description.text += "\n" +
-                                "\n" +
-                                "  - Consciousness: -25%";
-                        }
-                        else
-                        {
-                            healthTabInfos[0].description.text += "\n" +
-                                "\n" +
-                                "  - Consciousness: Max 10%\n" +
-                                "  - Consciousness: -25%";
-                        }
+                            < 0.2f => "  - Consciousness: -5%",
+                            < 0.4f => "  - Consciousness: -10%",
+                            < 0.6f => "  - Consciousness: -15%",
+                            < 0.8f => "  - Consciousness: -25%",
+                            _ => "  - Consciousness: Max 10%\n" +
+                                "  - Consciousness: -25%"
+                        };
 
                         healthTabInfos[0].nameStatus.text = ": " + Mathf.Round(informational.tendQuality * 100) + "%";
                     }
@@ -2713,8 +2564,7 @@ public class HealthTab : HudPart
                             {
                                 if (description != "")
                                 {
-                                    description += "\n";
-                                    description += "\n";
+                                    description += "\n\n";
                                 }
 
                                 description += "Needs tending now";
@@ -2723,8 +2573,7 @@ public class HealthTab : HudPart
                             {
                                 if (description != "")
                                 {
-                                    description += "\n";
-                                    description += "\n";
+                                    description += "\n\n";
                                 }
 
                                 if (healthTabBodyParts[selectedBodyPart].bodyPart.isSolid)
@@ -2993,6 +2842,7 @@ public class HealthTab : HudPart
     {
         base.ClearSprites();
 
+        #region Clearing others
         healthTabWholeBody.ClearSprites();
 
         foreach (HealthTabBodyPart bodyPartTab in healthTabBodyParts)
@@ -3004,29 +2854,100 @@ public class HealthTab : HudPart
         {
             infoTab.ClearSprites();
         }
+        #endregion
 
-        capacityName.RemoveFromContainer();
-
-        foreach (FLabel capacityName in capacityValueNames)
-        {
-            capacityName.RemoveFromContainer();
-        }
-
-        foreach (FLabel capacityValue in capacityValues)
-        {
-            capacityValue.RemoveFromContainer();
-        }
-
+        #region Sprites and Labels
         foreach (FSprite sprite in sprites)
         {
             sprite.RemoveFromContainer();
         }
 
+        capacityName.RemoveFromContainer();
+
+        bloodLossPerCycle.RemoveFromContainer();
+
+        foreach (FLabel label in capacityValueNames)
+        {
+            label.RemoveFromContainer();
+        }
+        foreach (FLabel label in capacityValues)
+        {
+            label.RemoveFromContainer();
+        }
+
         selectedSprite.RemoveFromContainer();
-        treatedSprite.RemoveFromContainer();
 
         afflictionsAboveLabel.RemoveFromContainer();
         afflictionsBelowLabel.RemoveFromContainer();
+
+        overviewLabel.RemoveFromContainer();
+        operationsLabel.RemoveFromContainer();
+
+        addBillSprite.RemoveFromContainer();
+        addBillLabel.RemoveFromContainer();
+
+        foreach (FSprite sprite in operationBackgrounds)
+        {
+            sprite.RemoveFromContainer();
+        }
+        foreach (FLabel label in operationNames)
+        {
+            label.RemoveFromContainer();
+        }
+        foreach (FSprite sprite in operationReorders)
+        {
+            sprite.RemoveFromContainer();
+        }
+        foreach (FSprite sprite in operationSuspends)
+        {
+            sprite.RemoveFromContainer();
+        }
+        foreach (FSprite sprite in operationDeletes)
+        {
+            sprite.RemoveFromContainer();
+        }
+        foreach (FLabel label in operationSuspendLabels)
+        {
+            label.RemoveFromContainer();
+        }
+
+        treatedSprite.RemoveFromContainer();
+        #endregion
+    }
+
+    public void ToggleVisibility(CreatureState self, RWState state)
+    {
+        visible = !visible && player != null;
+
+        if (visible)
+        {
+            inspectedState = state ?? playerState;
+            inspectedCreatureState = self ?? player.state;
+
+            TriggeredOn();
+        }
+        else
+        {
+            if (playerState != null)
+                playerState.tendAffliction = null;
+
+            inspectedState = null;
+            inspectedCreatureState = null;
+
+            TriggeredOff();
+        }
+    }
+    public void ToggleVisibility()
+    {
+        visible = false;
+
+        if (playerState != null)
+            playerState.tendAffliction = null;
+
+        inspectedState = null;
+        inspectedCreatureState = null;
+
+        TriggeredOff();
     }
 
     void TriggeredOn()
@@ -3050,17 +2971,6 @@ public class HealthTab : HudPart
     }
     public void TriggeredOff()
     {
-        selected = false;
-
-        selectedHorizontal = 0;
-        selectedVertical = 0;
-
-        topLimit = 510;
-
-        selectedTimer = selectedTimerMax;
-
-        overviewTab = 0;
-
         isOperationListActive = false;
     }
 
@@ -3071,22 +2981,11 @@ public class HealthTab : HudPart
 
     public float ActualTopLimit()
     {
-        if (DrawPos().y > hud.rainWorld.screenSize.y / 2)
-        {
-            return topLimit + Mathf.Abs((hud.rainWorld.screenSize.y / 2) - DrawPos().y);
-        }
-
-        return topLimit + (DrawPos().y - (hud.rainWorld.screenSize.y / 2));
+        return topLimit + (DrawPos().y > hud.rainWorld.screenSize.y / 2 ? Mathf.Abs((hud.rainWorld.screenSize.y / 2) - DrawPos().y) : DrawPos().y - (hud.rainWorld.screenSize.y / 2));
     }
-
     public float ActualBottomLimit()
     {
-        if (DrawPos().y > hud.rainWorld.screenSize.y / 2)
-        {
-            return bottomLimit + Mathf.Abs((hud.rainWorld.screenSize.y / 2) - DrawPos().y);
-        }
-
-        return bottomLimit + (DrawPos().y - (hud.rainWorld.screenSize.y / 2));
+        return bottomLimit + (DrawPos().y > hud.rainWorld.screenSize.y / 2 ? Mathf.Abs((hud.rainWorld.screenSize.y / 2) - DrawPos().y) : DrawPos().y - (hud.rainWorld.screenSize.y / 2));
     }
 
     public bool TransparencyCheck(float posX, float posY)
@@ -3129,7 +3028,6 @@ public class HealthTab : HudPart
     public RWState playerState;
     public AbstractCreature player;
 
-    public AbstractCreature inspectedCreature;
     public RWState inspectedState;
     public CreatureState inspectedCreatureState;
 
@@ -3230,28 +3128,31 @@ public class HealthTabBodyPart
 
         this.bodyPart = bodyPart;
 
-        background = new("pixel", true);
+        background = new("pixel", true)
+        {
+            x = DrawPos().x,
+            scaleX = 340,
+            color = Color.black
+        };
+        owner.hud.fContainers[1].AddChild(background);
 
         string name = bodyPart.name;
-
         if (bodyPart.subName != "")
         {
             name = char.ToLowerInvariant(name[0]) + name.Substring(1);
 
             name = bodyPart.subName + " " + name;
         }
-
         bodyPartName = new(Custom.GetFont(), name)
         {
+            x = DrawPos().x - 165,
             alignment = FLabelAlignment.Left,
             anchorX = 0f,
             anchorY = 1f
         };
-
-        owner.hud.fContainers[1].AddChild(background);
         owner.hud.fContainers[1].AddChild(bodyPartName);
 
-        afflictionVisuals.Add(new(owner));
+        afflictionVisuals.Add(new(owner, DrawPos().x));
     }
 
     public Vector2 DrawPos(bool usePivot = true)
@@ -3278,7 +3179,7 @@ public class HealthTabBodyPart
 
     public void Update()
     {
-        if (bodyPart == null || bodyPart.afflictions.Count <= 0)
+        if (bodyPart == null || bodyPart.afflictions.Count == 0)
         {
             slatedForDeletion = true;
             return;
@@ -3326,7 +3227,7 @@ public class HealthTabBodyPart
 
             for (int i = 0; i < afflictionNumber - list.Count; i++)
             {
-                afflictionVisuals.Add(new(owner));
+                afflictionVisuals.Add(new(owner, DrawPos().x));
             }
         }
     }
@@ -3343,14 +3244,10 @@ public class HealthTabBodyPart
 
         if (background.isVisible)
         {
-            background.x = DrawPos().x;
             background.y = DrawPos().y + 3;
-            background.scaleX = 340;
             background.scaleY = 0;
-            background.color = Color.black;
         }
 
-        bodyPartName.x = DrawPos().x - 165;
         bodyPartName.y = DrawPos().y;
 
         List<string> usedCombinedAfflictions = new();
@@ -3368,13 +3265,9 @@ public class HealthTabBodyPart
 
         for (int i = 0; i < afflictionVisuals.Count; i++)
         {
-            afflictionVisuals[i].name.x = DrawPos().x - 45;
             afflictionVisuals[i].name.y = DrawPos().y - 18f * i;
-            afflictionVisuals[i].name.color = Color.white;
 
-            afflictionVisuals[i].icon.x = DrawPos().x + 160;
             afflictionVisuals[i].icon.y = DrawPos().y - 7 - 18f * i;
-            afflictionVisuals[i].icon.scale = 14;
 
             for (int j = 0; j < bodyPart.afflictions.Count; j++)
             {
@@ -3395,7 +3288,7 @@ public class HealthTabBodyPart
 
                         IsVisible(i);
 
-                        afflictionVisuals[i].icon.color = injury.isTended ? Color.white : injury.isBleeding ? Color.red : Color.blue;
+                        afflictionVisuals[i].icon.color = injury.isTended ? Color.white : Color.red;
 
                         afflictionVisuals[i].icon.isVisible = isVisible && (injury.isTended || !owner.inspectedCreatureState.dead && injury.isBleeding);
                     }
@@ -3433,7 +3326,7 @@ public class HealthTabBodyPart
 
                         IsVisible(i);
 
-                        afflictionVisuals[i].icon.color = injury.isTended ? Color.white : injury.isBleeding ? Color.red : Color.blue;
+                        afflictionVisuals[i].icon.color = injury.isTended ? Color.white : Color.red;
 
                         afflictionVisuals[i].icon.isVisible = isVisible && (injury.isTended || !owner.inspectedCreatureState.dead && injury.isBleeding);
                     }
@@ -3443,18 +3336,12 @@ public class HealthTabBodyPart
 
                         if (disease is RWInfection && disease.severity > 0)
                         {
-                            if (disease.severity < 0.32f)
+                            text += disease.severity switch
                             {
-                                text += " (minor)";
-                            }
-                            else if (disease.severity < 0.77f)
-                            {
-                                text += " (major)";
-                            }
-                            else
-                            {
-                                text += " (extreme)";
-                            }
+                                < 0.32f => " (minor)",
+                                < 0.77f => " (major)",
+                                _ => " (extreme)"
+                            };
                         }
 
                         afflictionVisuals[i].name.text = text;
@@ -3486,7 +3373,7 @@ public class HealthTabBodyPart
         {
             bodyPartName.isVisible = true;
 
-            bodyPartName.color = Color.white;
+            bodyPartName.color = Color.white; //Make this change colour depenidng on the remaining health of the part
             bodyPartName.alpha = owner.SetTransparency();
 
             background.alpha = owner.SetTransparency();
@@ -3577,6 +3464,8 @@ public class HealthTabBodyPart
 
         allAfflictions.Clear();
         allAfflictionsHeight.Clear();
+
+        bodyPart = null;
     }
 
     public string CombinedAfflictionName(RWBodyPart bodyPart, int i)
@@ -3694,8 +3583,6 @@ public class HealthTabBodyPart
     public List<RWAffliction> allAfflictions;
     public List<List<int>> allAfflictionsHeight;
 
-    //public int partPriority;
-
     public bool slatedForDeletion = false;
 
     const float wordWrap = 200;
@@ -3713,27 +3600,34 @@ public class HealthTabWholeBody
     {
         this.owner = owner;
 
-        background = new("pixel", true);
+        background = new("pixel", true)
+        {
+            x = DrawPos().x,
+            scaleX = 340,
+            color = Color.black,
+        };
+        owner.hud.fContainers[1].AddChild(background);
 
         name = new(Custom.GetFont(), "Whole Body")
         {
+
+            x = DrawPos().x - 165,
+            y = DrawPos().y,
             alignment = FLabelAlignment.Left,
             anchorX = 0f,
             anchorY = 1f,
             color = Color.grey
         };
+        owner.hud.fContainers[1].AddChild(name);
 
         bloodLossName = new(Custom.GetFont(), "Blood loss ()")
         {
+            x = DrawPos().x - 45,
             alignment = FLabelAlignment.Left,
             anchorX = 0f,
             anchorY = 1f,
             color = Color.white
         };
-
-        owner.hud.fContainers[1].AddChild(background);
-        owner.hud.fContainers[1].AddChild(name);
-
         owner.hud.fContainers[1].AddChild(bloodLossName);
     }
 
@@ -3774,7 +3668,7 @@ public class HealthTabWholeBody
 
             for (int i = 0; i < afflictionNumber - list.Count; i++)
             {
-                afflictionVisuals.Add(new(owner));
+                afflictionVisuals.Add(new(owner, DrawPos().x));
             }
         }
     }
@@ -3799,16 +3693,9 @@ public class HealthTabWholeBody
 
         if (background.isVisible)
         {
-            background.x = DrawPos().x;
             background.y = DrawPos().y + 3;
-            background.scaleX = 340;
             background.scaleY = 0;
-            background.color = Color.black;
-            background.alpha = owner.SetTransparency();
         }
-
-        name.x = DrawPos().x - 165;
-        name.y = DrawPos().y;
 
         isVisible = false;
 
@@ -3817,32 +3704,15 @@ public class HealthTabWholeBody
 
         if (bloodLossVisible)
         {
-            bloodLossName.x = DrawPos().x - 45;
             bloodLossName.y = DrawPos().y;
-            bloodLossName.alpha = owner.SetTransparency();
 
-            if (owner.inspectedState.bloodLoss >= 0.6f)
+            bloodLossName.text = owner.inspectedState.bloodLoss switch
             {
-                bloodLossName.text = "Blood loss (extreme)";
-            }
-            else if (owner.inspectedState.bloodLoss >= 0.45f)
-            {
-                bloodLossName.text = "Blood loss (severe)";
-            }
-            else if (owner.inspectedState.bloodLoss >= 0.3f)
-            {
-                bloodLossName.text = "Blood loss (moderate)";
-            }
-            else if (owner.inspectedState.bloodLoss >= 0.15f)
-            {
-                bloodLossName.text = "Blood loss (minor)";
-            }
-            else
-            {
-                bloodLossName.text = "Blood loss ()";
-            }
-
-            bloodLossName.color = Color.white;
+                >= 0.6f => "Blood loss (extreme)",
+                >= 0.45f => "Blood loss (severe)",
+                >= 0.3f => "Blood loss (moderate)",
+                _ => "Blood loss (minor)"
+            };
 
             if (bloodLossName.y > owner.ActualTopLimit())
             {
@@ -3865,13 +3735,10 @@ public class HealthTabWholeBody
 
         for (int i = 0; i < afflictionVisuals.Count && i < owner.inspectedState.wholeBodyAfflictions.Count; i++)
         {
-            afflictionVisuals[i].name.x = DrawPos().x - 45;
             afflictionVisuals[i].name.y = DrawPos().y - ((bloodLossVisible ? 18f : 0) + (18f * i));
-            afflictionVisuals[i].name.color = Color.yellow;
+            afflictionVisuals[i].name.color = Color.yellow; //Colour of this will be taken from the affliction itself as different afflictions can have different colours whenever I setit up
 
-            afflictionVisuals[i].icon.x = DrawPos().x + 160;
             afflictionVisuals[i].icon.y = DrawPos().y - 7 - ((bloodLossVisible ? 18f : 0) + (18f * i));
-            afflictionVisuals[i].icon.scale = 14;
 
             if (owner.inspectedState.wholeBodyAfflictions[i] is RWDisease disease)
             {
@@ -3879,18 +3746,12 @@ public class HealthTabWholeBody
 
                 if (disease is RWFlu && disease.severity > 0)
                 {
-                    if (disease.severity < 0.665f)
+                    text += disease.severity switch
                     {
-                        text += " (minor)";
-                    }
-                    else if (disease.severity < 0.832f)
-                    {
-                        text += " (major)";
-                    }
-                    else
-                    {
-                        text += " (extreme)";
-                    }
+                        < 0.665f => " (minor)",
+                        < 0.832f => " (major)",
+                        _ => " (extreme)"
+                    };
                 }
 
                 afflictionVisuals[i].name.text = text;
@@ -3911,68 +3772,38 @@ public class HealthTabWholeBody
                 {
                     text = "Lung capacity";
 
-                    if (informational.tendQuality >= 0.7f)
+                    text += informational.tendQuality switch
                     {
-                        text += " (high)";
-                    }
-                    else if (informational.tendQuality >= 0.4f)
-                    {
-                        text += " (medium)";
-                    }
-                    else if (informational.tendQuality > 0f)
-                    {
-                        text += " (low)";
-                    }
-                    else
-                    {
-                        text += " (empty)";
-                    }
+                        >= 0.7f => " (high)",
+                        >= 0.4f => " (medium)",
+                        > 0f => " (low)",
+                        _ => " (empty)"
+                    };
                 }
                 else if (informational is RWHypothermia)
                 {
                     text = "Hypothermia";
 
-                    if (informational.tendQuality >= 0.62f)
+                    text += informational.tendQuality switch
                     {
-                        text += " (extreme)";
-                    }
-                    else if (informational.tendQuality >= 0.35f)
-                    {
-                        text += " (serious)";
-                    }
-                    else if (informational.tendQuality >= 0.2f)
-                    {
-                        text += " (minor)";
-                    }
-                    else
-                    {
-                        text += " (shivering)";
-                    }
+                        >= 0.62f => " (extreme)",
+                        >= 0.35f => " (serious)",
+                        >= 0.2f => " (minor)",
+                        _ => " (shivering)"
+                    };
                 }
                 else if (informational is RWToxicBuildup)
                 {
                     text = "Toxic buildup";
 
-                    if (informational.tendQuality >= 0.8f)
+                    text += informational.tendQuality switch
                     {
-                        text += " (extreme)";
-                    }
-                    else if (informational.tendQuality >= 0.6f)
-                    {
-                        text += " (serious)";
-                    }
-                    else if (informational.tendQuality >= 0.4f)
-                    {
-                        text += " (moderate)";
-                    }
-                    else if (informational.tendQuality >= 0.2f)
-                    {
-                        text += " (minor)";
-                    }
-                    else
-                    {
-                        text += " (initial)";
-                    }
+                        >= 0.8f => " (extreme)",
+                        >= 0.6f => " (serious)",
+                        >= 0.4f => " (moderate)",
+                        >= 0.2f => " (minor)",
+                        _ => " (initial)"
+                    };
                 }
 
                 afflictionVisuals[i].name.text = text;
@@ -3997,6 +3828,10 @@ public class HealthTabWholeBody
         {
             name.isVisible = true;
             name.alpha = owner.SetTransparency();
+
+            bloodLossName.alpha = owner.SetTransparency();
+
+            background.alpha = owner.SetTransparency();
         }
 
         void IsVisible(int i)
@@ -4105,14 +3940,7 @@ public class HealthTabWholeBody
             HeightChanges(i, Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight));
         }
 
-        if (top)
-        {
-            offset = owner.ActualTopLimit() - offset - 5;
-        }
-        else
-        {
-            offset = owner.ActualBottomLimit() - offset;
-        }
+        offset = top ? owner.ActualTopLimit() - offset - 5 : owner.ActualBottomLimit() - offset;
 
         return offset;
 
@@ -4164,18 +3992,22 @@ public class HealthTabWholeBody
 
 public class HealthTabAffliction
 {
-    public HealthTabAffliction(HealthTab owner)
+    public HealthTabAffliction(HealthTab owner, float drawPos)
     {
         name = new FLabel(Custom.GetFont(), "capacityName")
         {
+            x = drawPos - 45,
             alignment = FLabelAlignment.Left,
             anchorX = 0f,
             anchorY = 1f
         };
-
-        icon = new FSprite("pixel", true);
-
         owner.hud.fContainers[1].AddChild(name);
+
+        icon = new FSprite("pixel", true)
+        {
+            x = drawPos + 160,
+            scale = 14
+    };
         owner.hud.fContainers[1].AddChild(icon);
     }
 
@@ -4198,6 +4030,18 @@ public class HealthTabInfo
         this.owner = owner;
 
         backgrounds = new FSprite[2];
+        backgrounds[0] = new FSprite("pixel", true)
+        {
+            anchorX = 0f,
+            color = Color.black
+        };
+        owner.hud.fContainers[1].AddChild(backgrounds[0]);
+        backgrounds[1] = new FSprite("pixel", true)
+        {
+            anchorX = 0f,
+            color = Color.grey
+        };
+        owner.hud.fContainers[1].AddChild(backgrounds[1]);
 
         name = new(Custom.GetFont(), "Name")
         {
@@ -4205,6 +4049,7 @@ public class HealthTabInfo
             anchorX = 0f,
             anchorY = 1f
         };
+        owner.hud.fContainers[1].AddChild(name);
 
         nameStatus = new(Custom.GetFont(), " : Status")
         {
@@ -4212,6 +4057,7 @@ public class HealthTabInfo
             anchorX = 0f,
             anchorY = 1f
         };
+        owner.hud.fContainers[1].AddChild(nameStatus);
 
         description = new(Custom.GetFont(), "")
         {
@@ -4219,16 +4065,6 @@ public class HealthTabInfo
             anchorX = 0f,
             anchorY = 1f
         };
-
-        for (int k = 0; k < backgrounds.Length; k++)
-        {
-            backgrounds[k] = new FSprite("pixel", true);
-            owner.hud.fContainers[1].AddChild(backgrounds[k]);
-        }
-
-        owner.hud.fContainers[1].AddChild(name);
-        owner.hud.fContainers[1].AddChild(nameStatus);
-
         owner.hud.fContainers[1].AddChild(description);
     }
 
@@ -4250,7 +4086,6 @@ public class HealthTabInfo
         for (int i = 0; i < owner.healthTabInfos.IndexOf(this); i++)
         {
             pos.y -= 2 + owner.healthTabInfos[i].backgrounds[0].scaleY;
-
 
             pos.y += owner.healthTabInfos[i].borderCorrection;
         }
@@ -4297,10 +4132,7 @@ public class HealthTabInfo
         name.y = DrawPos().y;
         name.alpha = owner.SetTransparency();
 
-        nameStatus.x = DrawPos().x;
-
-        nameStatus.x += name.textRect.width;
-
+        nameStatus.x = DrawPos().x + name.textRect.width;
         nameStatus.y = DrawPos().y;
 
         nameStatus.alpha = owner.SetTransparency();
@@ -4359,19 +4191,17 @@ public class HealthTabInfo
             backgroundSize.y += description.textRect.height;
         }
 
-        backgrounds[0].x = DrawPos().x + (backgroundPos.x / 2);
+        backgrounds[0].x = DrawPos().x - 5;
         backgrounds[0].y = DrawPos().y + (backgroundPos.y / 2) - 15;
 
         backgrounds[0].scaleX = backgroundSize.x + 10;
         backgrounds[0].scaleY = backgroundSize.y + 10;
-        backgrounds[0].color = Color.black;
 
-        backgrounds[1].x = DrawPos().x + (backgroundPos.x / 2);
+        backgrounds[1].x = DrawPos().x - 4;
         backgrounds[1].y = DrawPos().y + (backgroundPos.y / 2) - 15;
 
         backgrounds[1].scaleX = backgroundSize.x + 8;
         backgrounds[1].scaleY = backgroundSize.y + 8;
-        backgrounds[1].color = Color.grey;
 
         backgrounds[0].alpha = owner.SetTransparency();
         backgrounds[1].alpha = owner.SetTransparency();
@@ -4439,7 +4269,7 @@ public class OperationSelection
         backgrounds[0] = new FSprite("pixel", true)
         {
             anchorX = 0,
-            color = Color.white,
+            color = Color.white, //white is default meaning this is redundant but I will keep it here for when I update all the colours
             scaleY = 20
         };
         owner.hud.fContainers[1].AddChild(backgrounds[0]);
@@ -4530,6 +4360,8 @@ public class OperationSelection
 
         name.RemoveFromContainer();
         icon.RemoveFromContainer();
+
+        operation = null;
     }
 
     #region Values

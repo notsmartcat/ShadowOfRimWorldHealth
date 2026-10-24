@@ -583,9 +583,9 @@ internal class SlugcatHooks
                     return;
                 }
 
-                state.tendAffliction = burningAffliction;
                 state.tendTime = 10;
                 state.tendTimeMax = state.tendTime;
+                state.tendAffliction = burningAffliction;
                 return;
             }
 
@@ -820,9 +820,9 @@ internal class SlugcatHooks
                 return;
             }
 
-            state.tendAffliction = affliction;
             state.tendTime = Mathf.Round(state.tendTimeBase / RWHealthState.MedicalTendSpeed(state));
             state.tendTimeMax = state.tendTime;
+            state.tendAffliction = affliction;
         }
 
         void tendOther(Creature creature)
