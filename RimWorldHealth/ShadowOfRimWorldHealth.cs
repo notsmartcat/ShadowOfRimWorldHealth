@@ -122,7 +122,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
     public class OneTimeUseData
     {
-        public List<Creature> creatures = new();
+        public Dictionary<CreatureState, float> hitCreatures = new();
     }
 
     public class RWWeaponStats
@@ -1091,7 +1091,7 @@ public class RimWorldHealth : BaseUnityPlugin
     public static void LocustDamage(CreatureState self, RWState state)
     {
         RWHealthState.Damage(self, state, new RWBite(), 1, 0, GetHitBodyPart(state), "Locust swarm - Mandibles");
-    }
+    } //make this add onto an already existing not-tended damage to reduce the amount of afflictions
 
     public static void TerrainImpactDamage(Player self, RWState state, int hitChunk, float speed, bool death)
     {
@@ -1162,18 +1162,18 @@ public class RimWorldHealth : BaseUnityPlugin
         float damage = death ? 8f : 0.5f;
 
         RWHealthState.Damage(self, state, new RWBlunt(), damage, 999, GetHitBodyPart(state, null, null, false, true), "Rain");
-    }
+    } //if not death make this add onto an already existing not-tended damage to reduce the amount of afflictions
     public static void SandstormDamage(CreatureState self, RWState state, bool death)
     {
         float damage = death ? 8f : 0.5f;
 
         RWHealthState.Damage(self, state, new RWBlunt(), damage, 999, GetHitBodyPart(state, null, null, false, true), "Sandstorm");
-    }
+    } //if not death make this add onto an already existing not-tended damage to reduce the amount of afflictions
 
     public static void SpiderDamage(CreatureState self, RWState state)
     {
         RWHealthState.Damage(self, state, new RWBite(), 1, 10, GetHitBodyPart(state), "Coalescipede - Fangs");
-    }
+    } //make this add onto an already existing not-tended damage to reduce the amount of afflictions
 
     public static void ZapCoilDamage(CreatureState self, RWState state)
     {
@@ -1199,7 +1199,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
         for (int i = 0; i < state.bodyParts.Count; i++)
         {
-            if (IsDestroyed(state.bodyParts[i]))
+            if (IsDestroyed(state.bodyParts[i]) || (state.bodyParts[i].deathEffect == "" || state.bodyParts[i] is UpperTorso) && state.bodyParts[i].health <= 0)
             {
                 continue;
             }
@@ -1258,14 +1258,9 @@ public class RimWorldHealth : BaseUnityPlugin
         return focusedBodyPart;
     }
 
-    public static float BombDamageMultiplier(bool hasHealthState, bool isSuper)
+    public static float BombDamageMultiplier(bool isSuper)
     {
-        if (isSuper)
-        {
-            return hasHealthState ? 550 : 78.57142857142857f;
-        }
-
-        return hasHealthState ? 250 : 35.71428571428571f;
+        return isSuper ? 55f : 27.5f;
     }
 
     public static void SetToxicBuildup(RWState state, Creature self)

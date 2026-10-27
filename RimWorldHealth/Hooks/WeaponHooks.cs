@@ -90,7 +90,7 @@ internal class WeaponHooks
 
             if (type == AbstractPhysicalObject.AbstractObjectType.Spear)
             {
-                state.damage = 25f * qualityMult; //Taken from RimWOrld's Pila, might make this lower due to the speed at which it can be thrown
+                state.damage = 25f * qualityMult; //Taken from RimWorld's Pila, might make self lower due to the rate at which it can be thrown
                 state.AP = 0.1f * qualityMult;
             }
             else if (type == AbstractPhysicalObject.AbstractObjectType.Rock)

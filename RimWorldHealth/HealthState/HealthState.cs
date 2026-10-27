@@ -574,6 +574,22 @@ public class RWHealthState
 
     public static void Update(CreatureState self, RWState state)
     {
+        if (state.onFire)
+        {
+            state.fireRate--;
+
+            if (state.fireRate <= 0)
+            {
+                state.fireRate = 40;
+
+                state.fireSize = Mathf.Min(!self.dead && state.consciousState == 0 ? 1.25f : 2.5f, state.fireSize + 0.125f);
+
+                Damage(self, state, new RWBurn(), 2, 0, GetHitBodyPart(state));
+
+                state.updateCapacities = true;
+            }
+        }
+
         if (self.dead)
         {
             goto dead;
@@ -589,22 +605,6 @@ public class RWHealthState
         if (heal)
         {
             state.healingRate = state.healingRateTics;
-        }
-
-        if (state.onFire)
-        {
-            state.fireRate--;
-
-            if (state.fireRate <= 0)
-            {
-                state.fireRate = 40;
-
-                state.fireSize = Mathf.Min(!self.dead && state.consciousState == 0 ? 1.25f : 2.5f, state.fireSize + 0.125f);
-
-                Damage(self, state, new RWBurn(), 2, 0, GetHitBodyPart(state));
-
-                state.updateCapacities = true;
-            }
         }
 
         List<RWInjury> healList = new();
@@ -1706,7 +1706,7 @@ public class RWHealthState
 
         OverkillPrevention();
 
-        if (damage <= 0)
+        if (damage <= 0f)
         {
             return;
         }
@@ -1874,14 +1874,18 @@ public class RWHealthState
 
         void DestroyBodyPart()
         {
-            if (focusedBodyPart == null || focusedBodyPart.deathEffect == "")
+            if (focusedBodyPart == null)
             {
-                focusedBodyPart.afflictions.Add(Scar(damage));
+                return;
+            }
+            else if (focusedBodyPart.deathEffect == "")
+            {
+                focusedBodyPart.afflictions.Add(Scar(focusedBodyPart.health));
                 return;
             }
             else if (focusedBodyPart is UpperTorso)
             {
-                focusedBodyPart.afflictions.Add(Scar(damage));
+                focusedBodyPart.afflictions.Add(Scar(focusedBodyPart.health));
                 Kill(self);
                 return;
             }
@@ -2107,10 +2111,20 @@ public class RWHealthState
         }
         else if (self.creature.realizedCreature == null)
         {
+            if (ShadowOfOptions.debug_logs.Value)
+            {
+                Debug.Log(all + " " + self.creature + " was destroyed by burning");
+            }
+
             self.creature.Destroy();
         }
         else
         {
+            if (ShadowOfOptions.debug_logs.Value)
+            {
+                Debug.Log(all + " " + self.creature + " was destroyed by burning");
+            }
+
             self.creature.realizedCreature.Destroy();
             self.creature.Destroy();
         }

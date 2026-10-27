@@ -1024,6 +1024,8 @@ public class HealthTab : HudPart
             #region Tending
             if (inspectedState.onFire)
             {
+                playerState.tendTarget = inspectedState == playerState && inspectedCreatureState != null && inspectedCreatureState.creature != null && inspectedCreatureState.creature.realizedCreature != null ? null : inspectedCreatureState.creature.realizedCreature;
+
                 playerState.tendTime = 10;
                 playerState.tendTimeMax = playerState.tendTime;
                 playerState.tendAffliction = burningAffliction;   

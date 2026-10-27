@@ -1313,10 +1313,6 @@ internal class ILHooks
                 val.Emit(OpCodes.Ldloc, 4);
                 val.Emit(OpCodes.Ldloc, 12);
                 val.Emit(OpCodes.Mul);
-                val.Emit(OpCodes.Ldarg_0);
-                val.Emit<Explosion>(OpCodes.Ldfld, "lifeTime");
-                val.Emit(OpCodes.Conv_R4);
-                val.Emit(OpCodes.Div);
                 val.EmitDelegate(ExplosionUpdate);
                 val.Emit(OpCodes.Brfalse, target);
             }
@@ -1324,101 +1320,125 @@ internal class ILHooks
             {
                 RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILExplosionUpdate!");
             }
+
+            if (val.TryGotoNext(MoveType.Before, new Func<Instruction, bool>[2]
+            {
+                x => x.MatchLdarg(0),
+                x => x.MatchCallvirt<UpdatableAndDeletable>("Destroy")
+            }))
+            {
+                val.MoveAfterLabels();
+
+                val.Emit(OpCodes.Ldarg_0);
+                val.EmitDelegate(ExplosionUpdateDestroy);
+            }
+            else
+            {
+                RimWorldHealth.Logger.LogInfo(all + "Could not find match for ILExplosionUpdate Destroy!");
+            }
         }
         catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
     }
     public static bool ExplosionUpdate(Explosion obj, Creature self, float damage)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || !singleExplosion.TryGetValue(obj, out OneTimeUseData data))
+        if (self.State == null || !healthState.TryGetValue(self.State, out _) || !singleExplosion.TryGetValue(obj, out OneTimeUseData data))
         {
             return true;
         }
-        else if (data.creatures.Contains(self) || damage <= 0)
+        else if (damage <= 0)
         {
             return false;
         }
 
-        data.creatures.Add(self);
-
-        bool isSuper = false;
-
-        PhysicalObject sourceObj = obj.sourceObject ?? null;
-
-        string attackName = obj.ToString();
-        string attackerName = "";
-
-        if (obj.killTagHolder != null)
+        if (!data.hitCreatures.TryGetValue(self.State, out _) || data.hitCreatures.TryGetValue(self.State, out float oldDamage) && damage > oldDamage)
         {
-            attackerName = GetCreatureName(obj.killTagHolder);
+            data.hitCreatures[self.State] = damage;
         }
 
-        if (sourceObj == null)
-        {
-            attackName = "Explosion";
-        }
-        else if (sourceObj is EggBug)
-        {
-            attackName = attackerName + " - Explosion";
-        }
-        else if (sourceObj is ExplosiveSpear)
-        {
-            attackName = "Explosive spear";
-        }
-        else if (sourceObj is FirecrackerPlant)
-        {
-            attackName = "Firecracker";
-        }
-        else if (sourceObj is ScavengerBomb)
-        {
-            attackName = "Bomb";
-        }
-        else if (sourceObj is Player)
-        {
-            attackName = attackerName + " - Explosion";
-        }
-        else if (sourceObj is Vulture)
-        {
-            attackName = attackerName + " - Laser explosion";
-        }
-        else if (ModManager.MSC && sourceObj is MoreSlugcats.EnergyCell)
-        {
-            attackName = "Energy cell";
-
-            isSuper = true;
-        }
-        else if (ModManager.MSC && sourceObj is MoreSlugcats.FireEgg)
-        {
-            attackName = "Fire egg";
-
-            damage *= BombDamageMultiplier(self.State is HealthState, isSuper);
-
-            BombDamage(self.State, state, damage, attackName, attackerName);
-
-            if (damage >= 10)
-            {
-                RWHealthState.Burn(state);
-            }
-
-            return false;
-        }
-        else if (ModManager.MSC && sourceObj is MoreSlugcats.SingularityBomb)
-        {
-            attackName = "Singularity bomb";
-
-            isSuper = true;
-        }
-        else if (sourceObj is Oracle)
-        {
-            attackName = attackerName + " - Explosion";
-        }
-        else if (sourceObj == null)
-        {
-            attackName = "Explosion";
-        }
-
-        BombDamage(self.State, state, damage * BombDamageMultiplier(self.State is HealthState, isSuper), attackName, attackerName);
+        Debug.Log("Bomb damage = " + damage + ", stored damage is " + data.hitCreatures[self.State]);
 
         return false;
+    }
+    public static void ExplosionUpdateDestroy(Explosion obj)
+    {
+        if (!singleExplosion.TryGetValue(obj, out OneTimeUseData data))
+        {
+            return;
+        }
+
+        foreach (KeyValuePair<CreatureState, float> dic in data.hitCreatures)
+        {
+            CreatureState self = dic.Key;
+
+            if (!healthState.TryGetValue(self, out RWState state))
+            {
+                continue;
+            }
+
+            float damage = dic.Value;
+
+            bool isSuper = false;
+
+            PhysicalObject sourceObj = obj.sourceObject ?? null;
+
+            string attackName = obj.ToString();
+            string attackerName = "";
+
+            if (obj.killTagHolder != null)
+            {
+                attackerName = GetCreatureName(obj.killTagHolder);
+            }
+
+            switch (sourceObj)
+            {
+                case null:
+                    attackName = "Explosion";
+                    break;
+                case EggBug:
+                    attackName = attackerName + " - Explosion";
+                    break;
+                case ExplosiveSpear:
+                    attackName = "Explosive spear";
+                    break;
+                case FirecrackerPlant:
+                    attackName = "Firecracker";
+                    break;
+                case ScavengerBomb:
+                    attackName = "Bomb";
+                    break;
+                case Player:
+                    attackName = attackerName + " - Explosion";
+                    break;
+                case Vulture:
+                    attackName = attackerName + " - Laser explosion";
+                    break;
+                case MoreSlugcats.EnergyCell:
+                    attackName = "Energy cell";
+
+                    isSuper = true;
+                    break;
+                case MoreSlugcats.FireEgg:
+                    attackName = "Fire egg";
+
+                    damage *= BombDamageMultiplier(isSuper);
+
+                    BombDamage(self, state, damage, attackName, attackerName);
+
+                    if (damage >= 200)
+                    {
+                        RWHealthState.Burn(state);
+                    }
+
+                    continue;
+                case Oracle:
+                    attackName = attackerName + " - Explosion";
+                    break;
+            }
+
+            Debug.Log("Dealing Bomb damage, base damage = " + damage + ", final damage = " + damage * BombDamageMultiplier(isSuper));
+
+            BombDamage(self, state, damage * BombDamageMultiplier(isSuper), attackName, attackerName);
+        }
     }
     #endregion
 
