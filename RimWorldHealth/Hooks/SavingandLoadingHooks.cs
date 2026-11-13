@@ -142,9 +142,9 @@ internal class SavingandLoadingHooks
                 diseasesToSave = new();
                 diseasesToTend = new();
 
-                foreach (RWAffliction affliction in part.afflictions)
+                foreach (RWAffliction baseAffliction in part.afflictions)
                 {
-                    if (affliction.isCharacterSpecific)
+                    if (baseAffliction is not RWTendableAffliction affliction || affliction.isCharacterSpecific)
                     {
                         continue;
                     }
@@ -235,9 +235,9 @@ internal class SavingandLoadingHooks
 
             List<RWAffliction> afflictionsToSave = new();
 
-            foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+            foreach (RWAffliction baseAffliction in state.wholeBodyAfflictions)
             {
-                if (affliction.isCharacterSpecific)
+                if (baseAffliction is not RWTendableAffliction affliction || affliction.isCharacterSpecific)
                 {
                     continue;
                 }
@@ -259,9 +259,9 @@ internal class SavingandLoadingHooks
 
                 if (part.afflictions.Count > 0)
                 {
-                    foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+                    foreach (RWAffliction baseAffliction in state.wholeBodyAfflictions)
                     {
-                        if (affliction.isCharacterSpecific)
+                        if (baseAffliction is not RWTendableAffliction affliction || affliction.isCharacterSpecific)
                         {
                             continue;
                         }
@@ -423,13 +423,13 @@ internal class SavingandLoadingHooks
                     name += "Injury:";
                 }
 
-                name += $"{affliction.isTended}:{affliction.tendQuality}:{injury.attackName}:{injury.attackerName}:{injury.damage}:{injury.damageType}:{injury.infectionTimer}:{injury.healingDifficulty.name}";
+                name += $"{injury.isTended}:{injury.tendQuality}:{injury.attackName}:{injury.attackerName}:{injury.damage}:{injury.damageType}:{injury.infectionTimer}:{injury.healingDifficulty.name}";
 
                 name += nameEnding;
             }
             else if (affliction is RWDisease disease)
             {
-                name = $"{affliction.isTended}:{disease.name}:{disease.severity}:{disease.isImmune}:{disease.immunity}:{disease.timeUntilTreatment}:{disease.totalTendQuality}:{disease.InfectionLuck}";
+                name = $"{disease.isTended}:{disease.name}:{disease.severity}:{disease.isImmune}:{disease.immunity}:{disease.timeUntilTreatment}:{disease.totalTendQuality}:{disease.InfectionLuck}";
             }
         }
 
@@ -468,13 +468,13 @@ internal class SavingandLoadingHooks
                     name += "Injury:";
                 }
 
-                name += $"{affliction.isTended}:{affliction.tendQuality}:{injury.attackName}:{injury.attackerName}:{injury.damage}:{injury.damageType}:{injury.infectionTimer}:{injury.healingDifficulty.name}";
+                name += $"{injury.isTended}:{injury.tendQuality}:{injury.attackName}:{injury.attackerName}:{injury.damage}:{injury.damageType}:{injury.infectionTimer}:{injury.healingDifficulty.name}";
 
                 name += nameEnding;
             }
             else if (affliction is RWDisease disease)
             {
-                name = $"{disease.name}:{affliction.isTended}:{disease.severity}:{disease.isImmune}:{disease.immunity}:{disease.timeUntilTreatment}:{disease.totalTendQuality}:{disease.InfectionLuck}";
+                name = $"{disease.name}:{disease.isTended}:{disease.severity}:{disease.isImmune}:{disease.immunity}:{disease.timeUntilTreatment}:{disease.totalTendQuality}:{disease.InfectionLuck}";
             }
         }
 

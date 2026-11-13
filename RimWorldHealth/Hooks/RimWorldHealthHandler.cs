@@ -63,27 +63,25 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
             diseasesToTend = new();
 
             #region WholeBody
-            foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+            if (!dead)
             {
-                if (affliction.isCharacterSpecific || dead)
+                foreach (RWAffliction baseAffliction in state.wholeBodyAfflictions)
                 {
-                    continue;
+                    if (baseAffliction is not RWTendableAffliction affliction || affliction.isCharacterSpecific)
+                    {
+                        continue;
+                    }
+
+                    if (affliction is RWDisease disease)
+                    {
+                        diseasesToTend.Add(disease);
+                    }
                 }
 
-                if (affliction is RWDisease disease)
+                foreach (RWDisease disease in diseasesToTend)
                 {
-                    diseasesToTend.Add(disease);
+                    diseasesToSave = SavingandLoadingHooks.UpdateDisease(disease, state, playerState, diseasesToSave, true);
                 }
-            }
-
-            foreach (RWDisease disease in diseasesToTend)
-            {
-                if (dead)
-                {
-                    continue;
-                }
-
-                diseasesToSave = SavingandLoadingHooks.UpdateDisease(disease, state, playerState, diseasesToSave, true);
             }
 
             state.wholeBodyAfflictions = diseasesToSave;
@@ -99,9 +97,9 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
                 diseasesToSave = new();
                 diseasesToTend = new();
 
-                foreach (RWAffliction affliction in part.afflictions)
+                foreach (RWAffliction baseAffliction in part.afflictions)
                 {
-                    if (affliction.isCharacterSpecific)
+                    if (baseAffliction is not RWTendableAffliction affliction || affliction.isCharacterSpecific)
                     {
                         continue;
                     }

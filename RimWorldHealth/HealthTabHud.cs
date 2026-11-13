@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using RWCustom;
 using System.Linq;
+using System;
 
 using static ShadowOfRimWorldHealth.RimWorldHealth;
 
@@ -205,7 +206,6 @@ public class HealthTab : HudPart
         {
             operationDeletes[i] = new FSprite("pixel", true)
             {
-
                 x = DrawPos().x - 197,
                 y = DrawPos().y + 55 - (45 * i),
 
@@ -229,6 +229,7 @@ public class HealthTab : HudPart
 
         treatedSprite = new FSprite("pixel", true)
         {
+            anchorX = 0f,
             color = Color.yellow
         };
         hud.fContainers[1].AddChild(treatedSprite);
@@ -895,17 +896,390 @@ public class HealthTab : HudPart
                 }
 
                 string operationName = "";
+                string operationSubName = "";
 
                 foreach (OperationSelection operation in operationList)
                 {
                     if (operation.horizontal == operationListHorizontal && operation.vertical == operationListVertical)
                     {
-                        operationName = operation.name.text;
+                        operationName = operation.name;
+                        operationSubName = operation.subName;
                         break;
                     }
                 }
 
-                inspectedState.operationsList.Add(new RWOperation(operationName));
+                int forLoops = operationName switch
+                {
+                    "Harvest" => 6,
+                    "Install peg leg" => 2,
+                    "Install wooden hand" => 2,
+                    "Install wooden foot" => 2,
+                    _ => 1
+                };
+
+                for (int i = 0; i < forLoops; i++)
+                {
+                    bool forceContinue = false;
+
+                    Type partType = null;
+                    string partSubName = "";
+
+                    switch (operationName)
+                    {
+                        case "Harvest":
+                            switch (i)
+                            {
+                                case 0:
+                                    partType = typeof(Heart);
+                                    break;
+                                case 1:
+                                    partType = typeof(Lung);
+                                    partSubName = "Left";
+                                    break;
+                                case 2:
+                                    partType = typeof(Lung);
+                                    partSubName = "Right";
+                                    break;
+                                case 3:
+                                    partType = typeof(Kidney);
+                                    partSubName = "Left";
+                                    break;
+                                case 4:
+                                    partType = typeof(Kidney);
+                                    partSubName = "Right";
+                                    break;
+                                case 5:
+                                    partType = typeof(Liver);
+                                    break;
+                            }
+                            break;
+                        case "Remove (tongue)":
+                            partType = typeof(Tongue);
+                            break;
+                        case "Install wooden hand":
+                            switch (i)
+                            {
+                                case 0:
+                                    partType = typeof(Arm);
+                                    partSubName = "Left";
+                                    break;
+                                case 1:
+                                    partType = typeof(Arm);
+                                    partSubName = "Right";
+                                    break;
+                            }
+                            break;
+                        case "Install wooden foot":
+                            switch (i)
+                            {
+                                case 0:
+                                    partType = typeof(Leg);
+                                    partSubName = "Left";
+                                    break;
+                                case 1:
+                                    partType = typeof(Leg);
+                                    partSubName = "Right";
+                                    break;
+                            }
+                            break;
+                        case "Install denture (jaw)":
+                            partType = typeof(Head);
+                            break;
+                    }
+
+                    foreach (RWOperation operation in inspectedState.operationsList)
+                    {
+                        if (operation.name == operationName && operation.subName == operationSubName)
+                        {
+                            forceContinue = true;
+                            break;
+                        }
+                    }
+
+                    if (forceContinue)
+                    {
+                        continue;
+                    }
+
+                    if (partType == null)
+                    {
+                        //goto skipBodyPart;
+                    }
+
+                    forceContinue = true;
+
+                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                    {
+                        if (part.GetType() == partType && part.subName == partSubName && !IsDestroyed(part))
+                        {
+                            forceContinue = false;
+                            break;
+                        }
+                    }
+
+                    if (forceContinue)
+                    {
+                        continue;
+                    }
+
+                //skipBodyPart:
+
+
+                }
+
+                //"Harvest",
+                //"Remove (tongue)", 
+                //"Amputate",
+                //"Euthanize by Cut", "Anesthetize",
+                //"Install archotech arm",
+                //"Install bionic arm",
+                //"Install peg leg",
+                //"Install wooden hand",
+                //"Install wooden foot",
+                //"Install denture (jaw)"
+
+                if (operationName == "Euthanize by Cut" || operationName == "Anesthetize")
+                {
+                    inspectedState.operationsList.Add(new RWOperation(operationName, operationSubName, null));
+                }
+                else
+                {
+                    string limbName = "";
+                    string limbSubName = "";
+                    Func<RWArtificialPartBase> replacement = null;
+                    RWBodyPart operatedPart = null;
+
+                    string nameOverride = "";
+
+                    string operationNameOverride = "";
+                    string operationSubNameOverride = "";
+
+                    switch (operationName)
+                    {
+                        case "Harvest":
+                            switch (operationSubName)
+                            {
+                                case "(heart)":
+                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    {
+                                        if (part is Heart heart)
+                                        {
+                                            operatedPart = part;
+                                            limbName = heart.name;
+                                            break;
+                                        }
+                                    }
+                                    break;
+                                case "(left lung)":
+                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    {
+                                        if (part is Lung lung && lung.subName == "Left")
+                                        {
+                                            operatedPart = part;
+                                            limbName = lung.name;
+                                            limbSubName = lung.subName;
+                                            break;
+                                        }
+                                    }
+                                    break;
+                                case "(right lung)":
+                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    {
+                                        if (part is Lung lung && lung.subName == "Right")
+                                        {
+                                            operatedPart = part;
+                                            limbName = lung.name;
+                                            limbSubName = lung.subName;
+                                            break;
+                                        }
+                                    }
+                                    break;
+                                case "(left kidney)":
+                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    {
+                                        if (part is Kidney kidney && kidney.subName == "Left")
+                                        {
+                                            operatedPart = part;
+                                            limbName = kidney.name;
+                                            limbSubName = kidney.subName;
+                                            break;
+                                        }
+                                    }
+                                    break;
+                                case "(right kidney)":
+                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    {
+                                        if (part is Kidney kidney && kidney.subName == "Right")
+                                        {
+                                            operatedPart = part;
+                                            limbName = kidney.name;
+                                            limbSubName = kidney.subName;
+                                            break;
+                                        }
+                                    }
+                                    break;
+                                case "(liver)":
+                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    {
+                                        if (part is Liver liver)
+                                        {
+                                            operatedPart = part;
+                                            limbName = liver.name;
+                                            break;
+                                        }
+                                    }
+                                    break;
+                            }
+                            break;
+                        case "Remove (tongue)":
+                            foreach (RWBodyPart part in inspectedState.bodyParts)
+                            {
+                                if (part is Tongue tongue)
+                                {
+                                    operatedPart = part;
+                                    limbName = tongue.name;
+                                    break;
+                                }
+                            }
+                            break;
+                        case "Amputate":
+
+                            break;
+                        case "Install archotech arm":
+
+                            break;
+                        case "Install bionic arm":
+
+                            break;
+                        case "Install peg leg":
+                            switch (operationSubName)
+                            {
+                                case "(left leg)":
+                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    {
+                                        if (part is Leg leg && leg.subName == "Left")
+                                        {
+                                            operatedPart = part;
+                                            limbName = leg.name;
+                                            break;
+                                        }
+                                    }
+                                    break;
+                                case "(right leg)":
+                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    {
+                                        if (part is Leg leg && leg.subName == "Right")
+                                        {
+                                            operatedPart = part;
+                                            limbName = leg.name;
+                                            break;
+                                        }
+                                    }
+                                    break;
+                            }
+
+                            replacement = () => new RWPegLeg(inspectedCreatureState, operatedPart);
+                            break;
+                        case "Install wooden hand":
+                            switch (operationSubName)
+                            {
+                                case "(left hand)":
+                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    {
+                                        if (part is Hand hand && hand.subName == "Left")
+                                        {
+                                            operatedPart = part;
+                                            limbName = hand.name;
+                                            break;
+                                        }
+                                    }
+                                    break;
+                                case "(right hand)":
+                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    {
+                                        if (part is Hand hand && hand.subName == "Right")
+                                        {
+                                            operatedPart = part;
+                                            limbName = hand.name;
+                                            break;
+                                        }
+                                    }
+                                    break;
+                            }
+
+                            replacement = () => new RWWoodenHand(inspectedCreatureState, operatedPart);
+                            break;
+                        case "Install wooden foot":
+                            switch (operationSubName)
+                            {
+                                case "(left foot)":
+                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    {
+                                        if (part is Foot foot && foot.subName == "Left")
+                                        {
+                                            operatedPart = part;
+                                            limbName = foot.name;
+
+                                            if (foot is SlugcatPaw)
+                                            {
+                                                nameOverride = "paw";
+                                                operationNameOverride = "Install wooden paw";
+                                                operationSubNameOverride = "(left paw)";
+                                            }
+
+                                            break;
+                                        }
+                                    }
+                                    break;
+                                case "(right foot)":
+                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    {
+                                        if (part is Foot foot && foot.subName == "Right")
+                                        {
+                                            operatedPart = part;
+                                            limbName = foot.name;
+
+                                            if (foot is SlugcatPaw)
+                                            {
+                                                nameOverride = "paw";
+                                                operationNameOverride = "Install wooden paw";
+                                                operationSubNameOverride = "(right paw)";
+                                            }
+
+                                            break;
+                                        }
+                                    }
+                                    break;
+                            }
+
+                            replacement = () => new RWWoodenFoot(inspectedCreatureState, operatedPart, nameOverride);
+                            break;
+                        case "Install denture (jaw)":
+                            foreach (RWBodyPart part in inspectedState.bodyParts)
+                            {
+                                if (part is Jaw jaw)
+                                {
+                                    operatedPart = part;
+                                    limbName = jaw.name;
+                                    break;
+                                }
+                            }
+
+                            replacement = () => new RWDenture(inspectedCreatureState, operatedPart);
+                            break;
+                    }
+
+                    if (operationNameOverride != "")
+                    {
+                        operationName = operationNameOverride;
+                    }
+                    if (operationSubNameOverride != "")
+                    {
+                        operationSubName = operationSubNameOverride;
+                    }
+
+                    inspectedState.operationsList.Add(new RWLimbReplacement(operationName, operationSubName, operatedPart, limbName, limbSubName, replacement));
+                }
 
                 isOperationListActive = false;
                 return;
@@ -923,11 +1297,55 @@ public class HealthTab : HudPart
 
                     SpawnOperationList();
                 }
+                else if (selectedHorizontal == 1)
+                {
+                    switch (selectedVertical)
+                    {
+                        case 2:
+                            if (inspectedState.operationsList.Count < 1 || inspectedState.operationsList[0] == null || inspectedState.operationsList[0].isSuspended || playerState.tendOperation == inspectedState.operationsList[0])
+                            {
+                                break;
+                            }
+
+                            startOperating(inspectedState.operationsList[0]);
+
+                            break;
+                        case 3:
+                            if (inspectedState.operationsList.Count < 2 || inspectedState.operationsList[1] == null || inspectedState.operationsList[1].isSuspended || playerState.tendOperation == inspectedState.operationsList[1])
+                            {
+                                break;
+                            }
+
+                            startOperating(inspectedState.operationsList[1]);
+                            break;
+                        case 4:
+                            if (inspectedState.operationsList.Count < 3 || inspectedState.operationsList[2] == null || inspectedState.operationsList[2].isSuspended || playerState.tendOperation == inspectedState.operationsList[2])
+                            {
+                                break;
+                            }
+
+                            startOperating(inspectedState.operationsList[2]);
+                            break;
+                        case 5:
+                            if (inspectedState.operationsList.Count < 4 || inspectedState.operationsList[3] == null || inspectedState.operationsList[3].isSuspended || playerState.tendOperation == inspectedState.operationsList[3])
+                            {
+                                break;
+                            }
+
+                            startOperating(inspectedState.operationsList[3]);
+                            break;
+                    }
+                }
                 else if (selectedHorizontal == 1.1f)
                 {
                     switch (selectedVertical)
                     {
                         case 2:
+                            if (playerState.tendOperation != null && playerState.tendOperation == inspectedState.operationsList[0])
+                            {
+                                playerState.tendOperation = null;
+                            }
+
                             inspectedState.operationsList.RemoveAt(0);
 
                             if (inspectedState.operationsList.Count == 0)
@@ -940,6 +1358,11 @@ public class HealthTab : HudPart
                             inspectedState.operationsList[0].isSuspended = !inspectedState.operationsList[0].isSuspended;
                             break;
                         case 4:
+                            if (playerState.tendOperation != null && playerState.tendOperation == inspectedState.operationsList[1])
+                            {
+                                playerState.tendOperation = null;
+                            }
+
                             inspectedState.operationsList.RemoveAt(1);
                             selectedVertical = 3;
                             break;
@@ -947,6 +1370,11 @@ public class HealthTab : HudPart
                             inspectedState.operationsList[1].isSuspended = !inspectedState.operationsList[1].isSuspended;
                             break;
                         case 6:
+                            if (playerState.tendOperation != null && playerState.tendOperation == inspectedState.operationsList[2])
+                            {
+                                playerState.tendOperation = null;
+                            }
+
                             inspectedState.operationsList.RemoveAt(2);
                             selectedVertical = 5;
                             break;
@@ -954,6 +1382,11 @@ public class HealthTab : HudPart
                             inspectedState.operationsList[2].isSuspended = !inspectedState.operationsList[2].isSuspended;
                             break;
                         case 8:
+                            if (playerState.tendOperation != null && playerState.tendOperation == inspectedState.operationsList[3])
+                            {
+                                playerState.tendOperation = null;
+                            }
+
                             inspectedState.operationsList.RemoveAt(3);
                             selectedVertical = 7;
                             break;
@@ -976,7 +1409,7 @@ public class HealthTab : HudPart
                             {
                                 order = new List<int> { 1, 0 };
                             }
-                            if (inspectedState.operationsList.Count == 3)
+                            else if (inspectedState.operationsList.Count == 3)
                             {
                                 order = new List<int> { 1, 0, 2 };
                             }
@@ -1039,8 +1472,13 @@ public class HealthTab : HudPart
 
             foreach (RWBodyPart part in inspectedState.bodyParts)
             {
-                foreach (RWAffliction affliction in part.afflictions)
+                foreach (RWAffliction baseAffliction in part.afflictions)
                 {
+                    if (baseAffliction is not RWTendableAffliction affliction || affliction.isCharacterSpecific)
+                    {
+                        continue;
+                    }
+
                     if (!affliction.isTended)
                     {
                         if (affliction is RWInjury injury)
@@ -1139,11 +1577,21 @@ public class HealthTab : HudPart
             interactOnce = false;
         }
 
-        void startTending(RWAffliction affliction)
+        void startTending(RWTendableAffliction affliction)
         {
+            playerState.tendOperation = null;
+
             playerState.tendTime = Mathf.Round(playerState.tendTimeBase / RWHealthState.MedicalTendSpeed(playerState));
             playerState.tendTimeMax = playerState.tendTime;
             playerState.tendAffliction = affliction;
+        }
+        void startOperating(RWOperation operation)
+        {
+            playerState.tendAffliction = null;
+
+            playerState.tendTime = Mathf.Round(playerState.tendTimeBase / RWHealthState.MedicalTendSpeed(playerState));
+            playerState.tendTimeMax = playerState.tendTime;
+            playerState.tendOperation = operation;
         }
 
         void SpawnOperationList()
@@ -1159,40 +1607,199 @@ public class HealthTab : HudPart
 
             foreach (string possibleOperation in possibleOperations)
             {
-                bool alreadyExists = false;
-
-                foreach (RWOperation operation in inspectedState.operationsList)
-                {
-                    if (operation.name == possibleOperation)
-                    {
-                        alreadyExists = true;
-                        break;
-                    }
-                }
-
-                if (alreadyExists)
+                if (possibleOperation == "Install archotech arm" || possibleOperation == "Install bionic arm" || possibleOperation == "Amputate") //Temporary
                 {
                     continue;
                 }
 
-                OperationSelection operationSelection = new(this, possibleOperation, horizontal)
+                int forLoops = possibleOperation switch
                 {
-                    vertical = vertical,
+                    "Harvest" => 6,
+                    "Install peg leg" => 2,
+                    "Install wooden hand" => 2,
+                    "Install wooden foot" => 2,
+                    _ => 1
                 };
 
-                vertical++;
-                operationListMaxVerticalLast = vertical;
-
-                operationListMaxHorizontal = horizontal;
-
-                if (vertical >= operationListMaxVertical)
+                for (int i = 0; i < forLoops; i++)
                 {
-                    vertical = 0;
-                    horizontal++;
-                    operationListHorizontalWidth.Add(0);
-                }
+                    bool forceContinue = false;
 
-                operationList.Add(operationSelection);
+                    string subName = "";
+                    Type partType = null;
+                    Type operationType = null;
+                    string partSubName = "";
+
+                    switch (possibleOperation)
+                    {
+                        case "Harvest":
+                            switch (i)
+                            {
+                                case 0:
+                                    subName = "(heart)";
+                                    partType = typeof(Heart);
+                                    break;
+                                case 1:
+                                    subName = "(left lung)";
+                                    partType = typeof(Lung);
+                                    partSubName = "Left";
+                                    break;
+                                case 2:
+                                    subName = "(right lung)";
+                                    partType = typeof(Lung);
+                                    partSubName = "Right";
+                                    break;
+                                case 3:
+                                    subName = "(left kidney)";
+                                    partType = typeof(Kidney);
+                                    partSubName = "Left";
+                                    break;
+                                case 4:
+                                    subName = "(right kidney)";
+                                    partType = typeof(Kidney);
+                                    partSubName = "Right";
+                                    break;
+                                case 5:
+                                    subName = "(liver)";
+                                    partType = typeof(Liver);
+                                    break;
+                                default:
+                                    subName = "(null)";
+                                    break;
+                            }
+                            break;
+                        case "Remove (tongue)":
+                            partType = typeof(Tongue);
+                            break;
+                        case "Install peg leg":
+                            partType = typeof(Leg);
+                            switch (i)
+                            {
+                                case 0:
+                                    subName = "(left leg)";
+                                    partSubName = "Left";
+                                    break;
+                                case 1:
+                                    subName = "(right leg)";
+                                    partSubName = "Right";
+                                    break;
+                                default:
+                                    subName = "(null)";
+                                    break;
+                            }
+
+                            operationType = typeof(RWPegLeg);
+                            break;
+                        case "Install wooden hand":
+                            partType = typeof(Hand);
+                            switch (i)
+                            {
+                                case 0:
+                                    subName = "(left hand)";
+                                    partSubName = "Left";
+                                    break;
+                                case 1:
+                                    subName = "(right hand)";
+                                    partSubName = "Right";
+                                    break;
+                                default:
+                                    subName = "(null)";
+                                    break;
+                            }
+
+                            operationType = typeof(RWWoodenHand);
+                            break;
+                        case "Install wooden foot":
+                            partType = typeof(Foot);
+                            switch (i)
+                            {
+                                case 0:
+                                    subName = "(left foot)";
+                                    partSubName = "Left";
+                                    break;
+                                case 1:
+                                    subName = "(right foot)";
+                                    partSubName = "Right";
+                                    break;
+                                default:
+                                    subName = "(null)";
+                                    break;
+                            }
+
+                            operationType = typeof(RWWoodenFoot);
+                            break;
+                        case "Install denture (jaw)":
+                            partType = typeof(Jaw);
+                            operationType = typeof(RWDenture);
+                            break;
+                    }
+
+                    foreach (RWOperation operation in inspectedState.operationsList)
+                    {
+                        if (operation.name == possibleOperation && operation.subName == subName)
+                        {
+                            forceContinue = true;
+                            break;
+                        }
+                    }
+
+                    if (forceContinue)
+                    {
+                        continue;
+                    }
+
+                    string nameOverride = "";
+
+                    if (partType != null)
+                    {
+                        forceContinue = true;
+
+                        foreach (RWBodyPart part in inspectedState.bodyParts)
+                        {
+                            if (possibleOperation == "Harvest" && part.GetType() == partType && part.subName == partSubName && !IsDestroyed(part) ||
+                                possibleOperation != "Harvest" && partType.IsAssignableFrom(part.GetType()) && part.subName == partSubName && !IsSubPartDestroyed(inspectedState, part) && (operationType == null || !part.isBionic || part.afflictions.Count == 0 || part.afflictions[0].GetType() != operationType))
+                            {
+                                forceContinue = false;
+
+                                if (part is SlugcatPaw)
+                                {
+                                    nameOverride = "Wooden Paw";
+
+                                    if (partSubName == "Right")
+                                    {
+                                        nameOverride += " (right paw)";
+                                    }
+                                    else
+                                    {
+                                        nameOverride += " (left paw)";
+                                    }
+                                }
+                                break;
+                            }
+                        }
+
+                        if (forceContinue)
+                        {
+                            continue;
+                        }
+                    }
+
+                    OperationSelection operationSelection = new(this, possibleOperation, subName, horizontal, vertical, nameOverride);
+
+                    vertical++;
+                    operationListMaxVerticalLast = vertical;
+
+                    operationListMaxHorizontal = horizontal;
+
+                    if (vertical >= operationListMaxVertical)
+                    {
+                        vertical = 0;
+                        horizontal++;
+                        operationListHorizontalWidth.Add(0);
+                    }
+
+                    operationList.Add(operationSelection);
+                }
             }
         }
 
@@ -1257,7 +1864,7 @@ public class HealthTab : HudPart
 
         selectedSprite.isVisible = visible && selected;
 
-        treatedSprite.isVisible = visible && playerState != null && playerState.tendAffliction != null && playerState.tendAffliction != burningAffliction;
+        treatedSprite.isVisible = visible && playerState != null && (playerState.tendAffliction != null && playerState.tendAffliction != burningAffliction || playerState.tendOperation != null && overviewTab == 1);
 
         afflictionsAboveLabel.isVisible = visible && afflictionsAbove > 0;
 
@@ -1388,6 +1995,11 @@ public class HealthTab : HudPart
                 capacityValueNamesNames = new(1) { "Pain" };
             }
 
+            if (selectedHorizontal == 0 && selectedVertical > capacityValueNamesNames.Count + 1)
+            {
+                selectedVertical = capacityValueNamesNames.Count;
+            }
+
             for (int i = 0; i < capacityValueNames.Count; i++)
             {
                 if (i >= capacityValueNamesNames.Count)
@@ -1501,7 +2113,14 @@ public class HealthTab : HudPart
                     continue;
                 }
 
-                operationNames[i].text = inspectedState.operationsList[i].name;
+                string text = inspectedState.operationsList[i].name;
+
+                if (inspectedState.operationsList[i].subName != "")
+                {
+                    text += " " + inspectedState.operationsList[i].subName;
+                }
+
+                operationNames[i].text = text;
                 Menu.MenuLabel.WordWrapLabel(operationNames[i], 100);
                 operationNames[i].alpha = SetTransparency();
             }
@@ -1573,12 +2192,45 @@ public class HealthTab : HudPart
             #endregion
         }
 
-        if (treatedSprite.isVisible && playerState.tendAffliction != null)
+        if (treatedSprite.isVisible && (playerState.tendAffliction != null || playerState.tendOperation != null))
         {
             float tendProgress = 1 - playerState.tendTime / playerState.tendTimeMax;
 
-            treatedSprite.x = Mathf.Lerp(DrawPos().x - 50, DrawPos().x + 60, tendProgress);
             treatedSprite.alpha = transparent ? 0.3f : 0.6f;
+
+            if (playerState.tendOperation != null)
+            {
+                RWOperation operation = playerState.tendOperation;
+
+                FSprite sprite = null;
+
+                if (operation == inspectedState.operationsList[0])
+                {
+                    sprite = operationBackgrounds[0];
+                }
+                else if (operation == inspectedState.operationsList[1])
+                {
+                    sprite = operationBackgrounds[1];
+                }
+                else if (operation == inspectedState.operationsList[2])
+                {
+                    sprite = operationBackgrounds[2];
+                }
+                else if (operation == inspectedState.operationsList[3])
+                {
+                    sprite = operationBackgrounds[3];
+                }
+
+                treatedSprite.x = sprite.x - 66;
+                treatedSprite.y = sprite.y;
+
+                treatedSprite.scaleX = Mathf.Lerp(0, 132, tendProgress);
+                treatedSprite.scaleY = 40;
+
+                goto skipTend;
+            }
+
+            treatedSprite.x = DrawPos().x - 50;
 
             treatedSprite.scaleX = Mathf.Lerp(0, 220, tendProgress);
             treatedSprite.scaleY = 20;
@@ -1663,6 +2315,8 @@ public class HealthTab : HudPart
                 }
             }
         }
+
+    skipTend:
 
         if (!selected)
         {
@@ -1931,13 +2585,9 @@ public class HealthTab : HudPart
                                 description += "  Breathing " + Mathf.Round(inspectedState.breathing * 100) + "%\n";
                             }
 
-                            for (int i = 0; i < inspectedState.movingBP.Count; i++)
+                            foreach (RWBodyPart part in inspectedState.movingBP)
                             {
-                                if (inspectedState.movingBP[i].efficiency < 1)
-                                {
-                                    isCapacityAffected = true;
-                                    description += "  " + inspectedState.movingBP[i].name + ": " + Mathf.Round(inspectedState.movingBP[i].health) + " / " + inspectedState.movingBP[i].maxHealth + "\n";
-                                }
+                                CheckCapacityBodypart(part);
                             }
 
                             for (int i = 0; i < inspectedState.legSetNames.Count; i++)
@@ -1963,13 +2613,9 @@ public class HealthTab : HudPart
                                 description += "  Consciousness " + Mathf.Round(inspectedState.consciousness * 100) + "%\n";
                             }
 
-                            for (int i = 0; i < inspectedState.manipulationBP.Count; i++)
+                            foreach (RWBodyPart part in inspectedState.manipulationBP)
                             {
-                                if (inspectedState.manipulationBP[i].efficiency < 1)
-                                {
-                                    isCapacityAffected = true;
-                                    description += "  " + inspectedState.manipulationBP[i].name + ": " + Mathf.Round(inspectedState.manipulationBP[i].health) + " / " + inspectedState.manipulationBP[i].maxHealth + "\n";
-                                }
+                                CheckCapacityBodypart(part);
                             }
 
                             for (int i = 0; i < inspectedState.armSetNames.Count; i++)
@@ -2002,13 +2648,28 @@ public class HealthTab : HudPart
                                 description += "  Consciousness " + Mathf.Round(inspectedState.consciousness * 100) + "%\n";
                             }
 
-                            for (int i = 0; i < inspectedState.talkingBP.Count; i++)
+                            foreach (RWBodyPart part in inspectedState.talkingBP)
                             {
-                                if (inspectedState.talkingBP[i].efficiency < 1)
+                                if (part is Tongue)
                                 {
-                                    isCapacityAffected = true;
-                                    description += "  " + inspectedState.talkingBP[i].name + ": " + Mathf.Round(inspectedState.talkingBP[i].health) + " / " + inspectedState.talkingBP[i].maxHealth + "\n";
+                                    bool jawIsBionic = false;
+
+                                    foreach (RWBodyPart part2 in inspectedState.talkingBP)
+                                    {
+                                        if (part2 is Jaw jaw && jaw.isBionic)
+                                        {
+                                            jawIsBionic = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if (jawIsBionic)
+                                    {
+                                        continue;
+                                    }
                                 }
+
+                                CheckCapacityBodypart(part);
                             }
 
                             break;
@@ -2023,13 +2684,28 @@ public class HealthTab : HudPart
                                 description += "  Consciousness " + Mathf.Round(inspectedState.consciousness * 100) + "%\n";
                             }
 
-                            for (int i = 0; i < inspectedState.eatingBP.Count; i++)
+                            foreach (RWBodyPart part in inspectedState.eatingBP)
                             {
-                                if (inspectedState.eatingBP[i].efficiency < 1)
+                                if (part is Tongue)
                                 {
-                                    isCapacityAffected = true;
-                                    description += "  " + inspectedState.eatingBP[i].name + ": " + Mathf.Round(inspectedState.eatingBP[i].health) + " / " + inspectedState.eatingBP[i].maxHealth + "\n";
+                                    bool jawIsBionic = false;
+
+                                    foreach (RWBodyPart part2 in inspectedState.eatingBP)
+                                    {
+                                        if (part2 is Jaw jaw && jaw.isBionic)
+                                        {
+                                            jawIsBionic = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if (jawIsBionic)
+                                    {
+                                        continue;
+                                    }
                                 }
+
+                                CheckCapacityBodypart(part);
                             }
 
                             break;
@@ -2038,13 +2714,9 @@ public class HealthTab : HudPart
                         {
                             value = inspectedState.sight;
 
-                            for (int i = 0; i < inspectedState.sightBP.Count; i++)
+                            foreach (RWBodyPart part in inspectedState.sightBP)
                             {
-                                if (inspectedState.sightBP[i].efficiency < 1)
-                                {
-                                    isCapacityAffected = true;
-                                    description += "  " + inspectedState.sightBP[i].name + ": " + Mathf.Round(inspectedState.sightBP[i].health) + " / " + inspectedState.sightBP[i].maxHealth + "\n";
-                                }
+                                CheckCapacityBodypart(part);
                             }
 
                             break;
@@ -2053,13 +2725,9 @@ public class HealthTab : HudPart
                         {
                             value = inspectedState.hearing;
 
-                            for (int i = 0; i < inspectedState.hearingBP.Count; i++)
+                            foreach (RWBodyPart part in inspectedState.hearingBP)
                             {
-                                if (inspectedState.hearingBP[i].efficiency < 1)
-                                {
-                                    isCapacityAffected = true;
-                                    description += "  " + inspectedState.hearingBP[i].name + ": " + Mathf.Round(inspectedState.hearingBP[i].health) + " / " + inspectedState.hearingBP[i].maxHealth + "\n";
-                                }
+                                CheckCapacityBodypart(part);
                             }
 
                             break;
@@ -2068,13 +2736,9 @@ public class HealthTab : HudPart
                         {
                             value = inspectedState.breathing;
 
-                            for (int i = 0; i < inspectedState.breathingBP.Count; i++)
+                            foreach (RWBodyPart part in inspectedState.breathingBP)
                             {
-                                if (inspectedState.breathingBP[i].efficiency < 1)
-                                {
-                                    isCapacityAffected = true;
-                                    description += "  " + inspectedState.breathingBP[i].name + ": " + Mathf.Round(inspectedState.breathingBP[i].health) + " / " + inspectedState.breathingBP[i].maxHealth + "\n";
-                                }
+                                CheckCapacityBodypart(part);
                             }
 
                             break;
@@ -2083,13 +2747,9 @@ public class HealthTab : HudPart
                         {
                             value = inspectedState.bloodFiltration;
 
-                            for (int i = 0; i < inspectedState.bloodFiltrationBP.Count; i++)
+                            foreach (RWBodyPart part in inspectedState.bloodFiltrationBP)
                             {
-                                if (inspectedState.bloodFiltrationBP[i].efficiency < 1)
-                                {
-                                    isCapacityAffected = true;
-                                    description += "  " + inspectedState.bloodFiltrationBP[i].name + ": " + Mathf.Round(inspectedState.bloodFiltrationBP[i].health) + " / " + inspectedState.bloodFiltrationBP[i].maxHealth + "\n";
-                                }
+                                CheckCapacityBodypart(part);
                             }
 
                             break;
@@ -2098,13 +2758,9 @@ public class HealthTab : HudPart
                         {
                             value = inspectedState.bloodPumping;
 
-                            for (int i = 0; i < inspectedState.bloodPumpingBP.Count; i++)
+                            foreach (RWBodyPart part in inspectedState.bloodPumpingBP)
                             {
-                                if (inspectedState.bloodPumpingBP[i].efficiency < 1)
-                                {
-                                    isCapacityAffected = true;
-                                    description += "  " + inspectedState.bloodPumpingBP[i].name + ": " + Mathf.Round(inspectedState.bloodPumpingBP[i].health) + " / " + inspectedState.bloodPumpingBP[i].maxHealth + "\n";
-                                }
+                                CheckCapacityBodypart(part);
                             }
 
                             break;
@@ -2113,20 +2769,16 @@ public class HealthTab : HudPart
                         {
                             value = inspectedState.digestion;
 
-                            for (int i = 0; i < inspectedState.digestionBP.Count; i++)
+                            foreach (RWBodyPart part in inspectedState.digestionBP)
                             {
-                                if (inspectedState.digestionBP[i].efficiency < 1)
-                                {
-                                    isCapacityAffected = true;
-                                    description += "  " + inspectedState.digestionBP[i].name + ": " + Mathf.Round(inspectedState.digestionBP[i].health) + " / " + inspectedState.digestionBP[i].maxHealth + "\n";
-                                }
+                                CheckCapacityBodypart(part);
                             }
 
                             break;
                         }
                 }
 
-                description = CapacityAffectingAffliction(description);
+                CapacityAffectingAffliction();
 
                 if (!isCapacityAffected)
                 {
@@ -2151,7 +2803,7 @@ public class HealthTab : HudPart
                     healthTabInfos[0].description.text = description;
                 }
 
-                string CapacityAffectingAffliction(string description)
+                string CapacityAffectingAffliction()
                 {
                     foreach (RWAffliction affliction in inspectedState.capacityAffectingAffliction)
                     {
@@ -2218,7 +2870,7 @@ public class HealthTab : HudPart
                                     continue;
                                 }
 
-                                if (informational.tendQuality < 0.2f)
+                                if (informational.amount < 0.2f)
                                 {
                                     if (stringValue == "Moving")
                                     {
@@ -2228,7 +2880,7 @@ public class HealthTab : HudPart
                                     isCapacityAffected = true;
                                     description += "  Hypothermia (shivering)\n";
                                 }
-                                else if (informational.tendQuality < 0.35f)
+                                else if (informational.amount < 0.35f)
                                 {
                                     if (stringValue == "Moving")
                                     {
@@ -2238,7 +2890,7 @@ public class HealthTab : HudPart
                                     isCapacityAffected = true;
                                     description += "  Hypothermia (minor)\n";
                                 }
-                                else if (informational.tendQuality < 0.62f)
+                                else if (informational.amount < 0.62f)
                                 {
                                     isCapacityAffected = true;
                                     description += "  Hypothermia (serious)\n";
@@ -2265,7 +2917,7 @@ public class HealthTab : HudPart
 
                                 isCapacityAffected = true;
 
-                                description += informational.tendQuality switch
+                                description += informational.amount switch
                                 {
                                     < 0.2f => "  Toxic buildup (initial)\n",
                                     < 0.4f => "  Toxic buildup (minor)\n",
@@ -2286,6 +2938,20 @@ public class HealthTab : HudPart
                     }
 
                     return description;
+                }
+
+                void CheckCapacityBodypart(RWBodyPart part)
+                {
+                    if (part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RWArtificialPartBase partBase && partBase.efficiency != 1)
+                    {
+                        isCapacityAffected = true;
+                        description += "  " + partBase.name + "\n";
+                    }
+                    if (part.health < part.maxHealth)
+                    {
+                        isCapacityAffected = true;
+                        description += "  " + part.name + ": " + Mathf.Round(part.health) + " / " + part.maxHealth + "\n";
+                    }
                 }
             }
         }
@@ -2395,7 +3061,7 @@ public class HealthTab : HudPart
                     {
                         healthTabInfos[0].description.text = "The amount of oxygen in a creature's lungs.";
 
-                        healthTabInfos[0].nameStatus.text = ": " + Mathf.Round(informational.tendQuality * 100) + "%";
+                        healthTabInfos[0].nameStatus.text = ": " + Mathf.Round(informational.amount * 100) + "%";
                     }
                     else if (informational is RWHypothermia)
                     {
@@ -2404,7 +3070,7 @@ public class HealthTab : HudPart
                             "worse and ends in death. Recovery is\n" +
                             "quick once the victim is re-warmed.\n\n";
 
-                        healthTabInfos[0].description.text += informational.tendQuality switch
+                        healthTabInfos[0].description.text += informational.amount switch
                         {
                             < 0.2f => "  - Consciousness: -5%\n" +
                                 "  - Manipulation: -8%\n",
@@ -2419,7 +3085,7 @@ public class HealthTab : HudPart
                                 "  - Pain: +30%"
                         };
 
-                        healthTabInfos[0].nameStatus.text = ": " + Mathf.Round(informational.tendQuality * 100) + "%";
+                        healthTabInfos[0].nameStatus.text = ": " + Mathf.Round(informational.amount * 100) + "%";
                     }
                     else if (informational is RWToxicBuildup)
                     {
@@ -2437,7 +3103,7 @@ public class HealthTab : HudPart
                             "eaten. The higher the toxic buildup, the\n" +
                             "higher the chance.\n\n";
 
-                        healthTabInfos[0].description.text += informational.tendQuality switch
+                        healthTabInfos[0].description.text += informational.amount switch
                         {
                             < 0.2f => "  - Consciousness: -5%",
                             < 0.4f => "  - Consciousness: -10%",
@@ -2447,7 +3113,7 @@ public class HealthTab : HudPart
                                 "  - Consciousness: -25%"
                         };
 
-                        healthTabInfos[0].nameStatus.text = ": " + Mathf.Round(informational.tendQuality * 100) + "%";
+                        healthTabInfos[0].nameStatus.text = ": " + Mathf.Round(informational.amount * 100) + "%";
                     }
                 }
             }
@@ -2822,6 +3488,13 @@ public class HealthTab : HudPart
                     healthTabInfos[1].description.text += "Immunity: " + Mathf.Clamp(Mathf.Round(disease.immunity * 1000) / 10, 0, 100) + "%";
                 }
             }  
+            else if (affliction is RWArtificialPartBase artificialPart)
+            {
+                healthTabInfos[1].name.text = artificialPart.name;
+                healthTabInfos[1].nameStatus.text = "";
+
+                healthTabInfos[1].description.text = artificialPart.descrition;
+            }
         }
 
         string GetTimeString(float timeInMin)
@@ -2974,6 +3647,9 @@ public class HealthTab : HudPart
     public void TriggeredOff()
     {
         isOperationListActive = false;
+
+        playerState.tendAffliction = null;
+        playerState.tendOperation = null;
     }
 
     public string ScarName(RWScar scar)
@@ -3026,6 +3702,111 @@ public class HealthTab : HudPart
         return transparent ? 0.5f : 1;
     }
     
+    public void OperationRemoved()
+    {
+        if (selectedHorizontal == 0 || selectedHorizontal == 2 || selectedVertical < 2)
+        {
+            return;
+        }
+
+        if (selectedHorizontal == 0.9f)
+        {
+            if (inspectedState.operationsList.Count == 0)
+            {
+                if (selectedVertical > 1)
+                {
+                    selectedHorizontal = 1;
+                    selectedVertical = 1;
+                }
+            }
+            else if (inspectedState.operationsList.Count == 1)
+            {
+                if (selectedVertical > 1)
+                {
+                    selectedHorizontal = 1;
+                    selectedVertical = 1;
+                }
+            }
+            else if (inspectedState.operationsList.Count == 2)
+            {
+                if (selectedVertical > 4)
+                {
+                    selectedVertical = 3;
+                }
+            }
+            else if (inspectedState.operationsList.Count == 3)
+            {
+                if (selectedVertical > 6)
+                {
+                    selectedVertical = 5;
+                }
+            }
+        }
+        else if (selectedHorizontal == 1)
+        {
+            if (inspectedState.operationsList.Count == 0)
+            {
+                if (selectedVertical > 1)
+                {
+                    selectedVertical = 1;
+                }
+            }
+            else if (inspectedState.operationsList.Count == 1)
+            {
+                if (selectedVertical > 2)
+                {
+                    selectedVertical = 2;
+                }
+            }
+            else if (inspectedState.operationsList.Count == 2)
+            {
+                if (selectedVertical > 3)
+                {
+                    selectedVertical = 3;
+                }
+            }
+            else if (inspectedState.operationsList.Count == 3)
+            {
+                if (selectedVertical > 4)
+                {
+                    selectedVertical = 4;
+                }
+            }
+        }
+        else if (selectedHorizontal == 1.1f)
+        {
+            if (inspectedState.operationsList.Count == 0)
+            {
+                if (selectedVertical > 1)
+                {
+                    selectedHorizontal = 1;
+                    selectedVertical = 1;
+                }
+            }
+            else if (inspectedState.operationsList.Count == 1)
+            {
+                if (selectedVertical > 3)
+                {
+                    selectedVertical = 3;
+                }
+            }
+            else if (inspectedState.operationsList.Count == 2)
+            {
+                if (selectedVertical > 5)
+                {
+                    selectedVertical = 5;
+                }
+            }
+            else if (inspectedState.operationsList.Count == 3)
+            {
+                if (selectedVertical > 7)
+                {
+                    selectedVertical = 7;
+                }
+            }
+        }
+    }
+
     #region Values
     public RWState playerState;
     public AbstractCreature player;
@@ -3078,15 +3859,31 @@ public class HealthTab : HudPart
 
     public List<float> operationListHorizontalWidth = new();
 
-    public List<OperationSelection> operationList = new(); //the entire list of all operations that can be chosen from, the list when isOperationListActive is turned on
+    public List<OperationSelection> operationList = new(); //the entire list of all operations that can be chosen from, the list is created when isOperationListActive is turned on
 
-    public List<string> possibleOperations = new(5) {
+    public List<string> possibleOperationsOld = new() {
         "Harvest (heart)", "Harvest (left lung)", "Harvest (right lung)", "Harvest (left kidney)", "Harvest (right kidney)", "Harvest (liver)",
         "Remove (tongue)", "Euthanize by Cut", "Anesthetize",
         "Install peg leg (left leg)", "Install peg leg (right leg)",
         "Install wooden hand (left hand)", "Install wooden hand (right hand)",
         "Install wooden foot (left foot)", "Install wooden foot (right foot)",
-        "Install denture (jaw)"}; //the entire list of all possible operations. when the OperationList is being made I check each of these options individually, if it is possible it is added to the list otherwise it is skipped
+        "Install denture (jaw)"
+    };
+
+    public List<string> possibleOperations = new() {
+        "Harvest",
+        "Remove (tongue)", 
+        "Amputate",
+        "Euthanize by Cut", "Anesthetize",
+        "Install archotech arm",
+        "Install bionic arm",
+        "Install peg leg",
+        "Install wooden hand",
+        "Install wooden foot",
+        "Install denture (jaw)"
+    };
+
+    //the entire list of all possible operations. when the OperationList is being made I check each of these options individually, if it is possible it is added to the operationList otherwise it is skipped
     #endregion
 
     public bool visible = false;
@@ -3153,6 +3950,17 @@ public class HealthTabBodyPart
             anchorY = 1f
         };
         owner.hud.fContainers[1].AddChild(bodyPartName);
+
+        if (owner.isOperationListActive && owner.operationList.Count > 0)
+        {
+            background.MoveBehindOtherNode(owner.operationList[0].backgrounds[0]);
+            bodyPartName.MoveBehindOtherNode(owner.operationList[0].backgrounds[0]);
+        }
+        if (owner.healthTabInfos.Count > 0)
+        {
+            background.MoveBehindOtherNode(owner.healthTabInfos[0].backgrounds[0]);
+            bodyPartName.MoveBehindOtherNode(owner.healthTabInfos[0].backgrounds[0]);
+        }
 
         afflictionVisuals.Add(new(owner, DrawPos().x));
     }
@@ -3309,7 +4117,14 @@ public class HealthTabBodyPart
 
                         if (injury is RWDestroyed destroyed)
                         {
-                            text = (bodyPart.isInternal ? bodyPart.isSolid ? "Shattered" : destroyed.healingDifficulty.destroyedOut : destroyed.healingDifficulty.destroyed) + (destroyed.isFresh ? " (fresh)" : "");
+                            if (bodyPart is RWOrgan && destroyed.damageType is RWSurgicalCut)
+                            {
+                                text = "Removed";
+                            }
+                            else
+                            {
+                                text = (bodyPart.isInternal ? bodyPart.isSolid ? "Shattered" : destroyed.healingDifficulty.destroyedOut : destroyed.healingDifficulty.destroyed) + (destroyed.isFresh ? " (fresh)" : "");
+                            }
                         }
                         else if (injury is RWScar scar && scar.isRevealed)
                         {
@@ -3330,7 +4145,7 @@ public class HealthTabBodyPart
 
                         afflictionVisuals[i].icon.color = injury.isTended ? Color.white : Color.red;
 
-                        afflictionVisuals[i].icon.isVisible = isVisible && (injury.isTended || !owner.inspectedCreatureState.dead && injury.isBleeding);
+                        afflictionVisuals[i].icon.isVisible = isVisible && (injury.isTended && injury is not RWDestroyed || !owner.inspectedCreatureState.dead && injury.isBleeding);
                     }
                     else if (bodyPart.afflictions[j] is RWDisease disease)
                     {
@@ -3356,6 +4171,18 @@ public class HealthTabBodyPart
                         IsVisible(i);
 
                         afflictionVisuals[i].icon.color = disease.isTended ? Color.white : Color.grey;
+                    }
+                    else if (bodyPart.afflictions[j] is RWArtificialPartBase artificialPart)
+                    {
+                        afflictionVisuals[i].name.text = artificialPart.name;
+                        afflictionVisuals[i].name.color = Color.white;
+
+                        Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
+                        allAfflictionsHeight.Add(new(2) { Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight });
+
+                        IsVisible(i);
+
+                        afflictionVisuals[i].icon.isVisible = false;
                     }
 
                     allAfflictions.Add(bodyPart.afflictions[j]);
@@ -3774,7 +4601,7 @@ public class HealthTabWholeBody
                 {
                     text = "Lung capacity";
 
-                    text += informational.tendQuality switch
+                    text += informational.amount switch
                     {
                         >= 0.7f => " (high)",
                         >= 0.4f => " (medium)",
@@ -3786,7 +4613,7 @@ public class HealthTabWholeBody
                 {
                     text = "Hypothermia";
 
-                    text += informational.tendQuality switch
+                    text += informational.amount switch
                     {
                         >= 0.62f => " (extreme)",
                         >= 0.35f => " (serious)",
@@ -3798,7 +4625,7 @@ public class HealthTabWholeBody
                 {
                     text = "Toxic buildup";
 
-                    text += informational.tendQuality switch
+                    text += informational.amount switch
                     {
                         >= 0.8f => " (extreme)",
                         >= 0.6f => " (serious)",
@@ -4009,8 +4836,19 @@ public class HealthTabAffliction
         {
             x = drawPos + 160,
             scale = 14
-    };
+        };
         owner.hud.fContainers[1].AddChild(icon);
+
+        if (owner.isOperationListActive && owner.operationList.Count > 0)
+        {
+            name.MoveBehindOtherNode(owner.operationList[0].backgrounds[0]);
+            icon.MoveBehindOtherNode(owner.operationList[0].backgrounds[0]);
+        }
+        if (owner.healthTabInfos.Count > 0)
+        {
+            name.MoveBehindOtherNode(owner.healthTabInfos[0].backgrounds[0]);
+            icon.MoveBehindOtherNode(owner.healthTabInfos[0].backgrounds[0]);
+        }
     }
 
     public void ClearSprites()
@@ -4245,7 +5083,7 @@ public class HealthTabInfo
     #region Values
     private readonly HealthTab owner;
 
-    private readonly FSprite[] backgrounds;
+    public readonly FSprite[] backgrounds;
 
     public FLabel name;
     public FLabel nameStatus;
@@ -4260,11 +5098,22 @@ public class HealthTabInfo
 
 public class OperationSelection
 {
-    public OperationSelection(HealthTab owner, string operationName, int horizontal)
+    public OperationSelection(HealthTab owner, string operationName, string operationSubName, int horizontal, int vertical, string nameOverride = "")
     {
         this.owner = owner;
 
         this.horizontal = horizontal;
+        this.vertical = vertical;
+
+        name = operationName;
+        subName = operationSubName;
+
+        string nameForLabel = nameOverride == "" ? name : nameOverride;
+
+        if (nameOverride == "" && subName != "")
+        {
+            nameForLabel += " " + subName;
+        }
 
         #region backgrounds
         backgrounds = new FSprite[2];
@@ -4285,16 +5134,16 @@ public class OperationSelection
         owner.hud.fContainers[1].AddChild(backgrounds[1]);
         #endregion
 
-        name = new(Custom.GetFont(), operationName)
+        nameLabel = new(Custom.GetFont(), nameForLabel)
         {
             alignment = FLabelAlignment.Left,
             anchorX = 0f,
             anchorY = 0.5f
         };
-        owner.hud.fContainers[1].AddChild(name);
+        owner.hud.fContainers[1].AddChild(nameLabel);
 
-        if (owner.operationListHorizontalWidth[horizontal] < name.textRect.width)
-            owner.operationListHorizontalWidth[horizontal] = name.textRect.width;
+        if (owner.operationListHorizontalWidth[horizontal] < nameLabel.textRect.width)
+            owner.operationListHorizontalWidth[horizontal] = nameLabel.textRect.width;
 
         icon = new FSprite("pixel", true)
         {
@@ -4346,8 +5195,8 @@ public class OperationSelection
         backgrounds[0].alpha = owner.SetTransparency();
         backgrounds[1].alpha = owner.SetTransparency();
 
-        name.x = DrawPos().x + 20 + (isSelected ? 5 : 0);
-        name.y = DrawPos().y;
+        nameLabel.x = DrawPos().x + 20 + (isSelected ? 5 : 0);
+        nameLabel.y = DrawPos().y;
 
         icon.x = DrawPos().x + 10 + (isSelected ? 5 : 0);
         icon.y = DrawPos().y;
@@ -4360,7 +5209,7 @@ public class OperationSelection
             background.RemoveFromContainer();
         }
 
-        name.RemoveFromContainer();
+        nameLabel.RemoveFromContainer();
         icon.RemoveFromContainer();
 
         operation = null;
@@ -4376,10 +5225,13 @@ public class OperationSelection
 
     public float width = 0;
 
-    private readonly FSprite[] backgrounds;
+    public readonly FSprite[] backgrounds;
 
-    public FLabel name;
+    public FLabel nameLabel;
     public FSprite icon;
+
+    public string name = "";
+    public string subName = "";
 
     public bool slatedForDeletion = false;
     #endregion

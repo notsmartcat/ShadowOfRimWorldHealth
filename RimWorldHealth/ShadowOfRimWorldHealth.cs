@@ -18,52 +18,53 @@ public class RimWorldHealth : BaseUnityPlugin
         public int lastCycle = -1; //This refers to the last cycle the creature was saved so whenever it is loaded the afflictions are properily calculated
         #endregion
 
-        public float maxHealth = 0; //Everytime a Bodypart is created it's max health is added to this. Currently unused. forgot waht the purpase was but I will see if it is necessary later.
-        public float bodySizeFactor = 1;
-        public float healthScale = 1; //Reffer to https://rimworldwiki.com/wiki/Property:Health_Scale when possible (lizards would have this be 1.2 due to the Alligator, however I will need to scale it as currently the slugcat is scaled as if it was a human, and the 1.2 is based on the human being 1. It will also need to be scaled based on the actual lizard scale)
+        public float maxHealth = 0; //Everytime a body part is created it's max health is added to this. Currently unused. Forgot what the purpase was but I will see if it is necessary later.
+        public float bodySizeFactor = 1; //Used to multiply blood loss. Currently not implemented properly.
+        public float healthScale = 1; //Reffer to https://rimworldwiki.com/wiki/Property:Health_Scale when possible. (lizards would have this be 1.2 due to the Alligator, however I will need to scale it as currently the slugcat is scaled as if it was a human, and the 1.2 is based on the human being 1. It will also need to be scaled based on the actual lizard scale)
 
-        public List<RWBodyPart> bodyParts = new();
+        public List<RWBodyPart> bodyParts = new(); //The entire list of all body parts. They are created when the RWHealthState is created.
 
-        public List<RWAffliction> wholeBodyAfflictions = new();
+        public List<RWAffliction> wholeBodyAfflictions = new(); //List of all affliction that do not belong to a single body part but are more general. All Informational Afflictions are whole body.
 
-        public Brain consciousnessSource = null;
+        public Brain consciousnessSource = null; //Used to directly multiply consciousness my it's own efficiency, generally the Brain.
 
         public readonly List<string> armSetNames = new();
         public readonly Dictionary<string, ArmSet> armSet = new();
         public readonly List<string> legSetNames = new();
         public readonly Dictionary<string, LegSet> legSet = new();
 
-        public float bloodLoss = 0;
-        public float bloodLossPerCycle = 0;
+        public float bloodLoss = 0; //Ranges from 0 to 1 where 1 equals death.
+        public float bloodLossPerCycle = 0; //How much blood loss will increase by in the span of a cycle (13 minutes by default). If it is 100 it will take 13 minutes for the bloodloss to reach 1.
 
-        public float pain = 0;
+        public float pain = 0; //Ranges from 0 to 1, afflictions can increase this. If it is higher then painShockThreshold the creature will go into pain shock. 
         public float painShockThreshold = 0.8f;
 
-        public Dictionary<string, List<float>> clothingArmour = new();
+        public Dictionary<string, List<float>> clothingArmour = new(); //Currently unimplemented.
 
         public bool forceUnconsciousness = false; //If true the creatures consiousness will be maximum 10%
         public int consciousState = 0; //0 = Conscious, 1 = Incapacitated, 2 = Pain Shock, 3 = Unconscious. in order of severity so more severe states will override
 
-        public bool onFire = false;
-        public float fireSize = 0;
-        public int fireRate = 40;
-        public int onFireMentalBreak = 0;
+        public bool onFire = false; //If true the creature will take 2 burn damage to a random non-internal limb every second.
+        public float fireSize = 0; //Ranges from 0 to 1.25 (2.5 if the creature is unconscious or dead), the fire size does not influence how much burn damage is dealt or how often it is dealt. When fire is put out is decreases by 0.1 every 10 ticks aka 0.25 seconds.
+        public int fireRate = 40; //Decreased by 1 each tick and returned to 40 when it reaches 0. Used to count for when the burn damage is meant to be dealt.
+        public int onFireMentalBreak = 0; //Decreased by 1 each tick, when above 0 non-player creatures will enter a special AI state where they will run around and not be able to tend, attack or flee.
 
-        public int timeAbstracted = 0;
+        public int timeAbstracted = 0; //Increased by 1 each tick when the creature is abstracted (meaning there is no actual creature spawned). When the creature is no longer abstracted (or the cycle ends) the number is used to tend the creature and progress any diseases it has.
 
         #region Capacities
-        public float consciousness = 1;
-        public float moving = 1;
-        public float manipulation = 1;
-        public float talking = 1;
-        public float eating = 1;
-        public float sight = 1;
-        public float hearing = 1;
-        public float breathing = 1;
-        public float bloodFiltration = 1;
-        public float bloodPumping = 1;
-        public float digestion = 1;
+        public float consciousness = 1; //Multiplies manipulation, moving, eating and talking capacities by iself.
+        public float moving = 1; //Along with Manipulation it multiplies movement speed by either a portion or it's entire amount depending on how leg-centric the movement is.
+        public float manipulation = 1; //Along with Moving it multiplies movement speed by either a portion or it's entire amount depending on how arm-centric the movement is. Multiplies Eating Speed by 30% of itself. Multiplies Medical Operation Speed, Medical Surgery Success Chance, Medical Tend Quality and Medical Tend Speed by itself. 
+        public float talking = 1; //Currently unused.
+        public float eating = 1; //Multiplies Eating Speed by 95% of itself. Multiplies the amount of time creatures spend in their den after taking prey by 40% of itself.
+        public float sight = 1; //Multiplies Medical Operation Speed and Medical Tend Quality by 7% of itself. Multiplies Medical Surgery Success Chance by 40% of itself. Multiplies Medical Tend Speed by 80% of itself.
+        public float hearing = 1; //Currently unused.
+        public float breathing = 1; //Multiplies Consciousness by 20% of itself. Multiplies Lungs Gain Multiplier and Lungs Loss Multiplier by itself.
+        public float bloodFiltration = 1; //Multiplies Consciousness by 10% of itself. Multiplies Immunity Gain Speed by 50% of itself.
+        public float bloodPumping = 1; //Multiplies Consciousness by 20% of itself.
+        public float digestion = 1; //Multiplies the amount of time creatures spend in their den after taking prey by 60% of itself.
 
+        //Collections of all body parts that modify each capacity. Used when setting the capacities so I do not have to go through each individual body part each time even if it doesn't modify the capacity.
         public readonly List<RWBodyPart> bloodFiltrationBP = new();
         public readonly List<RWBodyPart> bloodPumpingBP = new();
         public readonly List<RWBodyPart> breathingBP = new();
@@ -77,20 +78,20 @@ public class RimWorldHealth : BaseUnityPlugin
 
         public readonly List<RWAffliction> capacityAffectingAffliction = new();
 
-        public bool updateCapacities = false;
+        public bool updateCapacities = false; //Set to true whenever anything happens that could cause capacities to be differet, prevents updating capacities when they would be the same.
         #endregion
 
-        public List<int> missingBodyChunks = new();
+        public List<int> missingBodyChunks = new(); //The body chunk index number is added to this if all body parts connected to the body chunk are destroyed. Body chunks inclided here will not be hittable by weapons.
 
-        public bool hasEaten = false;
+        public bool hasEaten = false; //Set to true if the creature eats anything (some creatures cannot eat so this will need to be considered). Used to multiply Immunity Gain Speed by 0.9 if false. If the slugcat is Malnourished the multiplication is 0.9 if this is true and 0.7 if false.
 
-        public string violenceAttackOverride = "";
-        public string violenceAttackerOverride = "";
+        public string violenceAttackOverride = ""; //Set by certain attacks just before the Violence is called, overrides the Attack Name.
+        public string violenceAttackerOverride = ""; //Set by certain attacks just before the Violence is called, overrides the Attacker Name.
 
-        public bool wasLastBehaviourTend = false;
+        public bool wasLastBehaviourTend = false; //Used by AI to continue tending if they tended previousily.
 
         #region Medical
-        public int medicalSkill = 0;
+        public int medicalSkill = 0; //Ranges from 0 to 20, affects Medical Operation Speed, Medical Surgery Success Chance, Medical Tend Quality and Medical Tend Speed. Currently there is no way to increase it.
 
         public int healingRateTics = 400; //1 second = 40 ticks, healing should heppen every 10 seconds
         public int healingRate = 400;
@@ -100,7 +101,8 @@ public class RimWorldHealth : BaseUnityPlugin
         public readonly int tendTimeBase = 60; //1 second = 40 ticks, tending will take 1.5 seconds (couldn't find an official RimWorld base tend time)
         public Creature tendTarget = null;
 
-        public RWAffliction tendAffliction = null;
+        public RWTendableAffliction tendAffliction = null;
+        public RWOperation tendOperation = null;
 
         public List<RWOperation> operationsList = new();
         #endregion
@@ -170,7 +172,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
     public static RimWorldHealthHandler rimWorldHealthHandler;
 
-    public static RWAffliction burningAffliction = new(null, null); //generic affliction not connected to anything and used to make tending target burn as the act of burning is not a actual affliction
+    public static RWTendableAffliction burningAffliction = new(null, null); //generic affliction not connected to anything and used to make tending target burn as the act of burning is not a actual affliction
 
     public static List<CreatureTemplate> customTemplates = new();
 
@@ -503,21 +505,21 @@ public class RimWorldHealth : BaseUnityPlugin
 
     public static bool IsSubPartDestroyed(RWState state, RWBodyPart self)
     {
-        if (self.afflictions.Count == 1 && self.afflictions[0] is RWDestroyed && self.subPartOf != "")
+        if (IsDestroyed(self) && self.subPartOf != "")
         {
-            for (int i = 0; i < state.bodyParts.Count; i++)
+            foreach (RWBodyPart part in state.bodyParts)
             {
-                if (IsSubPartName(self, state.bodyParts[i]) && state.bodyParts[i] is not UpperTorso && state.bodyParts[i].afflictions.Count == 1 && state.bodyParts[i].afflictions[0] is RWDestroyed)
+                if (IsSubPartOf(self, part))
                 {
-                    return true;
+                    return part is not UpperTorso && (IsDestroyed(part) || part.isBionic);
                 }
             }
         }
 
         return false;
-    }
+    } //Checks is "self" is a subpart of anything and if it is destroyed. If "self" is destroyed but isn't a subpart or it's parent isn't destroyed this returns false
 
-    public static bool IsSubPartName(RWBodyPart self, RWBodyPart other)
+    public static bool IsSubPartOf(RWBodyPart self, RWBodyPart other)
     {
         if (self.parentSubName)
         {
@@ -527,7 +529,7 @@ public class RimWorldHealth : BaseUnityPlugin
         {
             return self.subPartOf == other.name;
         }
-    }
+    } //Checks if "self" is a sub-part of "other". Meaning that "self" is under "other"
 
     public static bool LegCheck(RWState state)
     {
@@ -628,7 +630,7 @@ public class RimWorldHealth : BaseUnityPlugin
             {
                 for (int i = 0; i < state.bodyParts.Count; i++)
                 {
-                    if (!IsDestroyed(state.bodyParts[i]) && state.bodyParts[i].isInternal && IsSubPartName(state.bodyParts[i], list[0]))
+                    if (!IsDestroyed(state.bodyParts[i]) && state.bodyParts[i].isInternal && IsSubPartOf(state.bodyParts[i], list[0]))
                     {
                         list.Add(state.bodyParts[i]);
                     }
@@ -742,7 +744,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
                     for (int i = 0; i < state.bodyParts.Count; i++)
                     {
-                        if (IsDestroyed(state.bodyParts[i]) || subPartOf == state.bodyParts[i] || !IsSubPartName(state.bodyParts[i], subPartOf) || state.bodyParts[i] is Eye)
+                        if (IsDestroyed(state.bodyParts[i]) || subPartOf == state.bodyParts[i] || !IsSubPartOf(state.bodyParts[i], subPartOf) || state.bodyParts[i] is Eye)
                         {
                             continue;
                         }
@@ -824,7 +826,7 @@ public class RimWorldHealth : BaseUnityPlugin
             {
                 continue;
             }
-            else if (!IsSubPartName(state.bodyParts[i], focusedBodyPart))
+            else if (!IsSubPartOf(state.bodyParts[i], focusedBodyPart))
             {
                 continue;
             }
@@ -841,7 +843,7 @@ public class RimWorldHealth : BaseUnityPlugin
             {
                 continue;
             }
-            else if (!IsSubPartName(focusedBodyPart, state.bodyParts[i]))
+            else if (!IsSubPartOf(focusedBodyPart, state.bodyParts[i]))
             {
                 continue;
             }
@@ -860,7 +862,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 {
                     continue;
                 }
-                else if (!IsSubPartName(state.bodyParts[i], focusedBodyPart))
+                else if (!IsSubPartOf(state.bodyParts[i], focusedBodyPart))
                 {
                     continue;
                 }
@@ -880,7 +882,7 @@ public class RimWorldHealth : BaseUnityPlugin
                     {
                         continue;
                     }
-                    else if (!IsSubPartName(focusedBodyPart, state.bodyParts[i]))
+                    else if (!IsSubPartOf(focusedBodyPart, state.bodyParts[i]))
                     {
                         continue;
                     }
@@ -902,7 +904,7 @@ public class RimWorldHealth : BaseUnityPlugin
                     {
                         continue;
                     }
-                    else if (!IsSubPartName(state.bodyParts[i], focusedBodyPart))
+                    else if (!IsSubPartOf(state.bodyParts[i], focusedBodyPart))
                     {
                         continue;
                     }
@@ -950,7 +952,7 @@ public class RimWorldHealth : BaseUnityPlugin
             {
                 continue;
             }
-            else if (!IsSubPartName(state.bodyParts[i], focusedBodyPart))
+            else if (!IsSubPartOf(state.bodyParts[i], focusedBodyPart))
             {
                 continue;
             }
@@ -967,7 +969,7 @@ public class RimWorldHealth : BaseUnityPlugin
             {
                 continue;
             }
-            else if (!IsSubPartName(focusedBodyPart, state.bodyParts[i]))
+            else if (!IsSubPartOf(focusedBodyPart, state.bodyParts[i]))
             {
                 continue;
             }
@@ -986,7 +988,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 {
                     continue;
                 }
-                else if (!IsSubPartName(state.bodyParts[i], focusedBodyPart))
+                else if (!IsSubPartOf(state.bodyParts[i], focusedBodyPart))
                 {
                     continue;
                 }
@@ -1212,7 +1214,7 @@ public class RimWorldHealth : BaseUnityPlugin
                     continue;
                 }
             }
-            else if (subPartOf != null && !IsSubPartName(state.bodyParts[i], subPartOf))
+            else if (subPartOf != null && !IsSubPartOf(state.bodyParts[i], subPartOf))
             {
                 continue;
             }
@@ -1295,7 +1297,7 @@ public class RimWorldHealth : BaseUnityPlugin
         {
             if (toxicBuildup != null)
             {
-                toxicBuildup.tendQuality = Math.Min(1, poison);
+                toxicBuildup.amount = Math.Min(1, poison);
             }
             else
             {
@@ -1924,7 +1926,25 @@ public class RimWorldHealth : BaseUnityPlugin
         {
             if (state.onFire)
             {
-                state.fireRate -= ticksPassed;
+                int firePatTimesMax = ticksPassed / 10;
+                int firePatTimes = 0;
+
+                if (!self.dead)
+                {
+                    while (state.fireRate <= 0 && firePatTimes < firePatTimesMax)
+                    {
+                        state.fireSize -= 0.1f * (ticksPassed / 10);
+                        firePatTimes++;
+                    }
+
+                    if (state.fireSize <= 0)
+                    {
+                        state.onFire = false;
+                        state.fireSize = 0;
+                    }
+                }
+
+                state.fireRate -= state.onFire ? ticksPassed : firePatTimes * 10;
 
                 while (state.fireRate <= 0)
                 {
@@ -1933,66 +1953,84 @@ public class RimWorldHealth : BaseUnityPlugin
                     RWHealthState.Damage(self, state, new RWBurn(), 2, 0, GetHitBodyPart(state));
                 }
 
-                state.onFire = false;
-                state.fireSize = 0;
-            }
-
-            if (state.consciousState > 0 && (ShadowOfOptions.downed_tend.Value != "Everyone" || state.consciousState == 3)) //if uncon do not automatically tend
-            {
-                goto skipTend;
+                ticksPassed -= firePatTimes * 10;
             }
 
             #region Tend
-            state.tendTime -= ticksPassed;
-
-            int timesTended = 0;
-
-            while (state.tendTime < 0)
+            if (!self.dead && (state.consciousState == 0 || (ShadowOfOptions.downed_tend.Value == "Everyone" && state.consciousState != 3)))
             {
-                Debug.Log("tend time was " + state.tendTime);
-                state.tendTime += Mathf.RoundToInt(state.tendTimeBase / RWHealthState.MedicalTendSpeed(state));
-                Debug.Log("new tend time " + state.tendTime);
-                timesTended++;
-            }
+                state.tendTime -= ticksPassed;
 
-            Debug.Log("tending times " + timesTended);
+                int timesTended = 0;
 
-            for (int i = 0; i < timesTended; i++)
-            {
-                RWInjury bleeding = null;
-                RWDisease diseaseAffliction = null;
-                RWInjury untendedAffliction = null;
-
-                foreach (RWBodyPart part in state.bodyParts)
+                while (state.tendTime < 0)
                 {
-                    foreach (RWAffliction affliction in part.afflictions)
+                    Debug.Log("tend time was " + state.tendTime);
+                    state.tendTime += Mathf.RoundToInt(state.tendTimeBase / RWHealthState.MedicalTendSpeed(state));
+                    Debug.Log("new tend time " + state.tendTime);
+                    timesTended++;
+                }
+
+                Debug.Log("tending times " + timesTended);
+
+                for (int i = 0; i < timesTended; i++)
+                {
+                    RWInjury bleeding = null;
+                    RWDisease diseaseAffliction = null;
+                    RWInjury untendedAffliction = null;
+
+                    foreach (RWBodyPart part in state.bodyParts)
                     {
-                        if (!affliction.isTended)
+                        foreach (RWAffliction baseAffliction in part.afflictions)
                         {
-                            if (affliction is RWInjury injury)
+                            if (baseAffliction is not RWTendableAffliction affliction)
                             {
-                                if (injury.isBleeding)
+                                continue;
+                            }
+
+                            if (!affliction.isTended)
+                            {
+                                if (affliction is RWInjury injury)
                                 {
-                                    if (bleeding != null)
+                                    if (injury.isBleeding)
                                     {
-                                        if (injury.healingDifficulty.bleeding * injury.damage > bleeding.healingDifficulty.bleeding * bleeding.damage)
+                                        if (bleeding != null)
                                         {
-                                            bleeding = injury;
+                                            if (injury.healingDifficulty.bleeding * injury.damage > bleeding.healingDifficulty.bleeding * bleeding.damage)
+                                            {
+                                                bleeding = injury;
+                                            }
+                                        }
+                                        else bleeding ??= injury;
+                                    }
+                                    else
+                                    {
+                                        if (untendedAffliction != null)
+                                        {
+                                            if (injury.damage > untendedAffliction.damage)
+                                            {
+                                                untendedAffliction = injury;
+                                            }
+                                        }
+                                        else untendedAffliction ??= injury;
+
+                                    }
+                                }
+                                else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                                {
+                                    if (diseaseAffliction != null)
+                                    {
+                                        if (disease.severity > diseaseAffliction.severity)
+                                        {
+                                            diseaseAffliction = disease;
                                         }
                                     }
-                                    else bleeding ??= injury;
+                                    else diseaseAffliction ??= disease;
                                 }
                                 else
                                 {
-                                    if (untendedAffliction != null)
-                                    {
-                                        if (injury.damage > untendedAffliction.damage)
-                                        {
-                                            untendedAffliction = injury;
-                                        }
-                                    }
-                                    else untendedAffliction ??= injury;
-
+                                    Debug.Log(all + affliction + " does not belong to any tendable check");
+                                    Logger.LogError(all + affliction + " does not belong to any tendable check");
                                 }
                             }
                             else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
@@ -2006,14 +2044,18 @@ public class RimWorldHealth : BaseUnityPlugin
                                 }
                                 else diseaseAffliction ??= disease;
                             }
-                            else
-                            {
-                                Debug.Log(all + affliction + " does not belong to any tendable check");
-                                Logger.LogError(all + affliction + " does not belong to any tendable check");
-                            }
                         }
-                        else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                    }
+
+                    if (bleeding == null)
+                    {
+                        foreach (RWAffliction affliction in state.wholeBodyAfflictions)
                         {
+                            if (affliction is not RWDisease disease || disease.timeUntilTreatment > 0)
+                            {
+                                continue;
+                            }
+
                             if (diseaseAffliction != null)
                             {
                                 if (disease.severity > diseaseAffliction.severity)
@@ -2024,75 +2066,53 @@ public class RimWorldHealth : BaseUnityPlugin
                             else diseaseAffliction ??= disease;
                         }
                     }
-                }
 
-                if (bleeding == null)
-                {
-                    foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+                    if (bleeding != null)
                     {
-                        if (affliction is not RWDisease disease || disease.timeUntilTreatment > 0)
-                        {
-                            continue;
-                        }
+                        keepUpdating = true;
+                        tend(bleeding);
+                    }
+                    else if (diseaseAffliction != null)
+                    {
+                        keepUpdating = true;
+                        tend(diseaseAffliction);
+                    }
+                    else if (untendedAffliction != null)
+                    {
+                        keepUpdating = true;
+                        tend(untendedAffliction);
+                    }
+                    else
+                    {
+                        keepUpdating = false;
+                        timesTended = 0;
+                        break;
+                    }
 
-                        if (diseaseAffliction != null)
+                    void tend(RWTendableAffliction tendAffliction)
+                    {
+                        tendAffliction.isTended = true;
+
+                        RWHealthState.TendAffliction(state, self, state.tendAffliction.state);
+
+                        if (tendAffliction is RWInjury injury)
                         {
-                            if (disease.severity > diseaseAffliction.severity)
+                            injury.isBleeding = false;
+
+                            if (injury is RWDestroyed destroyed)
                             {
-                                diseaseAffliction = disease;
+                                destroyed.isFresh = false;
                             }
                         }
-                        else diseaseAffliction ??= disease;
-                    }
-                }
-
-                if (bleeding != null)
-                {
-                    keepUpdating = true;
-                    tend(bleeding);
-                }
-                else if (diseaseAffliction != null)
-                {
-                    keepUpdating = true;
-                    tend(diseaseAffliction);
-                }
-                else if (untendedAffliction != null)
-                {
-                    keepUpdating = true;
-                    tend(untendedAffliction);
-                }
-                else
-                {
-                    keepUpdating = false;
-                    timesTended = 0;
-                    break;
-                }
-
-                void tend(RWAffliction tendAffliction)
-                {
-                    tendAffliction.isTended = true;
-
-                    RWHealthState.TendAffliction(state, self, state.tendAffliction.state);
-
-                    if (tendAffliction is RWInjury injury)
-                    {
-                        injury.isBleeding = false;
-
-                        if (injury is RWDestroyed destroyed)
+                        else if (tendAffliction is RWDisease disease)
                         {
-                            destroyed.isFresh = false;
+                            disease.timeUntilTreatment = cycleLength * disease.treatmentTimes;
+                            disease.totalTendQuality += disease.tendQuality;
                         }
-                    }
-                    else if (tendAffliction is RWDisease disease)
-                    {
-                        disease.timeUntilTreatment = cycleLength * disease.treatmentTimes;
-                        disease.totalTendQuality += disease.tendQuality;
                     }
                 }
             }
             #endregion
-
-        skipTend:
 
             state.consciousState = 0;
 
@@ -2109,9 +2129,9 @@ public class RimWorldHealth : BaseUnityPlugin
 
             foreach (RWBodyPart part in state.bodyParts)
             {
-                foreach (RWAffliction affliction in part.afflictions)
+                foreach (RWAffliction baseAffliction in part.afflictions)
                 {
-                    if (affliction.isCharacterSpecific)
+                    if (baseAffliction is not RWTendableAffliction affliction || affliction.isCharacterSpecific)
                     {
                         continue;
                     }
@@ -2149,8 +2169,13 @@ public class RimWorldHealth : BaseUnityPlugin
                 }
 
                 List<RWAffliction> afflictionList = new(part.afflictions);
-                foreach (RWAffliction affliction in afflictionList)
+                foreach (RWAffliction baseAffliction in afflictionList)
                 {
+                    if (baseAffliction is not RWTendableAffliction affliction)
+                    {
+                        continue;
+                    }
+
                     if (affliction is RWDestroyed destroyed)
                     {
                         part.health = 0;
@@ -2160,18 +2185,13 @@ public class RimWorldHealth : BaseUnityPlugin
                         {
                             state.bloodLossPerCycle += destroyed.isBleeding ? destroyed.healingDifficulty.bleeding * destroyed.part.maxHealth * 2 * state.bodySizeFactor * RWHealthState.BloodLossMultiplier(part) : 0;
 
-                            affliction.pain = destroyed.part.maxHealth * 2 * destroyed.healingDifficulty.pain / state.bodySizeFactor / 100;
+                            destroyed.pain = destroyed.part.maxHealth * 2 * destroyed.healingDifficulty.pain / state.bodySizeFactor / 100;
                         }
 
                         break;
                     }
 
-                    if (affliction is not RWInjury injury)
-                    {
-                        continue;
-                    }
-
-                    if (self.dead)
+                    if (self.dead || affliction is not RWInjury injury)
                     {
                         continue;
                     }
@@ -2180,20 +2200,20 @@ public class RimWorldHealth : BaseUnityPlugin
                     {
                         if (scar.painCategory == "painful")
                         {
-                            affliction.pain = scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
+                            scar.pain = scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
                         }
                         else if (scar.painCategory == "aching")
                         {
-                            affliction.pain = scar.scarDamage * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
+                            scar.pain = scar.scarDamage * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
                         }
                         else if (scar.painCategory == "itchy")
                         {
-                            affliction.pain = scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
+                            scar.pain = scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
                         }
                     }
                     else
                     {
-                        affliction.pain = injury.damage * injury.healingDifficulty.pain / state.bodySizeFactor / 100;
+                        injury.pain = injury.damage * injury.healingDifficulty.pain / state.bodySizeFactor / 100;
                     }
 
                     state.pain += affliction.pain;
@@ -2338,8 +2358,13 @@ public class RimWorldHealth : BaseUnityPlugin
                 }
 
                 afflictionList = new(part.afflictions);
-                foreach (RWAffliction affliction in afflictionList)
+                foreach (RWAffliction baseAffliction in afflictionList)
                 {
+                    if (baseAffliction is not RWTendableAffliction affliction)
+                    {
+                        continue;
+                    }
+
                     if (affliction is RWDestroyed destroyed)
                     {
                         part.health = 0;
@@ -2349,7 +2374,7 @@ public class RimWorldHealth : BaseUnityPlugin
                         {
                             state.bloodLossPerCycle += destroyed.isBleeding ? destroyed.healingDifficulty.bleeding * destroyed.part.maxHealth * 2 * state.bodySizeFactor * RWHealthState.BloodLossMultiplier(part) : 0;
 
-                            affliction.pain = destroyed.part.maxHealth * 2 * destroyed.healingDifficulty.pain / state.bodySizeFactor / 100;
+                            destroyed.pain = destroyed.part.maxHealth * 2 * destroyed.healingDifficulty.pain / state.bodySizeFactor / 100;
                         }
 
                         break;
@@ -2378,20 +2403,20 @@ public class RimWorldHealth : BaseUnityPlugin
                     {
                         if (scar.painCategory == "painful")
                         {
-                            affliction.pain = scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
+                            scar.pain = scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
                         }
                         else if (scar.painCategory == "aching")
                         {
-                            affliction.pain = scar.scarDamage * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
+                            scar.pain = scar.scarDamage * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
                         }
                         else if (scar.painCategory == "itchy")
                         {
-                            affliction.pain = scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
+                            scar.pain = scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
                         }
                     }
                     else
                     {
-                        affliction.pain = injury.damage * injury.healingDifficulty.pain / state.bodySizeFactor / 100;
+                        injury.pain = injury.damage * injury.healingDifficulty.pain / state.bodySizeFactor / 100;
                     }
 
                     state.pain += affliction.pain;
@@ -2745,7 +2770,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 {
                     state.capacityAffectingAffliction.Add(informational);
 
-                    switch (informational.tendQuality)
+                    switch (informational.amount)
                     {
                         case <= 0.2f:
                             state.consciousness -= 0.05f;
@@ -2774,7 +2799,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 {
                     state.capacityAffectingAffliction.Add(informational);
 
-                    switch (informational.tendQuality)
+                    switch (informational.amount)
                     {
                         case <= 0.2f:
                             state.consciousness -= 0.05f;

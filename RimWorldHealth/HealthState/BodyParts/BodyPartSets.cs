@@ -9,21 +9,42 @@ public class ArmSet
 {
     public float Efficiency(RWState state, float offsets = 0, float postFactors = 1, float otherEfficiency = 1)
     {
-        float fingerEfficiency = 1;
-
-        if (fingers.Count != 0)
+        if (shoulder != null && shoulder.isBionic)
         {
-            fingerEfficiency = 0;
+            efficiency = shoulder.efficiency * otherEfficiency;
 
-            foreach (Finger finger in fingers)
-            {
-                fingerEfficiency += finger.efficiency;
-            }
+            efficiency = ((state.consciousness * efficiency) + offsets) * postFactors;
 
-            fingerEfficiency = (fingerEfficiency * (0.8f / fingers.Count)) + 0.2f;
+            return efficiency;
         }
 
-        efficiency = (arm != null ? arm.efficiency : 1) * (shoulder != null ? shoulder.efficiency : 1) * (clavicle != null ? clavicle.efficiency : 1) * (humerus != null ? humerus.efficiency : 1) * (radius != null ? radius.efficiency : 1) * (hand != null ? hand.efficiency : 1) * fingerEfficiency * otherEfficiency;
+        float upperArmEfficiency = (shoulder != null ? shoulder.efficiency : 1) * (clavicle != null ? clavicle.efficiency : 1) * (arm != null ? arm.efficiency : 1) * (humerus != null ? humerus.efficiency : 1) * (radius != null ? radius.efficiency : 1);
+
+        float handEfficiecny;
+        if (hand != null && hand.isBionic)
+        {
+            handEfficiecny = hand.efficiency;
+        }
+        else
+        {
+            float fingerEfficiecny = 1;
+
+            if (fingers.Count != 0)
+            {
+                fingerEfficiecny = 0;
+
+                foreach (Finger finger in fingers)
+                {
+                    fingerEfficiecny += finger.efficiency;
+                }
+
+                fingerEfficiecny = (fingerEfficiecny * (0.8f / fingers.Count)) + 0.2f; //This means even if all fingers are gone there is still gonna be 0.2 efficiency left.
+            }
+
+            handEfficiecny = (hand != null ? hand.efficiency : 1) * fingerEfficiecny;
+        }
+
+        efficiency = upperArmEfficiency * handEfficiecny * otherEfficiency;
 
         efficiency = ((state.consciousness * efficiency) + offsets) * postFactors;
 
@@ -34,13 +55,21 @@ public class ArmSet
     {
         string description = "";
 
-        if (shoulder != null && shoulder.health < shoulder.maxHealth)
+        if (shoulder != null)
         {
-            description += SetDescription(shoulder);
-
-            if (IsDestroyed(shoulder))
+            if (shoulder.isBionic && shoulder.afflictions.Count > 0 && shoulder.afflictions[0] is RWArtificialPartBase partBase)
             {
-                return description;
+                return "  " + partBase.name + "\n";
+            }
+
+            if (shoulder.health < shoulder.maxHealth)
+            {
+                description += SetDescription(shoulder);
+
+                if (IsDestroyed(shoulder))
+                {
+                    return description;
+                }
             }
         }
         if (clavicle != null && clavicle.health < clavicle.maxHealth)
@@ -66,13 +95,23 @@ public class ArmSet
             description += SetDescription(radius);
         }
 
-        if (hand != null && hand.health < hand.maxHealth)
+        if (hand != null)
         {
-            description += SetDescription(hand);
-
-            if (IsDestroyed(hand))
+            if (hand.isBionic && hand.afflictions.Count > 0 && hand.afflictions[0] is RWArtificialPartBase partBase)
             {
+                description += "  " + partBase.name + "\n";
+
                 return description;
+            }
+
+            if (hand.health < hand.maxHealth)
+            {
+                description += SetDescription(hand);
+
+                if (IsDestroyed(hand))
+                {
+                    return description;
+                }
             }
         }
         foreach (Finger finger in fingers)
@@ -243,35 +282,55 @@ public class ArmSet
 
     public float efficiency = 1;
 
-    //used for all sets
     public static string SetDescription(RWBodyPart part)
     {
         string name = part.name;
         name = char.ToLowerInvariant(name[0]) + name.Substring(1);
 
         return "  " + part.subName + " " + name + ": " + Mathf.Round(part.health) + " / " + part.maxHealth + "\n";
-    }
+    } //used for all sets
 }
 
 public class LegSet
 {
     public float Efficiency(RWState state, float offsets = 0, float postFactors = 1, float otherEfficiency = 1)
     {
-        float toeEfficiency = 1;
-
-        if (toes.Count != 0)
+        if (leg != null && leg.isBionic)
         {
-            toeEfficiency = 0;
+            efficiency = leg.efficiency * otherEfficiency;
 
-            foreach (Toe toe in toes)
-            {
-                toeEfficiency += toe.efficiency;
-            }
+            efficiency = ((state.consciousness * efficiency) + offsets) * postFactors;
 
-            toeEfficiency = (toeEfficiency * (0.4f / toes.Count)) + 0.6f;
+            return efficiency;
         }
 
-        efficiency = (leg != null ? leg.efficiency : 1) * (tibia != null ? tibia.efficiency : 1) * (femur != null ? femur.efficiency : 1) * (foot != null ? foot.efficiency : 1) * toeEfficiency * otherEfficiency;
+        float upperLegEfficiency = (leg != null ? leg.efficiency : 1) * (tibia != null ? tibia.efficiency : 1) * (femur != null ? femur.efficiency : 1);
+
+        float footEfficiecny;
+        if (foot != null && foot.isBionic)
+        {
+            footEfficiecny = foot.efficiency;
+        }
+        else
+        {
+            float toeEfficiecny = 1;
+
+            if (toes.Count != 0)
+            {
+                toeEfficiecny = 0;
+
+                foreach (Toe toe in toes)
+                {
+                    toeEfficiecny += toe.efficiency;
+                }
+
+                toeEfficiecny = (toeEfficiecny * (0.4f / toes.Count)) + 0.6f; //This means even if all toes are gone there is still gonna be 0.6 efficiency left.
+            }
+
+            footEfficiecny = (foot != null ? foot.efficiency : 1) * toeEfficiecny;
+        }
+
+        efficiency = upperLegEfficiency * footEfficiecny * otherEfficiency;
 
         efficiency = ((Mathf.Min(1, state.consciousness) * (1 + (state.bloodPumping - 1f) * 0.2f) * (1f + (state.breathing - 1) * 0.2f) * efficiency) + offsets) * postFactors;
 
@@ -282,13 +341,21 @@ public class LegSet
     {
         string description = "";
 
-        if (leg != null && leg.health < leg.maxHealth)
+        if (leg != null)
         {
-            description += ArmSet.SetDescription(leg);
-
-            if (IsDestroyed(leg))
+            if (leg.isBionic && leg.afflictions.Count > 0 && leg.afflictions[0] is RWArtificialPartBase partBase)
             {
-                return description;
+                return "  " + partBase.name + "\n";
+            }
+
+            if (leg.health < leg.maxHealth)
+            {
+                description += ArmSet.SetDescription(leg);
+
+                if (IsDestroyed(leg))
+                {
+                    return description;
+                }
             }
         }
         if (femur != null && femur.health < femur.maxHealth)
@@ -300,8 +367,25 @@ public class LegSet
             description += ArmSet.SetDescription(tibia);
         }
 
-        if (foot != null && foot.health < foot.maxHealth)
+        if (foot != null)
         {
+            if (foot.isBionic && foot.afflictions.Count > 0 && foot.afflictions[0] is RWArtificialPartBase partBase)
+            {
+                description += "  " + partBase.name + "\n";
+
+                return description;
+            }
+
+            if (foot.health < foot.maxHealth)
+            {
+                description += ArmSet.SetDescription(foot);
+
+                if (IsDestroyed(foot))
+                {
+                    return description;
+                }
+            }
+
             if (IsDestroyed(foot))
             {
                 return description;

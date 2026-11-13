@@ -821,18 +821,18 @@ public class RWHealthState
         {
             if (informational is RWHypothermia hypothermia)
             {
-                if (hypothermia.lastHypothermia == hypothermia.tendQuality)
+                if (hypothermia.lastAmount == hypothermia.amount)
                 {
                     return;
                 }
-                else if (hypothermia.tendQuality >= 1)
+                else if (hypothermia.amount >= 1)
                 {
                     if (!self.dead)
                         Kill(self);
                     return;
                 }
 
-                if (state.healingRate % 15 == 0 && hypothermia.tendQuality > 0.37f && Random.value < (0.025f * hypothermia.tendQuality))
+                if (state.healingRate % 15 == 0 && hypothermia.amount > 0.37f && Random.value < (0.025f * hypothermia.amount))
                 {
                     RWBodyPart part = GetFrostbiteHitBodyPart(state);
 
@@ -841,12 +841,12 @@ public class RWHealthState
                     state.updateCapacities = true;
                 }
 
-                if (LessOrGreater(hypothermia.tendQuality, hypothermia.lastHypothermia, 0.2f) || LessOrGreater(hypothermia.tendQuality, hypothermia.lastHypothermia, 0.35f) || LessOrGreater(hypothermia.tendQuality, hypothermia.lastHypothermia, 0.62f))
+                if (LessOrGreater(hypothermia.amount, hypothermia.lastAmount, 0.2f) || LessOrGreater(hypothermia.amount, hypothermia.lastAmount, 0.35f) || LessOrGreater(hypothermia.amount, hypothermia.lastAmount, 0.62f))
                 {
                     state.updateCapacities = true;
                 }
 
-                hypothermia.lastHypothermia = hypothermia.tendQuality;
+                hypothermia.lastAmount = hypothermia.amount;
 
                 RWBodyPart GetFrostbiteHitBodyPart(RWState state)
                 {
@@ -959,23 +959,23 @@ public class RWHealthState
             }
             else if (informational is RWToxicBuildup toxicBuildup)
             {
-                if (toxicBuildup.lastToxicBuildup == toxicBuildup.tendQuality)
+                if (toxicBuildup.lastAmount == toxicBuildup.amount)
                 {
                     return;
                 }
-                else if(toxicBuildup.tendQuality >= 1)
+                else if(toxicBuildup.amount >= 1)
                 {
                     if (!self.dead)
                         Kill(self);
                     return;
                 }
 
-                if (LessOrGreater(toxicBuildup.tendQuality, toxicBuildup.lastToxicBuildup, 0.2f) || LessOrGreater(toxicBuildup.tendQuality, toxicBuildup.lastToxicBuildup, 0.4f) || LessOrGreater(toxicBuildup.tendQuality, toxicBuildup.lastToxicBuildup, 0.6f) || LessOrGreater(toxicBuildup.tendQuality, toxicBuildup.lastToxicBuildup, 0.8f))
+                if (LessOrGreater(toxicBuildup.amount, toxicBuildup.lastAmount, 0.2f) || LessOrGreater(toxicBuildup.amount, toxicBuildup.lastAmount, 0.4f) || LessOrGreater(toxicBuildup.amount, toxicBuildup.lastAmount, 0.6f) || LessOrGreater(toxicBuildup.amount, toxicBuildup.lastAmount, 0.8f))
                 {
                     state.updateCapacities = true;
                 }
 
-                toxicBuildup.lastToxicBuildup = toxicBuildup.tendQuality;
+                toxicBuildup.lastAmount = toxicBuildup.amount;
             }
         }
 
@@ -1033,8 +1033,13 @@ public class RWHealthState
 
                 afflictionList = new(part.afflictions);
 
-                foreach (RWAffliction affliction in afflictionList)
+                foreach (RWAffliction baseAffliction in afflictionList)
                 {
+                    if (baseAffliction is not RWTendableAffliction affliction)
+                    {
+                        continue;
+                    }
+
                     if (affliction is RWDestroyed destroyed)
                     {
                         part.health = 0;
@@ -1042,9 +1047,16 @@ public class RWHealthState
 
                         if (!destroyed.isTended)
                         {
-                            state.bloodLossPerCycle += destroyed.isBleeding ? destroyed.healingDifficulty.bleeding * destroyed.part.maxHealth * 2 * state.bodySizeFactor * BloodLossMultiplier(part) : 0;
+                            float destroyedBloodLoss = destroyed.isBleeding ? destroyed.healingDifficulty.bleeding * destroyed.part.maxHealth * 2 * state.bodySizeFactor * BloodLossMultiplier(part) : 0;
 
-                            affliction.pain = destroyed.part.maxHealth * 2 * destroyed.healingDifficulty.pain / state.bodySizeFactor / 100;
+                            state.bloodLossPerCycle += destroyedBloodLoss;
+
+                            foreach (int bodyChunk in destroyed.part.connectedBodyChunks)
+                            {
+                                state.visualBleedAmount[bodyChunk][0] += destroyedBloodLoss / destroyed.part.connectedBodyChunks.Count;
+                            }
+
+                            destroyed.pain = destroyed.part.maxHealth * 2 * destroyed.healingDifficulty.pain / state.bodySizeFactor / 100;
                         }
 
                         break;
@@ -1073,15 +1085,15 @@ public class RWHealthState
                     {
                         if (scar.painCategory == "painful")
                         {
-                            affliction.pain = scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
+                            scar.pain = scar.scarDamage * 1.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
                         }
                         else if (scar.painCategory == "aching")
                         {
-                            affliction.pain = scar.scarDamage * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
+                            scar.pain = scar.scarDamage * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
                         }
                         else if (scar.painCategory == "itchy")
                         {
-                            affliction.pain = scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
+                            scar.pain = scar.scarDamage * 0.5f * injury.healingDifficulty.scarPain / state.bodySizeFactor / 100;
                         }
                     }
                     else
@@ -1104,6 +1116,18 @@ public class RWHealthState
             line1:
 
                 part.efficiency = Mathf.Max(0, part.health / part.maxHealth);
+
+                if (part.isBionic)
+                {
+                    if (part.afflictions.Count == 0 || part.afflictions[0] is not RWArtificialPartBase artificialPart)
+                    {
+                        part.isBionic = false;
+                    }
+                    else
+                    {
+                        part.efficiency *= artificialPart.efficiency;
+                    }
+                }
 
                 if (part.health > 0 && part.health < 1 || part.deathEffect == "" && part.health < 1)
                 {
@@ -1282,6 +1306,25 @@ public class RWHealthState
 
                 foreach (RWBodyPart part in state.eatingBP)
                 {
+                    if (part is Tongue)
+                    {
+                        bool jawIsBionic = false;
+
+                        foreach (RWBodyPart part2 in state.eatingBP)
+                        {
+                            if (part2 is Jaw jaw && jaw.isBionic)
+                            {
+                                jawIsBionic = true;
+                                break;
+                            }
+                        }
+
+                        if (jawIsBionic)
+                        {
+                            continue;
+                        }
+                    }
+
                     baseEfficiency *= 1 - part.capacityImportance[part.capacity.IndexOf("Eating")] * (1 - part.efficiency);
                 }
 
@@ -1425,6 +1468,25 @@ public class RWHealthState
 
                 foreach (RWBodyPart part in state.talkingBP)
                 {
+                    if (part is Tongue)
+                    {
+                        bool jawIsBionic = false;
+
+                        foreach (RWBodyPart part2 in state.talkingBP)
+                        {
+                            if (part2 is Jaw jaw && jaw.isBionic)
+                            {
+                                jawIsBionic = true;
+                                break;
+                            }
+                        }
+
+                        if (jawIsBionic)
+                        {
+                            continue;
+                        }
+                    }
+
                     baseEfficiency *= 1 - part.capacityImportance[part.capacity.IndexOf("Talking")] * (1 - part.efficiency);
                 }
 
@@ -1507,7 +1569,7 @@ public class RWHealthState
                 {
                     state.capacityAffectingAffliction.Add(informational);
 
-                    switch (informational.tendQuality)
+                    switch (informational.amount)
                     {
                         case <= 0.2f:
                             state.consciousness -= 0.05f;
@@ -1536,7 +1598,7 @@ public class RWHealthState
                 {
                     state.capacityAffectingAffliction.Add(informational);
 
-                    switch (informational.tendQuality)
+                    switch (informational.amount)
                     {
                         case <= 0.2f:
                             state.consciousness -= 0.05f;
@@ -1624,7 +1686,7 @@ public class RWHealthState
 
             foreach (RWBodyPart part in state.bodyParts)
             {
-                if (IsSubPartName(focusedArmourPart, part))
+                if (IsSubPartOf(focusedArmourPart, part))
                 {
                     armour.Add(part.armour);
 
@@ -1711,7 +1773,7 @@ public class RWHealthState
             return;
         }
 
-        if (damageType is RWFlame )
+        if (damageType is RWFlame)
         {
             Burn(state);
         }
@@ -1721,7 +1783,7 @@ public class RWHealthState
             if (ShadowOfOptions.debug_logs.Value)
                 Debug.Log(all + self.creature + "'s " + focusedBodyPart.name + " was destroyed");
 
-            DestroyBodyPart();
+            DestroyBodyPart(self, state, damageType, focusedBodyPart, attackName, attackerName, weapon);
 
             extraDamage = health * -1;
             damage = 0;
@@ -1731,7 +1793,7 @@ public class RWHealthState
             if (ShadowOfOptions.debug_logs.Value)
                 Debug.Log(all + self.creature + "'s " + focusedBodyPart.name + " was damaged for " + damage);
 
-            focusedBodyPart.afflictions.Add(Scar(damage));
+            focusedBodyPart.afflictions.Add(Scar(self, damageType, damage, focusedBodyPart, attackName, attackerName));
             focusedBodyPart.health = health;
         }
 
@@ -1743,7 +1805,7 @@ public class RWHealthState
             {
                 foreach (RWBodyPart part in state.bodyParts)
                 {
-                    if (IsSubPartName(focusedBodyPart, part))
+                    if (IsSubPartOf(focusedBodyPart, part))
                     {
                         focusedBodyPart = part;
 
@@ -1764,7 +1826,7 @@ public class RWHealthState
                             if (ShadowOfOptions.debug_logs.Value)
                                 Debug.Log(all + self.creature + "'s extra bodypart " + focusedBodyPart + " was destroyed");
 
-                            DestroyBodyPart();
+                            DestroyBodyPart(self, state, damageType, focusedBodyPart, attackName, attackerName, weapon);
                             extraDamage = health * -1;
                             damage = 0;
                         }
@@ -1775,7 +1837,7 @@ public class RWHealthState
 
                             extraDamage = 0f;
 
-                            focusedBodyPart.afflictions.Add(Scar(tempDamage));
+                            focusedBodyPart.afflictions.Add(Scar(self, damageType, damage, focusedBodyPart, attackName, attackerName));
                             focusedBodyPart.health = health;
                         }
 
@@ -1789,7 +1851,7 @@ public class RWHealthState
             {
                 foreach (RWBodyPart part in state.bodyParts)
                 {
-                    if (IsSubPartName(focusedBodyPart, part))
+                    if (IsSubPartOf(focusedBodyPart, part))
                     {
                         focusedBodyPart = part;
 
@@ -1802,7 +1864,7 @@ public class RWHealthState
 
                         if (health <= 0f)
                         {
-                            DestroyBodyPart();
+                            DestroyBodyPart(self, state, damageType, focusedBodyPart, attackName, attackerName, weapon);
                             extraDamage = health * -1;
                             damage = 0;
 
@@ -1812,7 +1874,7 @@ public class RWHealthState
                         {
                             extraDamage = 0f;
 
-                            focusedBodyPart.afflictions.Add(Scar(tempDamage));
+                            focusedBodyPart.afflictions.Add(Scar(self, damageType, damage, focusedBodyPart, attackName, attackerName));
                             focusedBodyPart.health = health;
                         }
 
@@ -1826,7 +1888,7 @@ public class RWHealthState
             {
                 foreach (RWBodyPart part in state.bodyParts)
                 {
-                    if (IsSubPartName(focusedBodyPart, part))
+                    if (IsSubPartOf(focusedBodyPart, part))
                     {
                         focusedBodyPart = part;
 
@@ -1839,7 +1901,7 @@ public class RWHealthState
 
                         if (health <= 0f)
                         {
-                            DestroyBodyPart();
+                            DestroyBodyPart(self, state, damageType, focusedBodyPart, attackName, attackerName, weapon);
                             extraDamage = health * -1;
                             damage = 0;
 
@@ -1849,7 +1911,7 @@ public class RWHealthState
                         {
                             extraDamage = 0f;
 
-                            focusedBodyPart.afflictions.Add(Scar(tempDamage));
+                            focusedBodyPart.afflictions.Add(Scar(self, damageType, damage, focusedBodyPart, attackName, attackerName));
                             focusedBodyPart.health = health;
                         }
 
@@ -1871,92 +1933,6 @@ public class RWHealthState
         }
 
         state.updateCapacities = true;
-
-        void DestroyBodyPart()
-        {
-            if (focusedBodyPart == null)
-            {
-                return;
-            }
-            else if (focusedBodyPart.deathEffect == "")
-            {
-                focusedBodyPart.afflictions.Add(Scar(focusedBodyPart.health));
-                return;
-            }
-            else if (focusedBodyPart is UpperTorso)
-            {
-                focusedBodyPart.afflictions.Add(Scar(focusedBodyPart.health));
-                Kill(self);
-                return;
-            }
-
-            if (weapon != null)
-            {
-                weapon.destroyedPart = true;
-            }
-
-            List<RWBodyPart> subParts = new()
-                {
-                    focusedBodyPart
-                };
-
-            List<RWBodyPart> subPartsRestricted = new();
-
-            while (true)
-            {
-                bool newBodyParts = false;
-
-                foreach (RWBodyPart part in state.bodyParts)
-                {
-                    for (int i = 0; i < subParts.Count; i++)
-                    {
-                        if (!subParts.Contains(part) && !subPartsRestricted.Contains(part) && IsSubPartName(part, subParts[i]))
-                        {
-                            if (subParts[i].afflictions.Count == 1 && subParts[i].afflictions[0] is RWDestroyed)
-                            {
-                                subPartsRestricted.Add(part);
-                                continue;
-                            }
-
-                            newBodyParts = true;
-                            subParts.Add(part);
-                        }
-                    }
-                }
-
-                if (!newBodyParts)
-                {
-                    break;
-                }
-            }
-
-            for (int j = 0; j < subParts.Count; j++)
-            {
-                subParts[j].afflictions.Clear();
-                subParts[j].afflictions.Add(new RWDestroyed(self, subParts[j], j == 0 ? 1f : 0f, damageType, attackName, attackerName));
-
-                subParts[j].health = 0;
-                subParts[j].efficiency = 0;
-
-                if (subParts[j].deathEffect == "Death" || subParts[j].deathEffect == "Decapitation")
-                {
-                    Kill(self);
-                }
-            }
-
-            focusedBodyPart.health = 0;
-            focusedBodyPart.efficiency = 0;
-
-            if (focusedBodyPart.deathEffect == "Death" || focusedBodyPart.deathEffect == "Decapitation")
-            {
-                Kill(self);
-            }
-
-            if (self.creature.realizedCreature != null)
-            {
-                UpdateMissingChunks(state, self.creature.realizedCreature);
-            }
-        }
 
         void OverkillPrevention()
         {
@@ -1981,71 +1957,6 @@ public class RWHealthState
             }
         }
 
-        RWInjury Scar(float damage)
-        {
-            if (damageType.headiffs.Count >= 2 && damageType.headiffs[2] == "Bruise" && !focusedBodyPart.isSolid && !focusedBodyPart.isInternal || damageType.armourCategory == "Blunt" && focusedBodyPart is RWOrgan && !focusedBodyPart.isDelicate)
-            {
-                return new(self, focusedBodyPart, damage, damageType, attackName, attackerName);
-            } //bruises never scar
-
-            float oddsOfScarring;
-
-            if (focusedBodyPart is Brain)
-            {
-                oddsOfScarring = 100;
-            }
-            else if (focusedBodyPart.isDelicate)
-            {
-                oddsOfScarring = 50f * Mathf.Clamp((damage - 1) / 5, 0, 1);
-            }
-            else
-            {
-                oddsOfScarring = (focusedBodyPart.isSolid ? 1f : 2f) * Mathf.Clamp((damage - 4) / 10, 0, 1);
-            }
-
-            if (Random.value * 100 >= oddsOfScarring)
-            {
-                return new(self, focusedBodyPart, damage, damageType, attackName, attackerName);
-            }
-
-            RWScar scar = new(self, focusedBodyPart, damage, damageType, attackName, attackerName);
-
-            float pain = Random.value;
-
-            if (pain > 0.9f)
-            {
-                scar.painCategory = "painful";
-            }
-            else if (pain > 0.7f)
-            {
-                scar.painCategory = "aching";
-            }
-            else if (pain > 0.5f)
-            {
-                scar.painCategory = "itchy";
-            }
-
-            if (focusedBodyPart.isDelicate)
-            {
-                scar.isPermanent = true;
-                scar.isRevealed = true;
-
-                scar.isTended = true;
-                scar.isBleeding = false;
-            }
-
-            if (scar.isPermanent)
-            {
-                scar.scarDamage = damage;
-            }
-            else
-            {
-                scar.scarDamage = Mathf.Lerp(1, damage / 2, Random.value);
-            }
-
-            return scar;
-        }
-
         bool BombDestroyBodyparts()
         {
             if (focusedBodyPart is Finger || focusedBodyPart is Hand || focusedBodyPart is Toe || focusedBodyPart is Foot || focusedBodyPart is Ear || focusedBodyPart is Jaw || focusedBodyPart is Eye)
@@ -2055,6 +1966,243 @@ public class RWHealthState
 
             return false;
         }
+    }
+
+    public static void SurgicallyRemove(CreatureState self, RWState state, RWBodyPart part)
+    {
+        DestroyBodyPart(self, state, new RWSurgicalCut(), part, "", "", null);
+    }
+    public static void SurgicallyAttach(CreatureState self, RWState state, RWLimbReplacement limbReplacement)
+    {
+        RWBodyPart focusedBodyPart = limbReplacement.part;
+
+        List<RWBodyPart> subParts = new()
+        {
+            focusedBodyPart
+        };
+
+        List<RWBodyPart> subPartsRestricted = new();
+
+        while (true)
+        {
+            bool newBodyParts = false;
+
+            foreach (RWBodyPart part in state.bodyParts)
+            {
+                for (int i = 0; i < subParts.Count; i++)
+                {
+                    if (!subParts.Contains(part) && !subPartsRestricted.Contains(part) && IsSubPartOf(part, subParts[i]))
+                    {
+                        if (IsDestroyed(subParts[i]))
+                        {
+                            subPartsRestricted.Add(part);
+                            continue;
+                        }
+
+                        newBodyParts = true;
+                        subParts.Add(part);
+                    }
+                }
+            }
+
+            if (!newBodyParts)
+            {
+                break;
+            }
+        }
+
+        for (int j = 1; j < subParts.Count; j++)
+        {
+            subParts[j].afflictions.Clear();
+            subParts[j].afflictions.Add(new RWDestroyed(self, subParts[j], 0, new RWSurgicalCut(), "", ""));
+
+            subParts[j].health = 0;
+            subParts[j].efficiency = 0;
+
+            if (subParts[j].deathEffect == "Death" || subParts[j].deathEffect == "Decapitation")
+            {
+                Kill(self);
+            }
+        }
+
+        focusedBodyPart.health = 0;
+        focusedBodyPart.efficiency = 0;
+
+        if (focusedBodyPart.deathEffect == "Death" || focusedBodyPart.deathEffect == "Decapitation")
+        {
+            Kill(self);
+        }
+
+        if (self.creature.realizedCreature != null)
+        {
+            UpdateMissingChunks(state, self.creature.realizedCreature);
+        }
+
+        System.Func<RWArtificialPartBase> type = limbReplacement.replacement;
+
+        limbReplacement.part.afflictions.Add(type.Invoke());
+        limbReplacement.part.isBionic = true;
+    }
+
+    private static void DestroyBodyPart(CreatureState self, RWState state, RWDamageType damageType, RWBodyPart focusedBodyPart, string attackName, string attackerName, RWWeaponStats weapon)
+    {
+        if (focusedBodyPart == null)
+        {
+            return;
+        }
+        else if (focusedBodyPart.deathEffect == "")
+        {
+            focusedBodyPart.afflictions.Add(Scar(self, damageType, focusedBodyPart.health, focusedBodyPart, attackName, attackerName));
+            return;
+        }
+        else if (focusedBodyPart is UpperTorso)
+        {
+            focusedBodyPart.afflictions.Add(Scar(self, damageType, focusedBodyPart.health, focusedBodyPart, attackName, attackerName));
+            Kill(self);
+            return;
+        }
+
+        if (weapon != null)
+        {
+            weapon.destroyedPart = true;
+        }
+
+        List<RWBodyPart> subParts = new()
+        {
+            focusedBodyPart
+        };
+
+        List<RWBodyPart> subPartsRestricted = new();
+
+        while (true)
+        {
+            bool newBodyParts = false;
+
+            foreach (RWBodyPart part in state.bodyParts)
+            {
+                for (int i = 0; i < subParts.Count; i++)
+                {
+                    if (!subParts.Contains(part) && !subPartsRestricted.Contains(part) && IsSubPartOf(part, subParts[i]))
+                    {
+                        if (IsDestroyed(subParts[i]))
+                        {
+                            subPartsRestricted.Add(part);
+                            continue;
+                        }
+
+                        newBodyParts = true;
+                        subParts.Add(part);
+                    }
+                }
+            }
+
+            if (!newBodyParts)
+            {
+                break;
+            }
+        }
+
+        for (int j = 0; j < subParts.Count; j++)
+        {
+            subParts[j].afflictions.Clear();
+
+            RWDestroyed destroyed = new(self, subParts[j], j == 0 ? 1f : 0f, damageType, attackName, attackerName);
+
+            if (subParts[j] is RWOrgan)
+            {
+                destroyed.isTended = true;
+            }
+
+            subParts[j].afflictions.Add(destroyed);
+
+            subParts[j].health = 0;
+            subParts[j].efficiency = 0;
+
+            subParts[j].isBionic = false;
+
+            if (subParts[j].deathEffect == "Death" || subParts[j].deathEffect == "Decapitation")
+            {
+                Kill(self);
+            }
+        }
+
+        focusedBodyPart.health = 0;
+        focusedBodyPart.efficiency = 0;
+
+        if (focusedBodyPart.deathEffect == "Death" || focusedBodyPart.deathEffect == "Decapitation")
+        {
+            Kill(self);
+        }
+
+        if (self.creature.realizedCreature != null)
+        {
+            UpdateMissingChunks(state, self.creature.realizedCreature);
+        }
+    }
+
+    private static RWInjury Scar(CreatureState self, RWDamageType damageType, float damage, RWBodyPart focusedBodyPart, string attackName, string attackerName)
+    {
+        if (damageType.headiffs.Count >= 2 && damageType.headiffs[2] == "Bruise" && !focusedBodyPart.isSolid && !focusedBodyPart.isInternal || damageType.armourCategory == "Blunt" && focusedBodyPart is RWOrgan && !focusedBodyPart.isDelicate)
+        {
+            return new(self, focusedBodyPart, damage, damageType, attackName, attackerName);
+        } //bruises never scar
+
+        float oddsOfScarring;
+
+        if (focusedBodyPart is Brain)
+        {
+            oddsOfScarring = 100;
+        }
+        else if (focusedBodyPart.isDelicate)
+        {
+            oddsOfScarring = 50f * Mathf.Clamp((damage - 1) / 5, 0, 1);
+        }
+        else
+        {
+            oddsOfScarring = (focusedBodyPart.isSolid ? 1f : 2f) * Mathf.Clamp((damage - 4) / 10, 0, 1);
+        }
+
+        if (Random.value * 100 >= oddsOfScarring)
+        {
+            return new(self, focusedBodyPart, damage, damageType, attackName, attackerName);
+        }
+
+        RWScar scar = new(self, focusedBodyPart, damage, damageType, attackName, attackerName);
+
+        float pain = Random.value;
+
+        if (pain > 0.9f)
+        {
+            scar.painCategory = "painful";
+        }
+        else if (pain > 0.7f)
+        {
+            scar.painCategory = "aching";
+        }
+        else if (pain > 0.5f)
+        {
+            scar.painCategory = "itchy";
+        }
+
+        if (focusedBodyPart.isDelicate)
+        {
+            scar.isPermanent = true;
+            scar.isRevealed = true;
+
+            scar.isTended = true;
+            scar.isBleeding = false;
+        }
+
+        if (scar.isPermanent)
+        {
+            scar.scarDamage = damage;
+        }
+        else
+        {
+            scar.scarDamage = Mathf.Lerp(1, damage / 2, Random.value);
+        }
+
+        return scar;
     }
 
     public static void UpdateMissingChunks(RWState state, Creature creature)
@@ -2109,23 +2257,34 @@ public class RWHealthState
         {
             return;
         }
-        else if (self.creature.realizedCreature == null)
-        {
-            if (ShadowOfOptions.debug_logs.Value)
-            {
-                Debug.Log(all + " " + self.creature + " was destroyed by burning");
-            }
 
+        if (ShadowOfOptions.debug_logs.Value)
+        {
+            Debug.Log(all + " " + self.creature + " was destroyed by burning");
+        }
+
+        if (self.creature.realizedCreature == null)
+        {
             self.creature.Destroy();
         }
         else
         {
-            if (ShadowOfOptions.debug_logs.Value)
+            Creature crit = self.creature.realizedCreature;
+
+            Vector2 vector = Vector2.Lerp(crit.firstChunk.pos, crit.firstChunk.lastPos, 0.35f);
+            crit.room.AddObject(new SootMark(crit.room, vector, 80f, true));
+
+            for (int k = 0; k < 2; k++)
             {
-                Debug.Log(all + " " + self.creature + " was destroyed by burning");
+                Smoke.Smolder smolder = new(crit.room, crit.mainBodyChunk.pos, crit.mainBodyChunk, null);
+
+                if (smolder != null)
+                {
+                    crit.room.AddObject(smolder);
+                }
             }
 
-            self.creature.realizedCreature.Destroy();
+            crit.Destroy();
             self.creature.Destroy();
         }
     }
@@ -2248,7 +2407,7 @@ public class RWHealthState
             _ => 0
         };
 
-        value *= Mathf.Min(1.4f, 1 + (state.manipulation - 1f)) * Mathf.Min(1.4f, 1 + (state.sight - 1f) * 0.7f);
+        value *= Mathf.Min(1.4f, state.manipulation) * Mathf.Min(1.4f, 1 + (state.sight - 1f) * 0.7f);
 
         return value;
     }
@@ -2263,7 +2422,7 @@ public class RWHealthState
     {
         state.tendAffliction.tendQuality = Mathf.Clamp(MedicalTendQuality(state) * 0.3f * (tender == tendee ? 0.7f : 1) * Random.Range(0.75f, 1.25f), 0, 0.7f);
     }
-    public static void TendAffliction(RWState state, RWAffliction affliction)
+    public static void TendAffliction(RWState state, RWTendableAffliction affliction)
     {
         affliction.tendQuality = Mathf.Clamp(MedicalTendQuality(state) * 0.3f * 0.7f, 0, 0.7f);
     }

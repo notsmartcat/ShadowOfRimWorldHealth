@@ -912,7 +912,7 @@ internal class ILHooks
         {
             if (hypothermia != null)
             {
-                hypothermia.tendQuality = Math.Min(1, self.Hypothermia);
+                hypothermia.amount = Math.Min(1, self.Hypothermia);
             }
             else
             {
@@ -1623,7 +1623,7 @@ internal class ILHooks
         {
             if (airInLungs != null)
             {
-                airInLungs.tendQuality = lungs;
+                airInLungs.amount = lungs;
             }
             else
             {
@@ -1755,7 +1755,7 @@ internal class ILHooks
         {
             if (airInLungs != null)
             {
-                airInLungs.tendQuality = lungs;
+                airInLungs.amount = lungs;
             }
             else
             {
@@ -3735,7 +3735,7 @@ internal class ILHooks
 
         if (toxicBuildup != null)
         {
-            toxicBuildup.tendQuality = 1;
+            toxicBuildup.amount = 1;
         }
         else
         {
@@ -3766,8 +3766,8 @@ internal class ILHooks
 
         if (toxicBuildup != null)
         {
-            toxicBuildup.tendQuality += poison;
-            toxicBuildup.tendQuality = Math.Min(1, toxicBuildup.tendQuality);
+            toxicBuildup.amount += poison;
+            toxicBuildup.amount = Math.Min(1, toxicBuildup.amount);
         }
         else
         {
@@ -4605,8 +4605,13 @@ internal class ILHooks
 
         foreach (RWBodyPart part in otherState.bodyParts)
         {
-            foreach (RWAffliction affliction in part.afflictions)
+            foreach (RWAffliction baseAffliction in part.afflictions)
             {
+                if (baseAffliction is not RWTendableAffliction affliction)
+                {
+                    continue;
+                }
+
                 if (!affliction.isTended)
                 {
                     if (affliction is RWInjury injury)
@@ -4699,7 +4704,7 @@ internal class ILHooks
 
         return self.cat.abstractCreature.pos;
 
-        void startTending(RWAffliction affliction)
+        void startTending(RWTendableAffliction affliction)
         {
             state.tendTime = Mathf.Round(state.tendTimeBase / RWHealthState.MedicalTendSpeed(state));
             state.tendTimeMax = state.tendTime;

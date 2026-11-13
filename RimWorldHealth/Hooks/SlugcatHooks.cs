@@ -177,7 +177,7 @@ internal class SlugcatHooks
         {
             if (airInLungs != null)
             {
-                airInLungs.tendQuality = self.airInLungs;
+                airInLungs.amount = self.airInLungs;
             }
             else
             {
@@ -419,7 +419,7 @@ internal class SlugcatHooks
 
                 if (bleedInfo[1] <= 0)
                 {
-                    self.room.AddObject(new BloodDrip(self.bodyChunks[i].pos + new Vector2(UnityEngine.Random.Range(-self.bodyChunks[i].rad, self.bodyChunks[i].rad), UnityEngine.Random.Range(-self.bodyChunks[i].rad, self.bodyChunks[i].rad)), default, false));
+                    self.room.AddObject(new BloodDrip(self.bodyChunks[i].pos + new Vector2(Random.Range(-self.bodyChunks[i].rad, self.bodyChunks[i].rad), Random.Range(-self.bodyChunks[i].rad, self.bodyChunks[i].rad)), default, false));
 
                     bleedInfo[1] = Custom.LerpMap(bleedInfo[0], 0, 120, 25, 1);
                 }
@@ -600,8 +600,13 @@ internal class SlugcatHooks
 
             foreach (RWBodyPart part in state.bodyParts)
             {
-                foreach (RWAffliction affliction in part.afflictions)
+                foreach (RWAffliction baseAffliction in part.afflictions)
                 {
+                    if (baseAffliction is not RWTendableAffliction affliction)
+                    {
+                        continue;
+                    }
+
                     if (!affliction.isTended)
                     {
                         if (affliction is RWInjury injury)
@@ -705,8 +710,13 @@ internal class SlugcatHooks
 
                 foreach (RWBodyPart part in otherState.bodyParts)
                 {
-                    foreach (RWAffliction affliction in part.afflictions)
+                    foreach (RWAffliction baseAffliction in part.afflictions)
                     {
+                        if (baseAffliction is not RWTendableAffliction affliction)
+                        {
+                            continue;
+                        }
+
                         if (!affliction.isTended)
                         {
                             tendOther(self.friendTracker.friend);
@@ -761,8 +771,13 @@ internal class SlugcatHooks
 
                 foreach (RWBodyPart part in otherState.bodyParts)
                 {
-                    foreach (RWAffliction affliction in part.afflictions)
+                    foreach (RWAffliction baseAffliction in part.afflictions)
                     {
+                        if (baseAffliction is not RWTendableAffliction affliction)
+                        {
+                            continue;
+                        }
+
                         if (!affliction.isTended)
                         {
                             tendTarget = creature;
@@ -807,7 +822,7 @@ internal class SlugcatHooks
         }
         catch (System.Exception e) { RimWorldHealth.Logger.LogError(e); }
 
-        void startSelfTend(RWAffliction affliction)
+        void startSelfTend(RWTendableAffliction affliction)
         {
             stopBehaviour();
 

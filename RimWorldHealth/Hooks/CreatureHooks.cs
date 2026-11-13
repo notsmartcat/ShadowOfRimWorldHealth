@@ -61,7 +61,7 @@ internal class CreatureHooks
         {
             if (airInLungs != null)
             {
-                airInLungs.tendQuality = Mathf.InverseLerp(-0.5f, 1, self.lungs);
+                airInLungs.amount = Mathf.InverseLerp(-0.5f, 1, self.lungs);
             }
             else
             {
@@ -219,6 +219,68 @@ internal class CreatureHooks
                 }
 
                 state.tendAffliction = null;
+
+                inspectedState.updateCapacities = true;
+            }
+        }
+        else if (state.tendOperation != null)
+        {
+            RWState inspectedState = null;
+            
+            if (state.tendTarget != null && healthState.TryGetValue(state.tendTarget.State, out inspectedState)) { }
+
+            inspectedState ??= state;
+
+            state.tendTime--;
+
+            if (state.tendOperation.isSuspended)
+            {
+                state.tendOperation = null;
+            }
+            else if (state.tendTime <= 0)
+            {
+                inspectedState.operationsList.Remove(state.tendOperation);
+
+                if (self.State != null && self.State is PlayerState playerState && healthTabs.Count >= playerState.playerNumber && healthTabs[playerState.playerNumber].visible)
+                {
+                    healthTabs[playerState.playerNumber].OperationRemoved();
+                }
+
+                if (state.tendOperation is RWLimbReplacement limbReplacement)
+                {
+                    if (IsDestroyed(limbReplacement.part))
+                    {
+                        goto skipOperation;
+                    }
+
+                    foreach (RWAffliction affliction in limbReplacement.part.afflictions)
+                    {
+                        affliction.Remove();
+                    }
+
+                    limbReplacement.part.afflictions.Clear();
+
+                    CreatureState creatureState = self.abstractCreature.state;
+
+                    if (state.tendTarget != null && state.tendTarget.State != null)
+                    {
+                        creatureState = state.tendTarget.State;
+                    }
+
+                    if (limbReplacement.replacement == null)
+                    {
+                        RWHealthState.SurgicallyRemove(creatureState, inspectedState, limbReplacement.part);
+                    }
+                    else
+                    {
+
+                        RWHealthState.SurgicallyAttach(creatureState, inspectedState, limbReplacement);
+                    }
+                }
+
+            skipOperation:
+
+                state.tendOperation = null;
 
                 inspectedState.updateCapacities = true;
             }

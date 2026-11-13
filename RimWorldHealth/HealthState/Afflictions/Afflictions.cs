@@ -2,10 +2,19 @@
 
 public class RWAffliction(CreatureState state, RWBodyPart part)
 {
+    public void Remove()
+    {
+        state = null;
+        part = null;
+    }
+
     public CreatureState state = state;
 
     public RWBodyPart part = part;
+}
 
+public class RWTendableAffliction(CreatureState state, RWBodyPart part) : RWAffliction(state, part)
+{
     public float pain;
 
     public bool isTended = false;
@@ -15,7 +24,7 @@ public class RWAffliction(CreatureState state, RWBodyPart part)
     public bool isCharacterSpecific = false;
 }
 
-public class RWInjury : RWAffliction
+public class RWInjury : RWTendableAffliction
 {
     public RWInjury(CreatureState state, RWBodyPart part, float damage, RWDamageType damageType, string attackName = "", string attackerName = "") : base(state, part)
     {
@@ -40,7 +49,7 @@ public class RWInjury : RWAffliction
             healingDifficulty = new RWHealingDifficulty();
         }
 
-        if (part.isSolid || healingDifficulty.bleeding <= 0)
+        if (part.isSolid || part.isBionic || healingDifficulty.bleeding <= 0)
         {
             isBleeding = false;
         }
@@ -54,11 +63,11 @@ public class RWInjury : RWAffliction
         {
             string RWHealingDifficultyName;
 
-            if (damageType.headiffs.Count > 1 && damageType.headiffs[1] != "" && !part.isSolid && !part.isInternal)
+            if (damageType.headiffs.Count > 1 && damageType.headiffs[1] != "" && !part.isSolid && !part.isBionic && !part.isInternal)
             {
                 RWHealingDifficultyName = damageType.headiffs[1];
             }
-            else if (damageType.headiffs.Count > 2 && damageType.headiffs[2] != "" && part.isSolid)
+            else if (damageType.headiffs.Count > 2 && damageType.headiffs[2] != "" && (part.isSolid || part.isBionic))
             {
                 RWHealingDifficultyName = damageType.headiffs[2];
             }
@@ -97,7 +106,7 @@ public class RWInjury : RWAffliction
     }
 }
 
-public class RWDisease(CreatureState state, RWBodyPart part) : RWAffliction(state, part)
+public class RWDisease(CreatureState state, RWBodyPart part) : RWTendableAffliction(state, part)
 {
     public string name = "";
 
@@ -132,10 +141,15 @@ public class RWDisease(CreatureState state, RWBodyPart part) : RWAffliction(stat
     }
 }
 
-public class RWInformational : RWAffliction
+public class RWInformational(CreatureState state, RWBodyPart part) : RWAffliction(state, part)
 {
-    public RWInformational(CreatureState state, RWBodyPart part) : base(state, part)
-    {
-        isTended = true;
-    }
+    public float amount;
+    public float lastAmount;
 } //Informational afflictions cannot be treated and serve simply to show information on the HealthTab, these affliction can affect capacities
+
+public class RWArtificialPartBase(CreatureState state, RWBodyPart part) : RWAffliction(state, part)
+{
+    public string name = "Default Articicial Part";
+    public float efficiency = 0;
+    public string descrition = "Default description";
+}

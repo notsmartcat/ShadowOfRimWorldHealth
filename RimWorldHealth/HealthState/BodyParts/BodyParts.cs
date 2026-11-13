@@ -64,6 +64,8 @@ public class RWBodyPart(CreatureState state)
     public List<RWAffliction> afflictions = new();
 
     public bool edible = false;
+
+    public bool isBionic = false;
 }
 
 public class UpperTorso : RWBodyPart
