@@ -141,11 +141,11 @@ public class RWDisease(CreatureState state, RWBodyPart part) : RWTendableAfflict
     }
 }
 
-public class RWInformational(CreatureState state, RWBodyPart part) : RWAffliction(state, part)
+public class RWAilment(CreatureState state, RWBodyPart part) : RWAffliction(state, part)
 {
     public float amount;
     public float lastAmount;
-} //Informational afflictions cannot be treated and serve simply to show information on the HealthTab, these affliction can affect capacities
+} //Ailments cannot be treated and serve simply to show information on the HealthTab, these afflictions can affect capacities
 
 public class RWArtificialPartBase(CreatureState state, RWBodyPart part) : RWAffliction(state, part)
 {

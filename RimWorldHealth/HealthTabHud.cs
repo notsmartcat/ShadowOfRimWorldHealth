@@ -40,6 +40,15 @@ public class HealthTab : HudPart
         };
         hud.fContainers[1].AddChild(sprites[1]);
 
+        allowedMedicine = new FSprite("pixel", true)
+        {
+            x = DrawPos().x - 300,
+            y = DrawPos().y - 116,
+            scaleX = 14,
+            scaleY = 14
+        };
+        hud.fContainers[1].AddChild(allowedMedicine);
+
         capacityName = new(Custom.GetFont(), "Name")
         {
             x = DrawPos().x - 250,
@@ -809,11 +818,14 @@ public class HealthTab : HudPart
 
             if (selectedVertical >= maxVertical)
             {
-                selectedVertical = selectedHorizontal != 2 && !positiveInput ? 1 : 0;
-
-                if (selectedHorizontal == 0.9f || selectedHorizontal == 1.1f)
+                if (selectedHorizontal != 0 || selectedVertical != maxVertical)
                 {
-                    selectedHorizontal = 1;
+                    selectedVertical = selectedHorizontal != 2 && !positiveInput ? 1 : 0;
+
+                    if (selectedHorizontal == 0.9f || selectedHorizontal == 1.1f)
+                    {
+                        selectedHorizontal = 1;
+                    }
                 }
             }
             else if (selectedVertical <= -1)
@@ -1027,20 +1039,48 @@ public class HealthTab : HudPart
 
                 }
 
+                //"Remove bionic spine",
+                //"Remove bionic stomach",
+                //"Remove bionic heart",
                 //"Harvest",
-                //"Remove (tongue)", 
+                //(All "Remove bionic" below are ordered by left first and right last no matter which prosthetic is installed)
+                //"Remove bionic eye",
+                //"Remove bionic ear",
+                //"Remove bionic jaw",
+                //"Remove (tongue)", (same for default and bionic tongue)
+                //"Remove bionic arm",
+                //"Remove wooden hand",
+                //"Remove wooden foot",
+                //"Remove bionic leg",
                 //"Amputate",
                 //"Euthanize by Cut", "Anesthetize",
+                //"Install archotech eye",
                 //"Install archotech arm",
+                //"Install archotech leg",
+                //"Install bionic eye",
                 //"Install bionic arm",
+                //"Install bionic leg",
+                //"Install bionic spine",
+                //"Install bionic heart",
+                //"Install bionic stomach",
+                //"Install bionic ear",
+                //"Install bionic tongue",
+                //"Install bionic jaw",
                 //"Install peg leg",
                 //"Install wooden hand",
                 //"Install wooden foot",
-                //"Install denture (jaw)"
+                //"Install denture (jaw)",
+                //"Install heart",
+                //"Install lung",
+                //"Install kidney",
+                //"Install liver",
+                //"Install prosthetic heart",
+
+                List<int> medicalRequirments = new() {0, 1, 1};
 
                 if (operationName == "Euthanize by Cut" || operationName == "Anesthetize")
                 {
-                    inspectedState.operationsList.Add(new RWOperation(operationName, operationSubName, null));
+                    inspectedState.operationsList.Add(new RWOperation(operationName, operationSubName, null, medicalRequirments, null));
                 }
                 else
                 {
@@ -1053,6 +1093,8 @@ public class HealthTab : HudPart
 
                     string operationNameOverride = "";
                     string operationSubNameOverride = "";
+
+                    Type requiredObject = null;
 
                     switch (operationName)
                     {
@@ -1145,11 +1187,17 @@ public class HealthTab : HudPart
                         case "Amputate":
 
                             break;
+                        case "Install archotech eye":
+                            medicalRequirments = new() { 5, 2, 1 };
+                            break;
                         case "Install archotech arm":
-
+                            medicalRequirments = new() { 5, 2, 1 };
+                            break;
+                        case "Install archotech leg":
+                            medicalRequirments = new() { 5, 2, 1 };
                             break;
                         case "Install bionic arm":
-
+                            medicalRequirments = new() { 5, 2, 1 };
                             break;
                         case "Install peg leg":
                             switch (operationSubName)
@@ -1179,6 +1227,9 @@ public class HealthTab : HudPart
                             }
 
                             replacement = () => new RWPegLeg(inspectedCreatureState, operatedPart);
+
+                            medicalRequirments = new() { 3, 2, 1 };
+                            requiredObject = typeof(Spear);
                             break;
                         case "Install wooden hand":
                             switch (operationSubName)
@@ -1208,6 +1259,8 @@ public class HealthTab : HudPart
                             }
 
                             replacement = () => new RWWoodenHand(inspectedCreatureState, operatedPart);
+
+                            medicalRequirments = new() { 3, 2, 1 };
                             break;
                         case "Install wooden foot":
                             switch (operationSubName)
@@ -1253,6 +1306,8 @@ public class HealthTab : HudPart
                             }
 
                             replacement = () => new RWWoodenFoot(inspectedCreatureState, operatedPart, nameOverride);
+
+                            medicalRequirments = new() { 3, 2, 1 };
                             break;
                         case "Install denture (jaw)":
                             foreach (RWBodyPart part in inspectedState.bodyParts)
@@ -1266,6 +1321,8 @@ public class HealthTab : HudPart
                             }
 
                             replacement = () => new RWDenture(inspectedCreatureState, operatedPart);
+
+                            medicalRequirments = new() { 3, 2, 1 };
                             break;
                     }
 
@@ -1278,13 +1335,22 @@ public class HealthTab : HudPart
                         operationSubName = operationSubNameOverride;
                     }
 
-                    inspectedState.operationsList.Add(new RWLimbReplacement(operationName, operationSubName, operatedPart, limbName, limbSubName, replacement));
+                    inspectedState.operationsList.Add(new RWLimbReplacement(operationName, operationSubName, operatedPart, medicalRequirments, requiredObject, limbName, limbSubName, replacement));
                 }
 
                 isOperationListActive = false;
                 return;
             }
 
+            if (selectedHorizontal == 0 && selectedVertical == getMaxVertical())
+            {
+                inspectedState.allowedMedicine++;
+
+                if (inspectedState.allowedMedicine > 3)
+                {
+                    inspectedState.allowedMedicine = 0;
+                }
+            }
             if ((selectedHorizontal != 0 || selectedVertical == 0) && selectedHorizontal != 2) //use this to select Overview tabs and select operation stuff, otherwise regular tending code will trigger.
             {
                 if (selectedVertical == 0)
@@ -1860,6 +1926,8 @@ public class HealthTab : HudPart
 
         capacityName.isVisible = visible && overviewTab == 0;
 
+        allowedMedicine.isVisible = visible && overviewTab == 0;
+
         bloodLossPerCycle.isVisible = visible && inspectedState != null && inspectedState.bloodLossPerCycle >= 1 && inspectedState.bloodLoss < 1 && inspectedCreatureState != null && !inspectedCreatureState.dead;
 
         selectedSprite.isVisible = visible && selected;
@@ -1983,6 +2051,14 @@ public class HealthTab : HudPart
 
         if (overviewTab == 0)
         {
+            allowedMedicine.color = inspectedState.allowedMedicine switch
+            {
+                0 => Color.white,
+                1 => Color.green,
+                2 => Color.blue,
+                _ => Color.cyan
+            };
+
             capacityName.text = GetCreatureName(inspectedCreatureState.creature.realizedCreature);
             capacityName.alpha = SetTransparency();
 
@@ -2081,7 +2157,9 @@ public class HealthTab : HudPart
             if (selectedHorizontal != 0 && selectedHorizontal != 2)
             {
                 selectedSprite.isVisible = false;
-                selectedTimer = selectedTimerMax;
+
+                if (!isOperationListActive && (selectedHorizontal != 1 || selectedVertical < 2))
+                    selectedTimer = selectedTimerMax;
             }
 
             #region addBill
@@ -2337,15 +2415,26 @@ public class HealthTab : HudPart
 
         if (selectedHorizontal == 0)
         {
-            selectedSprite.x -= 250;
-
-            selectedSprite.y += 111 - 7 - (17 * selectedVertical - 1);
-
-            selectedSprite.scaleX = 145;
-
-            if (selectedTimer <= 0)
+            if (selectedVertical == (!inspectedCreatureState.dead ? 13 : 2))
             {
-                CapacitySelector();
+                selectedSprite.x = allowedMedicine.x;
+                selectedSprite.y = allowedMedicine.y;
+                selectedSprite.scale = 16;
+
+                selectedTimer = selectedTimerMax;
+            }
+            else
+            {
+                selectedSprite.x -= 250;
+
+                selectedSprite.y += 111 - 7 - (17 * selectedVertical - 1);
+
+                selectedSprite.scaleX = 145;
+
+                if (selectedTimer <= 0)
+                {
+                    CapacitySelector();
+                }
             }
         }
         else if (selectedHorizontal == 2)
@@ -2456,7 +2545,7 @@ public class HealthTab : HudPart
                 }
                 else if ((selectedSprite.y + (selectedSprite.scaleY / 2)) > ActualTopLimit())
                 {
-                    pivotOffset = healthTabBodyParts[selectedBodyPart].GetPivotOffset(selectedAffliction, true);      
+                    pivotOffset = healthTabBodyParts[selectedBodyPart].GetPivotOffset(selectedAffliction, true);
                 }
                 else if ((selectedSprite.y - (selectedSprite.scaleY / 2)) < ActualBottomLimit())
                 {
@@ -2471,21 +2560,249 @@ public class HealthTab : HudPart
                 }
             }
         }
+        else if (selectedTimer <= 0)
+        {
+            if (isOperationListActive)
+            {
+                foreach (OperationSelection operation in operationList)
+                {
+                    if (operation.horizontal == operationListHorizontal && operation.vertical == operationListVertical)
+                    {
+                        selectedSprite.x = operation.backgrounds[0].x + (operation.backgrounds[0].scaleX / 2) - 3;
+
+                        selectedSprite.y = operation.backgrounds[0].y + 12;
+
+                        selectedSprite.scaleX = operation.backgrounds[0].scaleX;
+                        break;
+                    }
+                }
+
+                if (healthTabInfos.Count == 0)
+                {
+                    healthTabInfos.Add(new(this));
+                }
+                else if (healthTabInfos.Count > 1)
+                {
+                    for (int i = 1; i < healthTabInfos.Count; i++)
+                    {
+                        healthTabInfos[i].slatedForDeletion = true;
+                    }
+                }
+
+                string operationName = "";
+                string operationSubName = "";
+
+                foreach (OperationSelection operation in operationList)
+                {
+                    if (operation.horizontal == operationListHorizontal && operation.vertical == operationListVertical)
+                    {
+                        operationName = operation.name;
+                        operationSubName = operation.subName;
+                        break;
+                    }
+                }
+
+                int medicalRequired = 0;
+                int medicineAmount = 1;
+                int medicineQuality = 1;
+
+                Type requiredObject = null;
+
+                RWBodyPart operationPart = null;
+
+                switch (operationName)
+                {
+                    case "Install archotech eye":
+                        medicalRequired = 5;
+                        medicineAmount = 2;
+                        break;
+                    case "Install archotech arm":
+                        medicalRequired = 5;
+                        medicineAmount = 2;
+                        break;
+                    case "Install archotech leg":
+                        medicalRequired = 5;
+                        medicineAmount = 2;
+                        break;
+                    case "Install bionic arm":
+                        medicalRequired = 5;
+                        medicineAmount = 2;
+                        break;
+                    case "Install peg leg":
+                        medicalRequired = 3;
+                        medicineAmount = 2;
+
+                        requiredObject = typeof(Spear);
+                        break;
+                    case "Install wooden hand":
+                        medicalRequired = 3;
+                        medicineAmount = 2;
+                        break;
+                    case "Install wooden foot":
+                        medicalRequired = 3;
+                        medicineAmount = 2;
+                        break;
+                    case "Install denture (jaw)":
+                        medicalRequired = 3;
+                        medicineAmount = 2;
+                        break;
+                }
+
+                if (medicalRequired != 0)
+                {
+                    healthTabInfos[0].name.text = "Requires: ";
+                    healthTabInfos[0].nameStatus.text = "Medical " + medicalRequired;
+
+                    healthTabInfos[0].colouredName.text = "Ingredients: ";
+
+                    healthTabInfos[0].description.text = "  " + medicineAmount + "x ";
+                    healthTabInfos[0].description.text += medicineQuality switch
+                    {
+                        1 => "Any Medicine",
+                        2 => "Regular or better medicine",
+                        _ => "Glitterworld Medicine"
+                    };
+
+                    if (requiredObject != null)
+                    {
+                        healthTabInfos[0].description.text += "\n  1x " + requiredObject.ToString();
+                    }
+
+                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                    {
+                        if (part == operationPart && part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RWArtificialPartBase artificialPart)
+                        {
+                            healthTabInfos[0].colouredName2.text = "Replaces: " + artificialPart.name;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    healthTabInfos[0].name.text = "Ingredients: ";
+                    healthTabInfos[0].nameStatus.text = "";
+
+                    healthTabInfos[0].colouredName.text = "";
+
+                    healthTabInfos[0].description.text = "  " + medicineAmount + "x ";
+                    healthTabInfos[0].description.text += medicineQuality switch
+                    {
+                        1 => "Any Medicine",
+                        2 => "Regular or better medicine",
+                        _ => "Glitterworld Medicine"
+                    };
+
+                    if (requiredObject != null)
+                    {
+                        healthTabInfos[0].description.text += "\n  1x " + requiredObject.ToString();
+                    }
+
+                    healthTabInfos[0].colouredName2.text = "";
+
+                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                    {
+                        if (part == operationPart && part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RWArtificialPartBase artificialPart)
+                        {
+                            healthTabInfos[0].colouredName2.text = "Replaces: " + artificialPart.name;
+                            break;
+                        }
+                    }
+                }
+            }
+            else if (selectedHorizontal == 1)
+            {
+                selectedSprite.x -= 258;
+
+                selectedSprite.y = selectedVertical switch
+                {
+                    2 => operationBackgrounds[0].y + 27,
+                    3 => operationBackgrounds[1].y + 27,
+                    4 => operationBackgrounds[2].y + 27,                    5 => operationBackgrounds[3].y + 27,
+                    _ => operationBackgrounds[0].y + 27
+                };
+
+                selectedSprite.scaleX = operationBackgrounds[0].scaleX;
+
+                if (healthTabInfos.Count == 0)
+                {
+                    healthTabInfos.Add(new(this));
+                }
+                else if (healthTabInfos.Count > 1)
+                {
+                    for (int i = 1; i < healthTabInfos.Count; i++)
+                    {
+                        healthTabInfos[i].slatedForDeletion = true;
+                    }
+                }
+
+                RWOperation operation = inspectedState.operationsList[selectedVertical - 2];
+
+                if (operation.medicalRequired != 0)
+                {
+                    healthTabInfos[0].name.text = "Requires: ";
+                    healthTabInfos[0].nameStatus.text = "Medical " + operation.medicalRequired;
+
+                    healthTabInfos[0].colouredName.text = "Ingredients: ";
+
+                    healthTabInfos[0].description.text = "  " + operation.medicineAmount + "x ";
+                    healthTabInfos[0].description.text += operation.medicineQuality switch
+                    {
+                        1 => "Any Medicine",
+                        2 => "Regular or better medicine",
+                        _ => "Glitterworld Medicine"
+                    };
+
+                    if (operation.requiredObject != null)
+                    {
+                        healthTabInfos[0].description.text += "\n  1x " + operation.requiredObject.ToString();
+                    }
+
+                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                    {
+                        if (part == operation.part && part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RWArtificialPartBase artificialPart)
+                        {
+                            healthTabInfos[0].colouredName2.text = "Replaces: " + artificialPart.name;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    healthTabInfos[0].name.text = "Ingredients: ";
+                    healthTabInfos[0].nameStatus.text = "";
+
+                    healthTabInfos[0].colouredName.text = "";
+
+                    healthTabInfos[0].description.text = "  " + operation.medicineAmount + "x ";
+                    healthTabInfos[0].description.text += operation.medicineQuality switch
+                    {
+                        1 => "Any Medicine",
+                        2 => "Regular or better medicine",
+                        _ => "Glitterworld Medicine"
+                    };
+
+                    if (operation.requiredObject != null)
+                    {
+                        healthTabInfos[0].description.text += "\n  1x " + operation.requiredObject.ToString();
+                    }
+
+                    healthTabInfos[0].colouredName2.text = "";
+
+                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                    {
+                        if (part == operation.part && part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RWArtificialPartBase artificialPart)
+                        {
+                            healthTabInfos[0].colouredName2.text = "Replaces: " + artificialPart.name;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
 
         void CapacitySelector()
         {
-            float value = 0;
-
             if (selectedVertical == 1)
-            {
-                SetPainInfo(!inspectedCreatureState.dead ? inspectedState.pain : 0);
-            }
-            else
-            {
-                SetInfo();
-            }
-
-            void SetPainInfo(float value)
             {
                 if (healthTabInfos.Count == 0)
                 {
@@ -2502,12 +2819,15 @@ public class HealthTab : HudPart
                 if (healthTabInfos.Count > 0)
                 {
                     healthTabInfos[0].name.text = "Pain: ";
-                    healthTabInfos[0].nameStatus.text = Mathf.Clamp(Mathf.Round(value * 100), 0, 100) + "%";
+                    healthTabInfos[0].nameStatus.text = Mathf.Clamp(Mathf.Round((!inspectedCreatureState.dead ? inspectedState.pain : 0) * 100), 0, 100) + "%";
 
                     healthTabInfos[0].description.text = "";
+
+                    healthTabInfos[0].colouredName.text = "";
+                    healthTabInfos[0].colouredName2.text = "";
                 }
             }
-            void SetInfo()
+            else
             {
                 if (healthTabInfos.Count == 0)
                 {
@@ -2527,6 +2847,8 @@ public class HealthTab : HudPart
                     "Affected by:\n";
 
                 bool isCapacityAffected = false;
+
+                float value = 0;
 
                 switch (stringValue)
                 {
@@ -2801,6 +3123,9 @@ public class HealthTab : HudPart
                     healthTabInfos[0].nameStatus.text = stringValue;
 
                     healthTabInfos[0].description.text = description;
+
+                    healthTabInfos[0].colouredName.text = "";
+                    healthTabInfos[0].colouredName2.text = "";
                 }
 
                 string CapacityAffectingAffliction()
@@ -2861,7 +3186,7 @@ public class HealthTab : HudPart
                                 continue;
                             }
                         }
-                        else if (affliction is RWInformational informational)
+                        else if (affliction is RWAilment informational)
                         {
                             if (informational is RWHypothermia)
                             {
@@ -2995,6 +3320,9 @@ public class HealthTab : HudPart
                     _ => "  - Consciousness: -40%\n" +
                         "  - Consciousness: Max 10%"
                 };
+
+                healthTabInfos[0].colouredName.text = "";
+                healthTabInfos[0].colouredName2.text = "";
             }
             else
             {
@@ -3052,7 +3380,7 @@ public class HealthTab : HudPart
                         healthTabInfos[0].description.text += "Immunity: " + Mathf.Clamp(Mathf.Round(disease.immunity * 1000) / 10, 0, 100) + "%";
                     }
                 }
-                else if (inspectedState.wholeBodyAfflictions[selectedAffliction] is RWInformational informational)
+                else if (inspectedState.wholeBodyAfflictions[selectedAffliction] is RWAilment informational)
                 {
                     healthTabInfos[0].description.text = "The description was not set, report this is seen";
                     healthTabInfos[0].nameStatus.text = ": the name status has not been set, report this if seen";
@@ -3116,6 +3444,9 @@ public class HealthTab : HudPart
                         healthTabInfos[0].nameStatus.text = ": " + Mathf.Round(informational.amount * 100) + "%";
                     }
                 }
+
+                healthTabInfos[0].colouredName.text = "";
+                healthTabInfos[0].colouredName2.text = "";
             }
         }
         void AfflictionSelector(int selectedBodyPart, int selectedAffliction)
@@ -3495,6 +3826,12 @@ public class HealthTab : HudPart
 
                 healthTabInfos[1].description.text = artificialPart.descrition;
             }
+
+            foreach (HealthTabInfo info in healthTabInfos)
+            {
+                info.colouredName.text = "";
+                info.colouredName2.text = "";
+            }
         }
 
         string GetTimeString(float timeInMin)
@@ -3538,6 +3875,8 @@ public class HealthTab : HudPart
         }
 
         capacityName.RemoveFromContainer();
+
+        allowedMedicine.RemoveFromContainer();
 
         bloodLossPerCycle.RemoveFromContainer();
 
@@ -3834,6 +4173,8 @@ public class HealthTab : HudPart
     private readonly FLabel overviewLabel;
 
     private List<string> capacityValueNamesNames;
+
+    private readonly FSprite allowedMedicine;
 
     #region Operations related
     private readonly FLabel operationsLabel;
@@ -4593,7 +4934,7 @@ public class HealthTabWholeBody
 
                 afflictionVisuals[i].icon.color = disease.isTended ? Color.white : Color.grey;
             }
-            else if (owner.inspectedState.wholeBodyAfflictions[i] is RWInformational informational)
+            else if (owner.inspectedState.wholeBodyAfflictions[i] is RWAilment informational)
             {
                 string text = "null";
 
@@ -4906,6 +5247,24 @@ public class HealthTabInfo
             anchorY = 1f
         };
         owner.hud.fContainers[1].AddChild(description);
+
+        colouredName = new(Custom.GetFont(), "")
+        {
+            alignment = FLabelAlignment.Left,
+            anchorX = 0f,
+            anchorY = 1f,
+            color = Color.yellow
+        };
+        owner.hud.fContainers[1].AddChild(colouredName);
+
+        colouredName2 = new(Custom.GetFont(), "")
+        {
+            alignment = FLabelAlignment.Left,
+            anchorX = 0f,
+            anchorY = 1f,
+            color = Color.red
+        };
+        owner.hud.fContainers[1].AddChild(colouredName2);
     }
 
     public Vector2 DrawPos()
@@ -4954,12 +5313,29 @@ public class HealthTabInfo
 
         description.isVisible = visible && description.text != "";
 
+        colouredName.isVisible = visible && colouredName.text != "";
+        colouredName2.isVisible = visible && colouredName2.text != "";
+
         if (!visible)
         {
             return;
         }
 
-        if (owner.healthTabInfos.IndexOf(this) != 0 || owner.healthTabInfos.IndexOf(this) == 0 && owner.selectedHorizontal == 2 && owner.healthTabWholeBody.active && owner.selectedVertical < owner.healthTabWholeBody.afflictionNumber)
+        if (owner.isOperationListActive)
+        {
+            foreach (OperationSelection operationSelection in owner.operationList)
+            {
+                foreach (FSprite sprite in operationSelection.backgrounds)
+                {
+                    sprite.MoveBehindOtherNode(backgrounds[0]);
+                }
+                    
+                operationSelection.nameLabel.MoveBehindOtherNode(backgrounds[0]);
+                operationSelection.icon.MoveBehindOtherNode(backgrounds[0]);
+            }
+        }
+
+        if (owner.healthTabInfos.IndexOf(this) != 0 || owner.healthTabInfos.IndexOf(this) == 0 && (owner.selectedHorizontal == 1 || owner.isOperationListActive || owner.selectedHorizontal == 2 && owner.healthTabWholeBody.active && owner.selectedVertical < owner.healthTabWholeBody.afflictionNumber))
         {
             name.color = Color.yellow;
         }
@@ -4989,31 +5365,53 @@ public class HealthTabInfo
             y = name.textRect.height
         };
 
+        if (colouredName.text != "")
+        {
+            colouredName.x = name.x;
+            colouredName.y = name.y - name.textRect.height;
+
+            if (backgroundPos.x < colouredName.textRect.width)
+            {
+                backgroundPos.x = colouredName.textRect.width;
+            }
+
+            backgroundPos.y -= colouredName.textRect.height;
+
+            if (backgroundSize.x < colouredName.textRect.width)
+            {
+                backgroundSize.x = colouredName.textRect.width;
+            }
+
+            backgroundSize.y += colouredName.textRect.height;
+        }
+
         if (description.text != "")
         {
+            FLabel labelAbove = colouredName.text != "" ? colouredName : name;
+
             if (owner.healthTabInfos.IndexOf(this) == 0)
             {
                 if (owner.selectedHorizontal == 2 && owner.healthTabWholeBody.active && owner.selectedVertical < owner.healthTabWholeBody.afflictionNumber)
                 {
-                    description.x = name.x;
-                    description.y = name.y - (name.textRect.height * 2);
+                    description.x = labelAbove.x;
+                    description.y = labelAbove.y - (labelAbove.textRect.height * 2);
 
-                    backgroundPos.y -= name.textRect.height;
-                    backgroundSize.y += name.textRect.height;
+                    backgroundPos.y -= labelAbove.textRect.height;
+                    backgroundSize.y += labelAbove.textRect.height;
                 }
                 else
                 {
-                    description.x = name.x;
-                    description.y = name.y - name.textRect.height;
+                    description.x = labelAbove.x;
+                    description.y = labelAbove.y - labelAbove.textRect.height;
                 }
             }
             else
             {
-                description.x = name.x;
-                description.y = name.y - (name.textRect.height * 2);
+                description.x = labelAbove.x;
+                description.y = labelAbove.y - (labelAbove.textRect.height * 2);
 
-                backgroundPos.y -= name.textRect.height;
-                backgroundSize.y += name.textRect.height;
+                backgroundPos.y -= labelAbove.textRect.height;
+                backgroundSize.y += labelAbove.textRect.height;
             }
 
             if (backgroundPos.x < description.textRect.width)
@@ -5029,6 +5427,28 @@ public class HealthTabInfo
             }
 
             backgroundSize.y += description.textRect.height;
+        }
+
+        if (colouredName2.text != "")
+        {
+            FLabel labelAbove = description.text != "" ? description : colouredName.text != "" ? colouredName : name;
+
+            colouredName2.x = labelAbove.x;
+            colouredName2.y = labelAbove.y - labelAbove.textRect.height;
+
+            if (backgroundPos.x < colouredName2.textRect.width)
+            {
+                backgroundPos.x = colouredName2.textRect.width;
+            }
+
+            backgroundPos.y -= colouredName2.textRect.height;
+
+            if (backgroundSize.x < colouredName2.textRect.width)
+            {
+                backgroundSize.x = colouredName2.textRect.width;
+            }
+
+            backgroundSize.y += colouredName2.textRect.height;
         }
 
         backgrounds[0].x = DrawPos().x - 5;
@@ -5053,6 +5473,8 @@ public class HealthTabInfo
             name.y += borderCorrection;
             nameStatus.y += borderCorrection;
             description.y += borderCorrection;
+            colouredName.y += borderCorrection;
+            colouredName2.y += borderCorrection;
             backgrounds[0].y += borderCorrection;
             backgrounds[1].y += borderCorrection;
 
@@ -5061,6 +5483,8 @@ public class HealthTabInfo
                 owner.healthTabInfos[i].name.y += borderCorrection;
                 owner.healthTabInfos[i].nameStatus.y += borderCorrection;
                 owner.healthTabInfos[i].description.y += borderCorrection;
+                owner.healthTabInfos[i].colouredName.y += borderCorrection;
+                owner.healthTabInfos[i].colouredName2.y += borderCorrection;
                 owner.healthTabInfos[i].backgrounds[0].y += borderCorrection;
                 owner.healthTabInfos[i].backgrounds[1].y += borderCorrection;
             }
@@ -5089,6 +5513,9 @@ public class HealthTabInfo
     public FLabel nameStatus;
 
     public FLabel description;
+
+    public FLabel colouredName;
+    public FLabel colouredName2;
 
     public bool slatedForDeletion = false;
 

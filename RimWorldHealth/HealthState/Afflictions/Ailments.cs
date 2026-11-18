@@ -1,13 +1,13 @@
 ﻿namespace ShadowOfRimWorldHealth;
 
-internal class RWAirInLungs : RWInformational
+internal class RWAirInLungs : RWAilment
 {
     public RWAirInLungs(CreatureState state, RWBodyPart part, float airInLungs) : base(state, part)
     {
         amount = airInLungs; //TendQuality is used for determining how much oxygen is in the lungs, 1 being full and 0 being empty
     }
 }
-internal class RWHypothermia : RWInformational
+internal class RWHypothermia : RWAilment
 {
     public RWHypothermia(CreatureState state, RWBodyPart part, float hypothermia) : base(state, part)
     {
@@ -15,7 +15,7 @@ internal class RWHypothermia : RWInformational
         lastAmount = hypothermia;
     }
 }
-internal class RWToxicBuildup : RWInformational
+internal class RWToxicBuildup : RWAilment
 {
     public RWToxicBuildup(CreatureState state, RWBodyPart part, float poison) : base(state, part)
     {

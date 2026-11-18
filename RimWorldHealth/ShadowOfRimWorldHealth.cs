@@ -93,7 +93,7 @@ public class RimWorldHealth : BaseUnityPlugin
         #region Medical
         public int medicalSkill = 0; //Ranges from 0 to 20, affects Medical Operation Speed, Medical Surgery Success Chance, Medical Tend Quality and Medical Tend Speed. Currently there is no way to increase it.
 
-        public int healingRateTics = 400; //1 second = 40 ticks, healing should heppen every 10 seconds
+        public int healingRateTics = 400; //1 second = 40 ticks, healing should happen every 10 seconds
         public int healingRate = 400;
 
         public float tendTime = 10;
@@ -105,6 +105,9 @@ public class RimWorldHealth : BaseUnityPlugin
         public RWOperation tendOperation = null;
 
         public List<RWOperation> operationsList = new();
+
+        public int allowedMedicine = 0; //0 is no Medicine, 1 is Herbal Medicine, 2 is Medicine and 3 is Glitterworld Medicine
+        public List<int> storedMedicine = new(); //When medicine is picked up it will be stored in this list so the player doesn't have to carry it all in hands.
         #endregion
 
         #region Slugcat Specific Variables
@@ -2475,7 +2478,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 {
                     Disease(disease);
                 }
-                else if (affliction is RWInformational informational)
+                else if (affliction is RWAilment informational)
                 {
                     Informational(informational);
                 }
@@ -2764,7 +2767,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 }
             }
 
-            void Informational(RWInformational informational)
+            void Informational(RWAilment informational)
             {
                 if (informational is RWHypothermia)
                 {

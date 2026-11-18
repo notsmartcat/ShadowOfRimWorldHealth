@@ -1355,7 +1355,7 @@ internal class ILHooks
             data.hitCreatures[self.State] = damage;
         }
 
-        Debug.Log("Bomb damage = " + damage + ", stored damage is " + data.hitCreatures[self.State]);
+        //Debug.Log("Bomb damage = " + damage + ", stored damage is " + data.hitCreatures[self.State]);
 
         return false;
     }
