@@ -1,10 +1,10 @@
 ﻿namespace ShadowOfRimWorldHealth;
 
-public class RWScar : RWInjury
+public class RimScar : RimInjury
 {
-    public RWScar(CreatureState state, RWBodyPart part, float damage, RWDamageType damageType, string attackName = "", string attackerName = "") : base(state, part, damage, damageType, attackName, attackerName) {}
+    public RimScar(CreatureState state, RimBodyPart part, float damage, RimDamageType damageType, string attackName = "", string attackerName = "") : base(state, part, damage, damageType, attackName, attackerName) {}
 
-    public RWScar(CreatureState state, RWBodyPart part) : base(state, part) {}
+    public RimScar(CreatureState state, RimBodyPart part) : base(state, part) {}
 
     public bool isRevealed = false; //Scars reveal when the injuries damage get's healed to the scarDamage
 
@@ -15,11 +15,11 @@ public class RWScar : RWInjury
     public string painCategory = ""; //The pain category consist of: Painless (no pain), Low (50% of pain), Medium (100% pain), High (150% pain)
 }
 
-public class RWDestroyed : RWInjury
+public class RimDestroyed : RimInjury
 {
-    public RWDestroyed(CreatureState state, RWBodyPart part, float damage, RWDamageType damageType, string attackName = "", string attackerName = "") : base(state, part, damage, damageType, attackName, attackerName)
+    public RimDestroyed(CreatureState state, RimBodyPart part, float damage, RimDamageType damageType, string attackName = "", string attackerName = "") : base(state, part, damage, damageType, attackName, attackerName)
     {
-        if (damageType is RWFrostbite)
+        if (damageType is RimFrostbite)
         {
             healingDifficulty.bleeding = 1;
         }
@@ -34,11 +34,15 @@ public class RWDestroyed : RWInjury
             isTended = false;
             isBleeding = true;
         }
+
+        labelColour = labelColour = new(0.5f, 0.5f, 0.5f);
     }
 
-    public RWDestroyed(CreatureState state, RWBodyPart part) : base(state, part)
+    public RimDestroyed(CreatureState state, RimBodyPart part) : base(state, part)
     {
         isFresh = false;
+
+        labelColour = labelColour = new(0.5f, 0.5f, 0.5f);
     }
 
     public bool isFresh = true;

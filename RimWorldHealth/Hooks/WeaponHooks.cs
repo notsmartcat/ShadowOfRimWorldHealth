@@ -38,7 +38,7 @@ internal class WeaponHooks
             return;
         }
 
-        RWWeaponStats state = weaponstat.GetOrCreateValue(self);
+        RimWeaponStats state = weaponstat.GetOrCreateValue(self);
 
         ApplyWeaponValues();
 
@@ -117,7 +117,7 @@ internal class WeaponHooks
     {
         orig(self, newMode);
 
-        if (!weaponstat.TryGetValue(self.abstractPhysicalObject, out RWWeaponStats weaponState))
+        if (!weaponstat.TryGetValue(self.abstractPhysicalObject, out RimWeaponStats weaponState))
         {
             return;
         }
@@ -142,7 +142,7 @@ internal class WeaponHooks
     #region Spear
     static bool SpearHitSomething(On.Spear.orig_HitSomething orig, Spear self, SharedPhysics.CollisionResult result, bool eu)
     {
-        if (result.chunk == null || result.chunk.owner == null || result.chunk.owner is not Creature creature || !healthState.TryGetValue(creature.State, out RWState state) || !state.missingBodyChunks.Contains(result.chunk.index))
+        if (result.chunk == null || result.chunk.owner == null || result.chunk.owner is not Creature creature || !healthState.TryGetValue(creature.State, out RimState state) || !state.missingBodyChunks.Contains(result.chunk.index))
         {
             return orig(self, result, eu);
         }
@@ -153,7 +153,7 @@ internal class WeaponHooks
     {
         orig(self, newMode);
 
-        if (!weaponstat.TryGetValue(self.abstractPhysicalObject, out RWWeaponStats weaponState))
+        if (!weaponstat.TryGetValue(self.abstractPhysicalObject, out RimWeaponStats weaponState))
         {
             return;
         }
@@ -163,7 +163,7 @@ internal class WeaponHooks
     }
     static void SpearLodgeInCreature(On.Spear.orig_LodgeInCreature_CollisionResult_bool_bool orig, Spear self, SharedPhysics.CollisionResult result, bool eu, bool isJellyFish)
     {
-        if (!weaponstat.TryGetValue(self.abstractPhysicalObject, out RWWeaponStats weaponState) || (!weaponState.wasDeflected && !weaponState.destroyedPart))
+        if (!weaponstat.TryGetValue(self.abstractPhysicalObject, out RimWeaponStats weaponState) || (!weaponState.wasDeflected && !weaponState.destroyedPart))
         {
             orig(self, result, eu, isJellyFish);
             return;

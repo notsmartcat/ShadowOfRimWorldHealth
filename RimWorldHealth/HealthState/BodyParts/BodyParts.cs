@@ -2,7 +2,7 @@
 
 namespace ShadowOfRimWorldHealth;
 
-public class RWBodyPart(CreatureState state)
+public class RimBodyPart(CreatureState state)
 {
     public CreatureState state = state;
 
@@ -61,14 +61,14 @@ public class RWBodyPart(CreatureState state)
 
     public float efficiency = 1;
 
-    public List<RWAffliction> afflictions = new();
+    public List<RimAffliction> afflictions = new();
 
     public bool edible = false;
 
     public bool isBionic = false;
 }
 
-public class UpperTorso : RWBodyPart
+public class UpperTorso : RimBodyPart
 {
     public UpperTorso(CreatureState state) : base(state)
     {
@@ -86,7 +86,7 @@ public class UpperTorso : RWBodyPart
         edible = true;
     }
 }
-public class LowerTorso : RWBodyPart
+public class LowerTorso : RimBodyPart
 {
     public LowerTorso(CreatureState state) : base(state)
     {
@@ -105,7 +105,7 @@ public class LowerTorso : RWBodyPart
     }
 } //LowerTorse is meant for creatures with more then 1 BodyChunk that is meant for the body
 
-public class Neck : RWBodyPart
+public class Neck : RimBodyPart
 {
     public Neck(CreatureState state) : base(state)
     {
@@ -133,7 +133,7 @@ public class Neck : RWBodyPart
         edible = true;
     }
 }
-public class Head : RWBodyPart
+public class Head : RimBodyPart
 {
     public Head(CreatureState state) : base(state)
     {
@@ -154,7 +154,7 @@ public class Head : RWBodyPart
         deathEffect = "Death";
     }
 }
-public class Eye : RWBodyPart
+public class Eye : RimBodyPart
 {
     public Eye(CreatureState state) : base(state)
     {
@@ -179,7 +179,7 @@ public class Eye : RWBodyPart
         capacity.Add("Sight");
     }
 }
-public class Ear : RWBodyPart
+public class Ear : RimBodyPart
 {
     public Ear(CreatureState state) : base(state)
     {
@@ -202,7 +202,7 @@ public class Ear : RWBodyPart
         capacity.Add("Hearing");
     }
 }
-public class Nose : RWBodyPart
+public class Nose : RimBodyPart
 {
     public Nose(CreatureState state) : base(state)
     {
@@ -220,7 +220,7 @@ public class Nose : RWBodyPart
         group.Add("FullHead");
     }
 }
-public class Jaw : RWBodyPart
+public class Jaw : RimBodyPart
 {
     public Jaw(CreatureState state) : base(state)
     {
@@ -244,7 +244,7 @@ public class Jaw : RWBodyPart
         capacityImportance.Add(1);
     }
 }
-public class Tongue : RWBodyPart
+public class Tongue : RimBodyPart
 {
     public Tongue(CreatureState state) : base(state)
     {
@@ -266,7 +266,7 @@ public class Tongue : RWBodyPart
     }
 }
 
-public class Shoulder : RWBodyPart
+public class Shoulder : RimBodyPart
 {
     public Shoulder(CreatureState state) : base(state)
     {
@@ -290,7 +290,7 @@ public class Shoulder : RWBodyPart
         edible = true;
     }
 }
-public class Arm : RWBodyPart
+public class Arm : RimBodyPart
 {
     public Arm(CreatureState state) : base(state)
     {
@@ -314,7 +314,7 @@ public class Arm : RWBodyPart
         capacity.Add("Manipulation");
     }
 }
-public class Hand : RWBodyPart
+public class Hand : RimBodyPart
 {
     public Hand(CreatureState state) : base(state)
     {
@@ -339,7 +339,7 @@ public class Hand : RWBodyPart
     }
 }
 
-public class Finger : RWBodyPart
+public class Finger : RimBodyPart
 {
     public Finger(CreatureState state) : base(state)
     {
@@ -364,7 +364,7 @@ public class Finger : RWBodyPart
     }
 }
 
-public class Leg : RWBodyPart
+public class Leg : RimBodyPart
 {
     public Leg(CreatureState state) : base(state)
     {
@@ -388,7 +388,7 @@ public class Leg : RWBodyPart
         edible = true;
     }
 }
-public class Foot : RWBodyPart
+public class Foot : RimBodyPart
 {
     public Foot(CreatureState state) : base(state)
     {
@@ -412,7 +412,7 @@ public class Foot : RWBodyPart
         capacity.Add("Moving");
     }
 }
-public class Toe : RWBodyPart
+public class Toe : RimBodyPart
 {
     public Toe(CreatureState state) : base(state)
     {
@@ -437,7 +437,7 @@ public class Toe : RWBodyPart
     }
 }
 
-public class Tail : RWBodyPart
+public class Tail : RimBodyPart
 {
     public Tail(CreatureState state) : base(state)
     {

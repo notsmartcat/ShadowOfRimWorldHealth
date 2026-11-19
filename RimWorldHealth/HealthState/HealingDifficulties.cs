@@ -1,8 +1,8 @@
 ﻿namespace ShadowOfRimWorldHealth;
 
-public class RWHealingDifficulty
+public class RimHealingDifficulty
 {
-    public RWHealingDifficulty() {}
+    public RimHealingDifficulty() {}
 
     public string name = "Misc"; //The name that is used in the HealthTab
 
@@ -27,24 +27,24 @@ public class RWHealingDifficulty
 
     public string description = "Miscellaneous injuries.";
 
-    public static RWHealingDifficulty GetRWHealingDifficulty(string name)
+    public static RimHealingDifficulty GetRWHealingDifficulty(string name)
     {
-        RWHealingDifficulty healingDifficulty = name switch
+        RimHealingDifficulty healingDifficulty = name switch
         {
-            "Burn" => new RWHDBurn(),
-            "Electrical burn" => new RWHDElectricalBurn(),
-            "Crush" => new RWHDCrush(),
-            "Crack" => new RWHDCrack(),
-            "Cut" => new RWHDCut(),
-            "Surgical cut" => new RWHDSurgicalCut(),
-            "Scratch" => new RWHDScratch(),
-            "Bite" => new RWHDBite(),
-            "Stab" => new RWHDStab(),
-            "Gunshot" => new RWHDGunshot(),
-            "Shredded" => new RWHDShredded(),
-            "Bruise" => new RWHDBruise(),
-            "Frostbite" => new RWHDFrostbite(),
-            "Acid burn" => new RWHDAcidBurn(),
+            "Burn" => new RimHDBurn(),
+            "Electrical burn" => new RimHDElectricalBurn(),
+            "Crush" => new RimHDCrush(),
+            "Crack" => new RimHDCrack(),
+            "Cut" => new RimHDCut(),
+            "Surgical cut" => new RimHDSurgicalCut(),
+            "Scratch" => new RimHDScratch(),
+            "Bite" => new RimHDBite(),
+            "Stab" => new RimHDStab(),
+            "Gunshot" => new RimHDGunshot(),
+            "Shredded" => new RimHDShredded(),
+            "Bruise" => new RimHDBruise(),
+            "Frostbite" => new RimHDFrostbite(),
+            "Acid burn" => new RimHDAcidBurn(),
             _ => null,
         };
 
@@ -56,9 +56,9 @@ public class RWHealingDifficulty
     }
 }
 
-public class RWHDCut : RWHealingDifficulty
+public class RimHDCut : RimHealingDifficulty
 {
-    public RWHDCut() : base()
+    public RimHDCut() : base()
     {
         name = "Cut";
 
@@ -73,9 +73,9 @@ public class RWHDCut : RWHealingDifficulty
     }
 }
 
-public class RWHDCrush : RWHealingDifficulty
+public class RimHDCrush : RimHealingDifficulty
 {
-    public RWHDCrush() : base()
+    public RimHDCrush() : base()
     {
         name = "Crush";
 
@@ -93,9 +93,9 @@ public class RWHDCrush : RWHealingDifficulty
         description = "A crushing wound.";
     }
 }
-public class RWHDShredded : RWHealingDifficulty
+public class RimHDShredded : RimHealingDifficulty
 {
-    public RWHDShredded() : base()
+    public RimHDShredded() : base()
     {
         name = "Shredded";
 
@@ -111,9 +111,9 @@ public class RWHDShredded : RWHealingDifficulty
         description = "A part of the body has been shredded and torn.";
     }
 }
-public class RWHDBruise : RWHealingDifficulty
+public class RimHDBruise : RimHealingDifficulty
 {
-    public RWHDBruise() : base()
+    public RimHDBruise() : base()
     {
         name = "Bruise";
 
@@ -122,9 +122,9 @@ public class RWHDBruise : RWHealingDifficulty
         description = "A bruise.";
     }
 }
-public class RWHDCrack : RWHealingDifficulty
+public class RimHDCrack : RimHealingDifficulty
 {
-    public RWHDCrack() : base()
+    public RimHDCrack() : base()
     {
         name = "Crack";
 
@@ -147,9 +147,9 @@ public class RWHDCrack : RWHealingDifficulty
     }
 }
 
-public class RWHDStab : RWHealingDifficulty
+public class RimHDStab : RimHealingDifficulty
 {
-    public RWHDStab() : base()
+    public RimHDStab() : base()
     {
         name = "Stab";
 
@@ -166,9 +166,9 @@ public class RWHDStab : RWHealingDifficulty
     }
 }
 
-public class RWHDGunshot : RWHealingDifficulty
+public class RimHDGunshot : RimHealingDifficulty
 {
-    public RWHDGunshot() : base()
+    public RimHDGunshot() : base()
     {
         name = "Gunshot";
 
@@ -184,9 +184,9 @@ public class RWHDGunshot : RWHealingDifficulty
     }
 }
 
-public class RWHDScratch : RWHealingDifficulty
+public class RimHDScratch : RimHealingDifficulty
 {
-    public RWHDScratch() : base()
+    public RimHDScratch() : base()
     {
         name = "Scratch";
 
@@ -202,9 +202,9 @@ public class RWHDScratch : RWHealingDifficulty
         description = "A scratch or tear.";
     }
 }
-public class RWHDBite : RWHealingDifficulty
+public class RimHDBite : RimHealingDifficulty
 {
-    public RWHDBite() : base()
+    public RimHDBite() : base()
     {
         name = "Bite";
 
@@ -221,7 +221,7 @@ public class RWHDBite : RWHealingDifficulty
     }
 }
 
-public class RWHDBurnBase : RWHealingDifficulty
+public class RWHDBurnBase : RimHealingDifficulty
 {
     public RWHDBurnBase() : base()
     {
@@ -241,9 +241,9 @@ public class RWHDBurnBase : RWHealingDifficulty
         description = "";
     }
 }
-public class RWHDBurn : RWHDBurnBase
+public class RimHDBurn : RWHDBurnBase
 {
-    public RWHDBurn() : base()
+    public RimHDBurn() : base()
     {
         name = "Burn";
 
@@ -255,9 +255,9 @@ public class RWHDBurn : RWHDBurnBase
         description = "A burn.";
     }
 }
-public class RWHDFrostbite : RWHealingDifficulty
+public class RimHDFrostbite : RimHealingDifficulty
 {
-    public RWHDFrostbite() : base()
+    public RimHDFrostbite() : base()
     {
         name = "Frostbite";
 
@@ -277,9 +277,9 @@ public class RWHDFrostbite : RWHealingDifficulty
         description = "Frozen tissue caused by exposure to cold. Frostbite is very painful, and frostbitten body parts are often lost.";
     }
 }
-public class RWHDElectricalBurn : RWHDBurnBase
+public class RimHDElectricalBurn : RWHDBurnBase
 {
-    public RWHDElectricalBurn() : base()
+    public RimHDElectricalBurn() : base()
     {
         name = "Electrical burn";
 
@@ -297,9 +297,9 @@ public class RWHDElectricalBurn : RWHDBurnBase
         description = "An electrical burn.";
     }
 }
-public class RWHDAcidBurn : RWHDBurnBase
+public class RimHDAcidBurn : RWHDBurnBase
 {
-    public RWHDAcidBurn() : base()
+    public RimHDAcidBurn() : base()
     {
         name = "Acid burn";
 
@@ -312,9 +312,9 @@ public class RWHDAcidBurn : RWHDBurnBase
     }
 }
 
-public class RWHDSurgicalCut : RWHealingDifficulty
+public class RimHDSurgicalCut : RimHealingDifficulty
 {
-    public RWHDSurgicalCut() : base()
+    public RimHDSurgicalCut() : base()
     {
         name = "Surgical cut";
 

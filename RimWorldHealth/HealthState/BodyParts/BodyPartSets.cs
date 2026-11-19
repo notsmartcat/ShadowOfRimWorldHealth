@@ -7,7 +7,7 @@ namespace ShadowOfRimWorldHealth;
 
 public class ArmSet
 {
-    public float Efficiency(RWState state, float offsets = 0, float postFactors = 1, float otherEfficiency = 1)
+    public float Efficiency(RimState state, float offsets = 0, float postFactors = 1, float otherEfficiency = 1)
     {
         if (shoulder != null && shoulder.isBionic)
         {
@@ -57,7 +57,7 @@ public class ArmSet
 
         if (shoulder != null)
         {
-            if (shoulder.isBionic && shoulder.afflictions.Count > 0 && shoulder.afflictions[0] is RWArtificialPartBase partBase)
+            if (shoulder.isBionic && shoulder.afflictions.Count > 0 && shoulder.afflictions[0] is RimArtificialPartBase partBase)
             {
                 return "  " + partBase.name + "\n";
             }
@@ -97,7 +97,7 @@ public class ArmSet
 
         if (hand != null)
         {
-            if (hand.isBionic && hand.afflictions.Count > 0 && hand.afflictions[0] is RWArtificialPartBase partBase)
+            if (hand.isBionic && hand.afflictions.Count > 0 && hand.afflictions[0] is RimArtificialPartBase partBase)
             {
                 description += "  " + partBase.name + "\n";
 
@@ -125,9 +125,9 @@ public class ArmSet
         return description;
     }
 
-    public Dictionary<string, List<RWBodyPart>> KarmaFlowerGetMainMissingPart(string key, Dictionary<string, List<RWBodyPart>> dic)
+    public Dictionary<string, List<RimBodyPart>> KarmaFlowerGetMainMissingPart(string key, Dictionary<string, List<RimBodyPart>> dic)
     {
-        List<RWBodyPart> list = new();
+        List<RimBodyPart> list = new();
 
         if (shoulder != null && IsDestroyed(shoulder))
         {
@@ -169,7 +169,7 @@ public class ArmSet
         return dic;
     }
 
-    public void KarmaFlowerHeal(RWState state, RWBodyPart part)
+    public void KarmaFlowerHeal(RimState state, RimBodyPart part)
     {
         if (part == shoulder)
         {
@@ -257,7 +257,7 @@ public class ArmSet
         return this.shoulder == shoulder;
     }
 
-    public RWBodyPart EatPart()
+    public RimBodyPart EatPart()
     {
         if (hand != null && !IsDestroyed(hand))
         {
@@ -282,7 +282,7 @@ public class ArmSet
 
     public float efficiency = 1;
 
-    public static string SetDescription(RWBodyPart part)
+    public static string SetDescription(RimBodyPart part)
     {
         string name = part.name;
         name = char.ToLowerInvariant(name[0]) + name.Substring(1);
@@ -293,7 +293,7 @@ public class ArmSet
 
 public class LegSet
 {
-    public float Efficiency(RWState state, float offsets = 0, float postFactors = 1, float otherEfficiency = 1)
+    public float Efficiency(RimState state, float offsets = 0, float postFactors = 1, float otherEfficiency = 1)
     {
         if (leg != null && leg.isBionic)
         {
@@ -343,7 +343,7 @@ public class LegSet
 
         if (leg != null)
         {
-            if (leg.isBionic && leg.afflictions.Count > 0 && leg.afflictions[0] is RWArtificialPartBase partBase)
+            if (leg.isBionic && leg.afflictions.Count > 0 && leg.afflictions[0] is RimArtificialPartBase partBase)
             {
                 return "  " + partBase.name + "\n";
             }
@@ -369,7 +369,7 @@ public class LegSet
 
         if (foot != null)
         {
-            if (foot.isBionic && foot.afflictions.Count > 0 && foot.afflictions[0] is RWArtificialPartBase partBase)
+            if (foot.isBionic && foot.afflictions.Count > 0 && foot.afflictions[0] is RimArtificialPartBase partBase)
             {
                 description += "  " + partBase.name + "\n";
 
@@ -402,9 +402,9 @@ public class LegSet
         return description;
     }
 
-    public Dictionary<string, List<RWBodyPart>> KarmaFlowerGetMainMissingPart(string key, Dictionary<string, List<RWBodyPart>> dic)
+    public Dictionary<string, List<RimBodyPart>> KarmaFlowerGetMainMissingPart(string key, Dictionary<string, List<RimBodyPart>> dic)
     {
-        List<RWBodyPart> list = new();
+        List<RimBodyPart> list = new();
 
         if (leg != null && IsDestroyed(leg))
         {
@@ -434,7 +434,7 @@ public class LegSet
         return dic;
     }
 
-    public void KarmaFlowerHeal(RWState state, RWBodyPart part)
+    public void KarmaFlowerHeal(RimState state, RimBodyPart part)
     {
         if (part == leg)
         {
@@ -468,7 +468,7 @@ public class LegSet
         return this.leg == leg;
     }
 
-    public RWBodyPart EatPart()
+    public RimBodyPart EatPart()
     {
         if (foot != null && !IsDestroyed(foot))
         {

@@ -2,9 +2,9 @@
 
 namespace ShadowOfRimWorldHealth;
 
-public class RWDamageType
+public class RimDamageType
 {
-    public RWDamageType() {}
+    public RimDamageType() {}
 
     public string name;
 
@@ -17,41 +17,41 @@ public class RWDamageType
 
     public List<string> headiffs = new();
 
-    public static RWDamageType GetRWDamageType(string name)
+    public static RimDamageType GetRWDamageType(string name)
     {
-        RWDamageType damageType = name switch
+        RimDamageType damageType = name switch
         {
-            "RWCut" => new RWCut(),
-            "RWCrush" => new RWCrush(),
-            "RWBlunt" => new RWBlunt(),
-            "RWPoke" => new RWPoke(),
-            "RWDemolish" => new RWDemolish(),
-            "RWStab" => new RWStab(),
-            "RWBullet" => new RWBullet(),
-            "RWScratch" => new RWScratch(),
-            "RWBite" => new RWBite(),
-            "RWBomb" => new RWBomb(),
-            "RWSuperBomb" => new RWSuperBomb(),
-            "RWFlame" => new RWFlame(),
-            "RWBurn" => new RWBurn(),
-            "RWFrostbite" => new RWFrostbite(),
-            "RWElectricalBurn" => new RWElectricalBurn(),
-            "RWAcidBurn" => new RWAcidBurn(),
-            "RWSurgicalCut" => new RWSurgicalCut(),
+            "RWCut" => new RimCut(),
+            "RWCrush" => new RimCrush(),
+            "RWBlunt" => new RimBlunt(),
+            "RWPoke" => new RimPoke(),
+            "RWDemolish" => new RimDemolish(),
+            "RWStab" => new RimStab(),
+            "RWBullet" => new RimBullet(),
+            "RWScratch" => new RimScratch(),
+            "RWBite" => new RimBite(),
+            "RWBomb" => new RimBomb(),
+            "RWSuperBomb" => new RimSuperBomb(),
+            "RWFlame" => new RimFlame(),
+            "RWBurn" => new RimBurn(),
+            "RWFrostbite" => new RimFrostbite(),
+            "RWElectricalBurn" => new RimElectricalBurn(),
+            "RWAcidBurn" => new RimAcidBurn(),
+            "RWSurgicalCut" => new RimSurgicalCut(),
             _ => null,
         };
 
         //Space to add custom DamageTypes
 
-        damageType ??= new RWPoke();
+        damageType ??= new RimPoke();
 
         return damageType;
     }
 }
 
-public class RWCut : RWDamageType
+public class RimCut : RimDamageType
 {
-    public RWCut() : base()
+    public RimCut() : base()
     {
         name = "Cut";
 
@@ -68,9 +68,9 @@ public class RWCut : RWDamageType
     }
 }
 
-public class RWCrush : RWDamageType
+public class RimCrush : RimDamageType
 {
-    public RWCrush() : base()
+    public RimCrush() : base()
     {
         name = "Crush";
 
@@ -86,9 +86,9 @@ public class RWCrush : RWDamageType
         headiffs.Add("Crack");
     }
 }
-public class RWBlunt : RWDamageType
+public class RimBlunt : RimDamageType
 {
-    public RWBlunt() : base()
+    public RimBlunt() : base()
     {
         name = "Blunt";
 
@@ -104,9 +104,9 @@ public class RWBlunt : RWDamageType
         headiffs.Add("Crack");
     }
 }
-public class RWPoke : RWDamageType
+public class RimPoke : RimDamageType
 {
-    public RWPoke() : base()
+    public RimPoke() : base()
     {
         name = "Poke";
 
@@ -122,9 +122,9 @@ public class RWPoke : RWDamageType
         headiffs.Add("Crack");
     }
 }
-public class RWDemolish : RWDamageType
+public class RimDemolish : RimDamageType
 {
-    public RWDemolish() : base()
+    public RimDemolish() : base()
     {
         name = "Demolish";
 
@@ -141,9 +141,9 @@ public class RWDemolish : RWDamageType
     }
 }
 
-public class RWStab : RWDamageType
+public class RimStab : RimDamageType
 {
-    public RWStab() : base()
+    public RimStab() : base()
     {
         name = "Stab";
 
@@ -160,9 +160,9 @@ public class RWStab : RWDamageType
     }
 }
 
-public class RWBullet : RWDamageType
+public class RimBullet : RimDamageType
 {
-    public RWBullet() : base()
+    public RimBullet() : base()
     {
         name = "Bullet";
 
@@ -177,9 +177,9 @@ public class RWBullet : RWDamageType
     }
 }
 
-public class RWScratch : RWDamageType
+public class RimScratch : RimDamageType
 {
-    public RWScratch() : base()
+    public RimScratch() : base()
     {
         name = "Scratch";
 
@@ -195,9 +195,9 @@ public class RWScratch : RWDamageType
         headiffs.Add("Crack");
     }
 }
-public class RWBite : RWDamageType
+public class RimBite : RimDamageType
 {
-    public RWBite() : base()
+    public RimBite() : base()
     {
         name = "Bite";
 
@@ -214,9 +214,9 @@ public class RWBite : RWDamageType
     }
 }
 
-public class RWBomb : RWDamageType
+public class RimBomb : RimDamageType
 {
-    public RWBomb() : base()
+    public RimBomb() : base()
     {
         name = "Bomb";
 
@@ -232,9 +232,9 @@ public class RWBomb : RWDamageType
         headiffs.Add("Crack");
     }
 }
-public class RWSuperBomb : RWDamageType
+public class RimSuperBomb : RimDamageType
 {
-    public RWSuperBomb() : base()
+    public RimSuperBomb() : base()
     {
         name = "Bomb";
 
@@ -251,9 +251,9 @@ public class RWSuperBomb : RWDamageType
     }
 }
 
-public class RWFlame : RWDamageType
+public class RimFlame : RimDamageType
 {
-    public RWFlame() : base()
+    public RimFlame() : base()
     {
         name = "Flame";
 
@@ -267,9 +267,9 @@ public class RWFlame : RWDamageType
         headiffs.Add("Burn");
     }
 }
-public class RWBurn : RWDamageType
+public class RimBurn : RimDamageType
 {
-    public RWBurn() : base()
+    public RimBurn() : base()
     {
         name = "Burn";
 
@@ -283,9 +283,9 @@ public class RWBurn : RWDamageType
         headiffs.Add("Burn");
     }
 }
-public class RWFrostbite : RWDamageType
+public class RimFrostbite : RimDamageType
 {
-    public RWFrostbite() : base()
+    public RimFrostbite() : base()
     {
         name = "Frostbite";
 
@@ -299,9 +299,9 @@ public class RWFrostbite : RWDamageType
         headiffs.Add("Frostbite");
     }
 }
-public class RWElectricalBurn : RWDamageType
+public class RimElectricalBurn : RimDamageType
 {
-    public RWElectricalBurn() : base()
+    public RimElectricalBurn() : base()
     {
         name = "Electrical burn";
 
@@ -315,9 +315,9 @@ public class RWElectricalBurn : RWDamageType
         headiffs.Add("Electrical burn");
     }
 }
-public class RWAcidBurn : RWDamageType
+public class RimAcidBurn : RimDamageType
 {
-    public RWAcidBurn() : base()
+    public RimAcidBurn() : base()
     {
         name = "Acid burn";
 
@@ -332,9 +332,9 @@ public class RWAcidBurn : RWDamageType
     }
 }
 
-public class RWSurgicalCut : RWDamageType
+public class RimSurgicalCut : RimDamageType
 {
-    public RWSurgicalCut() : base()
+    public RimSurgicalCut() : base()
     {
         name = "Surgical cut";
 

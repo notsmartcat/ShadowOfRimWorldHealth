@@ -27,12 +27,12 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
         if (!save.TryGetValueWithType(campaigName, out campaign))
             campaign = [];
 
-        List<RWAffliction> diseasesToSave;
-        List<RWDisease> diseasesToTend;
+        List<RimAffliction> diseasesToSave;
+        List<RimDisease> diseasesToTend;
 
-        List<RWInjury> injuriesToTend = new();
+        List<RimInjury> injuriesToTend = new();
 
-        Dictionary<RWBodyPart, List<RWAffliction>> afflictionsToSave = new();
+        Dictionary<RimBodyPart, List<RimAffliction>> afflictionsToSave = new();
 
         for (int playerNumber = 0; playerNumber < game.session.Players.Count; playerNumber++)
         {
@@ -40,7 +40,7 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
 
             bool dead = playerState.dead;
 
-            if ((dead && ShadowOfOptions.coop_dead_saving.Value == "Clear All Afflictions") || !healthState.TryGetValue(playerState, out RWState state))
+            if ((dead && ShadowOfOptions.coop_dead_saving.Value == "Clear All Afflictions") || !healthState.TryGetValue(playerState, out RimState state))
             {
                 if (campaign.ContainsKey(playerNumber.ToString()))
                 {
@@ -65,20 +65,20 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
             #region WholeBody
             if (!dead)
             {
-                foreach (RWAffliction baseAffliction in state.wholeBodyAfflictions)
+                foreach (RimAffliction baseAffliction in state.wholeBodyAfflictions)
                 {
-                    if (baseAffliction is not RWTendableAffliction affliction || affliction.isCharacterSpecific)
+                    if (baseAffliction is not RimTendableAffliction affliction || affliction.isCharacterSpecific)
                     {
                         continue;
                     }
 
-                    if (affliction is RWDisease disease)
+                    if (affliction is RimDisease disease)
                     {
                         diseasesToTend.Add(disease);
                     }
                 }
 
-                foreach (RWDisease disease in diseasesToTend)
+                foreach (RimDisease disease in diseasesToTend)
                 {
                     diseasesToSave = SavingandLoadingHooks.UpdateDisease(disease, state, playerState, diseasesToSave, true);
                 }
@@ -92,23 +92,23 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
             }
             #endregion
 
-            foreach (RWBodyPart part in state.bodyParts)
+            foreach (RimBodyPart part in state.bodyParts)
             {
                 diseasesToSave = new();
                 diseasesToTend = new();
 
-                foreach (RWAffliction baseAffliction in part.afflictions)
+                foreach (RimAffliction baseAffliction in part.afflictions)
                 {
-                    if (baseAffliction is not RWTendableAffliction affliction || affliction.isCharacterSpecific)
+                    if (baseAffliction is not RimTendableAffliction affliction || affliction.isCharacterSpecific)
                     {
                         continue;
                     }
 
-                    if (affliction is RWInjury injury)
+                    if (affliction is RimInjury injury)
                     {
-                        if (affliction is RWDestroyed)
+                        if (affliction is RimDestroyed)
                         {
-                            if (dead && RWHealthState.IsPartNecessary(part))
+                            if (dead && RimHealthState.IsPartNecessary(part))
                             {
                                 continue;
                             }
@@ -122,7 +122,7 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
 
                             continue;
                         }
-                        if (affliction is RWScar scar)
+                        if (affliction is RimScar scar)
                         {
                             if (scar.isRevealed || scar.isPermanent)
                             {
@@ -143,7 +143,7 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
 
                         injuriesToTend.Add(injury);
                     }
-                    else if (affliction is RWDisease disease)
+                    else if (affliction is RimDisease disease)
                     {
                         if (dead)
                         {
@@ -154,12 +154,12 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
                     }
                 }
 
-                foreach (RWDisease disease in diseasesToTend)
+                foreach (RimDisease disease in diseasesToTend)
                 {
                     diseasesToSave = SavingandLoadingHooks.UpdateDisease(disease, state, playerState, diseasesToSave, true);
                 }
 
-                foreach (RWAffliction disease in diseasesToSave)
+                foreach (RimAffliction disease in diseasesToSave)
                 {
                     if (!afflictionsToSave.ContainsKey(part))
                     {
@@ -177,7 +177,7 @@ public class RimWorldHealthHandler : BaseSavedDataHandler
                 key.Key.afflictions = key.Value;
             }
 
-            foreach (RWBodyPart part in state.bodyParts)
+            foreach (RimBodyPart part in state.bodyParts)
             {
                 if (part.afflictions.Count > 0)
                 {

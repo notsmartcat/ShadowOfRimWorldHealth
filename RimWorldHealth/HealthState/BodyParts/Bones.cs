@@ -1,15 +1,15 @@
 ﻿namespace ShadowOfRimWorldHealth;
 
-public class RWBone : RWBodyPart
+public class RimBone : RimBodyPart
 {
-    public RWBone(CreatureState state) : base(state)
+    public RimBone(CreatureState state) : base(state)
     {
         isInternal = true;
         isSolid = true;
     }
 }
 
-public class Skull : RWBone
+public class Skull : RimBone
 {
     public Skull(CreatureState state) : base(state)
     {
@@ -30,7 +30,7 @@ public class Skull : RWBone
     }
 }
 
-public class Spine : RWBone
+public class Spine : RimBone
 {
     public Spine(CreatureState state) : base(state)
     {
@@ -49,7 +49,7 @@ public class Spine : RWBone
         capacityImportance.Add(1);
     }
 }
-public class Ribcage : RWBone
+public class Ribcage : RimBone
 {
     public Ribcage(CreatureState state) : base(state)
     {
@@ -70,7 +70,7 @@ public class Ribcage : RWBone
         deathEffect = "";
     }
 }
-public class Sternum : RWBone
+public class Sternum : RimBone
 {
     public Sternum(CreatureState state) : base(state)
     {
@@ -92,7 +92,7 @@ public class Sternum : RWBone
     }
 }
 
-public class Clavicle : RWBone
+public class Clavicle : RimBone
 {
     public Clavicle(CreatureState state) : base(state)
     {
@@ -116,7 +116,7 @@ public class Clavicle : RWBone
         deathEffect = "";
     }
 }
-public class Humerus : RWBone
+public class Humerus : RimBone
 {
     public Humerus(CreatureState state) : base(state)
     {
@@ -138,7 +138,7 @@ public class Humerus : RWBone
         capacity.Add("Manipulation");
     }
 }
-public class Radius : RWBone
+public class Radius : RimBone
 {
     public Radius(CreatureState state) : base(state)
     {
@@ -161,7 +161,7 @@ public class Radius : RWBone
     }
 }
 
-public class Pelvis : RWBone
+public class Pelvis : RimBone
 {
     public Pelvis(CreatureState state) : base(state)
     {
@@ -183,7 +183,7 @@ public class Pelvis : RWBone
     }
 }
 
-public class Femur : RWBone
+public class Femur : RimBone
 {
     public Femur(CreatureState state) : base(state)
     {
@@ -205,7 +205,7 @@ public class Femur : RWBone
         capacity.Add("Moving");
     }
 }
-public class Tibia : RWBone
+public class Tibia : RimBone
 {
     public Tibia(CreatureState state) : base(state)
     {

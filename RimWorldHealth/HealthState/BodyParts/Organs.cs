@@ -1,14 +1,14 @@
 ﻿namespace ShadowOfRimWorldHealth;
 
-public class RWOrgan : RWBodyPart
+public class RimOrgan : RimBodyPart
 {
-    public RWOrgan(CreatureState state) : base(state)
+    public RimOrgan(CreatureState state) : base(state)
     {
         isInternal = true;
     }
 }
 
-public class Brain : RWOrgan
+public class Brain : RimOrgan
 {
     public Brain(CreatureState state) : base(state)
     {
@@ -33,7 +33,7 @@ public class Brain : RWOrgan
     }
 }
 
-public class Stomach : RWOrgan
+public class Stomach : RimOrgan
 {
     public Stomach(CreatureState state) : base(state)
     {
@@ -52,7 +52,7 @@ public class Stomach : RWOrgan
         capacityImportance.Add(0.5f);
     }
 }
-public class Heart : RWOrgan
+public class Heart : RimOrgan
 {
     public Heart(CreatureState state) : base(state)
     {
@@ -73,7 +73,7 @@ public class Heart : RWOrgan
         deathEffect = "Death";
     }
 }
-public class Lung : RWOrgan
+public class Lung : RimOrgan
 {
     public Lung(CreatureState state) : base(state)
     {
@@ -94,7 +94,7 @@ public class Lung : RWOrgan
         capacityImportance.Add(0.5f);
     }
 }
-public class Kidney : RWOrgan
+public class Kidney : RimOrgan
 {
     public Kidney(CreatureState state) : base(state)
     {
@@ -115,7 +115,7 @@ public class Kidney : RWOrgan
         capacityImportance.Add(0.5f);
     }
 }
-public class Liver : RWOrgan
+public class Liver : RimOrgan
 {
     public Liver(CreatureState state) : base(state)
     {

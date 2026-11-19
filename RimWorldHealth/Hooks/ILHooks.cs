@@ -279,7 +279,7 @@ internal class ILHooks
 
     public static void AbstractCreatureIsEnteringDenFeed(AbstractCreature self)
     {
-        if (self.state == null || !healthState.TryGetValue(self.state, out RWState state))
+        if (self.state == null || !healthState.TryGetValue(self.state, out RimState state))
         {
             return;
         }
@@ -288,7 +288,7 @@ internal class ILHooks
     }
     public static void AbstractCreatureIsEnteringDenEat(AbstractCreature self)
     {
-        if (self.state == null || !healthState.TryGetValue(self.state, out RWState state))
+        if (self.state == null || !healthState.TryGetValue(self.state, out RimState state))
         {
             return;
         }
@@ -368,14 +368,14 @@ internal class ILHooks
     }
     public static void BigSpiderAct(BigSpider self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
 
-        RWBodyPart mainPart = null;
+        RimBodyPart mainPart = null;
 
-        foreach (RWBodyPart part in state.bodyParts)
+        foreach (RimBodyPart part in state.bodyParts)
         {
             if (part is UpperTorso)
             {
@@ -389,7 +389,7 @@ internal class ILHooks
             return;
         }
 
-        RWHealthState.Damage(self.State, state, new RWCut(), mainPart.maxHealth, 999, mainPart, "Big Spider - Spew Babies");
+        RimHealthState.Damage(self.State, state, new RimCut(), mainPart.maxHealth, 999, mainPart, "Big Spider - Spew Babies");
     }
 
     static void ILBigSpiderUpdate(ILContext il)
@@ -645,7 +645,7 @@ internal class ILHooks
     }
     public static bool CentipedeShockAquaPyroDeath(Centipede self, Creature shockObj)
     {
-        if (shockObj.State == null || !healthState.TryGetValue(shockObj.State, out RWState state))
+        if (shockObj.State == null || !healthState.TryGetValue(shockObj.State, out RimState state))
         {
             return true;
         }
@@ -671,7 +671,7 @@ internal class ILHooks
     }
     public static bool CentipedeShockAqua(Centipede self, Creature shockObj)
     {
-        if (shockObj.State == null || !healthState.TryGetValue(shockObj.State, out RWState state))
+        if (shockObj.State == null || !healthState.TryGetValue(shockObj.State, out RimState state))
         {
             return true;
         }
@@ -691,7 +691,7 @@ internal class ILHooks
     }
     public static void CentipedeShockSmall(Centipede self, Creature shockObj)
     {
-        if (shockObj.State == null || !healthState.TryGetValue(shockObj.State, out RWState state))
+        if (shockObj.State == null || !healthState.TryGetValue(shockObj.State, out RimState state))
         {
             return;
         }
@@ -700,7 +700,7 @@ internal class ILHooks
     }
     public static bool CentipedeShockPyroDeath(Centipede self, Creature shockObj)
     {
-        if (shockObj.State == null || !healthState.TryGetValue(shockObj.State, out RWState state))
+        if (shockObj.State == null || !healthState.TryGetValue(shockObj.State, out RimState state))
         {
             return true;
         }
@@ -726,7 +726,7 @@ internal class ILHooks
     }
     public static bool CentipedeShock(Centipede self, Creature shockObj)
     {
-        if (shockObj.State == null || !healthState.TryGetValue(shockObj.State, out RWState state))
+        if (shockObj.State == null || !healthState.TryGetValue(shockObj.State, out RimState state))
         {
             return true;
         }
@@ -748,7 +748,7 @@ internal class ILHooks
     }
     public static void CentipedeShockLessMass(Centipede self, Creature shockObj)
     {
-        if (shockObj.State == null || !healthState.TryGetValue(shockObj.State, out RWState state))
+        if (shockObj.State == null || !healthState.TryGetValue(shockObj.State, out RimState state))
         {
             return;
         }
@@ -884,16 +884,16 @@ internal class ILHooks
     }
     public static void CreatureHypothermiaUpdate(Creature self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
 
-        RWHypothermia hypothermia = null;
+        RimHypothermia hypothermia = null;
 
-        foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+        foreach (RimAffliction affliction in state.wholeBodyAfflictions)
         {
-            if (affliction is RWHypothermia tempHypothermia)
+            if (affliction is RimHypothermia tempHypothermia)
             {
                 hypothermia = tempHypothermia;
                 break;
@@ -916,7 +916,7 @@ internal class ILHooks
             }
             else
             {
-                state.wholeBodyAfflictions.Add(new RWHypothermia(self.State, null, Math.Min(1, self.Hypothermia)));
+                state.wholeBodyAfflictions.Add(new RimHypothermia(self.State, null, Math.Min(1, self.Hypothermia)));
                 state.updateCapacities = true;
             }
         }
@@ -1048,7 +1048,7 @@ internal class ILHooks
     }
     public static bool CreatureUpdateLethalWater(Creature self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return true;
         }
@@ -1066,7 +1066,7 @@ internal class ILHooks
     }
     public static bool CreatureUpdatePoison(Creature self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return true;
         }
@@ -1148,7 +1148,7 @@ internal class ILHooks
 
     public static bool DartMaggotShotUpdateHitCheck(DartMaggot self, BodyChunk chunk)
     {
-        if (chunk.owner == null || chunk.owner is not Creature creature || !healthState.TryGetValue(creature.State, out RWState state) || !state.missingBodyChunks.Contains(chunk.index))
+        if (chunk.owner == null || chunk.owner is not Creature creature || !healthState.TryGetValue(creature.State, out RimState state) || !state.missingBodyChunks.Contains(chunk.index))
         {
             return true;
         }
@@ -1158,7 +1158,7 @@ internal class ILHooks
 
     public static bool DartMaggotShotUpdate(DartMaggot self, BodyChunk chunk)
     {
-        if (!weaponstat.TryGetValue(self.abstractPhysicalObject, out RWWeaponStats weaponState) || (!weaponState.wasDeflected && !weaponState.destroyedPart))
+        if (!weaponstat.TryGetValue(self.abstractPhysicalObject, out RimWeaponStats weaponState) || (!weaponState.wasDeflected && !weaponState.destroyedPart))
         {
             return true;
         }
@@ -1370,7 +1370,7 @@ internal class ILHooks
         {
             CreatureState self = dic.Key;
 
-            if (!healthState.TryGetValue(self, out RWState state))
+            if (!healthState.TryGetValue(self, out RimState state))
             {
                 continue;
             }
@@ -1426,7 +1426,7 @@ internal class ILHooks
 
                     if (damage >= 200)
                     {
-                        RWHealthState.Burn(state);
+                        RimHealthState.Burn(state);
                     }
 
                     continue;
@@ -1595,17 +1595,17 @@ internal class ILHooks
     }
     public static void FlyUpdateDrown(Creature self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
 
-        RWAirInLungs airInLungs = null;
+        RimAirInLungs airInLungs = null;
         float lungs = 1 - ((Fly)self).drown;
 
-        foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+        foreach (RimAffliction affliction in state.wholeBodyAfflictions)
         {
-            if (affliction is RWAirInLungs tempAirInLungs)
+            if (affliction is RimAirInLungs tempAirInLungs)
             {
                 airInLungs = tempAirInLungs;
                 break;
@@ -1627,7 +1627,7 @@ internal class ILHooks
             }
             else
             {
-                state.wholeBodyAfflictions.Add(new RWAirInLungs(self.State, null, lungs));
+                state.wholeBodyAfflictions.Add(new RimAirInLungs(self.State, null, lungs));
             }
         }
     }
@@ -1727,17 +1727,17 @@ internal class ILHooks
     }
     public static bool InsectoidCreatureUpdatePoison(Creature self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return true;
         }
 
-        RWAirInLungs airInLungs = null;
+        RimAirInLungs airInLungs = null;
         float lungs = 1 - ((Fly)self).drown;
 
-        foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+        foreach (RimAffliction affliction in state.wholeBodyAfflictions)
         {
-            if (affliction is RWAirInLungs tempAirInLungs)
+            if (affliction is RimAirInLungs tempAirInLungs)
             {
                 airInLungs = tempAirInLungs;
                 break;
@@ -1759,7 +1759,7 @@ internal class ILHooks
             }
             else
             {
-                state.wholeBodyAfflictions.Add(new RWAirInLungs(self.State, null, lungs));
+                state.wholeBodyAfflictions.Add(new RimAirInLungs(self.State, null, lungs));
             }
         }
 
@@ -1797,7 +1797,7 @@ internal class ILHooks
     }
     public static void KarmicShockwaveStunCreatures(Creature self, Creature attacker)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
@@ -1843,7 +1843,7 @@ internal class ILHooks
     }
     public static void KingTuskShootUpdate(Creature self, Creature attacker)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
@@ -1917,7 +1917,7 @@ internal class ILHooks
     }
     public static bool LeechAttached(Creature self)
     {
-        if (self.dead || self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.dead || self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return true;
         }
@@ -1961,7 +1961,7 @@ internal class ILHooks
     }
     public static bool LocustSwarmUpdate(Creature self)
     {
-        if (self.dead || self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.dead || self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return true;
         }
@@ -2013,7 +2013,7 @@ internal class ILHooks
 
     public static void SafariControlCreature(AbstractCreature self)
     {
-        if (!healthState.TryGetValue(self.state, out RWState state))
+        if (!healthState.TryGetValue(self.state, out RimState state))
         {
             return;
         }
@@ -2058,7 +2058,7 @@ internal class ILHooks
     }
     public static bool PlayercheckInput(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) ||
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) ||
             state.consciousState != 3 ||
             ModManager.MSC && self.State is MoreSlugcats.PlayerNPCState && ShadowOfOptions.player_uncon_movement.Value)
         {
@@ -2112,15 +2112,15 @@ internal class ILHooks
     }
     public static void PlayerEatMeatUpdate(Player self, Creature creature)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || creature.State == null || !healthState.TryGetValue(creature.State, out RWState otherState))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || creature.State == null || !healthState.TryGetValue(creature.State, out RimState otherState))
         {
             return;
         }
 
-        List<RWBodyPart> ediblebodyParts = new();
-        RWBodyPart focusedBodyPart;
+        List<RimBodyPart> ediblebodyParts = new();
+        RimBodyPart focusedBodyPart;
         
-        foreach (RWBodyPart part in otherState.bodyParts)
+        foreach (RimBodyPart part in otherState.bodyParts)
         {
             if (IsDestroyed(part) || !part.edible)
             {
@@ -2144,7 +2144,7 @@ internal class ILHooks
             {
                 bool containsHead = false;
 
-                foreach (RWBodyPart part in ediblebodyParts)
+                foreach (RimBodyPart part in ediblebodyParts)
                 {
                     if (part is Head)
                     {
@@ -2199,7 +2199,7 @@ internal class ILHooks
             return;
         }
 
-        RWHealthState.Damage(creature.State, otherState, new RWBite(), 999999f, 999, focusedBodyPart, GetCreatureName(self) + " - Teeth", GetCreatureName(self));
+        RimHealthState.Damage(creature.State, otherState, new RimBite(), 999999f, 999, focusedBodyPart, GetCreatureName(self) + " - Teeth", GetCreatureName(self));
     }
 
     static void ILPlayerGrabUpdate(ILContext il)
@@ -2242,21 +2242,21 @@ internal class ILHooks
     }
     public static void GrabUpdateBite(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || RWHealthState.EatingSpeed(state) >= 1)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || RimHealthState.EatingSpeed(state) >= 1)
         {
             return;
         }
 
-        self.eatCounter = Mathf.RoundToInt(Mathf.Lerp(60, 15, RWHealthState.EatingSpeed(state)));
+        self.eatCounter = Mathf.RoundToInt(Mathf.Lerp(60, 15, RimHealthState.EatingSpeed(state)));
     }
     public static void GrabUpdate(Player self, bool flag2)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || RWHealthState.EatingSpeed(state) >= 1 || flag2 || self.eatCounter < 40)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || RimHealthState.EatingSpeed(state) >= 1 || flag2 || self.eatCounter < 40)
         {
             return;
         }
 
-        if (self.eatCounter < Mathf.RoundToInt(Mathf.Lerp(90, 40, RWHealthState.EatingSpeed(state))))
+        if (self.eatCounter < Mathf.RoundToInt(Mathf.Lerp(90, 40, RimHealthState.EatingSpeed(state))))
         {
             self.eatCounter++;
         }
@@ -2321,7 +2321,7 @@ internal class ILHooks
     }
     public static void PlayerLungUpdateArti(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
@@ -2437,7 +2437,7 @@ internal class ILHooks
     }
     public static bool PlayerMovementUpdateNarrow(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.manipulation == 1 && state.moving == 1 && state.consciousState == 0)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || state.manipulation == 1 && state.moving == 1 && state.consciousState == 0)
         {
             return true;
         }
@@ -2450,7 +2450,7 @@ internal class ILHooks
     }
     public static bool PlayerMovementUpdateNarrowBoddyChunk(Player self, int n)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.manipulation == 1 && state.moving == 1 && state.consciousState == 0)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || state.manipulation == 1 && state.moving == 1 && state.consciousState == 0)
         {
             return true;
         }
@@ -2542,7 +2542,7 @@ internal class ILHooks
     }
     public static bool PlayerTerrainImpactDeath(Player self, float speed, int hitChunk = 0)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return true;
         }
@@ -2563,7 +2563,7 @@ internal class ILHooks
     }
     public static bool PlayerTerrainImpactHard(Player self, float speed, int hitChunk = 0)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return true;
         }
@@ -2874,7 +2874,7 @@ internal class ILHooks
     }
     public static bool PlayerUpdateAnimationHangFromBeam(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.manipulation == 1 && state.consciousState == 0)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || state.manipulation == 1 && state.consciousState == 0)
         {
             return true;
         }
@@ -2887,7 +2887,7 @@ internal class ILHooks
     }
     public static bool PlayerUpdateAnimationHangFromBeam2(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.manipulation == 1 && state.consciousState == 0)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || state.manipulation == 1 && state.consciousState == 0)
         {
             return true;
         }
@@ -2900,7 +2900,7 @@ internal class ILHooks
     }
     public static bool PlayerUpdateAnimationClimbOnBeam(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.manipulation == 1 && state.moving == 1 && state.consciousState == 0)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || state.manipulation == 1 && state.moving == 1 && state.consciousState == 0)
         {
             return true;
         }
@@ -2913,7 +2913,7 @@ internal class ILHooks
     }
     public static bool PlayerUpdateAnimation0GStand(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.manipulation == 1 && state.consciousState == 0)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || state.manipulation == 1 && state.consciousState == 0)
         {
             return true;
         }
@@ -2926,7 +2926,7 @@ internal class ILHooks
     }
     public static bool PlayerUpdateAnimation0GCrawl(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.manipulation == 1 && state.consciousState == 0)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || state.manipulation == 1 && state.consciousState == 0)
         {
             return true;
         }
@@ -3136,7 +3136,7 @@ internal class ILHooks
     }
     public static float PlayerUpdateCorridorMult(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.manipulation == 1 && state.moving == 1 && state.consciousState == 0)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || state.manipulation == 1 && state.moving == 1 && state.consciousState == 0)
         {
             return 1;
         }
@@ -3186,7 +3186,7 @@ internal class ILHooks
     }
     public static bool PlayerTongueUpdate(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return true;
         }
@@ -3227,7 +3227,7 @@ internal class ILHooks
 
     public static float PlayerJump(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.manipulation == 1 && state.moving == 1 && state.consciousState == 0)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || state.manipulation == 1 && state.moving == 1 && state.consciousState == 0)
         {
             return 1;
         }
@@ -3239,7 +3239,7 @@ internal class ILHooks
 
     public static void PlayerUpdateStandSpeed(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.moving == 1 && state.consciousState == 0)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || state.moving == 1 && state.consciousState == 0)
         {
             return;
         }
@@ -3251,7 +3251,7 @@ internal class ILHooks
     }
     public static void PlayerUpdateCrawlSpeed(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.manipulation == 1 && state.moving == 1 && state.consciousState == 0)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || state.manipulation == 1 && state.moving == 1 && state.consciousState == 0)
         {
             return;
         }
@@ -3264,7 +3264,7 @@ internal class ILHooks
 
     public static bool PlayerCanGrabPole(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || WorkingArms(state) > 0)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || WorkingArms(state) > 0)
         {
             return true;
         }
@@ -3342,7 +3342,7 @@ internal class ILHooks
     }
     public static void RoomRainThrowAroundObjects(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
@@ -3351,7 +3351,7 @@ internal class ILHooks
     }
     public static bool RoomRainThrowAroundObjectsDie(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return true;
         }
@@ -3455,7 +3455,7 @@ internal class ILHooks
     }
     public static void SmallNeedleWormScream(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState _))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState _))
         {
             return;
         }
@@ -3569,7 +3569,7 @@ internal class ILHooks
 
     public static bool SpearHitSomethingSound(Spear self)
     {
-        if (!weaponstat.TryGetValue(self.abstractPhysicalObject, out RWWeaponStats weaponState) || !weaponState.wasDeflected)
+        if (!weaponstat.TryGetValue(self.abstractPhysicalObject, out RimWeaponStats weaponState) || !weaponState.wasDeflected)
         {
             return true;
         }
@@ -3612,7 +3612,7 @@ internal class ILHooks
     }
     public static bool SpiderAttached(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return true;
         }
@@ -3717,16 +3717,16 @@ internal class ILHooks
     }
     public static void SporeCloudUpdateForceFull(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
 
-        RWToxicBuildup toxicBuildup = null;
+        RimToxicBuildup toxicBuildup = null;
 
-        foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+        foreach (RimAffliction affliction in state.wholeBodyAfflictions)
         {
-            if (affliction is RWToxicBuildup tempToxicBuildup)
+            if (affliction is RimToxicBuildup tempToxicBuildup)
             {
                 toxicBuildup = tempToxicBuildup;
                 break;
@@ -3739,23 +3739,23 @@ internal class ILHooks
         }
         else
         {
-            state.wholeBodyAfflictions.Add(new RWToxicBuildup(self.State, null, 1));
+            state.wholeBodyAfflictions.Add(new RimToxicBuildup(self.State, null, 1));
             state.updateCapacities = true;
         }
     }
 
     public static void SporeCloudUpdateAdd(Creature self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
 
-        RWToxicBuildup toxicBuildup = null;
+        RimToxicBuildup toxicBuildup = null;
 
-        foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+        foreach (RimAffliction affliction in state.wholeBodyAfflictions)
         {
-            if (affliction is RWToxicBuildup tempToxicBuildup)
+            if (affliction is RimToxicBuildup tempToxicBuildup)
             {
                 toxicBuildup = tempToxicBuildup;
                 break;
@@ -3771,7 +3771,7 @@ internal class ILHooks
         }
         else
         {
-            state.wholeBodyAfflictions.Add(new RWToxicBuildup(self.State, null, poison));
+            state.wholeBodyAfflictions.Add(new RimToxicBuildup(self.State, null, poison));
             state.updateCapacities = true;
         }
     }
@@ -3839,7 +3839,7 @@ internal class ILHooks
 
     public static void SporePlantAttachedBee(Creature self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
@@ -3877,12 +3877,12 @@ internal class ILHooks
     }
     public static void ThrowOutBehaviorUpdate(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.consciousnessSource == null)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || state.consciousnessSource == null)
         {
             return;
         }
 
-        RWHealthState.Damage(self.State, state, new RWBomb(), 999999f, 999, state.consciousnessSource, "Oracle - Explosion", "Oracle");
+        RimHealthState.Damage(self.State, state, new RimBomb(), 999999f, 999, state.consciousnessSource, "Oracle - Explosion", "Oracle");
     }
     #endregion
 
@@ -3975,7 +3975,7 @@ internal class ILHooks
     }
     public static bool TubeWormTongueUpdate(TubeWorm self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return true;
         }
@@ -4030,7 +4030,7 @@ internal class ILHooks
     }
     public static void UnderwaterShockUpdate(Creature self, Creature attacker)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
@@ -4184,7 +4184,7 @@ internal class ILHooks
     }
     public static bool WeaponHitSomethingWithoutStoppingSpear(Creature self, Creature attacker, Weapon weapon)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return true;
         }
@@ -4192,19 +4192,19 @@ internal class ILHooks
         float damage = 10;
         float AP = 0;
 
-        if (weaponstat.TryGetValue(weapon.abstractPhysicalObject, out RWWeaponStats weaponState))
+        if (weaponstat.TryGetValue(weapon.abstractPhysicalObject, out RimWeaponStats weaponState))
         {
             damage = weaponState.damage;
             AP = weaponState.AP;
         }
 
-        RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, null, null, true), weapon.ToString(), attacker.ToString());
+        RimHealthState.Damage(self.State, state, new RimStab(), damage, AP, GetHitBodyPart(state, null, null, true), weapon.ToString(), attacker.ToString());
 
         return false;
     }
     public static bool WeaponHitSomethingWithoutStoppingRockDie(Creature self, Creature attacker, Weapon weapon)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return true;
         }
@@ -4212,7 +4212,7 @@ internal class ILHooks
         float damage = 10;
         float AP = 0;
 
-        if (weaponstat.TryGetValue(weapon.abstractPhysicalObject, out RWWeaponStats weaponState))
+        if (weaponstat.TryGetValue(weapon.abstractPhysicalObject, out RimWeaponStats weaponState))
         {
             damage = weaponState.damage;
             AP = weaponState.AP;
@@ -4225,7 +4225,7 @@ internal class ILHooks
     }
     public static void WeaponHitSomethingWithoutStoppingRock(Creature self, Creature attacker, Weapon weapon)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
@@ -4233,7 +4233,7 @@ internal class ILHooks
         float damage = 10;
         float AP = 0;
 
-        if (weaponstat.TryGetValue(weapon.abstractPhysicalObject, out RWWeaponStats weaponState))
+        if (weaponstat.TryGetValue(weapon.abstractPhysicalObject, out RimWeaponStats weaponState))
         {
             damage = weaponState.damage;
             AP = weaponState.AP;
@@ -4282,7 +4282,7 @@ internal class ILHooks
     }
     public static bool ZapCoilUpdate(Creature self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return true;
         }
@@ -4344,7 +4344,7 @@ internal class ILHooks
     }
     public static bool BigJellyFishCollide(Creature self)
     {
-        if (self.dead || self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.dead || self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return true;
         }
@@ -4535,7 +4535,7 @@ internal class ILHooks
     }
     public static WorldCoordinate SlugNPCAIUpdate(MoreSlugcats.SlugNPCAI self, WorldCoordinate destination)
     {
-        if (self.creature.controlled || !healthState.TryGetValue(self.cat.State, out RWState state))
+        if (self.creature.controlled || !healthState.TryGetValue(self.cat.State, out RimState state))
         {
             return destination;
         }
@@ -4560,7 +4560,7 @@ internal class ILHooks
             return self.cat.abstractCreature.pos;
         }
 
-        if (state.tendTarget == null || state.tendTarget.State == null || !healthState.TryGetValue(state.tendTarget.State, out RWState otherState))
+        if (state.tendTarget == null || state.tendTarget.State == null || !healthState.TryGetValue(state.tendTarget.State, out RimState otherState))
         {
             stopTend();
 
@@ -4580,7 +4580,7 @@ internal class ILHooks
 
         if (state.tendAffliction != null)
         {
-            if (state.tendAffliction.isTended || state.tendAffliction.part == null && state.tendAffliction is not RWDisease)
+            if (state.tendAffliction.isTended || state.tendAffliction.part == null && state.tendAffliction is not RimDisease)
             {
                 state.tendAffliction = null;
 
@@ -4599,22 +4599,22 @@ internal class ILHooks
             return self.cat.abstractCreature.pos;
         }
 
-        RWInjury bleeding = null;
-        RWDisease diseaseAffliction = null;
-        RWInjury untendedAffliction = null;
+        RimInjury bleeding = null;
+        RimDisease diseaseAffliction = null;
+        RimInjury untendedAffliction = null;
 
-        foreach (RWBodyPart part in otherState.bodyParts)
+        foreach (RimBodyPart part in otherState.bodyParts)
         {
-            foreach (RWAffliction baseAffliction in part.afflictions)
+            foreach (RimAffliction baseAffliction in part.afflictions)
             {
-                if (baseAffliction is not RWTendableAffliction affliction)
+                if (baseAffliction is not RimTendableAffliction affliction)
                 {
                     continue;
                 }
 
                 if (!affliction.isTended)
                 {
-                    if (affliction is RWInjury injury)
+                    if (affliction is RimInjury injury)
                     {
                         if (injury.isBleeding)
                         {
@@ -4640,7 +4640,7 @@ internal class ILHooks
 
                         }
                     }
-                    else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                    else if (affliction is RimDisease disease && disease.timeUntilTreatment <= 0)
                     {
                         if (diseaseAffliction != null)
                         {
@@ -4657,7 +4657,7 @@ internal class ILHooks
                         RimWorldHealth.Logger.LogError(all + affliction + " does not belong to any tendable check");
                     }
                 }
-                else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                else if (affliction is RimDisease disease && disease.timeUntilTreatment <= 0)
                 {
                     if (diseaseAffliction != null)
                     {
@@ -4673,9 +4673,9 @@ internal class ILHooks
 
         if (bleeding == null)
         {
-            foreach (RWAffliction affliction in otherState.wholeBodyAfflictions)
+            foreach (RimAffliction affliction in otherState.wholeBodyAfflictions)
             {
-                if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                if (affliction is RimDisease disease && disease.timeUntilTreatment <= 0)
                 {
                     if (diseaseAffliction != null)
                     {
@@ -4704,9 +4704,9 @@ internal class ILHooks
 
         return self.cat.abstractCreature.pos;
 
-        void startTending(RWTendableAffliction affliction)
+        void startTending(RimTendableAffliction affliction)
         {
-            state.tendTime = Mathf.Round(state.tendTimeBase / RWHealthState.MedicalTendSpeed(state));
+            state.tendTime = Mathf.Round(state.tendTimeBase / RimHealthState.MedicalTendSpeed(state));
             state.tendTimeMax = state.tendTime;
             state.tendAffliction = affliction;
         }
@@ -4812,7 +4812,7 @@ internal class ILHooks
     }
     public static void ARZapperZapperContactStun(Creature self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
@@ -4821,7 +4821,7 @@ internal class ILHooks
     }
     public static bool ARZapperZapperContactDie(Creature self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return true;
         }
@@ -4933,7 +4933,7 @@ internal class ILHooks
     }
     public static bool BigMothUpdateDamage(Creature self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return true;
         }
@@ -4945,7 +4945,7 @@ internal class ILHooks
     }
     public static void BigMothUpdate(Creature self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
@@ -4996,7 +4996,7 @@ internal class ILHooks
     }
     public static void FlameJetUpdateDamage(Creature self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
@@ -5062,7 +5062,7 @@ internal class ILHooks
     }
     public static void LightningStrikeAOEUpdate(Creature self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
@@ -5152,7 +5152,7 @@ internal class ILHooks
     }
     public static void SandstormAffectObjects(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
@@ -5161,7 +5161,7 @@ internal class ILHooks
     }
     public static bool SandstormAffectObjectsDie(Player self)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return true;
         }
@@ -5226,7 +5226,7 @@ internal class ILHooks
 
     public static float LungsGainMultiplier(AbstractCreature self)
     {
-        if (self.state == null || !healthState.TryGetValue(self.state, out RWState state))
+        if (self.state == null || !healthState.TryGetValue(self.state, out RimState state))
         {
             return 1;
         }
@@ -5236,7 +5236,7 @@ internal class ILHooks
 
     public static float LungsLossMultiplier(AbstractCreature self)
     {
-        if (self.state == null || !healthState.TryGetValue(self.state, out RWState state))
+        if (self.state == null || !healthState.TryGetValue(self.state, out RimState state))
         {
             return 1;
         }

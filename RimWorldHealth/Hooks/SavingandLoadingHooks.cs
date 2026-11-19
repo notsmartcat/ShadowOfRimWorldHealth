@@ -40,19 +40,19 @@ internal class SavingandLoadingHooks
     {
         orig(self, s);
 
-        if (!healthState.TryGetValue(self, out RWState state))
+        if (!healthState.TryGetValue(self, out RimState state))
         {
             return;
         }
 
         state.timeAbstracted = cycleTick;
 
-        List<RWAffliction> diseasesToSave;
-        List<RWDisease> diseasesToTend;
+        List<RimAffliction> diseasesToSave;
+        List<RimDisease> diseasesToTend;
 
-        List<RWInjury> injuriesToTend = new();
+        List<RimInjury> injuriesToTend = new();
 
-        Dictionary<RWBodyPart, List<RWAffliction>> afflictionsToSave = new();
+        Dictionary<RimBodyPart, List<RimAffliction>> afflictionsToSave = new();
 
         try
         {
@@ -93,10 +93,10 @@ internal class SavingandLoadingHooks
                             continue;
                         }
 
-                        diseasesToTend.Add(LoadAffliction(afflictionInfo, null, self) as RWDisease);
+                        diseasesToTend.Add(LoadAffliction(afflictionInfo, null, self) as RimDisease);
                     }
 
-                    foreach (RWDisease disease in diseasesToTend)
+                    foreach (RimDisease disease in diseasesToTend)
                     {
                         diseasesToSave = UpdateDisease(disease, state, self, diseasesToSave);
                     }
@@ -108,7 +108,7 @@ internal class SavingandLoadingHooks
             }
             #endregion
 
-            foreach (RWBodyPart part in state.bodyParts)
+            foreach (RimBodyPart part in state.bodyParts)
             {
                 string bodyPartName = "ShadowOfRimWorld" + GetBodyPartKeyName(part);
 
@@ -137,27 +137,27 @@ internal class SavingandLoadingHooks
                 }
             }
 
-            foreach (RWBodyPart part in state.bodyParts)
+            foreach (RimBodyPart part in state.bodyParts)
             {
                 diseasesToSave = new();
                 diseasesToTend = new();
 
-                foreach (RWAffliction baseAffliction in part.afflictions)
+                foreach (RimAffliction baseAffliction in part.afflictions)
                 {
-                    if (baseAffliction is not RWTendableAffliction affliction || affliction.isCharacterSpecific)
+                    if (baseAffliction is not RimTendableAffliction affliction || affliction.isCharacterSpecific)
                     {
                         continue;
                     }
 
-                    if (affliction is RWInjury injury)
+                    if (affliction is RimInjury injury)
                     {
-                        if (affliction is RWDestroyed)
+                        if (affliction is RimDestroyed)
                         {
                             afflictionsToSave[part].Add(injury);
 
                             continue;
                         }
-                        if (affliction is RWScar scar)
+                        if (affliction is RimScar scar)
                         {
                             if (scar.isRevealed || scar.isPermanent)
                             {
@@ -173,18 +173,18 @@ internal class SavingandLoadingHooks
 
                         injuriesToTend.Add(injury);
                     }
-                    else if (affliction is RWDisease disease)
+                    else if (affliction is RimDisease disease)
                     {
                         diseasesToTend.Add(disease);
                     }
                 }
 
-                foreach (RWDisease disease in diseasesToTend)
+                foreach (RimDisease disease in diseasesToTend)
                 {
                     diseasesToSave = UpdateDisease(disease, state, self, diseasesToSave);
                 }
 
-                foreach (RWAffliction disease in diseasesToSave)
+                foreach (RimAffliction disease in diseasesToSave)
                 {
                     afflictionsToSave[part].Add(disease);
                 }
@@ -220,7 +220,7 @@ internal class SavingandLoadingHooks
 
     static string SaveStateSaveAbstractCreature(On.SaveState.orig_AbstractCreatureToStringStoryWorld_AbstractCreature_WorldCoordinate orig, AbstractCreature self, WorldCoordinate cc)
     {
-        if (self == null || self.state == null || self.state.unrecognizedSaveStrings == null || !healthState.TryGetValue(self.state, out RWState state))
+        if (self == null || self.state == null || self.state.unrecognizedSaveStrings == null || !healthState.TryGetValue(self.state, out RimState state))
         {
             return orig(self, cc);
         }
@@ -233,16 +233,16 @@ internal class SavingandLoadingHooks
 
             savedData["ShadowOfRimWorldBloodLoss"] = state.bloodLoss.ToString();
 
-            List<RWAffliction> afflictionsToSave = new();
+            List<RimAffliction> afflictionsToSave = new();
 
-            foreach (RWAffliction baseAffliction in state.wholeBodyAfflictions)
+            foreach (RimAffliction baseAffliction in state.wholeBodyAfflictions)
             {
-                if (baseAffliction is not RWTendableAffliction affliction || affliction.isCharacterSpecific)
+                if (baseAffliction is not RimTendableAffliction affliction || affliction.isCharacterSpecific)
                 {
                     continue;
                 }
 
-                if (affliction is RWDisease disease)
+                if (affliction is RimDisease disease)
                 {
                     afflictionsToSave.Add(disease);
                 }
@@ -253,15 +253,15 @@ internal class SavingandLoadingHooks
                 savedData["ShadowOfRimWorldWholeBody"] = GetAllWholeBodyAfflictionValueName(afflictionsToSave);
             }
 
-            foreach (RWBodyPart part in state.bodyParts)
+            foreach (RimBodyPart part in state.bodyParts)
             {
                 afflictionsToSave = new();
 
                 if (part.afflictions.Count > 0)
                 {
-                    foreach (RWAffliction baseAffliction in state.wholeBodyAfflictions)
+                    foreach (RimAffliction baseAffliction in state.wholeBodyAfflictions)
                     {
-                        if (baseAffliction is not RWTendableAffliction affliction || affliction.isCharacterSpecific)
+                        if (baseAffliction is not RimTendableAffliction affliction || affliction.isCharacterSpecific)
                         {
                             continue;
                         }
@@ -289,7 +289,7 @@ internal class SavingandLoadingHooks
     {
         orig(self, crit, playerNumber, slugcatCharacter, isGhost);
 
-        if (!healthState.TryGetValue(self, out RWState state) || !rimWorldHealthHandler.unrecognizedSaveStrings.ContainsKey(playerNumber.ToString()))
+        if (!healthState.TryGetValue(self, out RimState state) || !rimWorldHealthHandler.unrecognizedSaveStrings.ContainsKey(playerNumber.ToString()))
         {
             return;
         }
@@ -330,7 +330,7 @@ internal class SavingandLoadingHooks
             }
         }
 
-        foreach (RWBodyPart part in state.bodyParts)
+        foreach (RimBodyPart part in state.bodyParts)
         {
             string bodyPartName = GetBodyPartKeyName(part);
 
@@ -386,15 +386,15 @@ internal class SavingandLoadingHooks
     }
     #endregion
 
-    public static string GetBodyPartKeyName(RWBodyPart part)
+    public static string GetBodyPartKeyName(RimBodyPart part)
     {
         return part.subName + part.name;
     }
 
-    public static string GetAllAfflictionValueName(RWBodyPart part)
+    public static string GetAllAfflictionValueName(RimBodyPart part)
     {
         string name = "";
-        RWAffliction affliction;
+        RimAffliction affliction;
         string nameEnding;
 
         for (int i = 0; i < part.afflictions.Count; i++)
@@ -404,17 +404,17 @@ internal class SavingandLoadingHooks
 
             affliction = part.afflictions[i];
 
-            if (affliction is RWInjury injury)
+            if (affliction is RimInjury injury)
             {
                 nameEnding = "";
 
-                if (injury is RWScar scar)
+                if (injury is RimScar scar)
                 {
                     name += "Scar:";
 
                     nameEnding = $"{scar.isRevealed}:{scar.isPermanent}:{scar.scarDamage}:{scar.painCategory}";
                 }
-                else if (injury is RWDestroyed)
+                else if (injury is RimDestroyed)
                 {
                     name += "Destroyed:";
                 }
@@ -427,7 +427,7 @@ internal class SavingandLoadingHooks
 
                 name += nameEnding;
             }
-            else if (affliction is RWDisease disease)
+            else if (affliction is RimDisease disease)
             {
                 name = $"{disease.isTended}:{disease.name}:{disease.severity}:{disease.isImmune}:{disease.immunity}:{disease.timeUntilTreatment}:{disease.totalTendQuality}:{disease.InfectionLuck}";
             }
@@ -436,10 +436,10 @@ internal class SavingandLoadingHooks
         return name;
     }
 
-    public static string GetAllWholeBodyAfflictionValueName(List<RWAffliction> wholeBodyAfflictions)
+    public static string GetAllWholeBodyAfflictionValueName(List<RimAffliction> wholeBodyAfflictions)
     {
         string name = "";
-        RWAffliction affliction;
+        RimAffliction affliction;
         string nameEnding;
 
         for (int i = 0; i < wholeBodyAfflictions.Count; i++)
@@ -449,17 +449,17 @@ internal class SavingandLoadingHooks
 
             affliction = wholeBodyAfflictions[i];
 
-            if (affliction is RWInjury injury)
+            if (affliction is RimInjury injury)
             {
                 nameEnding = "";
 
-                if (injury is RWScar scar)
+                if (injury is RimScar scar)
                 {
                     name += "Scar:";
 
                     nameEnding = $"{scar.isRevealed}:{scar.isPermanent}:{scar.scarDamage}:{scar.painCategory}";
                 }
-                else if (injury is RWDestroyed)
+                else if (injury is RimDestroyed)
                 {
                     name += "Destroyed:";
                 }
@@ -472,7 +472,7 @@ internal class SavingandLoadingHooks
 
                 name += nameEnding;
             }
-            else if (affliction is RWDisease disease)
+            else if (affliction is RimDisease disease)
             {
                 name = $"{disease.name}:{disease.isTended}:{disease.severity}:{disease.isImmune}:{disease.immunity}:{disease.timeUntilTreatment}:{disease.totalTendQuality}:{disease.InfectionLuck}";
             }
@@ -481,7 +481,7 @@ internal class SavingandLoadingHooks
         return name;
     }
 
-    public static RWAffliction LoadAffliction(string[] afflictionInfo, RWBodyPart part, CreatureState state)
+    public static RimAffliction LoadAffliction(string[] afflictionInfo, RimBodyPart part, CreatureState state)
     {
         if (afflictionInfo.Length == 0)
         {
@@ -490,11 +490,11 @@ internal class SavingandLoadingHooks
 
         if (afflictionInfo[0] == "Injury" || afflictionInfo[0] == "Scar" || afflictionInfo[0] == "Destroyed")
         {
-            RWInjury injury = afflictionInfo[0] switch
+            RimInjury injury = afflictionInfo[0] switch
             {
-                "Scar" => new RWScar(state, part),
-                "Destroyed" => new RWDestroyed(state, part),
-                _ => new RWInjury(state, part)
+                "Scar" => new RimScar(state, part),
+                "Destroyed" => new RimDestroyed(state, part),
+                _ => new RimInjury(state, part)
             };
 
             injury.isTended = afflictionInfo[1] == "True";
@@ -502,12 +502,12 @@ internal class SavingandLoadingHooks
             injury.attackName = afflictionInfo[3];
             injury.attackerName = afflictionInfo[4];
             injury.damage = float.TryParse(afflictionInfo[5], out float damage) ? damage : 0f;
-            injury.damageType = RWDamageType.GetRWDamageType(afflictionInfo[6]);
+            injury.damageType = RimDamageType.GetRWDamageType(afflictionInfo[6]);
             injury.infectionTimer = float.TryParse(afflictionInfo[7], out float infectionTimer) ? infectionTimer : 0f;
 
-            injury.healingDifficulty = RWHealingDifficulty.GetRWHealingDifficulty(afflictionInfo[8]);
+            injury.healingDifficulty = RimHealingDifficulty.GetRWHealingDifficulty(afflictionInfo[8]);
 
-            if (injury is RWScar scar)
+            if (injury is RimScar scar)
             {
                 scar.isRevealed = afflictionInfo[9] == "True";
                 scar.isPermanent = afflictionInfo[10] == "True";
@@ -519,10 +519,10 @@ internal class SavingandLoadingHooks
         }
         else
         {
-            RWDisease disease = afflictionInfo[0] switch
+            RimDisease disease = afflictionInfo[0] switch
             {
-                "Flu" => new RWFlu(state, part ?? null),
-                "Infection" => new RWInfection(state, part ?? null),
+                "Flu" => new RimFlu(state, part ?? null),
+                "Infection" => new RimInfection(state, part ?? null),
                 _ => throw new NotImplementedException()
             };
 
@@ -539,7 +539,7 @@ internal class SavingandLoadingHooks
         }
     }
 
-    public static Dictionary<RWBodyPart, List<RWAffliction>> UpdateInjuries(List<RWInjury> healList, RWState state, Dictionary<RWBodyPart, List<RWAffliction>> afflictionsToSave, int cycleNumber = -1)
+    public static Dictionary<RimBodyPart, List<RimAffliction>> UpdateInjuries(List<RimInjury> healList, RimState state, Dictionary<RimBodyPart, List<RimAffliction>> afflictionsToSave, int cycleNumber = -1)
     {
         float treatmentTime;
 
@@ -559,12 +559,12 @@ internal class SavingandLoadingHooks
             treatmentTime += CycleLength() - cycleTick;
         }
 
-        foreach (RWInjury injury in healList)
+        foreach (RimInjury injury in healList)
         {
             if (!injury.isTended)
             {
                 injury.isTended = true;
-                RWHealthState.TendAffliction(state, injury);
+                RimHealthState.TendAffliction(state, injury);
             }
         }
 
@@ -575,7 +575,7 @@ internal class SavingandLoadingHooks
                 return afflictionsToSave;
             }
 
-            RWInjury injury = healList[UnityEngine.Random.Range(0, healList.Count)];
+            RimInjury injury = healList[UnityEngine.Random.Range(0, healList.Count)];
 
             float healRate = 8;
 
@@ -588,7 +588,7 @@ internal class SavingandLoadingHooks
 
             injury.damage -= healRate * 0.1f;
 
-            if (injury is RWScar scar)
+            if (injury is RimScar scar)
             {
                 if (scar.damage <= scar.scarDamage)
                 {
@@ -612,7 +612,7 @@ internal class SavingandLoadingHooks
             }
         }
 
-        foreach (RWInjury injury in healList)
+        foreach (RimInjury injury in healList)
         {
             if (!afflictionsToSave.ContainsKey(injury.part))
             {
@@ -625,7 +625,7 @@ internal class SavingandLoadingHooks
         return afflictionsToSave;
     }
 
-    public static List<RWAffliction> UpdateDisease(RWDisease disease, RWState state, CreatureState creatureState, List<RWAffliction> diseasesToSave, bool isPlayer = false, int ticksPassed = -1)
+    public static List<RimAffliction> UpdateDisease(RimDisease disease, RimState state, CreatureState creatureState, List<RimAffliction> diseasesToSave, bool isPlayer = false, int ticksPassed = -1)
     {
         float afterCycleTreatmentTime = 0;
 
@@ -670,7 +670,7 @@ internal class SavingandLoadingHooks
         {
             disease.isTended = true;
 
-            RWHealthState.TendAffliction(state, disease);
+            RimHealthState.TendAffliction(state, disease);
 
             disease.timeUntilTreatment = cycleLength * disease.treatmentTimes;
         }
@@ -735,7 +735,7 @@ internal class SavingandLoadingHooks
         else
         {
             disease.isTended = true;
-            RWHealthState.TendAffliction(state, disease);
+            RimHealthState.TendAffliction(state, disease);
         }
 
         //Debug.Log("Disease tendQuality " + disease.tendQuality);
@@ -789,7 +789,7 @@ internal class SavingandLoadingHooks
 
             if (ticksPassed != -1)
             {
-                RWHealthState.Kill(creatureState);
+                RimHealthState.Kill(creatureState);
             }
 
             return diseasesToSave;
@@ -834,7 +834,7 @@ internal class SavingandLoadingHooks
         }
         float WillImmunityMax()
         {
-            return disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(creatureState, state, ticksPassed == -1) / CycleLength() * timeUntilTreatment;
+            return disease.immunityGain * disease.InfectionLuck * RimHealthState.ImmunityGainSpeed(creatureState, state, ticksPassed == -1) / CycleLength() * timeUntilTreatment;
         }
 
         float SeverityMaxTimer()
@@ -843,7 +843,7 @@ internal class SavingandLoadingHooks
         }
         float ImmunityMaxTimer()
         {
-            return willImmunityMax ? (disease.immunity - 1) / disease.immunityGain * disease.InfectionLuck * RWHealthState.ImmunityGainSpeed(creatureState, state) / CycleLength() * treatmentTime : 0;
+            return willImmunityMax ? (disease.immunity - 1) / disease.immunityGain * disease.InfectionLuck * RimHealthState.ImmunityGainSpeed(creatureState, state) / CycleLength() * treatmentTime : 0;
         }
 
         float Tended()

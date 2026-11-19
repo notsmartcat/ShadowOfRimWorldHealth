@@ -12,7 +12,7 @@ namespace ShadowOfRimWorldHealth;
 
 public class RimWorldHealth : BaseUnityPlugin
 {
-    public class RWState
+    public class RimState
     {
         #region Saving variables
         public int lastCycle = -1; //This refers to the last cycle the creature was saved so whenever it is loaded the afflictions are properily calculated
@@ -22,9 +22,9 @@ public class RimWorldHealth : BaseUnityPlugin
         public float bodySizeFactor = 1; //Used to multiply blood loss. Currently not implemented properly.
         public float healthScale = 1; //Reffer to https://rimworldwiki.com/wiki/Property:Health_Scale when possible. (lizards would have this be 1.2 due to the Alligator, however I will need to scale it as currently the slugcat is scaled as if it was a human, and the 1.2 is based on the human being 1. It will also need to be scaled based on the actual lizard scale)
 
-        public List<RWBodyPart> bodyParts = new(); //The entire list of all body parts. They are created when the RWHealthState is created.
+        public List<RimBodyPart> bodyParts = new(); //The entire list of all body parts. They are created when the RWHealthState is created.
 
-        public List<RWAffliction> wholeBodyAfflictions = new(); //List of all affliction that do not belong to a single body part but are more general. All Informational Afflictions are whole body.
+        public List<RimAffliction> wholeBodyAfflictions = new(); //List of all affliction that do not belong to a single body part but are more general. All Informational Afflictions are whole body.
 
         public Brain consciousnessSource = null; //Used to directly multiply consciousness my it's own efficiency, generally the Brain.
 
@@ -41,7 +41,6 @@ public class RimWorldHealth : BaseUnityPlugin
 
         public Dictionary<string, List<float>> clothingArmour = new(); //Currently unimplemented.
 
-        public bool forceUnconsciousness = false; //If true the creatures consiousness will be maximum 10%
         public int consciousState = 0; //0 = Conscious, 1 = Incapacitated, 2 = Pain Shock, 3 = Unconscious. in order of severity so more severe states will override
 
         public bool onFire = false; //If true the creature will take 2 burn damage to a random non-internal limb every second.
@@ -65,18 +64,18 @@ public class RimWorldHealth : BaseUnityPlugin
         public float digestion = 1; //Multiplies the amount of time creatures spend in their den after taking prey by 60% of itself.
 
         //Collections of all body parts that modify each capacity. Used when setting the capacities so I do not have to go through each individual body part each time even if it doesn't modify the capacity.
-        public readonly List<RWBodyPart> bloodFiltrationBP = new();
-        public readonly List<RWBodyPart> bloodPumpingBP = new();
-        public readonly List<RWBodyPart> breathingBP = new();
-        public readonly List<RWBodyPart> digestionBP = new();
-        public readonly List<RWBodyPart> eatingBP = new();
-        public readonly List<RWBodyPart> hearingBP = new();
-        public readonly List<RWBodyPart> manipulationBP = new();
-        public readonly List<RWBodyPart> movingBP = new();
-        public readonly List<RWBodyPart> sightBP = new();
-        public readonly List<RWBodyPart> talkingBP = new();
+        public readonly List<RimBodyPart> bloodFiltrationBP = new();
+        public readonly List<RimBodyPart> bloodPumpingBP = new();
+        public readonly List<RimBodyPart> breathingBP = new();
+        public readonly List<RimBodyPart> digestionBP = new();
+        public readonly List<RimBodyPart> eatingBP = new();
+        public readonly List<RimBodyPart> hearingBP = new();
+        public readonly List<RimBodyPart> manipulationBP = new();
+        public readonly List<RimBodyPart> movingBP = new();
+        public readonly List<RimBodyPart> sightBP = new();
+        public readonly List<RimBodyPart> talkingBP = new();
 
-        public readonly List<RWAffliction> capacityAffectingAffliction = new();
+        public readonly List<RimAffliction> capacityAffectingAffliction = new();
 
         public bool updateCapacities = false; //Set to true whenever anything happens that could cause capacities to be differet, prevents updating capacities when they would be the same.
         #endregion
@@ -101,10 +100,10 @@ public class RimWorldHealth : BaseUnityPlugin
         public readonly int tendTimeBase = 60; //1 second = 40 ticks, tending will take 1.5 seconds (couldn't find an official RimWorld base tend time)
         public Creature tendTarget = null;
 
-        public RWTendableAffliction tendAffliction = null;
-        public RWOperation tendOperation = null;
+        public RimTendableAffliction tendAffliction = null;
+        public RimOperation tendOperation = null;
 
-        public List<RWOperation> operationsList = new();
+        public List<RimOperation> operationsList = new();
 
         public int allowedMedicine = 0; //0 is no Medicine, 1 is Herbal Medicine, 2 is Medicine and 3 is Glitterworld Medicine
         public List<int> storedMedicine = new(); //When medicine is picked up it will be stored in this list so the player doesn't have to carry it all in hands.
@@ -120,7 +119,7 @@ public class RimWorldHealth : BaseUnityPlugin
         {
             0, 0
         };
-        public RWFireSmoke visualFire = null;
+        public RimFireSmoke visualFire = null;
         public LightSource lightSource = null;
         #endregion
     }
@@ -130,7 +129,7 @@ public class RimWorldHealth : BaseUnityPlugin
         public Dictionary<CreatureState, float> hitCreatures = new();
     }
 
-    public class RWWeaponStats
+    public class RimWeaponStats
     {
         public string quality = "Normal";
 
@@ -143,11 +142,11 @@ public class RimWorldHealth : BaseUnityPlugin
         #endregion
     }
 
-    public static readonly ConditionalWeakTable<CreatureState, RWState> healthState = new();
+    public static readonly ConditionalWeakTable<CreatureState, RimState> healthState = new();
 
     public static readonly ConditionalWeakTable<Explosion, OneTimeUseData> singleExplosion = new();
 
-    public static readonly ConditionalWeakTable<AbstractPhysicalObject, RWWeaponStats> weaponstat = new();
+    public static readonly ConditionalWeakTable<AbstractPhysicalObject, RimWeaponStats> weaponstat = new();
 
     public static readonly MoreSlugcats.SlugNPCAI.BehaviorType SlugTend = new("SlugTend", true);
     public static readonly MoreSlugcats.SlugNPCAI.BehaviorType SlugSelfTend = new("SlugSelfTend", true);
@@ -175,7 +174,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
     public static RimWorldHealthHandler rimWorldHealthHandler;
 
-    public static RWTendableAffliction burningAffliction = new(null, null); //generic affliction not connected to anything and used to make tending target burn as the act of burning is not a actual affliction
+    public static RimTendableAffliction burningAffliction = new(null, null); //generic affliction not connected to anything and used to make tending target burn as the act of burning is not a actual affliction
 
     public static List<CreatureTemplate> customTemplates = new();
 
@@ -250,7 +249,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
             foreach (AbstractCreature creature in tempUpdatableCreatures)
             {
-                if (creature is null || !healthState.TryGetValue(creature.state, out RWState state))
+                if (creature is null || !healthState.TryGetValue(creature.state, out RimState state))
                 {
                     updatableCreatures.Remove(creature);
                     continue;
@@ -307,7 +306,7 @@ public class RimWorldHealth : BaseUnityPlugin
     {
         orig(self, eu);
 
-        if (!healthState.TryGetValue(self.State, out RWState state))
+        if (!healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
@@ -335,15 +334,15 @@ public class RimWorldHealth : BaseUnityPlugin
 
                             if (j == 0)
                             {
-                                RWHealthState.Damage(self.State, state, new RWCut(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest");
+                                RimHealthState.Damage(self.State, state, new RimCut(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest");
                             }
                             else if (j == 1)
                             {
-                                RWHealthState.Damage(self.State, state, new RWCut(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest");
+                                RimHealthState.Damage(self.State, state, new RimCut(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest");
                             }
                             else if (j == 2)
                             {
-                                RWHealthState.Damage(self.State, state, new RWCut(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
+                                RimHealthState.Damage(self.State, state, new RimCut(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
                             }
 
                             state.updateCapacities = true;
@@ -355,15 +354,15 @@ public class RimWorldHealth : BaseUnityPlugin
 
                         if (k == 0)
                         {
-                            RWHealthState.Damage(self.State, state, new RWCut(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest");
+                            RimHealthState.Damage(self.State, state, new RimCut(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest");
                         }
                         else if (k == 1)
                         {
-                            RWHealthState.Damage(self.State, state, new RWCut(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest");
+                            RimHealthState.Damage(self.State, state, new RimCut(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest");
                         }
                         else if (k == 2)
                         {
-                            RWHealthState.Damage(self.State, state, new RWCut(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
+                            RimHealthState.Damage(self.State, state, new RimCut(), 0.5f, 0, state.bodyParts[i], "testtesttesttesttesttest testtesttesttesttesttest testtesttesttesttesttest");
                         }
                     }
 
@@ -371,7 +370,7 @@ public class RimWorldHealth : BaseUnityPlugin
                     {
                         if (state.bodyParts[k] is Leg part && !IsDestroyed(part))
                         {
-                            RWHealthState.Damage(self.State, state, new RWPoke(), 999999f, 999, part, "oopsie");
+                            RimHealthState.Damage(self.State, state, new RimPoke(), 999999f, 999, part, "oopsie");
 
                             break;
                         }
@@ -390,7 +389,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 {
                     if (state.bodyParts[i] is Arm part && !IsDestroyed(part) && part.subName == "Right")
                     {
-                        RWHealthState.Damage(self.State, state, new RWPoke(), 999999f, 999, part, "oopsie");
+                        RimHealthState.Damage(self.State, state, new RimPoke(), 999999f, 999, part, "oopsie");
 
                         break;
                     }
@@ -402,7 +401,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 {
                     if (state.bodyParts[i] is Jaw part && !IsDestroyed(part))
                     {
-                        RWHealthState.Damage(self.State, state, new RWPoke(), 999999f, 999, part, "oopsie");
+                        RimHealthState.Damage(self.State, state, new RimPoke(), 999999f, 999, part, "oopsie");
 
                         break;
                     }
@@ -414,7 +413,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 {
                     if (state.bodyParts[i] is Leg part && !IsDestroyed(part))
                     {
-                        RWHealthState.Damage(self.State, state, new RWPoke(), 999999f, 999, part, "oopsie");
+                        RimHealthState.Damage(self.State, state, new RimPoke(), 999999f, 999, part, "oopsie");
                     }
                 }
 
@@ -424,7 +423,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
                 if (state.wholeBodyAfflictions.Count == 0)
                 {
-                    state.wholeBodyAfflictions.Add(new RWFlu(self.State, null));
+                    state.wholeBodyAfflictions.Add(new RimFlu(self.State, null));
                 }
 
                 state.bloodLoss = 0.2f;
@@ -445,7 +444,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 {
                     if (state.bodyParts[i] is Hand part && !IsDestroyed(part) && part.subName == "Left")
                     {
-                        RWHealthState.Damage(self.State, state, new RWPoke(), 999999f, 999, part, "oopsie");
+                        RimHealthState.Damage(self.State, state, new RimPoke(), 999999f, 999, part, "oopsie");
 
                         break;
                     }
@@ -482,7 +481,7 @@ public class RimWorldHealth : BaseUnityPlugin
             buttonHeld[playerNumber] = true;
 
             CreatureState healthTabCreatureState = self.State;
-            RWState healthTabState = state;
+            RimState healthTabState = state;
 
             foreach (var grasp in self.grasps)
             {
@@ -501,16 +500,16 @@ public class RimWorldHealth : BaseUnityPlugin
         }
     }
 
-    public static bool IsDestroyed(RWBodyPart self)
+    public static bool IsDestroyed(RimBodyPart self)
     {
-        return self.afflictions.Count != 0 && self.afflictions[0] is RWDestroyed;
+        return self.afflictions.Count != 0 && self.afflictions[0] is RimDestroyed;
     }
 
-    public static bool IsSubPartDestroyed(RWState state, RWBodyPart self)
+    public static bool IsSubPartDestroyed(RimState state, RimBodyPart self)
     {
         if (IsDestroyed(self) && self.subPartOf != "")
         {
-            foreach (RWBodyPart part in state.bodyParts)
+            foreach (RimBodyPart part in state.bodyParts)
             {
                 if (IsSubPartOf(self, part))
                 {
@@ -522,7 +521,7 @@ public class RimWorldHealth : BaseUnityPlugin
         return false;
     } //Checks is "self" is a subpart of anything and if it is destroyed. If "self" is destroyed but isn't a subpart or it's parent isn't destroyed this returns false
 
-    public static bool IsSubPartOf(RWBodyPart self, RWBodyPart other)
+    public static bool IsSubPartOf(RimBodyPart self, RimBodyPart other)
     {
         if (self.parentSubName)
         {
@@ -534,7 +533,7 @@ public class RimWorldHealth : BaseUnityPlugin
         }
     } //Checks if "self" is a sub-part of "other". Meaning that "self" is under "other"
 
-    public static bool LegCheck(RWState state)
+    public static bool LegCheck(RimState state)
     {
         if (state.consciousState != 0)
         {
@@ -556,7 +555,7 @@ public class RimWorldHealth : BaseUnityPlugin
         return workingLegs >= maxWorkingLegs / 2;
     }
 
-    public static int WorkingArms(RWState state)
+    public static int WorkingArms(RimState state)
     {
         int workingArms = 0;
 
@@ -573,13 +572,13 @@ public class RimWorldHealth : BaseUnityPlugin
     }
 
     #region Custom Damages
-    public static void BombDamage(CreatureState self, RWState state, float damage, string attackName = "", string attackerName = "")
+    public static void BombDamage(CreatureState self, RimState state, float damage, string attackName = "", string attackerName = "")
     {
         int amount = UnityEngine.Random.Range(1, 5);
 
-        RWBodyPart focusedBodyPart;
+        RimBodyPart focusedBodyPart;
 
-        List<RWBodyPart> list = new();
+        List<RimBodyPart> list = new();
 
         for (int p = 0; p < amount; p++)
         {
@@ -660,7 +659,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
                 chance = 0;
 
-                RWBodyPart tempFocusedBodyPart = null;
+                RimBodyPart tempFocusedBodyPart = null;
 
                 for (int i = 0; i < list.Count; i++)
                 {
@@ -687,16 +686,16 @@ public class RimWorldHealth : BaseUnityPlugin
 
             if (focusedBodyPart != null)
             {
-                RWDamageType damageType = isSuper ? new RWSuperBomb() : new RWBomb();
+                RimDamageType damageType = isSuper ? new RimSuperBomb() : new RimBomb();
 
-                RWHealthState.Damage(self, state, damageType, damage / amount, 0.1f, focusedBodyPart, attackName, attackerName);
+                RimHealthState.Damage(self, state, damageType, damage / amount, 0.1f, focusedBodyPart, attackName, attackerName);
             }
         }
     }
-    public static void BluntDamage(CreatureState self, RWState state, BodyChunk hitChunk, float damage, float AP, string attackName = "", string attackerName = "")
+    public static void BluntDamage(CreatureState self, RimState state, BodyChunk hitChunk, float damage, float AP, string attackName = "", string attackerName = "")
     {
-        RWBodyPart focusedBodyPart = GetHitBodyPart(state, hitChunk, null, false, true);
-        RWBodyPart secondaryFocusedBodyPart = 0.4f < UnityEngine.Random.value ? GetHitBodyPart(state, hitChunk, focusedBodyPart) : null;
+        RimBodyPart focusedBodyPart = GetHitBodyPart(state, hitChunk, null, false, true);
+        RimBodyPart secondaryFocusedBodyPart = 0.4f < UnityEngine.Random.value ? GetHitBodyPart(state, hitChunk, focusedBodyPart) : null;
 
         float extraDamage = 0;
 
@@ -735,15 +734,15 @@ public class RimWorldHealth : BaseUnityPlugin
 
                 secondaryFocusedBodyPart = focusedBodyPart;
 
-                RWBodyPart GetHitAnotherBodyPart(RWBodyPart subPartOf)
+                RimBodyPart GetHitAnotherBodyPart(RimBodyPart subPartOf)
                 {
                     if (subPartOf == null)
                     {
                         return null;
                     }
 
-                    List<RWBodyPart> list = new(1) { subPartOf };
-                    RWBodyPart focusedBodyPart = null;
+                    List<RimBodyPart> list = new(1) { subPartOf };
+                    RimBodyPart focusedBodyPart = null;
 
                     for (int i = 0; i < state.bodyParts.Count; i++)
                     {
@@ -789,13 +788,13 @@ public class RimWorldHealth : BaseUnityPlugin
             }
         }
 
-        void Damage(RWBodyPart focusedBodyPart, float damage)
+        void Damage(RimBodyPart focusedBodyPart, float damage)
         {
-            RWHealthState.Damage(self, state, new RWBlunt(), damage, AP, focusedBodyPart, attackName, attackerName);
+            RimHealthState.Damage(self, state, new RimBlunt(), damage, AP, focusedBodyPart, attackName, attackerName);
         }
     }
 
-    public static void CutDamage(CreatureState self, RWState state, BodyChunk hitChunk, float damage, float AP, string attackName = "", string attackerName = "")
+    public static void CutDamage(CreatureState self, RimState state, BodyChunk hitChunk, float damage, float AP, string attackName = "", string attackerName = "")
     {
         float additionalPartsRoll = UnityEngine.Random.value;
         int additionalParts;
@@ -820,8 +819,8 @@ public class RimWorldHealth : BaseUnityPlugin
 
         damage *= (1 + 1.4f) / (1 + additionalParts + 1.4f) * (1 + additionalPartsRoll);
 
-        RWBodyPart focusedBodyPart = GetHitBodyPart(state, hitChunk);
-        List<RWBodyPart> list = new(1) { focusedBodyPart };
+        RimBodyPart focusedBodyPart = GetHitBodyPart(state, hitChunk);
+        List<RimBodyPart> list = new(1) { focusedBodyPart };
 
         for (int i = 0; i < state.bodyParts.Count; i++)
         {
@@ -838,7 +837,7 @@ public class RimWorldHealth : BaseUnityPlugin
             list.Add(state.bodyParts[i]);
         } //Get all sub parts of the focusedBodypart
 
-        RWBodyPart tempFocusedpart = focusedBodyPart;
+        RimBodyPart tempFocusedpart = focusedBodyPart;
 
         for (int i = 0; i < state.bodyParts.Count; i++)
         {
@@ -936,18 +935,18 @@ public class RimWorldHealth : BaseUnityPlugin
             }
         }
 
-        void Damage(RWBodyPart focusedBodyPart, float damage)
+        void Damage(RimBodyPart focusedBodyPart, float damage)
         {
-            RWHealthState.Damage(self, state, new RWCut(), damage, AP, focusedBodyPart, attackName, attackerName);
+            RimHealthState.Damage(self, state, new RimCut(), damage, AP, focusedBodyPart, attackName, attackerName);
         }
     }
 
-    public static void ScratchDamage(CreatureState self, RWState state, BodyChunk hitChunk, float damage, float AP, string attackName = "", string attackerName = "")
+    public static void ScratchDamage(CreatureState self, RimState state, BodyChunk hitChunk, float damage, float AP, string attackName = "", string attackerName = "")
     {
-        RWBodyPart focusedBodyPart = GetHitBodyPart(state, hitChunk);
+        RimBodyPart focusedBodyPart = GetHitBodyPart(state, hitChunk);
         //Debug.Log("ScratchDamage focusedBodyPart is " + focusedBodyPart);
 
-        List<RWBodyPart> list = new(1) { focusedBodyPart };
+        List<RimBodyPart> list = new(1) { focusedBodyPart };
 
         for (int i = 0; i < state.bodyParts.Count; i++)
         {
@@ -964,7 +963,7 @@ public class RimWorldHealth : BaseUnityPlugin
             list.Add(state.bodyParts[i]);
         } //Get all sub parts of the focusedBodypart
 
-        RWBodyPart tempFocusedpart = focusedBodyPart;
+        RimBodyPart tempFocusedpart = focusedBodyPart;
 
         for (int i = 0; i < state.bodyParts.Count; i++)
         {
@@ -1012,15 +1011,15 @@ public class RimWorldHealth : BaseUnityPlugin
         Damage(list[listInt], damage * 0.67f);
         //Debug.Log("CutDamage second hit part is " + list[listInt]);
 
-        void Damage(RWBodyPart focusedBodyPart, float damage)
+        void Damage(RimBodyPart focusedBodyPart, float damage)
         {
-            RWHealthState.Damage(self, state, new RWScratch(), damage, AP, focusedBodyPart, attackName, attackerName);
+            RimHealthState.Damage(self, state, new RimScratch(), damage, AP, focusedBodyPart, attackName, attackerName);
         }
     }
 
-    public static void CentipedeShockDamage(CreatureState self, RWState state, Centipede source, bool underwater, bool shockGiveUp)
+    public static void CentipedeShockDamage(CreatureState self, RimState state, Centipede source, bool underwater, bool shockGiveUp)
     {
-        RWBodyPart focusedBodyPart = GetHitBodyPart(state);
+        RimBodyPart focusedBodyPart = GetHitBodyPart(state);
         //Debug.Log("CentipedeShockDamage focusedBodyPart is " + focusedBodyPart);
 
         string attackerName;
@@ -1060,7 +1059,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
         string attackName = attackerName + (source.Submersion > 0f ? " - Underwater shock" : " - Shock");
 
-        RWHealthState.Damage(self, state, new RWElectricalBurn(), damage, AP, focusedBodyPart, attackName, attackerName);
+        RimHealthState.Damage(self, state, new RimElectricalBurn(), damage, AP, focusedBodyPart, attackName, attackerName);
 
         if (shockGiveUp && !self.dead)
         {
@@ -1070,37 +1069,37 @@ public class RimWorldHealth : BaseUnityPlugin
         }
     }
 
-    public static void LethalWaterDamage(CreatureState self, RWState state)
+    public static void LethalWaterDamage(CreatureState self, RimState state)
     {
-        RWBodyPart focusedBodyPart = GetHitBodyPart(state);
+        RimBodyPart focusedBodyPart = GetHitBodyPart(state);
 
-        RWDamageType damageType;
+        RimDamageType damageType;
         string attackName;
 
         if (self.creature.Room.realizedRoom.roomSettings.GetEffect(RoomSettings.RoomEffect.Type.LavaSurface) != null)
         {
-            damageType = new RWFlame();
+            damageType = new RimFlame();
             attackName = "Lava";
         }
         else
         {
-            damageType = new RWAcidBurn();
+            damageType = new RimAcidBurn();
             attackName = "Acidic water";
         }
 
         float damage = 8 + self.creature.realizedCreature.lavaContactCount;
 
-        RWHealthState.Damage(self, state, damageType, damage, 999, focusedBodyPart, attackName);
+        RimHealthState.Damage(self, state, damageType, damage, 999, focusedBodyPart, attackName);
     }
 
-    public static void LocustDamage(CreatureState self, RWState state)
+    public static void LocustDamage(CreatureState self, RimState state)
     {
-        RWHealthState.Damage(self, state, new RWBite(), 1, 0, GetHitBodyPart(state), "Locust swarm - Mandibles");
+        RimHealthState.Damage(self, state, new RimBite(), 1, 0, GetHitBodyPart(state), "Locust swarm - Mandibles");
     } //make this add onto an already existing not-tended damage to reduce the amount of afflictions
 
-    public static void TerrainImpactDamage(Player self, RWState state, int hitChunk, float speed, bool death)
+    public static void TerrainImpactDamage(Player self, RimState state, int hitChunk, float speed, bool death)
     {
-        RWBodyPart part = GetHitBodyPart(state, self.bodyChunks[hitChunk], null, false, true);
+        RimBodyPart part = GetHitBodyPart(state, self.bodyChunks[hitChunk], null, false, true);
 
         part ??= GetHitBodyPart(state, null, null, false, true);
 
@@ -1147,60 +1146,60 @@ public class RimWorldHealth : BaseUnityPlugin
             }
         }
 
-        RWHealthState.Damage(self.State, state, new RWBlunt(), damage, 0, part, "Terrain impact");
+        RimHealthState.Damage(self.State, state, new RimBlunt(), damage, 0, part, "Terrain impact");
     }
 
-    public static void TongueElectricDamage(CreatureState self, RWState state)
+    public static void TongueElectricDamage(CreatureState self, RimState state)
     {
         for (int i = 0; i < state.bodyParts.Count; i++)
         {
             if (state.bodyParts[i] is Tongue part && !IsDestroyed(part))
             {
-                RWHealthState.Damage(self, state, new RWElectricalBurn(), 8, 999, part, "Zap-Coil");
+                RimHealthState.Damage(self, state, new RimElectricalBurn(), 8, 999, part, "Zap-Coil");
                 break;
             }
         }
     }
 
-    public static void RainDamage(CreatureState self, RWState state, bool death)
+    public static void RainDamage(CreatureState self, RimState state, bool death)
     {
         float damage = death ? 8f : 0.5f;
 
-        RWHealthState.Damage(self, state, new RWBlunt(), damage, 999, GetHitBodyPart(state, null, null, false, true), "Rain");
+        RimHealthState.Damage(self, state, new RimBlunt(), damage, 999, GetHitBodyPart(state, null, null, false, true), "Rain");
     } //if not death make this add onto an already existing not-tended damage to reduce the amount of afflictions
-    public static void SandstormDamage(CreatureState self, RWState state, bool death)
+    public static void SandstormDamage(CreatureState self, RimState state, bool death)
     {
         float damage = death ? 8f : 0.5f;
 
-        RWHealthState.Damage(self, state, new RWBlunt(), damage, 999, GetHitBodyPart(state, null, null, false, true), "Sandstorm");
+        RimHealthState.Damage(self, state, new RimBlunt(), damage, 999, GetHitBodyPart(state, null, null, false, true), "Sandstorm");
     } //if not death make this add onto an already existing not-tended damage to reduce the amount of afflictions
 
-    public static void SpiderDamage(CreatureState self, RWState state)
+    public static void SpiderDamage(CreatureState self, RimState state)
     {
-        RWHealthState.Damage(self, state, new RWBite(), 1, 10, GetHitBodyPart(state), "Coalescipede - Fangs");
+        RimHealthState.Damage(self, state, new RimBite(), 1, 10, GetHitBodyPart(state), "Coalescipede - Fangs");
     } //make this add onto an already existing not-tended damage to reduce the amount of afflictions
 
-    public static void ZapCoilDamage(CreatureState self, RWState state)
+    public static void ZapCoilDamage(CreatureState self, RimState state)
     {
-        RWHealthState.Damage(self, state, new RWElectricalBurn(), 20, 999, GetHitBodyPart(state), "Zap-Coil");
+        RimHealthState.Damage(self, state, new RimElectricalBurn(), 20, 999, GetHitBodyPart(state), "Zap-Coil");
     }
-    public static void BigJellyfishDamage(CreatureState self, RWState state)
+    public static void BigJellyfishDamage(CreatureState self, RimState state)
     {
-        RWHealthState.Damage(self, state, new RWElectricalBurn(), 20, 999, GetHitBodyPart(state), "Big Jellyfish - Electricity");
+        RimHealthState.Damage(self, state, new RimElectricalBurn(), 20, 999, GetHitBodyPart(state), "Big Jellyfish - Electricity");
     }
 
-    public static void ARZapperDamage(CreatureState self, RWState state, bool death)
+    public static void ARZapperDamage(CreatureState self, RimState state, bool death)
     {
         float damage = death ? 12f : 8f;
 
-        RWHealthState.Damage(self, state, new RWElectricalBurn(), damage, 999, GetHitBodyPart(state), "Zapper");
+        RimHealthState.Damage(self, state, new RimElectricalBurn(), damage, 999, GetHitBodyPart(state), "Zapper");
     }
     #endregion
 
-    public static RWBodyPart GetHitBodyPart(RWState state, BodyChunk hitChunk = null, RWBodyPart subPartOf = null, bool canHitInternal = false, bool isBlunt = false)
+    public static RimBodyPart GetHitBodyPart(RimState state, BodyChunk hitChunk = null, RimBodyPart subPartOf = null, bool canHitInternal = false, bool isBlunt = false)
     {
-        List<RWBodyPart> list = new();
-        RWBodyPart focusedBodyPart = null;
+        List<RimBodyPart> list = new();
+        RimBodyPart focusedBodyPart = null;
 
         for (int i = 0; i < state.bodyParts.Count; i++)
         {
@@ -1268,13 +1267,13 @@ public class RimWorldHealth : BaseUnityPlugin
         return isSuper ? 55f : 27.5f;
     }
 
-    public static void SetToxicBuildup(RWState state, Creature self)
+    public static void SetToxicBuildup(RimState state, Creature self)
     {
-        RWToxicBuildup toxicBuildup = null;
+        RimToxicBuildup toxicBuildup = null;
 
         for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
         {
-            if (state.wholeBodyAfflictions[i] is RWToxicBuildup tempToxicBuildup)
+            if (state.wholeBodyAfflictions[i] is RimToxicBuildup tempToxicBuildup)
             {
                 toxicBuildup = tempToxicBuildup;
                 break;
@@ -1304,7 +1303,7 @@ public class RimWorldHealth : BaseUnityPlugin
             }
             else
             {
-                state.wholeBodyAfflictions.Add(new RWToxicBuildup(self.State, null, Math.Min(1, poison)));
+                state.wholeBodyAfflictions.Add(new RimToxicBuildup(self.State, null, Math.Min(1, poison)));
                 state.updateCapacities = true;
             }
         }
@@ -1319,161 +1318,143 @@ public class RimWorldHealth : BaseUnityPlugin
 
         string name;
 
-        if (self is BigNeedleWorm)
+        switch (self)
         {
-            name = "Adult Noodlefly";
-        }
-        else if (self is BigSpider bigSpider)
-        {
-            if (bigSpider.spitter)
-            {
-                name = "Spitter Spider";
-            }
-            else if (bigSpider.mother)
-            {
-                name = "Mother Spider";
-            }
-            else
-            {
-                name = "Big Spider";
-            }
-        }
-        else if (self is DropBug)
-        {
-            name = "Dropwig";
-        }
-        else if (self is EggBug)
-        {
-            name = "Firebug";
-        }
-        else if (self is JetFish)
-        {
-            name = "Jetfish";
-        }
-        else if (self is Vulture vulture)
-        {
-            if (vulture.IsKing)
-            {
-                name = "King Vulture";
-            }
-            else if (vulture.IsMiros)
-            {
-                name = "Miros Vulture";
-            }
-            else
-            {
-                name = "Vulture";
-            }
-        }
-        else if (self is Leech leech)
-        {
-            if (leech.jungleLeech)
-            {
-                name = "Jungle Leech";
-            }
-            else if (leech.seaLeech)
-            {
-                name = "Sea Leech";
-            }
-            else
-            {
-                name = "Leech";
-            }
-        }
-        else if (self is Lizard)
-        {
-            name = "Lizard";
-        } //Will add all non-modded Lizards later
-        else if (self is MirosBird)
-        {
-            name = "Miros Bird";
-        }
-        else if (self is Player)
-        {
-            name = ((PlayerState)self.State).isPup ? "Slugpup" : "Slugcat";
+            case BigNeedleWorm:
+                name = "Adult Noodlefly";
+                break;
+            case BigSpider bigSpider:
+                if (bigSpider.spitter)
+                {
+                    name = "Spitter Spider";
+                }
+                else if (bigSpider.mother)
+                {
+                    name = "Mother Spider";
+                }
+                else
+                {
+                    name = "Big Spider";
+                }
+                break;
+            case DropBug:
+                name = "Dropwig";
+                break;
+            case EggBug:
+                name = "Firebug";
+                break;
+            case JetFish:
+                name = "Jetfish";
+                break;
+            case Vulture vulture:
+                if (vulture.IsKing)
+                {
+                    name = "King Vulture";
+                }
+                else if (vulture.IsMiros)
+                {
+                    name = "Miros Vulture";
+                }
+                else
+                {
+                    name = "Vulture";
+                }
+                break;
+            case Leech leech:
+                if (leech.jungleLeech)
+                {
+                    name = "Jungle Leech";
+                }
+                else if (leech.seaLeech)
+                {
+                    name = "Sea Leech";
+                }
+                else
+                {
+                    name = "Leech";
+                }
+                break;
+            case Lizard:
+                name = "Lizard";
+                break; //Will add all non-modded Lizards later
+            case MirosBird:
+                name = "Miros Bird";
+                break;
+            case Player:
+                name = ((PlayerState)self.State).isPup ? "Slugpup" : "Slugcat";
 
-            if (!singleplayerHud && (!ModManager.MSC || self.State is not MoreSlugcats.PlayerNPCState))
-            {
-                name = "Player " + (((PlayerState)self.State).playerNumber + 1);
-            }
-        } //Will add all non-modded Slugcats later
-        else if (self is SkyWhale)
-        {
-            name = "Sky Whale";
-        }
-        else if (self is Scavenger scavenger)
-        {
-            if (scavenger.King)
-            {
-                name = "Chieftain Scavenger";
-            }
-            else if (scavenger.Elite)
-            {
-                name = "Elite Scavenger";
-            }
-            else if (scavenger.Templar)
-            {
-                name = "Scavenger Templar";
-            }
-            else if (scavenger.Disciple)
-            {
-                name = "Scavenger Disciple";
-            }
-            else
-            {
-                name = "Scavenger";
-            }
-        }
-        else if (ModManager.MSC && self is MoreSlugcats.BigJellyFish)
-        {
-            name = "Big Jellyfish";
-        }
-        else if (ModManager.MSC && self is MoreSlugcats.StowawayBug)
-        {
-            name = "Stowaway";
-        }
-        else if (ModManager.Watcher && self is Watcher.BoxWorm)
-        {
-            name = "Box Worm";
-        }
-        else if (ModManager.Watcher && self is Watcher.DrillCrab)
-        {
-            name = "Drill Crab";
-        }
-        else if (ModManager.Watcher && self is Watcher.Frog)
-        {
-            name = "Frog";
-        }
-        else if (ModManager.Watcher && self is Watcher.Loach)
-        {
-            name = "Loach";
-        }
-        else if (ModManager.Watcher && self is Watcher.Rat)
-        {
-            name = "Rat";
-        }
-        else if (ModManager.Watcher && self is Watcher.RippleSpider)
-        {
-            name = "Ripple Spider";
-        }
-        else
-        {
-            name = self.ToString();
-            Debug.Log(all + self + " is a unknown creature");
-            Logger.LogError(all + self + " is a unknown creature");
+                if (!singleplayerHud && (!ModManager.MSC || self.State is not MoreSlugcats.PlayerNPCState))
+                {
+                    name = "Player " + (((PlayerState)self.State).playerNumber + 1);
+                }
+                break;
+            case SkyWhale:
+                name = "Sky Whale";
+                break;
+            case Scavenger scavenger:
+                if (scavenger.King)
+                {
+                    name = "Chieftain Scavenger";
+                }
+                else if (scavenger.Elite)
+                {
+                    name = "Elite Scavenger";
+                }
+                else if (scavenger.Templar)
+                {
+                    name = "Scavenger Templar";
+                }
+                else if (scavenger.Disciple)
+                {
+                    name = "Scavenger Disciple";
+                }
+                else
+                {
+                    name = "Scavenger";
+                }
+                break;
+            case MoreSlugcats.BigJellyFish:
+                name = "Big Jellyfish";
+                break;
+            case MoreSlugcats.StowawayBug:
+                name = "Stowaway";
+                break;
+            case Watcher.BoxWorm:
+                name = "Box Worm";
+                break;
+            case Watcher.DrillCrab:
+                name = "Drill Crab";
+                break;
+            case Watcher.Frog:
+                name = "Frog";
+                break;
+            case Watcher.Loach:
+                name = "Loach";
+                break;
+            case Watcher.Rat:
+                name = "Rat";
+                break;
+            case Watcher.RippleSpider:
+                name = "Ripple Spider";
+                break;
+            default:
+                name = self.ToString();
+                Debug.Log(all + self + " is a unknown creature");
+                Logger.LogError(all + self + " is a unknown creature");
+                break;
         }
 
         return name;
     }
 
-    public static void KarmaFlowerHeal(Creature self, RWState state)
+    public static void KarmaFlowerHeal(Creature self, RimState state)
     {
         #region Tier 1 (Missing important BodyParts)
         for (int i = 0; i < state.bodyParts.Count; i++)
         {
             if (state.bodyParts[i] is LowerTorso lowerTorso)
             {
-                if (lowerTorso.afflictions.Count == 1 && lowerTorso.afflictions[0] is RWDestroyed)
+                if (lowerTorso.afflictions.Count == 1 && lowerTorso.afflictions[0] is RimDestroyed)
                 {
                     lowerTorso.afflictions.Clear();
                     return;
@@ -1483,7 +1464,7 @@ public class RimWorldHealth : BaseUnityPlugin
             }
         }
 
-        Dictionary<string, List<RWBodyPart>> limbMissingBodyparts = new();
+        Dictionary<string, List<RimBodyPart>> limbMissingBodyparts = new();
 
         for (int i = 0; i < state.legSetNames.Count; i++)
         {
@@ -1492,7 +1473,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
         if (limbMissingBodyparts.Count > 0)
         {
-            Dictionary<string, RWBodyPart> mainBodyparts = new();
+            Dictionary<string, RimBodyPart> mainBodyparts = new();
 
             List<string> mainBodypartNames = new();
 
@@ -1530,9 +1511,9 @@ public class RimWorldHealth : BaseUnityPlugin
                     }
                     else if (!containsOneItem)
                     {
-                        foreach (RWBodyPart part in dic.Value)
+                        foreach (RimBodyPart part in dic.Value)
                         {
-                            if (part is RWBone)
+                            if (part is RimBone)
                             {
                                 if (!containsBone)
                                 {
@@ -1570,7 +1551,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
         if (limbMissingBodyparts.Count > 0)
         {
-            Dictionary<string, RWBodyPart> mainBodyparts = new();
+            Dictionary<string, RimBodyPart> mainBodyparts = new();
 
             List<string> mainBodypartNames = new();
 
@@ -1623,9 +1604,9 @@ public class RimWorldHealth : BaseUnityPlugin
                         }
                         else if (!containsOneItem)
                         {
-                            foreach (RWBodyPart part in dic.Value)
+                            foreach (RimBodyPart part in dic.Value)
                             {
-                                if (part is RWBone)
+                                if (part is RimBone)
                                 {
                                     if (!containsBone)
                                     {
@@ -1661,7 +1642,7 @@ public class RimWorldHealth : BaseUnityPlugin
         {
             if (state.bodyParts[i] is Spine spine)
             {
-                if (spine.afflictions.Count == 1 && spine.afflictions[0] is RWDestroyed)
+                if (spine.afflictions.Count == 1 && spine.afflictions[0] is RimDestroyed)
                 {
                     spine.afflictions.Clear();
                     return;
@@ -1685,11 +1666,11 @@ public class RimWorldHealth : BaseUnityPlugin
             return;
         }
 
-        RWDisease diseaseToHeal = null;
+        RimDisease diseaseToHeal = null;
 
-        foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+        foreach (RimAffliction affliction in state.wholeBodyAfflictions)
         {
-            if (affliction is RWDisease disease && (diseaseToHeal == null || disease.severity > diseaseToHeal.severity))
+            if (affliction is RimDisease disease && (diseaseToHeal == null || disease.severity > diseaseToHeal.severity))
             {
                 diseaseToHeal = disease;
             }
@@ -1697,11 +1678,11 @@ public class RimWorldHealth : BaseUnityPlugin
 
         if (diseaseToHeal == null)
         {
-            foreach (RWBodyPart part in state.bodyParts)
+            foreach (RimBodyPart part in state.bodyParts)
             {
-                foreach (RWAffliction affliction in part.afflictions)
+                foreach (RimAffliction affliction in part.afflictions)
                 {
-                    if (affliction is RWDisease disease && (diseaseToHeal == null || disease.severity > diseaseToHeal.severity))
+                    if (affliction is RimDisease disease && (diseaseToHeal == null || disease.severity > diseaseToHeal.severity))
                     {
                         diseaseToHeal = disease;
                     }
@@ -1748,11 +1729,11 @@ public class RimWorldHealth : BaseUnityPlugin
         //Tier 3 Brain Ailments (if I ever add any)
 
         #region Tier 4 Scars on the brain
-        RWScar scarToHeal = null;
+        RimScar scarToHeal = null;
 
-        foreach (RWAffliction affliction in state.consciousnessSource.afflictions)
+        foreach (RimAffliction affliction in state.consciousnessSource.afflictions)
         {
-            if (affliction is RWScar scar && (scar.isRevealed || scar.isPermanent))
+            if (affliction is RimScar scar && (scar.isRevealed || scar.isPermanent))
             {
                 if (scarToHeal == null || scarToHeal != null && scar.scarDamage > scarToHeal.scarDamage)
                 {
@@ -1779,10 +1760,10 @@ public class RimWorldHealth : BaseUnityPlugin
         List<Kidney> kidneys = new();
         List<Eye> eyes = new();
         List<Ear> ears = new();
-        List<RWBodyPart> facialParts = new();
-        List<RWBodyPart> fingersAndToes = new();
+        List<RimBodyPart> facialParts = new();
+        List<RimBodyPart> fingersAndToes = new();
 
-        foreach (RWBodyPart part in state.bodyParts)
+        foreach (RimBodyPart part in state.bodyParts)
         {
             if (part is Lung lung)
             {
@@ -1814,7 +1795,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
         foreach (Lung lung in lungs)
         {
-            if (lung.afflictions.Count == 1 && lung.afflictions[0] is RWDestroyed)
+            if (lung.afflictions.Count == 1 && lung.afflictions[0] is RimDestroyed)
             {
                 lung.afflictions.Clear();
 
@@ -1824,7 +1805,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
         foreach (Kidney kidney in kidneys)
         {
-            if (kidney.afflictions.Count == 1 && kidney.afflictions[0] is RWDestroyed)
+            if (kidney.afflictions.Count == 1 && kidney.afflictions[0] is RimDestroyed)
             {
                 kidney.afflictions.Clear();
 
@@ -1832,9 +1813,9 @@ public class RimWorldHealth : BaseUnityPlugin
             }
         }
 
-        foreach (RWBodyPart part in facialParts)
+        foreach (RimBodyPart part in facialParts)
         {
-            if (part.afflictions.Count == 1 && part.afflictions[0] is RWDestroyed)
+            if (part.afflictions.Count == 1 && part.afflictions[0] is RimDestroyed)
             {
                 part.afflictions.Clear();
 
@@ -1842,9 +1823,9 @@ public class RimWorldHealth : BaseUnityPlugin
             }
         }
 
-        foreach (RWBodyPart part in fingersAndToes)
+        foreach (RimBodyPart part in fingersAndToes)
         {
-            if (part.afflictions.Count == 1 && part.afflictions[0] is RWDestroyed)
+            if (part.afflictions.Count == 1 && part.afflictions[0] is RimDestroyed)
             {
                 part.afflictions.Clear();
 
@@ -1858,11 +1839,11 @@ public class RimWorldHealth : BaseUnityPlugin
         //Tier 7 Drug addictions (there might never be any)
 
         #region Tier 8 Scars on other parts
-        foreach (RWBodyPart part in state.bodyParts)
+        foreach (RimBodyPart part in state.bodyParts)
         {
-            foreach (RWAffliction affliction in part.afflictions)
+            foreach (RimAffliction affliction in part.afflictions)
             {
-                if (affliction is RWScar scar && (scar.isRevealed || scar.isPermanent))
+                if (affliction is RimScar scar && (scar.isRevealed || scar.isPermanent))
                 {
                     if (scarToHeal == null || scarToHeal != null && scar.scarDamage > scarToHeal.scarDamage)
                     {
@@ -1886,13 +1867,13 @@ public class RimWorldHealth : BaseUnityPlugin
         #endregion
 
         #region Tier 9 Injuries
-        RWInjury injuryToHeal = null;
+        RimInjury injuryToHeal = null;
 
-        foreach (RWBodyPart part in state.bodyParts)
+        foreach (RimBodyPart part in state.bodyParts)
         {
-            foreach (RWAffliction affliction in part.afflictions)
+            foreach (RimAffliction affliction in part.afflictions)
             {
-                if (affliction is RWInjury injury && injury is not RWDestroyed && (affliction is not RWScar || affliction is RWScar scar && !scar.isRevealed && !scar.isPermanent))
+                if (affliction is RimInjury injury && injury is not RimDestroyed && (affliction is not RimScar || affliction is RimScar scar && !scar.isRevealed && !scar.isPermanent))
                 {
                     if (injuryToHeal == null || injuryToHeal != null && injury.damage > injuryToHeal.damage)
                     {
@@ -1916,14 +1897,14 @@ public class RimWorldHealth : BaseUnityPlugin
         #endregion
     }
 
-    public static bool UpdateAfflictions(CreatureState self, RWState state, int ticksPassed)
+    public static bool UpdateAfflictions(CreatureState self, RimState state, int ticksPassed)
     {
         state.timeAbstracted = cycleTick;
 
         bool keepUpdating = false;
 
-        List<RWDisease> diseasesToTend = new();
-        List<RWInjury> injuriesToTend = new();
+        List<RimDisease> diseasesToTend = new();
+        List<RimInjury> injuriesToTend = new();
 
         try
         {
@@ -1953,7 +1934,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 {
                     state.fireRate += 40;
 
-                    RWHealthState.Damage(self, state, new RWBurn(), 2, 0, GetHitBodyPart(state));
+                    RimHealthState.Damage(self, state, new RimBurn(), 2, 0, GetHitBodyPart(state));
                 }
 
                 ticksPassed -= firePatTimes * 10;
@@ -1969,7 +1950,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 while (state.tendTime < 0)
                 {
                     Debug.Log("tend time was " + state.tendTime);
-                    state.tendTime += Mathf.RoundToInt(state.tendTimeBase / RWHealthState.MedicalTendSpeed(state));
+                    state.tendTime += Mathf.RoundToInt(state.tendTimeBase / RimHealthState.MedicalTendSpeed(state));
                     Debug.Log("new tend time " + state.tendTime);
                     timesTended++;
                 }
@@ -1978,22 +1959,22 @@ public class RimWorldHealth : BaseUnityPlugin
 
                 for (int i = 0; i < timesTended; i++)
                 {
-                    RWInjury bleeding = null;
-                    RWDisease diseaseAffliction = null;
-                    RWInjury untendedAffliction = null;
+                    RimInjury bleeding = null;
+                    RimDisease diseaseAffliction = null;
+                    RimInjury untendedAffliction = null;
 
-                    foreach (RWBodyPart part in state.bodyParts)
+                    foreach (RimBodyPart part in state.bodyParts)
                     {
-                        foreach (RWAffliction baseAffliction in part.afflictions)
+                        foreach (RimAffliction baseAffliction in part.afflictions)
                         {
-                            if (baseAffliction is not RWTendableAffliction affliction)
+                            if (baseAffliction is not RimTendableAffliction affliction)
                             {
                                 continue;
                             }
 
                             if (!affliction.isTended)
                             {
-                                if (affliction is RWInjury injury)
+                                if (affliction is RimInjury injury)
                                 {
                                     if (injury.isBleeding)
                                     {
@@ -2019,7 +2000,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
                                     }
                                 }
-                                else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                                else if (affliction is RimDisease disease && disease.timeUntilTreatment <= 0)
                                 {
                                     if (diseaseAffliction != null)
                                     {
@@ -2036,7 +2017,7 @@ public class RimWorldHealth : BaseUnityPlugin
                                     Logger.LogError(all + affliction + " does not belong to any tendable check");
                                 }
                             }
-                            else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                            else if (affliction is RimDisease disease && disease.timeUntilTreatment <= 0)
                             {
                                 if (diseaseAffliction != null)
                                 {
@@ -2052,9 +2033,9 @@ public class RimWorldHealth : BaseUnityPlugin
 
                     if (bleeding == null)
                     {
-                        foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+                        foreach (RimAffliction affliction in state.wholeBodyAfflictions)
                         {
-                            if (affliction is not RWDisease disease || disease.timeUntilTreatment > 0)
+                            if (affliction is not RimDisease disease || disease.timeUntilTreatment > 0)
                             {
                                 continue;
                             }
@@ -2092,22 +2073,22 @@ public class RimWorldHealth : BaseUnityPlugin
                         break;
                     }
 
-                    void tend(RWTendableAffliction tendAffliction)
+                    void tend(RimTendableAffliction tendAffliction)
                     {
                         tendAffliction.isTended = true;
 
-                        RWHealthState.TendAffliction(state, self, state.tendAffliction.state);
+                        RimHealthState.TendAffliction(state, self, state.tendAffliction.state);
 
-                        if (tendAffliction is RWInjury injury)
+                        if (tendAffliction is RimInjury injury)
                         {
                             injury.isBleeding = false;
 
-                            if (injury is RWDestroyed destroyed)
+                            if (injury is RimDestroyed destroyed)
                             {
                                 destroyed.isFresh = false;
                             }
                         }
-                        else if (tendAffliction is RWDisease disease)
+                        else if (tendAffliction is RimDisease disease)
                         {
                             disease.timeUntilTreatment = cycleLength * disease.treatmentTimes;
                             disease.totalTendQuality += disease.tendQuality;
@@ -2120,9 +2101,9 @@ public class RimWorldHealth : BaseUnityPlugin
             state.consciousState = 0;
 
             #region WholeBody
-            foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+            foreach (RimAffliction affliction in state.wholeBodyAfflictions)
             {
-                if (affliction is RWDisease disease)
+                if (affliction is RimDisease disease)
                 {
                     keepUpdating = true;
                     diseasesToTend.Add(disease);
@@ -2130,25 +2111,25 @@ public class RimWorldHealth : BaseUnityPlugin
             }
             #endregion
 
-            foreach (RWBodyPart part in state.bodyParts)
+            foreach (RimBodyPart part in state.bodyParts)
             {
-                foreach (RWAffliction baseAffliction in part.afflictions)
+                foreach (RimAffliction baseAffliction in part.afflictions)
                 {
-                    if (baseAffliction is not RWTendableAffliction affliction || affliction.isCharacterSpecific)
+                    if (baseAffliction is not RimTendableAffliction affliction || affliction.isCharacterSpecific)
                     {
                         continue;
                     }
 
-                    if (affliction is RWInjury injury)
+                    if (affliction is RimInjury injury)
                     {
-                        if (affliction is RWDestroyed || affliction is RWScar scar && (scar.isRevealed || scar.isPermanent))
+                        if (affliction is RimDestroyed || affliction is RimScar scar && (scar.isRevealed || scar.isPermanent))
                         {
                             continue;
                         }
 
                         injuriesToTend.Add(injury);
                     }
-                    else if (affliction is RWDisease disease)
+                    else if (affliction is RimDisease disease)
                     {
                         diseasesToTend.Add(disease);
                     }
@@ -2164,29 +2145,29 @@ public class RimWorldHealth : BaseUnityPlugin
 
             state.bloodLossPerCycle = 0;
 
-            foreach (RWBodyPart part in state.bodyParts)
+            foreach (RimBodyPart part in state.bodyParts)
             {
                 if (IsSubPartDestroyed(state, part))
                 {
                     continue;
                 }
 
-                List<RWAffliction> afflictionList = new(part.afflictions);
-                foreach (RWAffliction baseAffliction in afflictionList)
+                List<RimAffliction> afflictionList = new(part.afflictions);
+                foreach (RimAffliction baseAffliction in afflictionList)
                 {
-                    if (baseAffliction is not RWTendableAffliction affliction)
+                    if (baseAffliction is not RimTendableAffliction affliction)
                     {
                         continue;
                     }
 
-                    if (affliction is RWDestroyed destroyed)
+                    if (affliction is RimDestroyed destroyed)
                     {
                         part.health = 0;
                         part.efficiency = 0;
 
                         if (!destroyed.isTended)
                         {
-                            state.bloodLossPerCycle += destroyed.isBleeding ? destroyed.healingDifficulty.bleeding * destroyed.part.maxHealth * 2 * state.bodySizeFactor * RWHealthState.BloodLossMultiplier(part) : 0;
+                            state.bloodLossPerCycle += destroyed.isBleeding ? destroyed.healingDifficulty.bleeding * destroyed.part.maxHealth * 2 * state.bodySizeFactor * RimHealthState.BloodLossMultiplier(part) : 0;
 
                             destroyed.pain = destroyed.part.maxHealth * 2 * destroyed.healingDifficulty.pain / state.bodySizeFactor / 100;
                         }
@@ -2194,12 +2175,12 @@ public class RimWorldHealth : BaseUnityPlugin
                         break;
                     }
 
-                    if (self.dead || affliction is not RWInjury injury)
+                    if (self.dead || affliction is not RimInjury injury)
                     {
                         continue;
                     }
 
-                    if (injury is RWScar scar && scar.isRevealed)
+                    if (injury is RimScar scar && scar.isRevealed)
                     {
                         if (scar.painCategory == "painful")
                         {
@@ -2221,7 +2202,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
                     state.pain += affliction.pain;
 
-                    float bloodLoss = injury.isBleeding && !injury.isTended ? injury.healingDifficulty.bleeding * injury.damage * state.bodySizeFactor * RWHealthState.BloodLossMultiplier(part) : 0;
+                    float bloodLoss = injury.isBleeding && !injury.isTended ? injury.healingDifficulty.bleeding * injury.damage * state.bodySizeFactor * RimHealthState.BloodLossMultiplier(part) : 0;
 
                     foreach (int bodyChunk in injury.part.connectedBodyChunks)
                     {
@@ -2241,7 +2222,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
             if (state.bloodLoss == 1)
             {
-                RWHealthState.Kill(self);
+                RimHealthState.Kill(self);
 
                 return false;
             }
@@ -2250,12 +2231,12 @@ public class RimWorldHealth : BaseUnityPlugin
                 keepUpdating = true;
             }
 
-            foreach (RWDisease disease in diseasesToTend)
+            foreach (RimDisease disease in diseasesToTend)
             {
                 SavingandLoadingHooks.UpdateDisease(disease, state, self, new(), false, ticksPassed);
             }
 
-            UpdateCapacities();
+            RimHealthState.UpdateCapacities(state, self);
 
             state.updateCapacities = true;
         }
@@ -2263,7 +2244,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
         return keepUpdating;
 
-        void UpdateInjuries(List<RWInjury> healList, RWState state)
+        void UpdateInjuries(List<RimInjury> healList, RimState state)
         {
             state.healingRate -= ticksPassed;
             int treatmentTime = 0;
@@ -2282,7 +2263,7 @@ public class RimWorldHealth : BaseUnityPlugin
                     return;
                 }
 
-                RWInjury injury = healList[UnityEngine.Random.Range(0, healList.Count)];
+                RimInjury injury = healList[UnityEngine.Random.Range(0, healList.Count)];
 
                 float healRate = 8;
 
@@ -2295,7 +2276,7 @@ public class RimWorldHealth : BaseUnityPlugin
 
                 injury.damage -= healRate * 0.1f;
 
-                if (injury is RWScar scar)
+                if (injury is RimScar scar)
                 {
                     if (scar.damage <= scar.scarDamage)
                     {
@@ -2315,12 +2296,15 @@ public class RimWorldHealth : BaseUnityPlugin
                 }
             }
         }
-
+        
+        /*
         void UpdateCapacities()
         {
             state.capacityAffectingAffliction.Clear();
 
-            state.forceUnconsciousness = false;
+            float painFactor = 1f;
+
+            float maxConsciousness = -1;
 
             if (!self.dead)
             {
@@ -2480,7 +2464,7 @@ public class RimWorldHealth : BaseUnityPlugin
                 }
                 else if (affliction is RWAilment informational)
                 {
-                    Informational(informational);
+                    Ailment(informational);
                 }
             }
 
@@ -2553,7 +2537,7 @@ public class RimWorldHealth : BaseUnityPlugin
             {
                 state.consciousness -= 0.4f;
 
-                state.forceUnconsciousness = true;
+                maxConsciousness = 0.1f;
             }
             else if (state.bloodLoss >= 0.45f)
             {
@@ -2568,9 +2552,9 @@ public class RimWorldHealth : BaseUnityPlugin
                 state.consciousness -= 0.1f;
             }
 
-            if (state.forceUnconsciousness)
+            if (maxConsciousness != -1)
             {
-                state.consciousness = Mathf.Min(state.consciousness, 0.1f);
+                state.consciousness = Mathf.Min(state.consciousness, maxConsciousness);
             }
 
             state.consciousness = Mathf.Max(state.consciousness, 0);
@@ -2755,7 +2739,7 @@ public class RimWorldHealth : BaseUnityPlugin
                             state.capacityAffectingAffliction.Add(disease);
                             break;
                         default:
-                            state.forceUnconsciousness = true;
+                            maxConsciousness = 0.1f;
 
                             state.pain += 0.85f;
 
@@ -2767,13 +2751,13 @@ public class RimWorldHealth : BaseUnityPlugin
                 }
             }
 
-            void Informational(RWAilment informational)
+            void Ailment(RWAilment ailment)
             {
-                if (informational is RWHypothermia)
+                if (ailment is RWHypothermia)
                 {
-                    state.capacityAffectingAffliction.Add(informational);
+                    state.capacityAffectingAffliction.Add(ailment);
 
-                    switch (informational.amount)
+                    switch (ailment.amount)
                     {
                         case <= 0.2f:
                             state.consciousness -= 0.05f;
@@ -2792,17 +2776,17 @@ public class RimWorldHealth : BaseUnityPlugin
                             state.pain += 0.15f;
                             break;
                         default:
-                            state.forceUnconsciousness = true;
+                            maxConsciousness = 0.1f;
 
                             state.pain += 0.3f;
                             break;
                     }
                 }
-                else if (informational is RWToxicBuildup)
+                else if (ailment is RWToxicBuildup)
                 {
-                    state.capacityAffectingAffliction.Add(informational);
+                    state.capacityAffectingAffliction.Add(ailment);
 
-                    switch (informational.amount)
+                    switch (ailment.amount)
                     {
                         case <= 0.2f:
                             state.consciousness -= 0.05f;
@@ -2817,14 +2801,47 @@ public class RimWorldHealth : BaseUnityPlugin
                             state.consciousness -= 0.25f;
                             break;
                         default:
-                            state.forceUnconsciousness = true;
+                            maxConsciousness = 0.1f;
 
                             state.consciousness -= 0.25f;
                             break;
                     }
                 }
+                else if (ailment is RWAnesthetic)
+                {
+                    state.capacityAffectingAffliction.Add(ailment);
+
+                    switch (ailment.amount)
+                    {
+                        case <= 0.6f:
+                            painFactor *= 0.95f;
+
+                            maxConsciousness = 0.9f;
+
+                            state.manipulation -= 0.1f;
+                            state.moving -= 0.05f;
+                            break;
+                        case <= 0.8f:
+                            painFactor *= 0.8f;
+
+                            maxConsciousness = 0.7f;
+
+                            state.manipulation -= 0.2f;
+                            state.moving -= 0.2f;
+                            state.talking -= 0.2f;
+                            state.digestion -= 0.2f;
+                            state.sight -= 0.15f;
+                            break;
+                        default:
+                            painFactor *= 0f;
+
+                            maxConsciousness = 0.01f;
+                            break;
+                    }
+                }
             }
         }
+        */
     }
 
     public static float CycleLength()
@@ -2833,7 +2850,7 @@ public class RimWorldHealth : BaseUnityPlugin
     }
 }
 
-public class BloodDrip(Vector2 pos, Vector2 vel, bool waterColor) : WaterDrip(pos, vel, waterColor)
+public class RimBloodDrip(Vector2 pos, Vector2 vel, bool waterColor) : WaterDrip(pos, vel, waterColor)
 {
     public override void ApplyPalette(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, RoomPalette palette)
     {
@@ -2846,9 +2863,9 @@ public class BloodDrip(Vector2 pos, Vector2 vel, bool waterColor) : WaterDrip(po
     }
 }
 
-public class DiseaseCloud : SporeCloud
+public class RimDiseaseCloud : SporeCloud
 {
-    public DiseaseCloud(Vector2 pos, Vector2 vel, Color color, float size, AbstractCreature killTag, int checkInsectsDelay, InsectCoordinator smallInsects, int rippleLayer) : base(pos, vel, color, size, killTag, checkInsectsDelay, smallInsects, rippleLayer)
+    public RimDiseaseCloud(Vector2 pos, Vector2 vel, Color color, float size, AbstractCreature killTag, int checkInsectsDelay, InsectCoordinator smallInsects, int rippleLayer) : base(pos, vel, color, size, killTag, checkInsectsDelay, smallInsects, rippleLayer)
     {
         rad = Mathf.Lerp(0.2f, 0.6f, UnityEngine.Random.value) * size;
         lifeTime = UnityEngine.Random.value * 20f + 25f;
@@ -2857,14 +2874,14 @@ public class DiseaseCloud : SporeCloud
     }
 }
 
-public class RWFireSmoke(Room room, RimWorldHealth.RWState state, Creature creature) : Smoke.FireSmoke(room)
+public class RimFireSmoke(Room room, RimWorldHealth.RimState state, Creature creature) : Smoke.FireSmoke(room)
 {
     public override SmokeSystemParticle CreateParticle()
     {
-        return new RWFireSmokeParticle();
+        return new RimFireSmokeParticle();
     }
 
-    public void RWEmitSmoke()
+    public void RimEmitSmoke()
     {
         if (creature == null || state == null || !state.onFire)
         {
@@ -2873,7 +2890,7 @@ public class RWFireSmoke(Room room, RimWorldHealth.RWState state, Creature creat
 
         Vector2 pos = creature.mainBodyChunk.pos + new Vector2(UnityEngine.Random.Range(-creature.mainBodyChunk.rad, creature.mainBodyChunk.rad), UnityEngine.Random.Range(-creature.mainBodyChunk.rad, creature.mainBodyChunk.rad));
 
-        if (AddParticle(pos, Custom.RNV(), Mathf.Lerp(10f, 40f, UnityEngine.Random.value)) is RWFireSmokeParticle fireSmokeParticle)
+        if (AddParticle(pos, Custom.RNV(), Mathf.Lerp(10f, 40f, UnityEngine.Random.value)) is RimFireSmokeParticle fireSmokeParticle)
         {
             fireSmokeParticle.effectColor = Color.yellow;
             fireSmokeParticle.colorFadeTime = 25;
@@ -2882,7 +2899,7 @@ public class RWFireSmoke(Room room, RimWorldHealth.RWState state, Creature creat
         }
     }
 
-    public class RWFireSmokeParticle : FireSmokeParticle
+    public class RimFireSmokeParticle : FireSmokeParticle
     {
         public override void Reset(Smoke.SmokeSystem newOwner, Vector2 pos, Vector2 vel, float lifeTime)
         {
@@ -2974,6 +2991,6 @@ public class RWFireSmoke(Room room, RimWorldHealth.RWState state, Creature creat
 
         private Color colorB;
 
-        public RimWorldHealth.RWState state;
+        public RimWorldHealth.RimState state;
     }
 }

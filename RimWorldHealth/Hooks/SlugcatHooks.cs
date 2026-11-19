@@ -44,21 +44,21 @@ internal class SlugcatHooks
     {
         orig(self, abstractCreature, world);
 
-        if (!healthState.TryGetValue(self.State, out RWState state))
+        if (!healthState.TryGetValue(self.State, out RimState state))
         {
-            healthState.Add(self.State, new RWState());
+            healthState.Add(self.State, new RimState());
             healthState.TryGetValue(self.State, out state);
 
-            RWHealthState.NewRWHealthState(self, state);
+            RimHealthState.NewRWHealthState(self, state);
         }
 
-        RWHealthState.UpdateMissingChunks(state, self);
+        RimHealthState.UpdateMissingChunks(state, self);
 
         state.swimForceFac = self.slugcatStats.swimForceFac;
 
         state.updateCapacities = true;
 
-        RWHealthState.Update(self.State, state);
+        RimHealthState.Update(self.State, state);
 
         if (state.moving == 1 && state.manipulation == 1 && state.consciousState == 0)
         {
@@ -74,7 +74,7 @@ internal class SlugcatHooks
     {
         orig(self, add);
 
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
@@ -83,7 +83,7 @@ internal class SlugcatHooks
     }
     static bool PlayerCanIPickThisUp(On.Player.orig_CanIPickThisUp orig, Player self, PhysicalObject obj)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || WorkingArms(state) > 0 || JawCheck(state) && self.grasps[0] == null)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || WorkingArms(state) > 0 || JawCheck(state) && self.grasps[0] == null)
         {
             return orig(self, obj);
         }
@@ -103,7 +103,7 @@ internal class SlugcatHooks
     {
         orig(self, eu);
 
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState _))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState _))
         {
             return;
         }
@@ -114,7 +114,7 @@ internal class SlugcatHooks
     {
         orig(self, actuallyViewed, eu);
 
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || self.grasps[0] == null || WorkingArms(state) > 0 || !JawCheck(state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || self.grasps[0] == null || WorkingArms(state) > 0 || !JawCheck(state))
         {
             return;
         }
@@ -150,16 +150,16 @@ internal class SlugcatHooks
     {
         orig(self);
 
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
 
-        RWAirInLungs airInLungs = null;
+        RimAirInLungs airInLungs = null;
 
-        foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+        foreach (RimAffliction affliction in state.wholeBodyAfflictions)
         {
-            if (affliction is RWAirInLungs tempAirInLungs)
+            if (affliction is RimAirInLungs tempAirInLungs)
             {
                 airInLungs = tempAirInLungs;
                 break;
@@ -181,7 +181,7 @@ internal class SlugcatHooks
             }
             else
             {
-                state.wholeBodyAfflictions.Add(new RWAirInLungs(self.State, null, self.airInLungs));
+                state.wholeBodyAfflictions.Add(new RimAirInLungs(self.State, null, self.airInLungs));
             }
         }
     }
@@ -189,7 +189,7 @@ internal class SlugcatHooks
     {
         orig(self, edible);
 
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || !ShadowOfOptions.karma_flower.Value || edible is not KarmaFlower || self.room.game.session is StoryGameSession && ShadowOfOptions.karma_flower.Value && !(self.room.game.session as StoryGameSession).saveState.deathPersistentSaveData.reinforcedKarma)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || !ShadowOfOptions.karma_flower.Value || edible is not KarmaFlower || self.room.game.session is StoryGameSession && ShadowOfOptions.karma_flower.Value && !(self.room.game.session as StoryGameSession).saveState.deathPersistentSaveData.reinforcedKarma)
         {
             return;
         }
@@ -200,7 +200,7 @@ internal class SlugcatHooks
     {
         orig(self);
 
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
@@ -211,7 +211,7 @@ internal class SlugcatHooks
     {
         orig(self, sub);
 
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || self.playerState.foodInStomach > 0)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || self.playerState.foodInStomach > 0)
         {
             return;
         }
@@ -222,7 +222,7 @@ internal class SlugcatHooks
     {
         orig(self, spear);
 
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || state.consciousState == 0)
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || state.consciousState == 0)
         {
             return;
         }
@@ -231,7 +231,7 @@ internal class SlugcatHooks
     }
     static void PlayerThrowObject(On.Player.orig_ThrowObject orig, Player self, int grasp, bool eu)
     {
-        if (self.grasps[grasp].grabbed is not Weapon || self.State == null || !healthState.TryGetValue(self.State, out RWState state) || 
+        if (self.grasps[grasp].grabbed is not Weapon || self.State == null || !healthState.TryGetValue(self.State, out RimState state) || 
             state.consciousState == 0 || 
             state.consciousState == 3 && ModManager.MSC && self.State is MoreSlugcats.PlayerNPCState && ShadowOfOptions.player_uncon_movement.Value && ShadowOfOptions.downed_combat.Value != "No one" ||
             state.consciousState != 3 && (ShadowOfOptions.downed_combat.Value == "Everyone") || ModManager.MSC && self.State is MoreSlugcats.PlayerNPCState && ShadowOfOptions.downed_combat.Value != "No one")
@@ -338,7 +338,7 @@ internal class SlugcatHooks
     }
     static void PlayerUpdate(On.Player.orig_Update orig, Player self, bool eu)
     {
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             orig(self, eu);
             return;
@@ -419,7 +419,7 @@ internal class SlugcatHooks
 
                 if (bleedInfo[1] <= 0)
                 {
-                    self.room.AddObject(new BloodDrip(self.bodyChunks[i].pos + new Vector2(Random.Range(-self.bodyChunks[i].rad, self.bodyChunks[i].rad), Random.Range(-self.bodyChunks[i].rad, self.bodyChunks[i].rad)), default, false));
+                    self.room.AddObject(new RimBloodDrip(self.bodyChunks[i].pos + new Vector2(Random.Range(-self.bodyChunks[i].rad, self.bodyChunks[i].rad), Random.Range(-self.bodyChunks[i].rad, self.bodyChunks[i].rad)), default, false));
 
                     bleedInfo[1] = Custom.LerpMap(bleedInfo[0], 0, 120, 25, 1);
                 }
@@ -448,7 +448,7 @@ internal class SlugcatHooks
                             b.x = (float)self.flipDirection * 20f;
                         }
                         //self.room.AddObject(new MoreSlugcats.ColdRoom.ColdBreath(pos + b + vector, Custom.RNV() * 0.2f + vector * 0.1f + self.firstChunk.vel * 0.25f, UnityEngine.Random.value * 20f + 5f));
-                        DiseaseCloud sporeCloud = new(pos + b + vector, Custom.RNV() * 0.2f + vector * 0.1f + self.firstChunk.vel * 0.25f, new Color(0.2f, 1f, 0.2f), 1f, null, 20, null, self.abstractPhysicalObject.rippleLayer)
+                        RimDiseaseCloud sporeCloud = new(pos + b + vector, Custom.RNV() * 0.2f + vector * 0.1f + self.firstChunk.vel * 0.25f, new Color(0.2f, 1f, 0.2f), 1f, null, 20, null, self.abstractPhysicalObject.rippleLayer)
                         {
                             nonToxic = true
                         };
@@ -467,7 +467,7 @@ internal class SlugcatHooks
     {
         orig(self, sLeaser, rCam, timeStacker, camPos);
 
-        if (sLeaser.deleteMeNextFrame || !healthState.TryGetValue(self.player.State, out RWState state))
+        if (sLeaser.deleteMeNextFrame || !healthState.TryGetValue(self.player.State, out RimState state))
         {
             return;
         }
@@ -491,7 +491,7 @@ internal class SlugcatHooks
     #region SlugNPCAI
     static bool SlugNPCAIAttackingThreat(On.MoreSlugcats.SlugNPCAI.orig_AttackingThreat orig, MoreSlugcats.SlugNPCAI self)
     {
-        if (self.cat.State != null && healthState.TryGetValue(self.cat.State, out RWState state) && state.consciousState != 0 && ShadowOfOptions.downed_combat.Value != "Everyone")
+        if (self.cat.State != null && healthState.TryGetValue(self.cat.State, out RimState state) && state.consciousState != 0 && ShadowOfOptions.downed_combat.Value != "Everyone")
         {
             return false;
         }
@@ -500,7 +500,7 @@ internal class SlugcatHooks
     }
     static bool SlugNPCAICanGrabItem(On.MoreSlugcats.SlugNPCAI.orig_CanGrabItem orig, MoreSlugcats.SlugNPCAI self, PhysicalObject obj)
     {
-        if (self.cat.State != null && healthState.TryGetValue(self.cat.State, out RWState state) && WorkingArms(state) == 0 && !JawCheck(state))
+        if (self.cat.State != null && healthState.TryGetValue(self.cat.State, out RimState state) && WorkingArms(state) == 0 && !JawCheck(state))
         {
             return false;
         }
@@ -511,7 +511,7 @@ internal class SlugcatHooks
     {
         orig(self);
 
-        if (self.creature.controlled || !healthState.TryGetValue(self.cat.State, out RWState state) || state.consciousState == 3)
+        if (self.creature.controlled || !healthState.TryGetValue(self.cat.State, out RimState state) || state.consciousState == 3)
         {
             return;
         }
@@ -594,22 +594,22 @@ internal class SlugcatHooks
                 return;
             }
 
-            RWInjury bleeding = null;
-            RWDisease diseaseAffliction = null;
-            RWInjury untendedAffliction = null;
+            RimInjury bleeding = null;
+            RimDisease diseaseAffliction = null;
+            RimInjury untendedAffliction = null;
 
-            foreach (RWBodyPart part in state.bodyParts)
+            foreach (RimBodyPart part in state.bodyParts)
             {
-                foreach (RWAffliction baseAffliction in part.afflictions)
+                foreach (RimAffliction baseAffliction in part.afflictions)
                 {
-                    if (baseAffliction is not RWTendableAffliction affliction)
+                    if (baseAffliction is not RimTendableAffliction affliction)
                     {
                         continue;
                     }
 
                     if (!affliction.isTended)
                     {
-                        if (affliction is RWInjury injury)
+                        if (affliction is RimInjury injury)
                         {
                             if (injury.isBleeding)
                             {
@@ -635,7 +635,7 @@ internal class SlugcatHooks
 
                             }
                         }
-                        else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                        else if (affliction is RimDisease disease && disease.timeUntilTreatment <= 0)
                         {
                             if (diseaseAffliction != null)
                             {
@@ -652,7 +652,7 @@ internal class SlugcatHooks
                             RimWorldHealth.Logger.LogError(all + affliction + " does not belong to any tendable check");
                         }
                     }
-                    else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                    else if (affliction is RimDisease disease && disease.timeUntilTreatment <= 0)
                     {
                         if (diseaseAffliction != null)
                         {
@@ -668,9 +668,9 @@ internal class SlugcatHooks
 
             if (bleeding == null)
             {
-                foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+                foreach (RimAffliction affliction in state.wholeBodyAfflictions)
                 {
-                    if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                    if (affliction is RimDisease disease && disease.timeUntilTreatment <= 0)
                     {
                         if (diseaseAffliction != null)
                         {
@@ -700,7 +700,7 @@ internal class SlugcatHooks
                 return;
             }
 
-            if (self.friendTracker.friend != null && !self.friendTracker.friend.dead && self.friendTracker.friend.Stunned && (grabbedByThis(self.friendTracker.friend) || self.friendTracker.friend.grabbedBy.Count == 0) && self.friendTracker.friend.State != null && healthState.TryGetValue(self.friendTracker.friend.State, out RWState otherState))
+            if (self.friendTracker.friend != null && !self.friendTracker.friend.dead && self.friendTracker.friend.Stunned && (grabbedByThis(self.friendTracker.friend) || self.friendTracker.friend.grabbedBy.Count == 0) && self.friendTracker.friend.State != null && healthState.TryGetValue(self.friendTracker.friend.State, out RimState otherState))
             {
                 if (otherState.onFire)
                 {
@@ -708,11 +708,11 @@ internal class SlugcatHooks
                     return;
                 }
 
-                foreach (RWBodyPart part in otherState.bodyParts)
+                foreach (RimBodyPart part in otherState.bodyParts)
                 {
-                    foreach (RWAffliction baseAffliction in part.afflictions)
+                    foreach (RimAffliction baseAffliction in part.afflictions)
                     {
-                        if (baseAffliction is not RWTendableAffliction affliction)
+                        if (baseAffliction is not RimTendableAffliction affliction)
                         {
                             continue;
                         }
@@ -722,7 +722,7 @@ internal class SlugcatHooks
                             tendOther(self.friendTracker.friend);
                             return;
                         }
-                        else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                        else if (affliction is RimDisease disease && disease.timeUntilTreatment <= 0)
                         {
                             tendOther(self.friendTracker.friend);
                             return;
@@ -730,9 +730,9 @@ internal class SlugcatHooks
                     }
                 }
 
-                foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+                foreach (RimAffliction affliction in state.wholeBodyAfflictions)
                 {
-                    if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                    if (affliction is RimDisease disease && disease.timeUntilTreatment <= 0)
                     {
                         tendOther(self.friendTracker.friend);
                         return;
@@ -769,11 +769,11 @@ internal class SlugcatHooks
                     break;
                 }
 
-                foreach (RWBodyPart part in otherState.bodyParts)
+                foreach (RimBodyPart part in otherState.bodyParts)
                 {
-                    foreach (RWAffliction baseAffliction in part.afflictions)
+                    foreach (RimAffliction baseAffliction in part.afflictions)
                     {
-                        if (baseAffliction is not RWTendableAffliction affliction)
+                        if (baseAffliction is not RimTendableAffliction affliction)
                         {
                             continue;
                         }
@@ -783,7 +783,7 @@ internal class SlugcatHooks
                             tendTarget = creature;
                             break;
                         }
-                        else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                        else if (affliction is RimDisease disease && disease.timeUntilTreatment <= 0)
                         {
                             tendTarget = creature;
                             break;
@@ -796,14 +796,14 @@ internal class SlugcatHooks
                     }
                 }
 
-                foreach (RWAffliction affliction in state.wholeBodyAfflictions)
+                foreach (RimAffliction affliction in state.wholeBodyAfflictions)
                 {
                     if (tendTarget == creature)
                     {
                         break;
                     }
 
-                    if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                    if (affliction is RimDisease disease && disease.timeUntilTreatment <= 0)
                     {
                         tendTarget = creature;
                         break;
@@ -822,7 +822,7 @@ internal class SlugcatHooks
         }
         catch (System.Exception e) { RimWorldHealth.Logger.LogError(e); }
 
-        void startSelfTend(RWTendableAffliction affliction)
+        void startSelfTend(RimTendableAffliction affliction)
         {
             stopBehaviour();
 
@@ -835,7 +835,7 @@ internal class SlugcatHooks
                 return;
             }
 
-            state.tendTime = Mathf.Round(state.tendTimeBase / RWHealthState.MedicalTendSpeed(state));
+            state.tendTime = Mathf.Round(state.tendTimeBase / RimHealthState.MedicalTendSpeed(state));
             state.tendTimeMax = state.tendTime;
             state.tendAffliction = affliction;
         }
@@ -938,9 +938,9 @@ internal class SlugcatHooks
     }
     #endregion
 
-    static bool JawCheck(RWState state)
+    static bool JawCheck(RimState state)
     {
-        foreach (RWBodyPart part in state.bodyParts)
+        foreach (RimBodyPart part in state.bodyParts)
         {
             if (part is Jaw jaw)
             {
@@ -951,18 +951,18 @@ internal class SlugcatHooks
         return false;
     }
 
-    public static void ArtiLungExplosion(CreatureState self, RWState state)
+    public static void ArtiLungExplosion(CreatureState self, RimState state)
     {
-        foreach (RWBodyPart part in state.bodyParts)
+        foreach (RimBodyPart part in state.bodyParts)
         {
             if (part is Lung && !IsDestroyed(part))
             {
-                RWHealthState.Damage(self, state, new RWBomb(), 999999f, 999, part, "Artificer - Explosion", "Artificer");
+                RimHealthState.Damage(self, state, new RimBomb(), 999999f, 999, part, "Artificer - Explosion", "Artificer");
             }
         }
     }
 
-    public static float GetPlayerMovementSpeedMultiplier(RWState state, float manipulationWeight)
+    public static float GetPlayerMovementSpeedMultiplier(RimState state, float manipulationWeight)
     {
         float tempMoving = state.consciousState == 0 ? state.moving : 0;
         float tempManipulation = state.consciousState == 0 ? state.manipulation : state.manipulation * 0.75f;

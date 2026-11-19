@@ -17,7 +17,7 @@ public class HealthTab : HudPart
         {
             player = owner;
 
-            playerState = healthState.TryGetValue(player.state, out RWState state) ? state : null;
+            playerState = healthState.TryGetValue(player.state, out RimState state) ? state : null;
         }
 
         sprites = new FSprite[2];
@@ -391,7 +391,7 @@ public class HealthTab : HudPart
             return;
         }
 
-        foreach (RWBodyPart part in inspectedState.bodyParts)
+        foreach (RimBodyPart part in inspectedState.bodyParts)
         {
             if (part.afflictions.Count == 0)
             {
@@ -999,7 +999,7 @@ public class HealthTab : HudPart
                             break;
                     }
 
-                    foreach (RWOperation operation in inspectedState.operationsList)
+                    foreach (RimOperation operation in inspectedState.operationsList)
                     {
                         if (operation.name == operationName && operation.subName == operationSubName)
                         {
@@ -1020,7 +1020,7 @@ public class HealthTab : HudPart
 
                     forceContinue = true;
 
-                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                    foreach (RimBodyPart part in inspectedState.bodyParts)
                     {
                         if (part.GetType() == partType && part.subName == partSubName && !IsDestroyed(part))
                         {
@@ -1080,14 +1080,14 @@ public class HealthTab : HudPart
 
                 if (operationName == "Euthanize by Cut" || operationName == "Anesthetize")
                 {
-                    inspectedState.operationsList.Add(new RWOperation(operationName, operationSubName, null, medicalRequirments, null));
+                    inspectedState.operationsList.Add(new RimOperation(operationName, operationSubName, null, medicalRequirments, null));
                 }
                 else
                 {
                     string limbName = "";
                     string limbSubName = "";
-                    Func<RWArtificialPartBase> replacement = null;
-                    RWBodyPart operatedPart = null;
+                    Func<RimArtificialPartBase> replacement = null;
+                    RimBodyPart operatedPart = null;
 
                     string nameOverride = "";
 
@@ -1102,7 +1102,7 @@ public class HealthTab : HudPart
                             switch (operationSubName)
                             {
                                 case "(heart)":
-                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    foreach (RimBodyPart part in inspectedState.bodyParts)
                                     {
                                         if (part is Heart heart)
                                         {
@@ -1113,7 +1113,7 @@ public class HealthTab : HudPart
                                     }
                                     break;
                                 case "(left lung)":
-                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    foreach (RimBodyPart part in inspectedState.bodyParts)
                                     {
                                         if (part is Lung lung && lung.subName == "Left")
                                         {
@@ -1125,7 +1125,7 @@ public class HealthTab : HudPart
                                     }
                                     break;
                                 case "(right lung)":
-                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    foreach (RimBodyPart part in inspectedState.bodyParts)
                                     {
                                         if (part is Lung lung && lung.subName == "Right")
                                         {
@@ -1137,7 +1137,7 @@ public class HealthTab : HudPart
                                     }
                                     break;
                                 case "(left kidney)":
-                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    foreach (RimBodyPart part in inspectedState.bodyParts)
                                     {
                                         if (part is Kidney kidney && kidney.subName == "Left")
                                         {
@@ -1149,7 +1149,7 @@ public class HealthTab : HudPart
                                     }
                                     break;
                                 case "(right kidney)":
-                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    foreach (RimBodyPart part in inspectedState.bodyParts)
                                     {
                                         if (part is Kidney kidney && kidney.subName == "Right")
                                         {
@@ -1161,7 +1161,7 @@ public class HealthTab : HudPart
                                     }
                                     break;
                                 case "(liver)":
-                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    foreach (RimBodyPart part in inspectedState.bodyParts)
                                     {
                                         if (part is Liver liver)
                                         {
@@ -1174,7 +1174,7 @@ public class HealthTab : HudPart
                             }
                             break;
                         case "Remove (tongue)":
-                            foreach (RWBodyPart part in inspectedState.bodyParts)
+                            foreach (RimBodyPart part in inspectedState.bodyParts)
                             {
                                 if (part is Tongue tongue)
                                 {
@@ -1203,7 +1203,7 @@ public class HealthTab : HudPart
                             switch (operationSubName)
                             {
                                 case "(left leg)":
-                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    foreach (RimBodyPart part in inspectedState.bodyParts)
                                     {
                                         if (part is Leg leg && leg.subName == "Left")
                                         {
@@ -1214,7 +1214,7 @@ public class HealthTab : HudPart
                                     }
                                     break;
                                 case "(right leg)":
-                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    foreach (RimBodyPart part in inspectedState.bodyParts)
                                     {
                                         if (part is Leg leg && leg.subName == "Right")
                                         {
@@ -1226,7 +1226,7 @@ public class HealthTab : HudPart
                                     break;
                             }
 
-                            replacement = () => new RWPegLeg(inspectedCreatureState, operatedPart);
+                            replacement = () => new RimPegLeg(inspectedCreatureState, operatedPart);
 
                             medicalRequirments = new() { 3, 2, 1 };
                             requiredObject = typeof(Spear);
@@ -1235,7 +1235,7 @@ public class HealthTab : HudPart
                             switch (operationSubName)
                             {
                                 case "(left hand)":
-                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    foreach (RimBodyPart part in inspectedState.bodyParts)
                                     {
                                         if (part is Hand hand && hand.subName == "Left")
                                         {
@@ -1246,7 +1246,7 @@ public class HealthTab : HudPart
                                     }
                                     break;
                                 case "(right hand)":
-                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    foreach (RimBodyPart part in inspectedState.bodyParts)
                                     {
                                         if (part is Hand hand && hand.subName == "Right")
                                         {
@@ -1258,7 +1258,7 @@ public class HealthTab : HudPart
                                     break;
                             }
 
-                            replacement = () => new RWWoodenHand(inspectedCreatureState, operatedPart);
+                            replacement = () => new RimWoodenHand(inspectedCreatureState, operatedPart);
 
                             medicalRequirments = new() { 3, 2, 1 };
                             break;
@@ -1266,7 +1266,7 @@ public class HealthTab : HudPart
                             switch (operationSubName)
                             {
                                 case "(left foot)":
-                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    foreach (RimBodyPart part in inspectedState.bodyParts)
                                     {
                                         if (part is Foot foot && foot.subName == "Left")
                                         {
@@ -1285,7 +1285,7 @@ public class HealthTab : HudPart
                                     }
                                     break;
                                 case "(right foot)":
-                                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                                    foreach (RimBodyPart part in inspectedState.bodyParts)
                                     {
                                         if (part is Foot foot && foot.subName == "Right")
                                         {
@@ -1305,12 +1305,12 @@ public class HealthTab : HudPart
                                     break;
                             }
 
-                            replacement = () => new RWWoodenFoot(inspectedCreatureState, operatedPart, nameOverride);
+                            replacement = () => new RimWoodenFoot(inspectedCreatureState, operatedPart, nameOverride);
 
                             medicalRequirments = new() { 3, 2, 1 };
                             break;
                         case "Install denture (jaw)":
-                            foreach (RWBodyPart part in inspectedState.bodyParts)
+                            foreach (RimBodyPart part in inspectedState.bodyParts)
                             {
                                 if (part is Jaw jaw)
                                 {
@@ -1320,7 +1320,7 @@ public class HealthTab : HudPart
                                 }
                             }
 
-                            replacement = () => new RWDenture(inspectedCreatureState, operatedPart);
+                            replacement = () => new RimDenture(inspectedCreatureState, operatedPart);
 
                             medicalRequirments = new() { 3, 2, 1 };
                             break;
@@ -1335,7 +1335,7 @@ public class HealthTab : HudPart
                         operationSubName = operationSubNameOverride;
                     }
 
-                    inspectedState.operationsList.Add(new RWLimbReplacement(operationName, operationSubName, operatedPart, medicalRequirments, requiredObject, limbName, limbSubName, replacement));
+                    inspectedState.operationsList.Add(new RimLimbReplacement(operationName, operationSubName, operatedPart, medicalRequirments, requiredObject, limbName, limbSubName, replacement));
                 }
 
                 isOperationListActive = false;
@@ -1463,7 +1463,7 @@ public class HealthTab : HudPart
                 }
                 else if (selectedHorizontal == 0.9f)
                 {
-                    List<RWOperation> list;
+                    List<RimOperation> list;
                     List<int> order;
 
                     switch (selectedVertical)
@@ -1532,22 +1532,22 @@ public class HealthTab : HudPart
                 return;
             }
 
-            RWInjury bleeding = null;
-            RWDisease diseaseAffliction = null;
-            RWInjury untendedAffliction = null;
+            RimInjury bleeding = null;
+            RimDisease diseaseAffliction = null;
+            RimInjury untendedAffliction = null;
 
-            foreach (RWBodyPart part in inspectedState.bodyParts)
+            foreach (RimBodyPart part in inspectedState.bodyParts)
             {
-                foreach (RWAffliction baseAffliction in part.afflictions)
+                foreach (RimAffliction baseAffliction in part.afflictions)
                 {
-                    if (baseAffliction is not RWTendableAffliction affliction || affliction.isCharacterSpecific)
+                    if (baseAffliction is not RimTendableAffliction affliction || affliction.isCharacterSpecific)
                     {
                         continue;
                     }
 
                     if (!affliction.isTended)
                     {
-                        if (affliction is RWInjury injury)
+                        if (affliction is RimInjury injury)
                         {
                             if (injury.isBleeding)
                             {
@@ -1573,7 +1573,7 @@ public class HealthTab : HudPart
 
                             }
                         }
-                        else if (affliction is RWDisease disease && disease.timeUntilTreatment <= 0)
+                        else if (affliction is RimDisease disease && disease.timeUntilTreatment <= 0)
                         {
                             if (diseaseAffliction != null)
                             {
@@ -1590,7 +1590,7 @@ public class HealthTab : HudPart
                             RimWorldHealth.Logger.LogError(all + affliction + " does not belong to any tendable check");
                         }
                     }
-                    else if (affliction is RWDisease disease && (disease.timeUntilTreatment <= 0 || !disease.isTended))
+                    else if (affliction is RimDisease disease && (disease.timeUntilTreatment <= 0 || !disease.isTended))
                     {
                         if (diseaseAffliction != null)
                         {
@@ -1606,9 +1606,9 @@ public class HealthTab : HudPart
 
             if (bleeding == null)
             {
-                foreach (RWAffliction affliction in inspectedState.wholeBodyAfflictions)
+                foreach (RimAffliction affliction in inspectedState.wholeBodyAfflictions)
                 {
-                    if (affliction is not RWDisease disease || (disease.timeUntilTreatment > 0 && disease.isTended))
+                    if (affliction is not RimDisease disease || (disease.timeUntilTreatment > 0 && disease.isTended))
                     {
                         continue;
                     }
@@ -1643,21 +1643,54 @@ public class HealthTab : HudPart
             interactOnce = false;
         }
 
-        void startTending(RWTendableAffliction affliction)
+        void startTending(RimTendableAffliction affliction)
         {
             playerState.tendOperation = null;
 
-            playerState.tendTime = Mathf.Round(playerState.tendTimeBase / RWHealthState.MedicalTendSpeed(playerState));
+            playerState.tendTime = Mathf.Round(playerState.tendTimeBase / RimHealthState.MedicalTendSpeed(playerState));
             playerState.tendTimeMax = playerState.tendTime;
             playerState.tendAffliction = affliction;
         }
-        void startOperating(RWOperation operation)
+        void startOperating(RimOperation operation)
         {
             playerState.tendAffliction = null;
 
-            playerState.tendTime = Mathf.Round(playerState.tendTimeBase / RWHealthState.MedicalTendSpeed(playerState));
+            playerState.tendTime = Mathf.Round(playerState.tendTimeBase / RimHealthState.MedicalTendSpeed(playerState));
             playerState.tendTimeMax = playerState.tendTime;
             playerState.tendOperation = operation;
+
+            if (operation.name == "Anesthetize")
+            {
+                return;
+            }
+
+            RimAnesthetic anesthetic = null;
+
+            foreach (RimAffliction affliction in inspectedState.wholeBodyAfflictions)
+            {
+                if (affliction is RimAnesthetic tempAnesthetic)
+                {
+                    anesthetic = tempAnesthetic;
+                    break;
+                }
+            }
+
+            int ticks = Mathf.RoundToInt(UnityEngine.Random.Range(cycleLength * 0.75f, cycleLength * 2f)) * 40 * 60;
+
+            if (anesthetic != null)
+            {
+                if (anesthetic.lastAmount < ticks)
+                {
+                    anesthetic.lastAmount = ticks;
+                }
+
+                anesthetic.amount = anesthetic.lastAmount;
+            }
+            else
+            {
+                inspectedState.wholeBodyAfflictions.Add(new RimAnesthetic(inspectedCreatureState, null, ticks));
+                inspectedState.updateCapacities = true;
+            }    
         }
 
         void SpawnOperationList()
@@ -1754,7 +1787,7 @@ public class HealthTab : HudPart
                                     break;
                             }
 
-                            operationType = typeof(RWPegLeg);
+                            operationType = typeof(RimPegLeg);
                             break;
                         case "Install wooden hand":
                             partType = typeof(Hand);
@@ -1773,7 +1806,7 @@ public class HealthTab : HudPart
                                     break;
                             }
 
-                            operationType = typeof(RWWoodenHand);
+                            operationType = typeof(RimWoodenHand);
                             break;
                         case "Install wooden foot":
                             partType = typeof(Foot);
@@ -1792,15 +1825,15 @@ public class HealthTab : HudPart
                                     break;
                             }
 
-                            operationType = typeof(RWWoodenFoot);
+                            operationType = typeof(RimWoodenFoot);
                             break;
                         case "Install denture (jaw)":
                             partType = typeof(Jaw);
-                            operationType = typeof(RWDenture);
+                            operationType = typeof(RimDenture);
                             break;
                     }
 
-                    foreach (RWOperation operation in inspectedState.operationsList)
+                    foreach (RimOperation operation in inspectedState.operationsList)
                     {
                         if (operation.name == possibleOperation && operation.subName == subName)
                         {
@@ -1820,7 +1853,7 @@ public class HealthTab : HudPart
                     {
                         forceContinue = true;
 
-                        foreach (RWBodyPart part in inspectedState.bodyParts)
+                        foreach (RimBodyPart part in inspectedState.bodyParts)
                         {
                             if (possibleOperation == "Harvest" && part.GetType() == partType && part.subName == partSubName && !IsDestroyed(part) ||
                                 possibleOperation != "Harvest" && partType.IsAssignableFrom(part.GetType()) && part.subName == partSubName && !IsSubPartDestroyed(inspectedState, part) && (operationType == null || !part.isBionic || part.afflictions.Count == 0 || part.afflictions[0].GetType() != operationType))
@@ -2113,25 +2146,25 @@ public class HealthTab : HudPart
                 {
                     switch (value)
                     {
-                        case >= 0.8f:
-                            capacityValues[i].text = "Mind-shattering";
-                            capacityValues[i].color = Color.red;
+                        case < 0.01f:
+                            capacityValues[i].text = "None";
+                            capacityValues[i].color = Color.green;
                             break;
-                        case >= 0.4f:
-                            capacityValues[i].text = "Intense";
-                            capacityValues[i].color = Color.Lerp(Color.white, Color.black, 0.6f);
-                            break;
-                        case >= 0.15f:
-                            capacityValues[i].text = "Serious";
-                            capacityValues[i].color = Color.Lerp(Color.white, Color.black, 0.4f);
-                            break;
-                        case >= 0.01f:
+                        case < 0.15f:
                             capacityValues[i].text = "Minor";
                             capacityValues[i].color = Color.Lerp(Color.white, Color.black, 0.1f);
                             break;
+                        case < 0.4f:
+                            capacityValues[i].text = "Serious";
+                            capacityValues[i].color = Color.Lerp(Color.white, Color.black, 0.4f);
+                            break;
+                        case < 0.8f:
+                            capacityValues[i].text = "Intense";
+                            capacityValues[i].color = Color.Lerp(Color.white, Color.black, 0.6f);
+                            break;
                         default:
-                            capacityValues[i].text = "None";
-                            capacityValues[i].color = Color.green;
+                            capacityValues[i].text = "Mind-shattering";
+                            capacityValues[i].color = Color.red;
                             break;
                     }
                 }
@@ -2278,7 +2311,7 @@ public class HealthTab : HudPart
 
             if (playerState.tendOperation != null)
             {
-                RWOperation operation = playerState.tendOperation;
+                RimOperation operation = playerState.tendOperation;
 
                 FSprite sprite = null;
 
@@ -2361,7 +2394,7 @@ public class HealthTab : HudPart
 
                         for (int j = 0; j < healthTabBodyParts[i].combinedAfflictions.Count; j++)
                         {
-                            if (healthTabBodyParts[i].combinedAfflictions.TryGetValue(healthTabBodyParts[i].CombinedAfflictionName(healthTabBodyParts[i].bodyPart, j), out List<RWAffliction> list) && list.Contains(playerState.tendAffliction))
+                            if (healthTabBodyParts[i].combinedAfflictions.TryGetValue(healthTabBodyParts[i].CombinedAfflictionName(healthTabBodyParts[i].bodyPart, j), out List<RimAffliction> list) && list.Contains(playerState.tendAffliction))
                             {
                                 for (int k = 0; k < list.Count; k++)
                                 {
@@ -2590,14 +2623,12 @@ public class HealthTab : HudPart
                 }
 
                 string operationName = "";
-                string operationSubName = "";
 
                 foreach (OperationSelection operation in operationList)
                 {
                     if (operation.horizontal == operationListHorizontal && operation.vertical == operationListVertical)
                     {
                         operationName = operation.name;
-                        operationSubName = operation.subName;
                         break;
                     }
                 }
@@ -2608,7 +2639,7 @@ public class HealthTab : HudPart
 
                 Type requiredObject = null;
 
-                RWBodyPart operationPart = null;
+                RimBodyPart operationPart = null;
 
                 switch (operationName)
                 {
@@ -2668,9 +2699,9 @@ public class HealthTab : HudPart
                         healthTabInfos[0].description.text += "\n  1x " + requiredObject.ToString();
                     }
 
-                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                    foreach (RimBodyPart part in inspectedState.bodyParts)
                     {
-                        if (part == operationPart && part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RWArtificialPartBase artificialPart)
+                        if (part == operationPart && part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RimArtificialPartBase artificialPart)
                         {
                             healthTabInfos[0].colouredName2.text = "Replaces: " + artificialPart.name;
                             break;
@@ -2699,9 +2730,9 @@ public class HealthTab : HudPart
 
                     healthTabInfos[0].colouredName2.text = "";
 
-                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                    foreach (RimBodyPart part in inspectedState.bodyParts)
                     {
-                        if (part == operationPart && part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RWArtificialPartBase artificialPart)
+                        if (part == operationPart && part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RimArtificialPartBase artificialPart)
                         {
                             healthTabInfos[0].colouredName2.text = "Replaces: " + artificialPart.name;
                             break;
@@ -2735,7 +2766,7 @@ public class HealthTab : HudPart
                     }
                 }
 
-                RWOperation operation = inspectedState.operationsList[selectedVertical - 2];
+                RimOperation operation = inspectedState.operationsList[selectedVertical - 2];
 
                 if (operation.medicalRequired != 0)
                 {
@@ -2757,9 +2788,9 @@ public class HealthTab : HudPart
                         healthTabInfos[0].description.text += "\n  1x " + operation.requiredObject.ToString();
                     }
 
-                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                    foreach (RimBodyPart part in inspectedState.bodyParts)
                     {
-                        if (part == operation.part && part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RWArtificialPartBase artificialPart)
+                        if (part == operation.part && part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RimArtificialPartBase artificialPart)
                         {
                             healthTabInfos[0].colouredName2.text = "Replaces: " + artificialPart.name;
                             break;
@@ -2788,9 +2819,9 @@ public class HealthTab : HudPart
 
                     healthTabInfos[0].colouredName2.text = "";
 
-                    foreach (RWBodyPart part in inspectedState.bodyParts)
+                    foreach (RimBodyPart part in inspectedState.bodyParts)
                     {
-                        if (part == operation.part && part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RWArtificialPartBase artificialPart)
+                        if (part == operation.part && part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RimArtificialPartBase artificialPart)
                         {
                             healthTabInfos[0].colouredName2.text = "Replaces: " + artificialPart.name;
                             break;
@@ -2907,7 +2938,7 @@ public class HealthTab : HudPart
                                 description += "  Breathing " + Mathf.Round(inspectedState.breathing * 100) + "%\n";
                             }
 
-                            foreach (RWBodyPart part in inspectedState.movingBP)
+                            foreach (RimBodyPart part in inspectedState.movingBP)
                             {
                                 CheckCapacityBodypart(part);
                             }
@@ -2935,7 +2966,7 @@ public class HealthTab : HudPart
                                 description += "  Consciousness " + Mathf.Round(inspectedState.consciousness * 100) + "%\n";
                             }
 
-                            foreach (RWBodyPart part in inspectedState.manipulationBP)
+                            foreach (RimBodyPart part in inspectedState.manipulationBP)
                             {
                                 CheckCapacityBodypart(part);
                             }
@@ -2970,13 +3001,13 @@ public class HealthTab : HudPart
                                 description += "  Consciousness " + Mathf.Round(inspectedState.consciousness * 100) + "%\n";
                             }
 
-                            foreach (RWBodyPart part in inspectedState.talkingBP)
+                            foreach (RimBodyPart part in inspectedState.talkingBP)
                             {
                                 if (part is Tongue)
                                 {
                                     bool jawIsBionic = false;
 
-                                    foreach (RWBodyPart part2 in inspectedState.talkingBP)
+                                    foreach (RimBodyPart part2 in inspectedState.talkingBP)
                                     {
                                         if (part2 is Jaw jaw && jaw.isBionic)
                                         {
@@ -3006,13 +3037,13 @@ public class HealthTab : HudPart
                                 description += "  Consciousness " + Mathf.Round(inspectedState.consciousness * 100) + "%\n";
                             }
 
-                            foreach (RWBodyPart part in inspectedState.eatingBP)
+                            foreach (RimBodyPart part in inspectedState.eatingBP)
                             {
                                 if (part is Tongue)
                                 {
                                     bool jawIsBionic = false;
 
-                                    foreach (RWBodyPart part2 in inspectedState.eatingBP)
+                                    foreach (RimBodyPart part2 in inspectedState.eatingBP)
                                     {
                                         if (part2 is Jaw jaw && jaw.isBionic)
                                         {
@@ -3036,7 +3067,7 @@ public class HealthTab : HudPart
                         {
                             value = inspectedState.sight;
 
-                            foreach (RWBodyPart part in inspectedState.sightBP)
+                            foreach (RimBodyPart part in inspectedState.sightBP)
                             {
                                 CheckCapacityBodypart(part);
                             }
@@ -3047,7 +3078,7 @@ public class HealthTab : HudPart
                         {
                             value = inspectedState.hearing;
 
-                            foreach (RWBodyPart part in inspectedState.hearingBP)
+                            foreach (RimBodyPart part in inspectedState.hearingBP)
                             {
                                 CheckCapacityBodypart(part);
                             }
@@ -3058,7 +3089,7 @@ public class HealthTab : HudPart
                         {
                             value = inspectedState.breathing;
 
-                            foreach (RWBodyPart part in inspectedState.breathingBP)
+                            foreach (RimBodyPart part in inspectedState.breathingBP)
                             {
                                 CheckCapacityBodypart(part);
                             }
@@ -3069,7 +3100,7 @@ public class HealthTab : HudPart
                         {
                             value = inspectedState.bloodFiltration;
 
-                            foreach (RWBodyPart part in inspectedState.bloodFiltrationBP)
+                            foreach (RimBodyPart part in inspectedState.bloodFiltrationBP)
                             {
                                 CheckCapacityBodypart(part);
                             }
@@ -3080,7 +3111,7 @@ public class HealthTab : HudPart
                         {
                             value = inspectedState.bloodPumping;
 
-                            foreach (RWBodyPart part in inspectedState.bloodPumpingBP)
+                            foreach (RimBodyPart part in inspectedState.bloodPumpingBP)
                             {
                                 CheckCapacityBodypart(part);
                             }
@@ -3091,7 +3122,7 @@ public class HealthTab : HudPart
                         {
                             value = inspectedState.digestion;
 
-                            foreach (RWBodyPart part in inspectedState.digestionBP)
+                            foreach (RimBodyPart part in inspectedState.digestionBP)
                             {
                                 CheckCapacityBodypart(part);
                             }
@@ -3130,11 +3161,11 @@ public class HealthTab : HudPart
 
                 string CapacityAffectingAffliction()
                 {
-                    foreach (RWAffliction affliction in inspectedState.capacityAffectingAffliction)
+                    foreach (RimAffliction affliction in inspectedState.capacityAffectingAffliction)
                     {
-                        if (affliction is RWDisease disease)
+                        if (affliction is RimDisease disease)
                         {
-                            if (disease is RWFlu)
+                            if (disease is RimFlu)
                             {
                                 if (stringValue != "Consiousness" && stringValue != "Manipulation" && stringValue != "Breathing")
                                 {
@@ -3154,7 +3185,7 @@ public class HealthTab : HudPart
 
                                 continue;
                             }
-                            else if (disease is RWInfection)
+                            else if (disease is RimInfection)
                             {
                                 if (stringValue != "Consiousness" && stringValue != "Breathing")
                                 {
@@ -3171,7 +3202,7 @@ public class HealthTab : HudPart
                                     isCapacityAffected = true;
                                     description += "  " + disease.name + " (major)\n";
                                 }
-                                else if (disease.severity > 0.86f)
+                                else if (disease.severity >= 0.86f)
                                 {
                                     isCapacityAffected = true;
                                     description += "  " + disease.name + " (extreme)\n";
@@ -3186,9 +3217,9 @@ public class HealthTab : HudPart
                                 continue;
                             }
                         }
-                        else if (affliction is RWAilment informational)
+                        else if (affliction is RimAilment informational)
                         {
-                            if (informational is RWHypothermia)
+                            if (informational is RimHypothermia)
                             {
                                 if (stringValue != "Consiousness" && stringValue != "Manipulation" && stringValue != "Moving")
                                 {
@@ -3233,7 +3264,7 @@ public class HealthTab : HudPart
 
                                 continue;
                             }
-                            else if (informational is RWToxicBuildup)
+                            else if (informational is RimToxicBuildup)
                             {
                                 if (stringValue != "Consiousness")
                                 {
@@ -3265,9 +3296,9 @@ public class HealthTab : HudPart
                     return description;
                 }
 
-                void CheckCapacityBodypart(RWBodyPart part)
+                void CheckCapacityBodypart(RimBodyPart part)
                 {
-                    if (part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RWArtificialPartBase partBase && partBase.efficiency != 1)
+                    if (part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RimArtificialPartBase partBase && partBase.efficiency != 1)
                     {
                         isCapacityAffected = true;
                         description += "  " + partBase.name + "\n";
@@ -3335,11 +3366,13 @@ public class HealthTab : HudPart
 
                 healthTabInfos[0].name.text = healthTabWholeBody.afflictionVisuals[selectedAffliction].name.text;
 
-                if (inspectedState.wholeBodyAfflictions[selectedAffliction] is RWDisease disease)
+                if (inspectedState.wholeBodyAfflictions[selectedAffliction] is RimDisease disease)
                 {
-                    healthTabInfos[0].nameStatus.text = ": " + Mathf.Clamp(Mathf.Round(disease.severity * 1000) / 10, 0, 100) + "%";
+                    healthTabInfos[0].name.text += ": ";
 
-                    if (disease is RWFlu)
+                    healthTabInfos[0].nameStatus.text = Mathf.Clamp(Mathf.Round(disease.severity * 1000) / 10, 0, 100) + "%";
+
+                    if (disease is RimFlu)
                     {
                         healthTabInfos[0].description.text = "An infectious disease.\n\n";
 
@@ -3380,68 +3413,100 @@ public class HealthTab : HudPart
                         healthTabInfos[0].description.text += "Immunity: " + Mathf.Clamp(Mathf.Round(disease.immunity * 1000) / 10, 0, 100) + "%";
                     }
                 }
-                else if (inspectedState.wholeBodyAfflictions[selectedAffliction] is RWAilment informational)
+                else if (inspectedState.wholeBodyAfflictions[selectedAffliction] is RimAilment ailment)
                 {
-                    healthTabInfos[0].description.text = "The description was not set, report this is seen";
-                    healthTabInfos[0].nameStatus.text = ": the name status has not been set, report this if seen";
-
-                    if (informational is RWAirInLungs)
+                    switch (ailment)
                     {
-                        healthTabInfos[0].description.text = "The amount of oxygen in a creature's lungs.";
+                        case RimAirInLungs:
+                            healthTabInfos[0].name.text += ": ";
 
-                        healthTabInfos[0].nameStatus.text = ": " + Mathf.Round(informational.amount * 100) + "%";
-                    }
-                    else if (informational is RWHypothermia)
-                    {
-                        healthTabInfos[0].description.text = "Dangerously low core body temperature.\n" +
-                            "Unless re-warmed, hypothermia gets\n" +
-                            "worse and ends in death. Recovery is\n" +
-                            "quick once the victim is re-warmed.\n\n";
+                            healthTabInfos[0].description.text = "The amount of oxygen in a creature's lungs.";
 
-                        healthTabInfos[0].description.text += informational.amount switch
-                        {
-                            < 0.2f => "  - Consciousness: -5%\n" +
-                                "  - Manipulation: -8%\n",
-                            < 0.35f => "  - Consciousness: -10%\n" +
-                                "  - Manipulation: -20%\n" +
-                                "  - Moving: -10%\n",
-                            < 0.62f => "  - Consciousness: -20%\n" +
-                                "  - Manipulation: -50%\n" +
-                                "  - Moving: -30%\n" +
-                                "  - Pain: +15%\n",
-                            _ => "  - Consciousness: Max 10%\n" +
-                                "  - Pain: +30%"
-                        };
+                            healthTabInfos[0].nameStatus.text = Mathf.Round(ailment.amount * 100) + "%";
+                            break;
+                        case RimHypothermia:
+                            healthTabInfos[0].name.text += ": ";
 
-                        healthTabInfos[0].nameStatus.text = ": " + Mathf.Round(informational.amount * 100) + "%";
-                    }
-                    else if (informational is RWToxicBuildup)
-                    {
-                        healthTabInfos[0].description.text = "Poison in the bloodstream. This can\n" +
-                            "come from various sources, incluidng\n" +
-                            "environmental toxins, venomous bites,\n" +
-                            "or poisoned weapons.\n" +
-                            "\n" +
-                            "At high doses, toxic buildup is lethal.\n" +
-                            "Even at low doses, it can generate\n" +
-                            "cancers.\n" +
-                            "\n" +
-                            "If a creature dies with toxic buildup,\n" +
-                            "there's a chance that they cannot be\n" +
-                            "eaten. The higher the toxic buildup, the\n" +
-                            "higher the chance.\n\n";
+                            healthTabInfos[0].description.text = "Dangerously low core body temperature.\n" +
+                                "Unless re-warmed, hypothermia gets\n" +
+                                "worse and ends in death. Recovery is\n" +
+                                "quick once the victim is re-warmed.\n\n";
 
-                        healthTabInfos[0].description.text += informational.amount switch
-                        {
-                            < 0.2f => "  - Consciousness: -5%",
-                            < 0.4f => "  - Consciousness: -10%",
-                            < 0.6f => "  - Consciousness: -15%",
-                            < 0.8f => "  - Consciousness: -25%",
-                            _ => "  - Consciousness: Max 10%\n" +
-                                "  - Consciousness: -25%"
-                        };
+                            healthTabInfos[0].description.text += ailment.amount switch
+                            {
+                                < 0.2f => "  - Consciousness: -5%\n" +
+                                    "  - Manipulation: -8%\n",
+                                < 0.35f => "  - Consciousness: -10%\n" +
+                                    "  - Manipulation: -20%\n" +
+                                    "  - Moving: -10%\n",
+                                < 0.62f => "  - Consciousness: -20%\n" +
+                                    "  - Manipulation: -50%\n" +
+                                    "  - Moving: -30%\n" +
+                                    "  - Pain: +15%\n",
+                                _ => "  - Consciousness: Max 10%\n" +
+                                    "  - Pain: +30%"
+                            };
 
-                        healthTabInfos[0].nameStatus.text = ": " + Mathf.Round(informational.amount * 100) + "%";
+                            healthTabInfos[0].nameStatus.text = Mathf.Round(ailment.amount * 100) + "%";
+                            break;
+                        case RimToxicBuildup:
+                            healthTabInfos[0].name.text += ": ";
+
+                            healthTabInfos[0].description.text = "Poison in the bloodstream. This can\n" +
+                                "come from various sources, incluidng\n" +
+                                "environmental toxins, venomous bites,\n" +
+                                "or poisoned weapons.\n" +
+                                "\n" +
+                                "At high doses, toxic buildup is lethal.\n" +
+                                "Even at low doses, it can generate\n" +
+                                "cancers.\n" +
+                                "\n" +
+                                "If a creature dies with toxic buildup,\n" +
+                                "there's a chance that they cannot be\n" +
+                                "eaten. The higher the toxic buildup, the\n" +
+                                "higher the chance.\n\n";
+
+                            healthTabInfos[0].description.text += ailment.amount switch
+                            {
+                                < 0.2f => "  - Consciousness: -5%",
+                                < 0.4f => "  - Consciousness: -10%",
+                                < 0.6f => "  - Consciousness: -15%",
+                                < 0.8f => "  - Consciousness: -25%",
+                                _ => "  - Consciousness: Max 10%\n" +
+                                    "  - Consciousness: -25%"
+                            };
+
+                            healthTabInfos[0].nameStatus.text = ": " + Mathf.Round(ailment.amount * 100) + "%";
+                            break;
+                        case RimAnesthetic:
+                            healthTabInfos[0].description.text = "Sleep drugs in the bloodstream.\n" +
+                                "Anestheic renders creatures\n" +
+                                "unconscious.\n\n";
+
+                            healthTabInfos[0].description.text += ailment.amount switch
+                            {
+                                < 0.6f => "  - Pain: x95%\n" +
+                                    "  - Consciousness: Max 90%\n" +
+                                    "  - Manipulation: -10%\n" +
+                                    "  - Moving: -5%",
+                                < 0.8f => "  - Pain: x80%\n" +
+                                    "  - Consciousness: Max 70%\n" +
+                                    "  - Moving: -20%\n" +
+                                    "  - Manipulation: -20%\n" +
+                                    "  - Talking: -20%\n" +
+                                    "  - Digestion: -20%\n" +
+                                    "  - Sight: -15%\n" +
+                                    "  - Affects: Memory", //does not affect memory
+                                _ => "  - Pain: x0%\n" +
+                                    "  - Consciousness: Max 1%"
+                            };
+
+                            healthTabInfos[0].nameStatus.text = "";
+                            break;
+                        default:
+                            healthTabInfos[0].description.text = "The description was not set, report this is seen";
+                            healthTabInfos[0].nameStatus.text = "the name status has not been set, report this if seen";
+                            break;
                     }
                 }
 
@@ -3474,12 +3539,12 @@ public class HealthTab : HudPart
 
             bool isCombined = false;
 
-            List<RWAffliction> afflictions = null;
-            RWAffliction affliction = healthTabBodyParts[selectedBodyPart].allAfflictions[selectedAffliction];
+            List<RimAffliction> afflictions = null;
+            RimAffliction affliction = healthTabBodyParts[selectedBodyPart].allAfflictions[selectedAffliction];
 
             for (int j = 0; j < healthTabBodyParts[selectedBodyPart].combinedAfflictions.Count; j++)
             {
-                if (healthTabBodyParts[selectedBodyPart].combinedAfflictions.TryGetValue(healthTabBodyParts[selectedBodyPart].CombinedAfflictionName(healthTabBodyParts[selectedBodyPart].allAfflictions, selectedAffliction), out List<RWAffliction> list) && list.Contains(affliction))
+                if (healthTabBodyParts[selectedBodyPart].combinedAfflictions.TryGetValue(healthTabBodyParts[selectedBodyPart].CombinedAfflictionName(healthTabBodyParts[selectedBodyPart].allAfflictions, selectedAffliction), out List<RimAffliction> list) && list.Contains(affliction))
                 {
                     for (int k = 0; k < list.Count; k++)
                     {
@@ -3526,7 +3591,7 @@ public class HealthTab : HudPart
 
                     int j = i + 1;
 
-                    if (affliction is RWInjury combinedInjury)
+                    if (affliction is RimInjury combinedInjury)
                     {
                         healthTabInfos[j].name.text = combinedInjury.healingDifficulty.name + (combinedInjury.attackName != "" ? " (" + combinedInjury.attackName + ")" : "");
 
@@ -3536,7 +3601,7 @@ public class HealthTab : HudPart
 
                         if (!inspectedCreatureState.dead)
                         {
-                            float bleeding = Mathf.Max(1f, Mathf.Round(combinedInjury.healingDifficulty.bleeding * combinedInjury.damage * inspectedState.bodySizeFactor * RWHealthState.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
+                            float bleeding = Mathf.Max(1f, Mathf.Round(combinedInjury.healingDifficulty.bleeding * combinedInjury.damage * inspectedState.bodySizeFactor * RimHealthState.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
 
                             if (combinedInjury.isBleeding)
                             {
@@ -3626,9 +3691,9 @@ public class HealthTab : HudPart
 
             healthTabInfos[1].name.text = healthTabBodyParts[selectedBodyPart].afflictionVisuals[selectedAffliction].name.text;
 
-            if (affliction is RWInjury injury)
+            if (affliction is RimInjury injury)
             {
-                if (injury is RWDestroyed)
+                if (injury is RimDestroyed)
                 {
                     healthTabInfos[1].nameStatus.text = "";
 
@@ -3638,7 +3703,7 @@ public class HealthTab : HudPart
                     {
                         description += "\n\n";
 
-                        float bleeding = Mathf.Max(1f, Mathf.Round(injury.healingDifficulty.bleeding * injury.part.maxHealth * 2 * inspectedState.bodySizeFactor * RWHealthState.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
+                        float bleeding = Mathf.Max(1f, Mathf.Round(injury.healingDifficulty.bleeding * injury.part.maxHealth * 2 * inspectedState.bodySizeFactor * RimHealthState.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
 
                         if (injury.isBleeding)
                         {
@@ -3667,7 +3732,7 @@ public class HealthTab : HudPart
 
                     healthTabInfos[1].description.text = description;
                 }
-                else if (injury is RWScar scar && scar.isRevealed)
+                else if (injury is RimScar scar && scar.isRevealed)
                 {
                     healthTabInfos[1].name.text = ScarName(scar);
 
@@ -3706,7 +3771,7 @@ public class HealthTab : HudPart
 
                     if (!inspectedCreatureState.dead)
                     {
-                        float bleeding = Mathf.Max(1f, Mathf.Round(injury.healingDifficulty.bleeding * injury.damage * inspectedState.bodySizeFactor * RWHealthState.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
+                        float bleeding = Mathf.Max(1f, Mathf.Round(injury.healingDifficulty.bleeding * injury.damage * inspectedState.bodySizeFactor * RimHealthState.BloodLossMultiplier(healthTabBodyParts[selectedBodyPart].bodyPart)));
 
                         if (injury.isBleeding)
                         {
@@ -3761,11 +3826,11 @@ public class HealthTab : HudPart
                     healthTabInfos[1].description.text = description;
                 }
             }
-            else if (affliction is RWDisease disease)
+            else if (affliction is RimDisease disease)
             {
                 healthTabInfos[1].nameStatus.text = " : " + (Mathf.Round(disease.severity * 1000) / 10) + "%";
 
-                if (disease is RWInfection)
+                if (disease is RimInfection)
                 {
                     healthTabInfos[1].description.text = "Bacterial infection in a wound. Without\n" +
                         "treatment, the bacteria will multiply,\n" +
@@ -3819,7 +3884,7 @@ public class HealthTab : HudPart
                     healthTabInfos[1].description.text += "Immunity: " + Mathf.Clamp(Mathf.Round(disease.immunity * 1000) / 10, 0, 100) + "%";
                 }
             }  
-            else if (affliction is RWArtificialPartBase artificialPart)
+            else if (affliction is RimArtificialPartBase artificialPart)
             {
                 healthTabInfos[1].name.text = artificialPart.name;
                 healthTabInfos[1].nameStatus.text = "";
@@ -3833,21 +3898,6 @@ public class HealthTab : HudPart
                 info.colouredName2.text = "";
             }
         }
-
-        string GetTimeString(float timeInMin)
-        {
-            string text;
-            if (timeInMin < 1)
-            {
-                text = Mathf.Max(Mathf.Round(timeInMin * 10000) / 100, 0) + (Mathf.Round(timeInMin * 10000) / 100 == 1 ? " second" : " seconds");
-            }
-            else
-            {
-                text = (Mathf.Round(timeInMin * 10) / 10) + (Mathf.Round(timeInMin * 10) / 10 == 1 ? " minute" : " minutes");
-            }
-
-            return text;
-        }   
     }
 
     public override void ClearSprites()
@@ -3929,7 +3979,7 @@ public class HealthTab : HudPart
         #endregion
     }
 
-    public void ToggleVisibility(CreatureState self, RWState state)
+    public void ToggleVisibility(CreatureState self, RimState state)
     {
         visible = !visible && player != null;
 
@@ -3991,7 +4041,7 @@ public class HealthTab : HudPart
         playerState.tendOperation = null;
     }
 
-    public string ScarName(RWScar scar)
+    public string ScarName(RimScar scar)
     {
         return (scar.isPermanent && scar.healingDifficulty.permanentScar != "" ? scar.healingDifficulty.permanentScar : scar.healingDifficulty.scar) + ((scar.attackName != "" || scar.painCategory != "") ? " (" + (scar.attackName != "" ? scar.attackName + (scar.painCategory != "" ? ", " + scar.painCategory : "") : scar.painCategory) + ")" : "");
     }
@@ -4146,11 +4196,26 @@ public class HealthTab : HudPart
         }
     }
 
+    public static string GetTimeString(float timeInMin)
+    {
+        string text;
+        if (timeInMin < 1)
+        {
+            text = Mathf.Max(Mathf.Round(timeInMin * 10000) / 100, 0) + (Mathf.Round(timeInMin * 10000) / 100 == 1 ? " second" : " seconds");
+        }
+        else
+        {
+            text = (Mathf.Round(timeInMin * 10) / 10) + (Mathf.Round(timeInMin * 10) / 10 == 1 ? " minute" : " minutes");
+        }
+
+        return text;
+    }
+
     #region Values
-    public RWState playerState;
+    public RimState playerState;
     public AbstractCreature player;
 
-    public RWState inspectedState;
+    public RimState inspectedState;
     public CreatureState inspectedCreatureState;
 
     private readonly FLabel capacityName;
@@ -4262,7 +4327,7 @@ public class HealthTab : HudPart
 
 public class HealthTabBodyPart
 {
-    public HealthTabBodyPart(HealthTab owner, RWBodyPart bodyPart)
+    public HealthTabBodyPart(HealthTab owner, RimBodyPart bodyPart)
     {
         this.owner = owner;
 
@@ -4343,9 +4408,9 @@ public class HealthTabBodyPart
 
         for (int i = 0; i < bodyPart.afflictions.Count; i++)
         {
-            if (bodyPart.afflictions[i] is RWInjury injury && injury is not RWDestroyed && injury.healingDifficulty.combines && (injury is not RWScar scar || !scar.isRevealed))
+            if (bodyPart.afflictions[i] is RimInjury injury && injury is not RimDestroyed && injury.healingDifficulty.combines && (injury is not RimScar scar || !scar.isRevealed))
             {
-                if (combinedAfflictions.TryGetValue(CombinedAfflictionName(bodyPart, i), out List<RWAffliction> dic))
+                if (combinedAfflictions.TryGetValue(CombinedAfflictionName(bodyPart, i), out List<RimAffliction> dic))
                 {
                     dic.Add(injury);
                     afflictionNumber--;
@@ -4402,7 +4467,7 @@ public class HealthTabBodyPart
         bodyPartName.y = DrawPos().y;
 
         List<string> usedCombinedAfflictions = new();
-        List<RWAffliction> usedAfflictions = new();
+        List<RimAffliction> usedAfflictions = new();
 
         allAfflictions = new();
         allAfflictionsHeight = new();
@@ -4422,11 +4487,13 @@ public class HealthTabBodyPart
 
             for (int j = 0; j < bodyPart.afflictions.Count; j++)
             {
-                if (!usedCombinedAfflictions.Contains(CombinedAfflictionName(bodyPart, j)) && combinedAfflictions.TryGetValue(CombinedAfflictionName(bodyPart, j), out List<RWAffliction> dic))
+                if (!usedCombinedAfflictions.Contains(CombinedAfflictionName(bodyPart, j)) && combinedAfflictions.TryGetValue(CombinedAfflictionName(bodyPart, j), out List<RimAffliction> dic))
                 {
+                    afflictionVisuals[i].name.color = bodyPart.afflictions[j].labelColour;
+
                     usedCombinedAfflictions.Add(CombinedAfflictionName(bodyPart, j));
 
-                    if (bodyPart.afflictions[j] is RWInjury injury)
+                    if (bodyPart.afflictions[j] is RimInjury injury)
                     {
                         string text;
 
@@ -4450,15 +4517,17 @@ public class HealthTabBodyPart
                 }
                 else if (!usedAfflictions.Contains(bodyPart.afflictions[j]) && afflictions.Contains(bodyPart.afflictions[j]))
                 {
+                    afflictionVisuals[i].name.color = bodyPart.afflictions[j].labelColour;
+
                     usedAfflictions.Add(bodyPart.afflictions[j]);
 
-                    if (bodyPart.afflictions[j] is RWInjury injury)
+                    if (bodyPart.afflictions[j] is RimInjury injury)
                     {
                         string text;
 
-                        if (injury is RWDestroyed destroyed)
+                        if (injury is RimDestroyed destroyed)
                         {
-                            if (bodyPart is RWOrgan && destroyed.damageType is RWSurgicalCut)
+                            if (bodyPart is RimOrgan && destroyed.damageType is RimSurgicalCut)
                             {
                                 text = "Removed";
                             }
@@ -4467,7 +4536,7 @@ public class HealthTabBodyPart
                                 text = (bodyPart.isInternal ? bodyPart.isSolid ? "Shattered" : destroyed.healingDifficulty.destroyedOut : destroyed.healingDifficulty.destroyed) + (destroyed.isFresh ? " (fresh)" : "");
                             }
                         }
-                        else if (injury is RWScar scar && scar.isRevealed)
+                        else if (injury is RimScar scar && scar.isRevealed)
                         {
                             text = owner.ScarName(scar);
                         }
@@ -4477,7 +4546,6 @@ public class HealthTabBodyPart
                         }
 
                         afflictionVisuals[i].name.text = text;
-                        afflictionVisuals[i].name.color = Color.white;
 
                         Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
                         allAfflictionsHeight.Add(new(2) { Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight });
@@ -4486,13 +4554,13 @@ public class HealthTabBodyPart
 
                         afflictionVisuals[i].icon.color = injury.isTended ? Color.white : Color.red;
 
-                        afflictionVisuals[i].icon.isVisible = isVisible && (injury.isTended && injury is not RWDestroyed || !owner.inspectedCreatureState.dead && injury.isBleeding);
+                        afflictionVisuals[i].icon.isVisible = isVisible && (injury.isTended && injury is not RimDestroyed || !owner.inspectedCreatureState.dead && injury.isBleeding);
                     }
-                    else if (bodyPart.afflictions[j] is RWDisease disease)
+                    else if (bodyPart.afflictions[j] is RimDisease disease)
                     {
                         string text = disease.name;
 
-                        if (disease is RWInfection && disease.severity > 0)
+                        if (disease is RimInfection && disease.severity > 0)
                         {
                             text += disease.severity switch
                             {
@@ -4503,7 +4571,6 @@ public class HealthTabBodyPart
                         }
 
                         afflictionVisuals[i].name.text = text;
-                        afflictionVisuals[i].name.color = Color.yellow;
 
                         Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
 
@@ -4513,10 +4580,9 @@ public class HealthTabBodyPart
 
                         afflictionVisuals[i].icon.color = disease.isTended ? Color.white : Color.grey;
                     }
-                    else if (bodyPart.afflictions[j] is RWArtificialPartBase artificialPart)
+                    else if (bodyPart.afflictions[j] is RimArtificialPartBase artificialPart)
                     {
                         afflictionVisuals[i].name.text = artificialPart.name;
-                        afflictionVisuals[i].name.color = Color.white;
 
                         Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
                         allAfflictionsHeight.Add(new(2) { Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight });
@@ -4638,30 +4704,30 @@ public class HealthTabBodyPart
         bodyPart = null;
     }
 
-    public string CombinedAfflictionName(RWBodyPart bodyPart, int i)
+    public string CombinedAfflictionName(RimBodyPart bodyPart, int i)
     {
         string name = "";
 
-        if (bodyPart.afflictions[i] is RWInjury injury)
+        if (bodyPart.afflictions[i] is RimInjury injury)
         {
             name = injury.healingDifficulty.name + injury.attackName + injury.isTended;
         }
-        else if (bodyPart.afflictions[i] is RWDisease disease)
+        else if (bodyPart.afflictions[i] is RimDisease disease)
         {
             name = disease.name;
         }
 
         return name;
     }
-    public string CombinedAfflictionName(List<RWAffliction> bodyPart, int i)
+    public string CombinedAfflictionName(List<RimAffliction> bodyPart, int i)
     {
         string name = "";
 
-        if (bodyPart[i] is RWInjury injury)
+        if (bodyPart[i] is RimInjury injury)
         {
             name = injury.healingDifficulty.name + injury.attackName + injury.isTended;
         }
-        else if (bodyPart[i] is RWDisease disease)
+        else if (bodyPart[i] is RimDisease disease)
         {
             name = disease.name;
         }
@@ -4674,7 +4740,7 @@ public class HealthTabBodyPart
         float offset = 0;
 
         List<string> usedCombinedAfflictions = new();
-        List<RWAffliction> usedAfflictions = new();
+        List<RimAffliction> usedAfflictions = new();
 
         int totalHeight = 0;
         int extraHeight = 0;
@@ -4736,7 +4802,7 @@ public class HealthTabBodyPart
     #region Values
     private readonly HealthTab owner;
 
-    public RWBodyPart bodyPart;
+    public RimBodyPart bodyPart;
 
     public FSprite background;
 
@@ -4747,10 +4813,10 @@ public class HealthTabBodyPart
     public int afflictionNumber = 1;
     public int extraHeight = 0;
 
-    public Dictionary<string, List<RWAffliction>> combinedAfflictions;
-    public List<RWAffliction> afflictions;
+    public Dictionary<string, List<RimAffliction>> combinedAfflictions;
+    public List<RimAffliction> afflictions;
 
-    public List<RWAffliction> allAfflictions;
+    public List<RimAffliction> allAfflictions;
     public List<List<int>> allAfflictionsHeight;
 
     public bool slatedForDeletion = false;
@@ -4878,10 +4944,10 @@ public class HealthTabWholeBody
 
             bloodLossName.text = owner.inspectedState.bloodLoss switch
             {
-                >= 0.6f => "Blood loss (extreme)",
-                >= 0.45f => "Blood loss (severe)",
-                >= 0.3f => "Blood loss (moderate)",
-                _ => "Blood loss (minor)"
+                < 0.3f => "Blood loss (minor)",
+                < 0.45f => "Blood loss (moderate)",
+                < 0.6f => "Blood loss (severe)",
+                _ => "Blood loss (extreme)"
             };
 
             if (bloodLossName.y > owner.ActualTopLimit())
@@ -4906,15 +4972,15 @@ public class HealthTabWholeBody
         for (int i = 0; i < afflictionVisuals.Count && i < owner.inspectedState.wholeBodyAfflictions.Count; i++)
         {
             afflictionVisuals[i].name.y = DrawPos().y - ((bloodLossVisible ? 18f : 0) + (18f * i));
-            afflictionVisuals[i].name.color = Color.yellow; //Colour of this will be taken from the affliction itself as different afflictions can have different colours whenever I setit up
+            afflictionVisuals[i].name.color = owner.inspectedState.wholeBodyAfflictions[i].labelColour;
 
             afflictionVisuals[i].icon.y = DrawPos().y - 7 - ((bloodLossVisible ? 18f : 0) + (18f * i));
 
-            if (owner.inspectedState.wholeBodyAfflictions[i] is RWDisease disease)
+            if (owner.inspectedState.wholeBodyAfflictions[i] is RimDisease disease)
             {
                 string text = disease.name;
 
-                if (disease is RWFlu && disease.severity > 0)
+                if (disease is RimFlu && disease.severity > 0)
                 {
                     text += disease.severity switch
                     {
@@ -4934,46 +5000,57 @@ public class HealthTabWholeBody
 
                 afflictionVisuals[i].icon.color = disease.isTended ? Color.white : Color.grey;
             }
-            else if (owner.inspectedState.wholeBodyAfflictions[i] is RWAilment informational)
+            else if (owner.inspectedState.wholeBodyAfflictions[i] is RimAilment ailment)
             {
                 string text = "null";
-
-                if (informational is RWAirInLungs)
+                switch (ailment)
                 {
-                    text = "Lung capacity";
+                    case RimAirInLungs:
+                        text = "Lung capacity";
 
-                    text += informational.amount switch
-                    {
-                        >= 0.7f => " (high)",
-                        >= 0.4f => " (medium)",
-                        > 0f => " (low)",
-                        _ => " (empty)"
-                    };
-                }
-                else if (informational is RWHypothermia)
-                {
-                    text = "Hypothermia";
+                        text += ailment.amount switch
+                        {
+                            < 0f => " (empty)",
+                            < 0.4f => " (low)",
+                            < 0.7f => " (medium)",
+                            _ => " (high)"
+                        };
+                        break;
+                    case RimHypothermia:
+                        text = "Hypothermia";
 
-                    text += informational.amount switch
-                    {
-                        >= 0.62f => " (extreme)",
-                        >= 0.35f => " (serious)",
-                        >= 0.2f => " (minor)",
-                        _ => " (shivering)"
-                    };
-                }
-                else if (informational is RWToxicBuildup)
-                {
-                    text = "Toxic buildup";
+                        text += ailment.amount switch
+                        {
+                            < 0.2f => " (shivering)",
+                            < 0.35f => " (minor)",
+                            < 0.62f => " (serious)",
+                            _ => " (extreme)"
+                        };
+                        break;
+                    case RimToxicBuildup:
+                        text = "Toxic buildup";
 
-                    text += informational.amount switch
-                    {
-                        >= 0.8f => " (extreme)",
-                        >= 0.6f => " (serious)",
-                        >= 0.4f => " (moderate)",
-                        >= 0.2f => " (minor)",
-                        _ => " (initial)"
-                    };
+                        text += ailment.amount switch
+                        {
+                            < 0.2f => " (initial)",
+                            < 0.4f => " (minor)",
+                            < 0.6f => " (moderate)",
+                            < 0.8f => " (serious)",
+                            _ => " (extreme)"
+                        };
+                        break;
+                    case RimAnesthetic:
+                        text = "Anesthetic";
+
+                        text += ailment.amount switch
+                        {
+                            < 0.6f => " (wearing off, ",
+                            < 0.8f => " (woozy, ",
+                            _ => " (sedated, "
+                        };
+
+                        text += HealthTab.GetTimeString(ailment.amount / (40 * 60)) + ")";
+                        break;
                 }
 
                 afflictionVisuals[i].name.text = text;
@@ -5645,7 +5722,7 @@ public class OperationSelection
     #region Values
     private readonly HealthTab owner;
 
-    public RWOperation operation;
+    public RimOperation operation;
 
     public int horizontal = 0;
     public int vertical = 0;

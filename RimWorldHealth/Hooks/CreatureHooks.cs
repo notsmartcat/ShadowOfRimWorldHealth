@@ -34,16 +34,16 @@ internal class CreatureHooks
     {
         orig(self, eu);
 
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state) || (self is Lizard lizard && lizard.Swimmer))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state) || (self is Lizard lizard && lizard.Swimmer))
         {
             return;
         }
 
-        RWAirInLungs airInLungs = null;
+        RimAirInLungs airInLungs = null;
 
         for (int i = 0; i < state.wholeBodyAfflictions.Count; i++)
         {
-            if (state.wholeBodyAfflictions[i] is RWAirInLungs tempAirInLungs)
+            if (state.wholeBodyAfflictions[i] is RimAirInLungs tempAirInLungs)
             {
                 airInLungs = tempAirInLungs;
                 break;
@@ -65,7 +65,7 @@ internal class CreatureHooks
             }
             else
             {
-                state.wholeBodyAfflictions.Add(new RWAirInLungs(self.State, null, Mathf.InverseLerp(-0.5f, 1, self.lungs)));
+                state.wholeBodyAfflictions.Add(new RimAirInLungs(self.State, null, Mathf.InverseLerp(-0.5f, 1, self.lungs)));
             }
         }
     }
@@ -76,7 +76,7 @@ internal class CreatureHooks
     {
         orig(self, abstractCreature, world);
 
-        if (!healthState.TryGetValue(self.State, out RWState state))
+        if (!healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
@@ -90,7 +90,7 @@ internal class CreatureHooks
     }
     static void CreatureAbstractize(On.Creature.orig_Abstractize orig, Creature self)
     {
-        if (!healthState.TryGetValue(self.State, out RWState state))
+        if (!healthState.TryGetValue(self.State, out RimState state))
         {
             orig(self);
             return;
@@ -107,18 +107,18 @@ internal class CreatureHooks
 
         bool IsUpdatable()
         {
-            foreach (RWBodyPart part in state.bodyParts)
+            foreach (RimBodyPart part in state.bodyParts)
             {
                 if (part.afflictions.Count == 0 || IsSubPartDestroyed(state, part))
                 {
                     continue;
                 }
 
-                foreach (RWAffliction affliction in part.afflictions)
+                foreach (RimAffliction affliction in part.afflictions)
                 {
-                    if (affliction is not RWInjury injury)
+                    if (affliction is not RimInjury injury)
                     {
-                        if (affliction is RWDisease disease)
+                        if (affliction is RimDisease disease)
                         {
                             return true;
                         }
@@ -131,7 +131,7 @@ internal class CreatureHooks
                         return true;
                     }
 
-                    if (injury is not RWDestroyed && (injury is not RWScar scar || !scar.isRevealed))
+                    if (injury is not RimDestroyed && (injury is not RimScar scar || !scar.isRevealed))
                     {
                         return true;
                     }
@@ -145,16 +145,16 @@ internal class CreatureHooks
     {
         orig(self, eu);
 
-        if (!healthState.TryGetValue(self.State, out RWState state))
+        if (!healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }
 
-        RWHealthState.Update(self.State, state);
+        RimHealthState.Update(self.State, state);
 
         if (state.tendAffliction != null)
         {
-            RWState inspectedState = null;
+            RimState inspectedState = null;
 
             if (state.tendAffliction != burningAffliction && (state.tendAffliction.state == null || !healthState.TryGetValue(state.tendAffliction.state, out inspectedState)))
             {
@@ -193,7 +193,7 @@ internal class CreatureHooks
                 goto skipTend;
             }
 
-            if (state.tendAffliction.isTended && (state.tendAffliction is not RWDisease tendedDisease || tendedDisease.timeUntilTreatment > 0))
+            if (state.tendAffliction.isTended && (state.tendAffliction is not RimDisease tendedDisease || tendedDisease.timeUntilTreatment > 0))
             {
                 state.tendAffliction = null;
             }
@@ -201,18 +201,18 @@ internal class CreatureHooks
             {
                 state.tendAffliction.isTended = true;
 
-                RWHealthState.TendAffliction(state, self.State, state.tendAffliction.state);
+                RimHealthState.TendAffliction(state, self.State, state.tendAffliction.state);
 
-                if (state.tendAffliction is RWInjury injury)
+                if (state.tendAffliction is RimInjury injury)
                 {
                     injury.isBleeding = false;
 
-                    if (injury is RWDestroyed destroyed)
+                    if (injury is RimDestroyed destroyed)
                     {
                         destroyed.isFresh = false;
                     }
                 }
-                else if (state.tendAffliction is RWDisease disease)
+                else if (state.tendAffliction is RimDisease disease)
                 {
                     disease.timeUntilTreatment = cycleLength * disease.treatmentTimes;
                     disease.totalTendQuality += disease.tendQuality;
@@ -225,7 +225,7 @@ internal class CreatureHooks
         }
         else if (state.tendOperation != null)
         {
-            RWState inspectedState = null;
+            RimState inspectedState = null;
             
             if (state.tendTarget != null && healthState.TryGetValue(state.tendTarget.State, out inspectedState)) { }
 
@@ -246,14 +246,14 @@ internal class CreatureHooks
                     healthTabs[playerState.playerNumber].OperationRemoved();
                 }
 
-                if (state.tendOperation is RWLimbReplacement limbReplacement)
+                if (state.tendOperation is RimLimbReplacement limbReplacement)
                 {
                     if (IsDestroyed(limbReplacement.part))
                     {
                         goto skipOperation;
                     }
 
-                    foreach (RWAffliction affliction in limbReplacement.part.afflictions)
+                    foreach (RimAffliction affliction in limbReplacement.part.afflictions)
                     {
                         affliction.Remove();
                     }
@@ -269,12 +269,12 @@ internal class CreatureHooks
 
                     if (limbReplacement.replacement == null)
                     {
-                        RWHealthState.SurgicallyRemove(creatureState, inspectedState, limbReplacement.part);
+                        RimHealthState.SurgicallyRemove(creatureState, inspectedState, limbReplacement.part);
                     }
                     else
                     {
 
-                        RWHealthState.SurgicallyAttach(creatureState, inspectedState, limbReplacement);
+                        RimHealthState.SurgicallyAttach(creatureState, inspectedState, limbReplacement);
                     }
                 }
 
@@ -349,7 +349,7 @@ internal class CreatureHooks
             state.visualFire.Update(eu);
             if (self.room.ViewedByAnyCamera(self.firstChunk.pos, 300f))
             {
-                state.visualFire.RWEmitSmoke();
+                state.visualFire.RimEmitSmoke();
             }
             if (state.visualFire.Dead)
             {
@@ -359,7 +359,7 @@ internal class CreatureHooks
     }
     static void CreatureViolence(On.Creature.orig_Violence orig, Creature self, BodyChunk source, Vector2? directionAndMomentum, BodyChunk hitChunk, PhysicalObject.Appendage.Pos hitAppendage, Creature.DamageType type, float damage, float stunBonus)
     {
-        if (hitChunk == null || damage <= 0 || self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (hitChunk == null || damage <= 0 || self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             orig(self, source, directionAndMomentum, hitChunk, hitAppendage, type, damage, stunBonus);
             return;
@@ -419,7 +419,7 @@ internal class CreatureHooks
 
                     Override();
 
-                    RWHealthState.Damage(self.State, state, new RWElectricalBurn(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                    RimHealthState.Damage(self.State, state, new RimElectricalBurn(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
                 }
                 else if (type == Creature.DamageType.Explosion)
                 {
@@ -431,7 +431,7 @@ internal class CreatureHooks
                     {
                         damage = 10;
 
-                        RWHealthState.Damage(self.State, state, new RWFlame(), damage, AP, GetHitBodyPart(state), attackName, attackerName);
+                        RimHealthState.Damage(self.State, state, new RimFlame(), damage, AP, GetHitBodyPart(state), attackName, attackerName);
 
                         return;
                     }
@@ -439,7 +439,7 @@ internal class CreatureHooks
                     {
                         damage = 10;
 
-                        RWHealthState.Damage(self.State, state, new RWFlame(), damage, AP, GetHitBodyPart(state), attackName, attackerName);
+                        RimHealthState.Damage(self.State, state, new RimFlame(), damage, AP, GetHitBodyPart(state), attackName, attackerName);
 
                         return;
                     }
@@ -452,7 +452,7 @@ internal class CreatureHooks
 
                     Override();
 
-                    RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                    RimHealthState.Damage(self.State, state, new RimStab(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
                 }
                 else if (type == Creature.DamageType.Blunt)
                 {
@@ -470,7 +470,7 @@ internal class CreatureHooks
 
                     Override();
 
-                    RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                    RimHealthState.Damage(self.State, state, new RimBite(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
                 }
                 else if (type == Creature.DamageType.Water)
                 {
@@ -503,7 +503,7 @@ internal class CreatureHooks
 
                     Override();
 
-                    if (weaponstat.TryGetValue(boomerang.abstractPhysicalObject, out RWWeaponStats weaponState))
+                    if (weaponstat.TryGetValue(boomerang.abstractPhysicalObject, out RimWeaponStats weaponState))
                     {
                         damage = weaponState.damage;
                     }
@@ -526,9 +526,9 @@ internal class CreatureHooks
 
                     damage = 0.5f;
 
-                    if (weaponstat.TryGetValue(dartMaggot.abstractPhysicalObject, out RWWeaponStats weaponState)) { } //curently not sure if I should add damage stats to the dartmaggot
+                    if (weaponstat.TryGetValue(dartMaggot.abstractPhysicalObject, out RimWeaponStats weaponState)) { } //curently not sure if I should add damage stats to the dartmaggot
 
-                    RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName, weaponState);
+                    RimHealthState.Damage(self.State, state, new RimStab(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName, weaponState);
                 }
                 else if (attacker is JellyFish jellyFish)
                 {
@@ -542,7 +542,7 @@ internal class CreatureHooks
 
                     damage = 0.5f;
 
-                    RWHealthState.Damage(self.State, state, new RWElectricalBurn(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                    RimHealthState.Damage(self.State, state, new RimElectricalBurn(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
                 }
                 else if (attacker is Pomegranate pomegranate)
                 {
@@ -570,7 +570,7 @@ internal class CreatureHooks
 
                     Override();
 
-                    if (weaponstat.TryGetValue(rock.abstractPhysicalObject, out RWWeaponStats weaponState))
+                    if (weaponstat.TryGetValue(rock.abstractPhysicalObject, out RimWeaponStats weaponState))
                     {
                         damage = weaponState.damage;
                     }
@@ -600,7 +600,7 @@ internal class CreatureHooks
                         attackerName = GetCreatureName(spear.thrownBy);
                     }
 
-                    if (weaponstat.TryGetValue(spear.abstractPhysicalObject, out RWWeaponStats weaponState)) { }
+                    if (weaponstat.TryGetValue(spear.abstractPhysicalObject, out RimWeaponStats weaponState)) { }
 
                     if (type == Creature.DamageType.Explosion)
                     {
@@ -625,9 +625,9 @@ internal class CreatureHooks
 
                         Override();
 
-                        RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName, weaponState);
+                        RimHealthState.Damage(self.State, state, new RimStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName, weaponState);
 
-                        RWHealthState.Burn(state);
+                        RimHealthState.Burn(state);
 
                         return;
                     }
@@ -637,7 +637,7 @@ internal class CreatureHooks
 
                         Override();
 
-                        RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName, weaponState);
+                        RimHealthState.Damage(self.State, state, new RimStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName, weaponState);
 
                         return;
                     }
@@ -649,11 +649,11 @@ internal class CreatureHooks
 
                         if (type == Creature.DamageType.Electric)
                         {
-                            RWHealthState.Damage(self.State, state, new RWElectricalBurn(), 5, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                            RimHealthState.Damage(self.State, state, new RimElectricalBurn(), 5, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
                         }
                         else
                         {
-                            RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName, weaponState);
+                            RimHealthState.Damage(self.State, state, new RimStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName, weaponState);
                         }
 
                         return;
@@ -663,7 +663,7 @@ internal class CreatureHooks
 
                     Override();
 
-                    RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName, weaponState);
+                    RimHealthState.Damage(self.State, state, new RimStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName, weaponState);
                 }
                 else if (ModManager.MSC && attacker is MoreSlugcats.Bullet bullet)
                 {
@@ -707,7 +707,7 @@ internal class CreatureHooks
 
                     Override();
 
-                    RWHealthState.Damage(self.State, state, new RWBullet(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                    RimHealthState.Damage(self.State, state, new RimBullet(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
                 }
                 else if (ModManager.MSC && attacker is MoreSlugcats.LillyPuck lillyPuck)
                 {
@@ -719,7 +719,7 @@ internal class CreatureHooks
 
                     Override();
 
-                    if (weaponstat.TryGetValue(lillyPuck.abstractPhysicalObject, out RWWeaponStats weaponState))
+                    if (weaponstat.TryGetValue(lillyPuck.abstractPhysicalObject, out RimWeaponStats weaponState))
                     {
                         damage = weaponState.damage;
                     }
@@ -751,7 +751,7 @@ internal class CreatureHooks
                 damage = 25;
                 AP = 0.2f;
 
-                RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                RimHealthState.Damage(self.State, state, new RimStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
                 break;
             case BigSpider:
                 attackerName = GetCreatureName((Creature)attacker);
@@ -763,7 +763,7 @@ internal class CreatureHooks
                 damage = 10;
                 AP = 0.1f;
 
-                RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                RimHealthState.Damage(self.State, state, new RimBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
                 break;
             case DropBug:
                 attackerName = GetCreatureName((Creature)attacker);
@@ -775,7 +775,7 @@ internal class CreatureHooks
                 damage = 10;
                 AP = 0.1f;
 
-                RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                RimHealthState.Damage(self.State, state, new RimBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
                 break;
             case EggBug:
                 attackerName = GetCreatureName((Creature)attacker);
@@ -787,7 +787,7 @@ internal class CreatureHooks
                 damage = 5;
                 AP = 0.1f;
 
-                RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                RimHealthState.Damage(self.State, state, new RimStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
                 break;
             case JetFish:
                 attackerName = GetCreatureName((Creature)attacker);
@@ -810,7 +810,7 @@ internal class CreatureHooks
                 damage = 0.5f;
                 AP = 0.1f;
 
-                RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                RimHealthState.Damage(self.State, state, new RimBite(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
                 break;
             case Lizard lizard:
                 attackerName = GetCreatureName((Creature)attacker);
@@ -824,7 +824,7 @@ internal class CreatureHooks
                     damage = 5f;
                     AP = 0.1f;
 
-                    RWHealthState.Damage(self.State, state, new RWFrostbite(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                    RimHealthState.Damage(self.State, state, new RimFrostbite(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
                 }
                 else
                 {
@@ -836,7 +836,7 @@ internal class CreatureHooks
 
                     AP = 0.33f;
 
-                    RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                    RimHealthState.Damage(self.State, state, new RimBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
                 }
                 break;
             case MirosBird:
@@ -849,7 +849,7 @@ internal class CreatureHooks
                 damage = 30;
                 AP = 0.5f;
 
-                RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                RimHealthState.Damage(self.State, state, new RimBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
                 break;
             case Player:
                 attackerName = GetCreatureName((Creature)attacker);
@@ -884,7 +884,7 @@ internal class CreatureHooks
                     damage = 7;
                     AP = 0.1f;
 
-                    RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                    RimHealthState.Damage(self.State, state, new RimBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
                 }
                 break;
             case SkyWhale:
@@ -909,7 +909,7 @@ internal class CreatureHooks
                 damage = 10;
                 AP = 0.1f;
 
-                RWHealthState.Damage(self.State, state, new RWBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                RimHealthState.Damage(self.State, state, new RimBite(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
                 break;
             case MoreSlugcats.StowawayBug:
                 attackerName = GetCreatureName((Creature)attacker);
@@ -921,7 +921,7 @@ internal class CreatureHooks
                 damage = 1;
                 AP = 0.1f;
 
-                RWHealthState.Damage(self.State, state, new RWStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
+                RimHealthState.Damage(self.State, state, new RimStab(), damage, AP, GetHitBodyPart(state, hitChunk, null, true), attackName, attackerName);
                 break;
             case Watcher.BoxWorm:
                 attackerName = GetCreatureName((Creature)attacker);
@@ -933,7 +933,7 @@ internal class CreatureHooks
                 damage = 6;
                 AP = 0.1f;
 
-                RWHealthState.Damage(self.State, state, new RWBurn(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                RimHealthState.Damage(self.State, state, new RimBurn(), damage, AP, GetHitBodyPart(state, hitChunk), attackName, attackerName);
                 break;
             case Watcher.DrillCrab:
                 attackerName = GetCreatureName((Creature)attacker);
@@ -959,7 +959,7 @@ internal class CreatureHooks
                     damage = 1;
                     AP = 0.1f;
 
-                    RWHealthState.Damage(self.State, state, new RWStab(), AP, damage, GetHitBodyPart(state, hitChunk), attackName, attackerName);
+                    RimHealthState.Damage(self.State, state, new RimStab(), AP, damage, GetHitBodyPart(state, hitChunk), attackName, attackerName);
                 }
                 else
                 {
@@ -1047,7 +1047,7 @@ internal class CreatureHooks
     {
         orig(self, eu);
 
-        if (self.State == null || !healthState.TryGetValue(self.State, out RWState state))
+        if (self.State == null || !healthState.TryGetValue(self.State, out RimState state))
         {
             return;
         }

@@ -1,25 +1,42 @@
 ﻿namespace ShadowOfRimWorldHealth;
 
-internal class RWAirInLungs : RWAilment
+internal class RimAirInLungs : RimAilment
 {
-    public RWAirInLungs(CreatureState state, RWBodyPart part, float airInLungs) : base(state, part)
+    public RimAirInLungs(CreatureState state, RimBodyPart part, float airInLungs) : base(state, part)
     {
-        amount = airInLungs; //TendQuality is used for determining how much oxygen is in the lungs, 1 being full and 0 being empty
+        amount = airInLungs; //Used for determining how much oxygen is in the lungs, 1 being full and 0 being empty
+
+        labelColour = labelColour = new(0.7f, 0.7f, 1f);
     }
 }
-internal class RWHypothermia : RWAilment
+internal class RimHypothermia : RimAilment
 {
-    public RWHypothermia(CreatureState state, RWBodyPart part, float hypothermia) : base(state, part)
+    public RimHypothermia(CreatureState state, RimBodyPart part, float hypothermia) : base(state, part)
     {
-        amount = hypothermia; //TendQuality is used for determining how far hypothermia has progressed
+        amount = hypothermia; //Used for determining how far hypothermia has progressed
         lastAmount = hypothermia;
+
+        labelColour = labelColour = new(0.8f, 0.8f, 1f);
     }
 }
-internal class RWToxicBuildup : RWAilment
+internal class RimToxicBuildup : RimAilment
 {
-    public RWToxicBuildup(CreatureState state, RWBodyPart part, float poison) : base(state, part)
+    public RimToxicBuildup(CreatureState state, RimBodyPart part, float poison) : base(state, part)
     {
-        amount = poison; //TendQuality is used for determining how much Toxic Buildup there is
+        amount = poison; //Used for determining how much Toxic Buildup there is
         lastAmount = poison;
+
+        labelColour = labelColour = new(0.7f, 1f, 0.7f);
+    }
+}
+
+internal class RimAnesthetic : RimAilment
+{
+    public RimAnesthetic(CreatureState state, RimBodyPart part, float ticks) : base(state, part)
+    {
+        amount = ticks; //Unlike other Ailments this is in ticks
+        lastAmount = amount; //Used as a "max" for calculations
+
+        labelColour = labelColour = new(0.9f, 1f, 0.35f);
     }
 }

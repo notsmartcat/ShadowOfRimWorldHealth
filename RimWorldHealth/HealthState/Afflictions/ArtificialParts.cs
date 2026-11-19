@@ -1,8 +1,8 @@
 ﻿namespace ShadowOfRimWorldHealth;
 
-public class RWPegLeg : RWArtificialPartBase
+public class RimPegLeg : RimArtificialPartBase
 {
-    public RWPegLeg(CreatureState state, RWBodyPart part) : base(state, part)
+    public RimPegLeg(CreatureState state, RimBodyPart part) : base(state, part)
     {
         name = "Peg leg";
         efficiency = 0.6f;
@@ -12,9 +12,9 @@ public class RWPegLeg : RWArtificialPartBase
     }
 }
 
-public class RWWoodenHand : RWArtificialPartBase
+public class RimWoodenHand : RimArtificialPartBase
 {
-    public RWWoodenHand(CreatureState state, RWBodyPart part) : base(state, part)
+    public RimWoodenHand(CreatureState state, RimBodyPart part) : base(state, part)
     {
         name = "Wooden hand";
         efficiency = 0.6f;
@@ -24,9 +24,9 @@ public class RWWoodenHand : RWArtificialPartBase
     }
 }
 
-public class RWWoodenFoot : RWArtificialPartBase
+public class RimWoodenFoot : RimArtificialPartBase
 {
-    public RWWoodenFoot(CreatureState state, RWBodyPart part, string nameOverride = "foot") : base(state, part)
+    public RimWoodenFoot(CreatureState state, RimBodyPart part, string nameOverride = "foot") : base(state, part)
     {
         name = "Wooden " + nameOverride;
         efficiency = 0.8f;
@@ -37,9 +37,9 @@ public class RWWoodenFoot : RWArtificialPartBase
     }
 }
 
-public class RWDenture : RWArtificialPartBase
+public class RimDenture : RimArtificialPartBase
 {
-    public RWDenture(CreatureState state, RWBodyPart part) : base(state, part)
+    public RimDenture(CreatureState state, RimBodyPart part) : base(state, part)
     {
         name = "Denture";
         efficiency = 0.8f;

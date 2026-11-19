@@ -1,8 +1,8 @@
 ﻿namespace ShadowOfRimWorldHealth;
 
-public class RWFlu : RWDisease
+public class RimFlu : RimDisease
 {
-    public RWFlu(CreatureState state, RWBodyPart part) : base(state, part)
+    public RimFlu(CreatureState state, RimBodyPart part) : base(state, part)
     {
         name = "Flu";
 
@@ -16,12 +16,14 @@ public class RWFlu : RWDisease
         treatment = 0.0773f;
 
         treatmentTimes = 0.5f;
+
+        labelColour = new(0.8f, 0.8f, 0.35f);
     }
 }
 
-public class RWInfection : RWDisease
+public class RimInfection : RimDisease
 {
-    public RWInfection(CreatureState state, RWBodyPart part) : base(state, part)
+    public RimInfection(CreatureState state, RimBodyPart part) : base(state, part)
     {
         name = "Infection";
 
@@ -35,5 +37,7 @@ public class RWInfection : RWDisease
         treatment = 0.53f;
 
         treatmentTimes = 0.5f;
+
+        labelColour = new(0.8f, 0.8f, 0.35f);
     }
 }

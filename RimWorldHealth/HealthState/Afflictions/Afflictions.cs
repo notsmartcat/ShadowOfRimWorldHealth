@@ -1,6 +1,6 @@
 ﻿namespace ShadowOfRimWorldHealth;
 
-public class RWAffliction(CreatureState state, RWBodyPart part)
+public class RimAffliction(CreatureState state, RimBodyPart part)
 {
     public void Remove()
     {
@@ -10,10 +10,12 @@ public class RWAffliction(CreatureState state, RWBodyPart part)
 
     public CreatureState state = state;
 
-    public RWBodyPart part = part;
+    public RimBodyPart part = part;
+
+    public UnityEngine.Color labelColour = new(1f, 1f, 1f);
 }
 
-public class RWTendableAffliction(CreatureState state, RWBodyPart part) : RWAffliction(state, part)
+public class RimTendableAffliction(CreatureState state, RimBodyPart part) : RimAffliction(state, part)
 {
     public float pain;
 
@@ -24,9 +26,9 @@ public class RWTendableAffliction(CreatureState state, RWBodyPart part) : RWAffl
     public bool isCharacterSpecific = false;
 }
 
-public class RWInjury : RWTendableAffliction
+public class RimInjury : RimTendableAffliction
 {
-    public RWInjury(CreatureState state, RWBodyPart part, float damage, RWDamageType damageType, string attackName = "", string attackerName = "") : base(state, part)
+    public RimInjury(CreatureState state, RimBodyPart part, float damage, RimDamageType damageType, string attackName = "", string attackerName = "") : base(state, part)
     {
         this.damage = damage;
 
@@ -46,7 +48,7 @@ public class RWInjury : RWTendableAffliction
         }
         else
         {
-            healingDifficulty = new RWHealingDifficulty();
+            healingDifficulty = new RimHealingDifficulty();
         }
 
         if (part.isSolid || part.isBionic || healingDifficulty.bleeding <= 0)
@@ -59,7 +61,7 @@ public class RWInjury : RWTendableAffliction
             infectionTimer = UnityEngine.Random.Range(15000, 45001);
         }
 
-        RWHealingDifficulty HealingDifficulty()
+        RimHealingDifficulty HealingDifficulty()
         {
             string RWHealingDifficultyName;
 
@@ -76,38 +78,46 @@ public class RWInjury : RWTendableAffliction
                 RWHealingDifficultyName = damageType.headiffs[0];
             }
 
-            RWHealingDifficulty healingDifficulty = RWHealingDifficulty.GetRWHealingDifficulty(RWHealingDifficultyName);
+            RimHealingDifficulty healingDifficulty = RimHealingDifficulty.GetRWHealingDifficulty(RWHealingDifficultyName);
 
             return healingDifficulty;
         }
     }
 
-    public RWInjury(CreatureState state, RWBodyPart part) : base(state, part) {}
+    public RimInjury(CreatureState state, RimBodyPart part) : base(state, part) {}
 
     public string attackName; //Name of the attack, used in the HealthTab
     public string attackerName; //Name of the attacker (currently unused but will be used in the HealthTab)
 
     public float damage;
-    public RWDamageType damageType;
+    public RimDamageType damageType;
 
     public bool isBleeding = true;
 
     public float infectionTimer; //If the wound is injury bleeds and the Healing Difficulty has infection chance a random time between 4.17 and 12.5 minutes will be set, when the timer finishes the Infection will be rolled
 
-    public RWHealingDifficulty healingDifficulty;
+    public RimHealingDifficulty healingDifficulty;
 
     public void RemoveSelf()
     {
-        part.afflictions.Remove(this);
+        if (part != null)
+        {
+            part.afflictions.Remove(this);
+            part = null;
+        }
 
         state = null;
-        part = null;
         healingDifficulty = null;
     }
 }
 
-public class RWDisease(CreatureState state, RWBodyPart part) : RWTendableAffliction(state, part)
+public class RimDisease : RimTendableAffliction
 {
+    public RimDisease(CreatureState state, RimBodyPart part) : base(state, part)
+    {
+        labelColour = new(0.9f, 1f, 0.35f);
+    }
+
     public string name = "";
 
     public bool lethal = false; //Lethal diseases will kill when their severity reaches 100%
@@ -141,14 +151,19 @@ public class RWDisease(CreatureState state, RWBodyPart part) : RWTendableAfflict
     }
 }
 
-public class RWAilment(CreatureState state, RWBodyPart part) : RWAffliction(state, part)
+public class RimAilment(CreatureState state, RimBodyPart part) : RimAffliction(state, part)
 {
     public float amount;
     public float lastAmount;
 } //Ailments cannot be treated and serve simply to show information on the HealthTab, these afflictions can affect capacities
 
-public class RWArtificialPartBase(CreatureState state, RWBodyPart part) : RWAffliction(state, part)
+public class RimArtificialPartBase : RimAffliction
 {
+    public RimArtificialPartBase(CreatureState state, RimBodyPart part) : base(state, part)
+    {
+        labelColour = new(0.6f, 0.6f, 1f);
+    }
+
     public string name = "Default Articicial Part";
     public float efficiency = 0;
     public string descrition = "Default description";
