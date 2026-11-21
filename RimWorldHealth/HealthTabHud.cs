@@ -3144,7 +3144,7 @@ public class HealthTab : HudPart
                     1 => "OK",
                     >= 0.4f => "Weakened",
                     >= 0.15f => "Poor",
-                    >= 0.01f => "Very Poor",
+                    > 0f => "Very Poor",
                     _ => "None",
                 };
 
@@ -3178,8 +3178,8 @@ public class HealthTab : HudPart
 
                                 description += disease.severity switch
                                 {
-                                    < 0.665f => text + " (minor)\n",
-                                    < 0.832f => text + " (major)\n",
+                                    < fluMajor => text + " (minor)\n",
+                                    < fluExtreme => text + " (major)\n",
                                     _ => text + " (extreme)\n"
                                 };
 
@@ -3187,12 +3187,12 @@ public class HealthTab : HudPart
                             }
                             else if (disease is RimInfection)
                             {
-                                if (stringValue != "Consiousness" && stringValue != "Breathing")
+                                if (disease.severity < infectionExtreme || stringValue != "Consiousness" && stringValue != "Breathing")
                                 {
                                     continue;
                                 }
 
-                                if (disease.severity >= 0.77f && disease.severity < 0.86f)
+                                if (disease.severity < infectionExtreme2)
                                 {
                                     if (stringValue == "Breathing")
                                     {
@@ -3200,9 +3200,9 @@ public class HealthTab : HudPart
                                     }
 
                                     isCapacityAffected = true;
-                                    description += "  " + disease.name + " (major)\n";
+                                    description += "  " + disease.name + " (extreme)\n";
                                 }
-                                else if (disease.severity >= 0.86f)
+                                else
                                 {
                                     isCapacityAffected = true;
                                     description += "  " + disease.name + " (extreme)\n";
@@ -3217,16 +3217,16 @@ public class HealthTab : HudPart
                                 continue;
                             }
                         }
-                        else if (affliction is RimAilment informational)
+                        else if (affliction is RimAilment ailment)
                         {
-                            if (informational is RimHypothermia)
+                            if (ailment is RimHypothermia)
                             {
                                 if (stringValue != "Consiousness" && stringValue != "Manipulation" && stringValue != "Moving")
                                 {
                                     continue;
                                 }
 
-                                if (informational.amount < 0.2f)
+                                if (ailment.amount < hypothermiaMinor)
                                 {
                                     if (stringValue == "Moving")
                                     {
@@ -3236,7 +3236,7 @@ public class HealthTab : HudPart
                                     isCapacityAffected = true;
                                     description += "  Hypothermia (shivering)\n";
                                 }
-                                else if (informational.amount < 0.35f)
+                                else if (ailment.amount < hypothermiaSerious)
                                 {
                                     if (stringValue == "Moving")
                                     {
@@ -3246,7 +3246,7 @@ public class HealthTab : HudPart
                                     isCapacityAffected = true;
                                     description += "  Hypothermia (minor)\n";
                                 }
-                                else if (informational.amount < 0.62f)
+                                else if (ailment.amount < hypothermiaExtreme)
                                 {
                                     isCapacityAffected = true;
                                     description += "  Hypothermia (serious)\n";
@@ -3264,7 +3264,7 @@ public class HealthTab : HudPart
 
                                 continue;
                             }
-                            else if (informational is RimToxicBuildup)
+                            else if (ailment is RimToxicBuildup)
                             {
                                 if (stringValue != "Consiousness")
                                 {
@@ -3273,15 +3273,57 @@ public class HealthTab : HudPart
 
                                 isCapacityAffected = true;
 
-                                description += informational.amount switch
+                                description += ailment.amount switch
                                 {
-                                    < 0.2f => "  Toxic buildup (initial)\n",
-                                    < 0.4f => "  Toxic buildup (minor)\n",
-                                    < 0.6f => "  Toxic buildup (moderate)\n",
-                                    < 0.8f => "  Toxic buildup (serious)\n",
+                                    < toxicBuildupMinor => "  Toxic buildup (initial)\n",
+                                    < toxicBuildupModerate => "  Toxic buildup (minor)\n",
+                                    < toxicBuildupSerious => "  Toxic buildup (moderate)\n",
+                                    < toxicBuildupExtreme => "  Toxic buildup (serious)\n",
                                     _ => "  Toxic buildup (extreme)\n"
                                 };
 
+                                continue;
+                            }
+                            else if (ailment is RimAnesthetic)
+                            {
+                                if (stringValue != "Consiousness" && stringValue != "Manipulation" && stringValue != "Moving" && stringValue != "Talking" && stringValue != "Digestion" && stringValue != "Sight")
+                                {
+                                    continue;
+                                }
+
+                                if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.25f))
+                                {
+                                    if (stringValue == "Talking" && stringValue == "Digestion" && stringValue == "Sight")
+                                    {
+                                        continue;
+                                    }
+
+                                    isCapacityAffected = true;
+                                    description += "Anesthetic (wearing off, ";
+                                    description += GetTimeString(ailment.amount / (40 * 60)) + ")";
+                                }
+                                else if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.5f))
+                                {
+                                    if (stringValue == "Moving")
+                                    {
+                                        continue;
+                                    }
+
+                                    isCapacityAffected = true;
+                                    description += "Anesthetic (woozy, ";
+                                    description += GetTimeString(ailment.amount / (40 * 60)) + ")";
+                                }
+                                else
+                                {
+                                    if (stringValue != "Consiousness")
+                                    {
+                                        continue;
+                                    }
+
+                                    isCapacityAffected = true;
+                                    description += "Anesthetic (sedated, ";
+                                    description += GetTimeString(ailment.amount / (40 * 60)) + ")";
+                                }
                                 continue;
                             }
                         }
@@ -3328,8 +3370,8 @@ public class HealthTab : HudPart
 
             if (healthTabWholeBody.bloodLossVisible && selectedVertical == 0)
             {
-                healthTabInfos[0].name.text = healthTabWholeBody.bloodLossName.text;
-                healthTabInfos[0].nameStatus.text = " : " + Mathf.Round(inspectedState.bloodLoss * 100) + "%";
+                healthTabInfos[0].name.text = healthTabWholeBody.bloodLossName.text + ": ";
+                healthTabInfos[0].nameStatus.text = Mathf.Round(inspectedState.bloodLoss * 100) + "%";
 
                 healthTabInfos[0].description.text = "A reduction in the normal blood volume.\n" +
                     "Minor blood loss has relatively mild\n" +
@@ -3345,9 +3387,9 @@ public class HealthTab : HudPart
 
                 healthTabInfos[0].description.text += inspectedState.bloodLoss switch
                 {
-                    < 0.3f => "  - Consciousness: -10%",
-                    < 0.45f => "  - Consciousness: -20%",
-                    < 0.6f => "  - Consciousness: -40%",
+                    < bloodLossModerate => "  - Consciousness: -10%",
+                    < bloodLossSevere => "  - Consciousness: -20%",
+                    < bloodLossExtreme => "  - Consciousness: -40%",
                     _ => "  - Consciousness: -40%\n" +
                         "  - Consciousness: Max 10%"
                 };
@@ -3378,10 +3420,10 @@ public class HealthTab : HudPart
 
                         healthTabInfos[0].description.text += disease.severity switch
                         {
-                            < 0.665f => "  - Consciousness: -5%\n" +
+                            < fluMajor => "  - Consciousness: -5%\n" +
                                 "  - Manipulation: -5%\n" +
                                 "  - Breathing: -10%\n",
-                            < 0.832f => "  - Consciousness: -10%\n" +
+                            < fluExtreme => "  - Consciousness: -10%\n" +
                                 "  - Manipulation: -10%\n" +
                                 "  - Breathing: -15%\n",
                             _ => "  - Pain: +5%\n" +
@@ -3434,12 +3476,12 @@ public class HealthTab : HudPart
 
                             healthTabInfos[0].description.text += ailment.amount switch
                             {
-                                < 0.2f => "  - Consciousness: -5%\n" +
+                                < hypothermiaMinor => "  - Consciousness: -5%\n" +
                                     "  - Manipulation: -8%\n",
-                                < 0.35f => "  - Consciousness: -10%\n" +
+                                < hypothermiaSerious => "  - Consciousness: -10%\n" +
                                     "  - Manipulation: -20%\n" +
                                     "  - Moving: -10%\n",
-                                < 0.62f => "  - Consciousness: -20%\n" +
+                                < hypothermiaExtreme => "  - Consciousness: -20%\n" +
                                     "  - Manipulation: -50%\n" +
                                     "  - Moving: -30%\n" +
                                     "  - Pain: +15%\n",
@@ -3468,10 +3510,10 @@ public class HealthTab : HudPart
 
                             healthTabInfos[0].description.text += ailment.amount switch
                             {
-                                < 0.2f => "  - Consciousness: -5%",
-                                < 0.4f => "  - Consciousness: -10%",
-                                < 0.6f => "  - Consciousness: -15%",
-                                < 0.8f => "  - Consciousness: -25%",
+                                < toxicBuildupMinor => "  - Consciousness: -5%",
+                                < toxicBuildupModerate => "  - Consciousness: -10%",
+                                < toxicBuildupSerious => "  - Consciousness: -15%",
+                                < toxicBuildupExtreme => "  - Consciousness: -25%",
                                 _ => "  - Consciousness: Max 10%\n" +
                                     "  - Consciousness: -25%"
                             };
@@ -3483,23 +3525,29 @@ public class HealthTab : HudPart
                                 "Anestheic renders creatures\n" +
                                 "unconscious.\n\n";
 
-                            healthTabInfos[0].description.text += ailment.amount switch
+                            if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.25f))
                             {
-                                < 0.6f => "  - Pain: x95%\n" +
+                                healthTabInfos[0].description.text += "  - Pain: x95%\n" +
                                     "  - Consciousness: Max 90%\n" +
                                     "  - Manipulation: -10%\n" +
-                                    "  - Moving: -5%",
-                                < 0.8f => "  - Pain: x80%\n" +
+                                    "  - Moving: -5%";
+                            }
+                            else if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.5f))
+                            {
+                                healthTabInfos[0].description.text += "  - Pain: x80%\n" +
                                     "  - Consciousness: Max 70%\n" +
                                     "  - Moving: -20%\n" +
                                     "  - Manipulation: -20%\n" +
                                     "  - Talking: -20%\n" +
                                     "  - Digestion: -20%\n" +
                                     "  - Sight: -15%\n" +
-                                    "  - Affects: Memory", //does not affect memory
-                                _ => "  - Pain: x0%\n" +
-                                    "  - Consciousness: Max 1%"
-                            };
+                                    "  - Affects: Memory"; //does not affect memory
+                            }
+                            else
+                            {
+                                healthTabInfos[0].description.text += "  - Pain: x0%\n" +
+                                    "  - Consciousness: Max 1%";
+                            }
 
                             healthTabInfos[0].nameStatus.text = "";
                             break;
@@ -3837,17 +3885,17 @@ public class HealthTab : HudPart
                         "killing local tissue, and eventually\n" +
                         "causing blood poisoning and death.";
 
-                    if (disease.severity < 0.32f)
+                    if (disease.severity < infectionMajor)
                     {
                         healthTabInfos[1].description.text += "\n\n" +
                             "  - Pain: +5%\n";
                     }
-                    else if (disease.severity < 0.77f)
+                    else if (disease.severity < infectionExtreme)
                     {
                         healthTabInfos[1].description.text += "\n\n" +
                             "  - Pain: +8%\n";
                     }
-                    else if (disease.severity < 0.86f)
+                    else if (disease.severity < infectionExtreme2)
                     {
                         healthTabInfos[1].description.text += "\n\n" +
                             "  - Pain: +12%\n" +
@@ -3856,8 +3904,8 @@ public class HealthTab : HudPart
                     else
                     {
                         healthTabInfos[1].description.text += "\n\n" +
-                            "  - Pain: +12%\n" +
-                            "  - Consciousness: -5%\n" +
+                            "  - Pain: +85%\n" +
+                            "  - Consciousness: Max 10%\n" +
                             "  - Breathing: -5%";
                     }
 
@@ -4564,8 +4612,8 @@ public class HealthTabBodyPart
                         {
                             text += disease.severity switch
                             {
-                                < 0.32f => " (minor)",
-                                < 0.77f => " (major)",
+                                < infectionMajor => " (minor)",
+                                < infectionExtreme => " (major)",
                                 _ => " (extreme)"
                             };
                         }
@@ -4942,13 +4990,15 @@ public class HealthTabWholeBody
         {
             bloodLossName.y = DrawPos().y;
 
-            bloodLossName.text = owner.inspectedState.bloodLoss switch
+            string name = owner.inspectedState.bloodLoss switch
             {
-                < 0.3f => "Blood loss (minor)",
-                < 0.45f => "Blood loss (moderate)",
-                < 0.6f => "Blood loss (severe)",
-                _ => "Blood loss (extreme)"
+                < bloodLossModerate => "minor",
+                < bloodLossSevere => "moderate",
+                < bloodLossExtreme => "severe",
+                _ => "extreme"
             };
+
+            bloodLossName.text = $"Blood loss ({name})";
 
             if (bloodLossName.y > owner.ActualTopLimit())
             {
@@ -4984,8 +5034,8 @@ public class HealthTabWholeBody
                 {
                     text += disease.severity switch
                     {
-                        < 0.665f => " (minor)",
-                        < 0.832f => " (major)",
+                        < fluMajor => " (minor)",
+                        < fluExtreme => " (major)",
                         _ => " (extreme)"
                     };
                 }
@@ -5010,9 +5060,9 @@ public class HealthTabWholeBody
 
                         text += ailment.amount switch
                         {
-                            < 0f => " (empty)",
-                            < 0.4f => " (low)",
-                            < 0.7f => " (medium)",
+                            < airInLungsLow => " (empty)",
+                            < airInLungsMedium => " (low)",
+                            < airInLungsHigh => " (medium)",
                             _ => " (high)"
                         };
                         break;
@@ -5021,9 +5071,9 @@ public class HealthTabWholeBody
 
                         text += ailment.amount switch
                         {
-                            < 0.2f => " (shivering)",
-                            < 0.35f => " (minor)",
-                            < 0.62f => " (serious)",
+                            < hypothermiaMinor => " (shivering)",
+                            < hypothermiaSerious => " (minor)",
+                            < hypothermiaExtreme => " (serious)",
                             _ => " (extreme)"
                         };
                         break;
@@ -5032,22 +5082,28 @@ public class HealthTabWholeBody
 
                         text += ailment.amount switch
                         {
-                            < 0.2f => " (initial)",
-                            < 0.4f => " (minor)",
-                            < 0.6f => " (moderate)",
-                            < 0.8f => " (serious)",
+                            < toxicBuildupMinor => " (initial)",
+                            < toxicBuildupModerate => " (minor)",
+                            < toxicBuildupSerious => " (moderate)",
+                            < toxicBuildupExtreme => " (serious)",
                             _ => " (extreme)"
                         };
                         break;
                     case RimAnesthetic:
                         text = "Anesthetic";
 
-                        text += ailment.amount switch
+                        if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.25f))
                         {
-                            < 0.6f => " (wearing off, ",
-                            < 0.8f => " (woozy, ",
-                            _ => " (sedated, "
-                        };
+                            text += " (wearing off, ";
+                        }
+                        else if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.5f))
+                        {
+                            text += " (woozy, ";
+                        }
+                        else
+                        {
+                            text += " (sedated, ";
+                        }
 
                         text += HealthTab.GetTimeString(ailment.amount / (40 * 60)) + ")";
                         break;

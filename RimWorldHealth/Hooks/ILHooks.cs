@@ -900,7 +900,7 @@ internal class ILHooks
             }
         }
 
-        if (self.Hypothermia < 0.04f)
+        if (self.Hypothermia < hypothermiaShivering)
         {
             if (hypothermia != null)
             {
@@ -3722,26 +3722,7 @@ internal class ILHooks
             return;
         }
 
-        RimToxicBuildup toxicBuildup = null;
-
-        foreach (RimAffliction affliction in state.wholeBodyAfflictions)
-        {
-            if (affliction is RimToxicBuildup tempToxicBuildup)
-            {
-                toxicBuildup = tempToxicBuildup;
-                break;
-            }
-        }
-
-        if (toxicBuildup != null)
-        {
-            toxicBuildup.amount = 1;
-        }
-        else
-        {
-            state.wholeBodyAfflictions.Add(new RimToxicBuildup(self.State, null, 1));
-            state.updateCapacities = true;
-        }
+        self.injectedPoison += 1;
     }
 
     public static void SporeCloudUpdateAdd(Creature self)
@@ -3751,29 +3732,7 @@ internal class ILHooks
             return;
         }
 
-        RimToxicBuildup toxicBuildup = null;
-
-        foreach (RimAffliction affliction in state.wholeBodyAfflictions)
-        {
-            if (affliction is RimToxicBuildup tempToxicBuildup)
-            {
-                toxicBuildup = tempToxicBuildup;
-                break;
-            }
-        }
-
-        float poison = UnityEngine.Random.Range(0.2f, 0.6f);
-
-        if (toxicBuildup != null)
-        {
-            toxicBuildup.amount += poison;
-            toxicBuildup.amount = Math.Min(1, toxicBuildup.amount);
-        }
-        else
-        {
-            state.wholeBodyAfflictions.Add(new RimToxicBuildup(self.State, null, poison));
-            state.updateCapacities = true;
-        }
+        self.injectedPoison += UnityEngine.Random.Range(0.2f, 0.6f);
     }
     #endregion
 

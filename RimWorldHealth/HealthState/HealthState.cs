@@ -807,11 +807,11 @@ public class RimHealthState
                 return;
             }
 
-            if (disease is RimFlu && (LessOrGreater(disease.severity, prevSeverity, 0.665f) || LessOrGreater(disease.severity, prevSeverity, 0.832f)))
+            if (disease is RimFlu && (LessOrGreater(disease.severity, prevSeverity, fluMajor) || LessOrGreater(disease.severity, prevSeverity, fluExtreme)))
             {
                 state.updateCapacities = true;
             }
-            else if (disease is RimInfection && (LessOrGreater(disease.severity, prevSeverity, 0.32f) || LessOrGreater(disease.severity, prevSeverity, 0.77f) || LessOrGreater(disease.severity, prevSeverity, 0.86f)))
+            else if (disease is RimInfection && (LessOrGreater(disease.severity, prevSeverity, infectionMajor) || LessOrGreater(disease.severity, prevSeverity, infectionExtreme) || LessOrGreater(disease.severity, prevSeverity, infectionExtreme2)))
             {
                 state.updateCapacities = true;
             }
@@ -832,7 +832,7 @@ public class RimHealthState
                     return;
                 }
 
-                if (state.healingRate % 15 == 0 && hypothermia.amount > 0.37f && Random.value < (0.025f * hypothermia.amount))
+                if (state.healingRate % 15 == 0 && hypothermia.amount > hypothermiaFrostbite && Random.value < (0.025f * hypothermia.amount))
                 {
                     RimBodyPart part = GetFrostbiteHitBodyPart(state);
 
@@ -841,7 +841,7 @@ public class RimHealthState
                     state.updateCapacities = true;
                 }
 
-                if (LessOrGreater(hypothermia.amount, hypothermia.lastAmount, 0.2f) || LessOrGreater(hypothermia.amount, hypothermia.lastAmount, 0.35f) || LessOrGreater(hypothermia.amount, hypothermia.lastAmount, 0.62f))
+                if (LessOrGreater(hypothermia.amount, hypothermia.lastAmount, hypothermiaMinor) || LessOrGreater(hypothermia.amount, hypothermia.lastAmount, hypothermiaSerious) || LessOrGreater(hypothermia.amount, hypothermia.lastAmount, hypothermiaExtreme))
                 {
                     state.updateCapacities = true;
                 }
@@ -970,7 +970,7 @@ public class RimHealthState
                     return;
                 }
 
-                if (LessOrGreater(toxicBuildup.amount, toxicBuildup.lastAmount, 0.2f) || LessOrGreater(toxicBuildup.amount, toxicBuildup.lastAmount, 0.4f) || LessOrGreater(toxicBuildup.amount, toxicBuildup.lastAmount, 0.6f) || LessOrGreater(toxicBuildup.amount, toxicBuildup.lastAmount, 0.8f))
+                if (LessOrGreater(toxicBuildup.amount, toxicBuildup.lastAmount, toxicBuildupMinor) || LessOrGreater(toxicBuildup.amount, toxicBuildup.lastAmount, toxicBuildupModerate) || LessOrGreater(toxicBuildup.amount, toxicBuildup.lastAmount, toxicBuildupSerious) || LessOrGreater(toxicBuildup.amount, toxicBuildup.lastAmount, toxicBuildupExtreme))
                 {
                     state.updateCapacities = true;
                 }
@@ -983,7 +983,7 @@ public class RimHealthState
 
                 anesthetic.amount--;
 
-                if (anesthetic.amount < 0.8f && lastAmount >= 0.8f || anesthetic.amount < 0.6f && lastAmount >= 0.6f)
+                if (LessOrGreater(anesthetic.amount, lastAmount, anesthetic.lastAmount - (CycleLength() * 0.25f)) || LessOrGreater(anesthetic.amount, lastAmount, anesthetic.lastAmount - (CycleLength() * 0.5f)))
                 {
                     state.updateCapacities = true;
                 }
@@ -1005,7 +1005,7 @@ public class RimHealthState
 
         bool updateBloodLoss()
         {
-            return state.bloodLoss >= 0.6f && prevbloodLoss < 0.6f || state.bloodLoss < 0.6f && prevbloodLoss >= 0.6f || state.bloodLoss >= 0.45f && prevbloodLoss < 0.45f || state.bloodLoss < 0.45f && prevbloodLoss >= 0.45f || state.bloodLoss >= 0.3f && prevbloodLoss < 0.3f || state.bloodLoss < 0.3f && prevbloodLoss >= 0.3f || state.bloodLoss >= 0.15f && prevbloodLoss < 0.15f || state.bloodLoss < 0.15f && prevbloodLoss >= 0.15f;
+            return LessOrGreater(state.bloodLoss, prevbloodLoss, bloodLossExtreme) || LessOrGreater(state.bloodLoss, prevbloodLoss, bloodLossSevere) || LessOrGreater(state.bloodLoss, prevbloodLoss, bloodLossModerate) || LessOrGreater(state.bloodLoss, prevbloodLoss, bloodLossMinor);
         }
     }
 
@@ -1198,7 +1198,7 @@ public class RimHealthState
             }
         }
 
-        state.pain = Mathf.Clamp(state.pain, 0, 1);
+        state.pain = Mathf.Clamp(state.pain, 0, 1) * painFactor;
 
         if (state.pain > state.painShockThreshold && state.consciousState < 2)
         {
@@ -1248,21 +1248,21 @@ public class RimHealthState
 
         state.consciousness = ((state.consciousnessSource == null ? 1 : state.consciousnessSource.efficiency) * (1 - Mathf.Clamp((state.pain - 0.1f) * 4 / 9, 0, 0.4f)) * Mathf.Min(1, 1 - 0.2f * (1 - state.bloodPumping)) * Mathf.Min(1, 1 - 0.2f * (1 - state.breathing)) * Mathf.Min(1, 1 - 0.1f * (1 - state.bloodFiltration))) + consciounessOffset;
 
-        if (state.bloodLoss >= 0.6f)
+        if (state.bloodLoss >= bloodLossExtreme)
         {
             state.consciousness -= 0.4f;
 
             maxConsciousness = 0.1f;
         }
-        else if (state.bloodLoss >= 0.45f)
+        else if (state.bloodLoss >= bloodLossSevere)
         {
             state.consciousness -= 0.4f;
         }
-        else if (state.bloodLoss >= 0.3f)
+        else if (state.bloodLoss >= bloodLossModerate)
         {
             state.consciousness -= 0.2f;
         }
-        else if (state.bloodLoss >= 0.15f)
+        else if (state.bloodLoss >= bloodLossMinor)
         {
             state.consciousness -= 0.1f;
         }
@@ -1464,12 +1464,12 @@ public class RimHealthState
 
                 switch (disease.severity)
                 {
-                    case <= 0.665f:
+                    case < fluMajor:
                         state.consciousness -= 0.05f;
                         state.manipulation -= 0.05f;
                         state.breathing -= 0.1f;
                         break;
-                    case <= 0.832f:
+                    case < fluExtreme:
                         state.consciousness -= 0.1f;
                         state.manipulation -= 0.1f;
                         state.breathing -= 0.15f;
@@ -1487,16 +1487,16 @@ public class RimHealthState
             {
                 switch (disease.severity)
                 {
-                    case <= 0.32f:
+                    case < infectionMajor:
                         state.pain += 0.05f;
                         break;
-                    case <= 0.77f:
+                    case < infectionExtreme:
                         state.pain += 0.08f;
                         break;
-                    case <= 0.86f:
+                    case < infectionExtreme2:
                         state.pain += 0.12f;
 
-                        state.consciousness -= 0.5f;
+                        state.consciousness -= 0.05f;
 
                         state.capacityAffectingAffliction.Add(disease);
                         break;
@@ -1505,7 +1505,7 @@ public class RimHealthState
 
                         state.pain += 0.85f;
 
-                        state.breathing -= 0.5f;
+                        state.breathing -= 0.05f;
 
                         state.capacityAffectingAffliction.Add(disease);
                         break;
@@ -1521,16 +1521,16 @@ public class RimHealthState
 
                 switch (ailment.amount)
                 {
-                    case <= 0.2f:
+                    case < hypothermiaMinor:
                         state.consciousness -= 0.05f;
                         state.manipulation -= 0.08f;
                         break;
-                    case <= 0.35f:
+                    case < hypothermiaSerious:
                         state.consciousness -= 0.1f;
                         state.manipulation -= 0.2f;
                         state.moving -= 0.1f;
                         break;
-                    case <= 0.62f:
+                    case < hypothermiaExtreme:
                         state.consciousness -= 0.2f;
                         state.manipulation -= 0.5f;
                         state.moving -= 0.3f;
@@ -1550,16 +1550,16 @@ public class RimHealthState
 
                 switch (ailment.amount)
                 {
-                    case <= 0.2f:
+                    case < toxicBuildupMinor:
                         state.consciousness -= 0.05f;
                         break;
-                    case <= 0.4f:
+                    case < toxicBuildupModerate:
                         state.consciousness -= 0.1f;
                         break;
-                    case <= 0.6f:
+                    case < toxicBuildupSerious:
                         state.consciousness -= 0.15f;
                         break;
-                    case <= 0.8f:
+                    case < toxicBuildupExtreme:
                         state.consciousness -= 0.25f;
                         break;
                     default:
@@ -1573,32 +1573,32 @@ public class RimHealthState
             {
                 state.capacityAffectingAffliction.Add(ailment);
 
-                switch (ailment.amount)
+                if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.25f))
                 {
-                    case <= 0.6f:
-                        painFactor *= 0.95f;
+                    painFactor *= 0.95f;
 
-                        maxConsciousness = 0.9f;
+                    maxConsciousness = 0.9f;
 
-                        state.manipulation -= 0.1f;
-                        state.moving -= 0.05f;
-                        break;
-                    case <= 0.8f:
-                        painFactor *= 0.8f;
+                    state.manipulation -= 0.1f;
+                    state.moving -= 0.05f;
+                }
+                else if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.5f))
+                {
+                    painFactor *= 0.8f;
 
-                        maxConsciousness = 0.7f;
+                    maxConsciousness = 0.7f;
 
-                        state.manipulation -= 0.2f;
-                        state.moving -= 0.2f;
-                        state.talking -= 0.2f;
-                        state.digestion -= 0.2f;
-                        state.sight -= 0.15f;
-                        break;
-                    default:
-                        painFactor *= 0f;
+                    state.manipulation -= 0.2f;
+                    state.moving -= 0.2f;
+                    state.talking -= 0.2f;
+                    state.digestion -= 0.2f;
+                    state.sight -= 0.15f;
+                }
+                else
+                {
+                    painFactor *= 0f;
 
-                        maxConsciousness = 0.01f;
-                        break;
+                    maxConsciousness = 0.01f;
                 }
             }
         }
