@@ -22,9 +22,9 @@ public class RimWorldHealth : BaseUnityPlugin
         public float bodySizeFactor = 1; //Used to multiply blood loss. Currently not implemented properly.
         public float healthScale = 1; //Reffer to https://rimworldwiki.com/wiki/Property:Health_Scale when possible. (lizards would have this be 1.2 due to the Alligator, however I will need to scale it as currently the slugcat is scaled as if it was a human, and the 1.2 is based on the human being 1. It will also need to be scaled based on the actual lizard scale)
 
-        public List<RimBodyPart> bodyParts = new(); //The entire list of all body parts. They are created when the RWHealthState is created.
+        public List<RimBodyPart> bodyParts = new(); //The entire list of all body parts. They are created when the RimHealthState is created.
 
-        public List<RimAffliction> wholeBodyAfflictions = new(); //List of all affliction that do not belong to a single body part but are more general. All Informational Afflictions are whole body.
+        public List<RimAffliction> wholeBodyAfflictions = new(); //List of all affliction that do not belong to a single body part but are more general. All Ailments are whole body.
 
         public Brain consciousnessSource = null; //Used to directly multiply consciousness my it's own efficiency, generally the Brain.
 
@@ -347,7 +347,7 @@ public class RimWorldHealth : BaseUnityPlugin
             {
                 state.bloodLoss = 0.5f;
 
-                self.injectedPoison = 0.2f;
+                //self.injectedPoison = 0.2f;
 
                 self.Hypothermia = 0.06f;
 

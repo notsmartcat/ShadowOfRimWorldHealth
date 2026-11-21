@@ -270,509 +270,186 @@ public class HealthTab : HudPart
 
     public override void Update()
     {
-        base.Update();
-
-        if (player == null || player.realizedCreature == null || !player.realizedCreature.dead && player.realizedCreature.Stunned)
+        try
         {
-            visible = false;
-        }
+            base.Update();
 
-        if (visible && inspectedCreatureState.creature != null && player != inspectedCreatureState.creature)
-        {
-            bool stillHoolding = false;
-
-            if (inspectedCreatureState.creature.realizedCreature != null)
+            if (player == null || player.realizedCreature == null || !player.realizedCreature.dead && player.realizedCreature.Stunned)
             {
-                foreach (Creature.Grasp grasp in player.realizedCreature.grasps)
+                visible = false;
+            }
+
+            if (visible && inspectedCreatureState.creature != null && player != inspectedCreatureState.creature)
+            {
+                bool stillHoolding = false;
+
+                if (inspectedCreatureState.creature.realizedCreature != null)
                 {
-                    if (grasp != null && grasp.grabbedChunk != null && grasp.grabbedChunk.owner == inspectedCreatureState.creature.realizedCreature)
+                    foreach (Creature.Grasp grasp in player.realizedCreature.grasps)
                     {
-                        stillHoolding = true;
-                    }
-                }
-            }
-
-            if (!stillHoolding)
-            {
-                ToggleVisibility();
-            }
-        }
-
-        if (!singleplayerHud && visible)
-        {
-            transparencyTimer++;
-
-            if (transparencyTimer >= 5)
-            {
-                transparencyTimer = 0;
-
-                float cameraPositionX = player.realizedCreature.room.game.cameras[0].pos.x;
-                float cameraPositionY = player.realizedCreature.room.game.cameras[0].pos.y;
-
-                bool forceTransparent = false;
-
-                List<AbstractCreature> list = new(player.realizedCreature.abstractCreature.Room.creatures);
-                foreach (AbstractCreature creature in list)
-                {
-                    if (creature.realizedCreature == null || creature == player || creature == inspectedCreatureState.creature)
-                    {
-                        continue;
-                    }
-
-                    float creaturePositionX = creature.pos.Tile.x * 20;
-                    float creaturePositionY = creature.pos.Tile.y * 20;
-
-                    float checkPositionX = 1366 + cameraPositionX - creaturePositionX;
-                    float checkPositionY = 768 + cameraPositionY - creaturePositionY;
-
-                    if (TransparencyCheck(checkPositionX, checkPositionY))
-                    {
-                        forceTransparent = true;
-                        break;
-                    }
-                }
-
-                transparent = forceTransparent;
-            }
-        }
-        else
-        {
-            transparent = false;
-        }
-
-        #region Clearing add-ons
-        for (int i = healthTabBodyParts.Count - 1; i >= 0; i--)
-        {
-            if (!visible || healthTabBodyParts[i].slatedForDeletion || inspectedState == null)
-            {
-                healthTabBodyParts[i].ClearSprites();
-                healthTabBodyParts.RemoveAt(i);
-            }
-        }
-        for (int i = healthTabInfos.Count - 1; i >= 0; i--)
-        {
-            if (!visible || healthTabInfos[i].slatedForDeletion || inspectedState == null)
-            {
-                healthTabInfos[i].ClearSprites();
-                healthTabInfos.RemoveAt(i);
-            }
-        }
-        for (int i = operationList.Count - 1; i >= 0; i--)
-        {
-            if (!visible || operationList[i].slatedForDeletion || !isOperationListActive)
-            {
-                operationList[i].ClearSprites();
-                operationList.RemoveAt(i);
-            }
-        }
-        #endregion
-
-        #region Updates
-        healthTabWholeBody.Update();
-
-        foreach (HealthTabBodyPart healthTabBodyPart in healthTabBodyParts)
-        {
-            healthTabBodyPart.Update();
-        }
-
-        foreach (HealthTabInfo healthTabInfo in healthTabInfos)
-        {
-            healthTabInfo.Update();
-        }
-
-        foreach (OperationSelection operationSelection in operationList)
-        {
-            operationSelection.Update();
-        }
-        #endregion
-
-        if (player == null || inspectedState == null || !visible)
-        {
-            return;
-        }
-
-        foreach (RimBodyPart part in inspectedState.bodyParts)
-        {
-            if (part.afflictions.Count == 0)
-            {
-                continue;
-            }
-
-            bool alreadyExists = false;
-            foreach (var bodyPartTab in healthTabBodyParts)
-            {
-                if (bodyPartTab.bodyPart == part)
-                {
-                    alreadyExists = true;
-
-                    if (IsSubPartDestroyed(inspectedState, bodyPartTab.bodyPart))
-                    {
-                        bodyPartTab.slatedForDeletion = true;
-                    }
-                    break;
-                }
-            }
-
-            if (!alreadyExists && !IsSubPartDestroyed(inspectedState, part))
-            {
-                HealthTabBodyPart partTab = new(this, part);
-
-                healthTabBodyParts.Add(partTab);
-
-                partTab.Update();
-            }
-        }
-
-        if (input.x != 0)
-        {
-            if (horizontalOnce)
-            {
-                goto skipHorizontal;
-            }
-
-            horizontalOnce = true;
-
-            bool positiveInput = input.x > 0;
-
-            if (isOperationListActive)
-            {
-                if (operationListMaxHorizontal == 0)
-                {
-                    goto skipHorizontal;
-                }
-
-                operationListHorizontal += positiveInput ? 1 : -1;
-
-                if (operationListHorizontal > operationListMaxHorizontal)
-                {
-                    operationListHorizontal = 0;
-                }
-                if (operationListHorizontal < 0 || operationListHorizontal == operationListMaxHorizontal)
-                {
-                    operationListHorizontal = operationListMaxHorizontal;
-
-                    if (operationListVertical >= operationListMaxVerticalLast)
-                    {
-                        operationListVertical = operationListMaxVerticalLast - 1;
-                    }
-                }
-
-                goto skipHorizontal;
-            }
-
-            bool afflictionActive = healthTabBodyParts.Count + healthTabWholeBody.afflictionNumber != 0;
-
-            if (!afflictionActive && (selectedHorizontal == 0 && selectedVertical != 0 || selectedHorizontal == 1 && selectedVertical == 1))
-            {
-                goto skipHorizontal;
-            }
-
-            if (selectedHorizontal == 0 && selectedVertical != 0)
-            {
-                selectedHorizontal = 2;
-
-                if (selectedVertical != -1)
-                {
-                    selectedVertical -= 1;
-                }
-            }
-            else if (selectedHorizontal == 2)
-            {
-                selectedHorizontal = overviewTab;
-
-                if (selectedVertical != -1)
-                {
-                    selectedVertical += 1;
-                }
-            }
-            else if (selectedHorizontal != 0 && selectedHorizontal != 2)
-            {
-                if (selectedHorizontal == 0.9f)
-                {
-                    if (positiveInput)
-                    {
-                        selectedHorizontal = 1;
-
-                        selectedVertical = selectedVertical switch
+                        if (grasp != null && grasp.grabbedChunk != null && grasp.grabbedChunk.owner == inspectedCreatureState.creature.realizedCreature)
                         {
-                            <= 2 => 2,
-                            <= 4 => 3,
-                            <= 6 => 4,
-                            _ => 5
-                        };
-                    }
-                    else
-                    {
-                        if (afflictionActive)
-                        {
-                            selectedHorizontal = 2;
-
-                            selectedVertical = selectedVertical switch
-                            {
-                                <= 2 => 1,
-                                <= 4 => 2,
-                                <= 6 => 3,
-                                _ => 4
-                            };
-                        }
-                        else
-                        {
-                            selectedHorizontal = 1.1f;
-
-                            selectedVertical = selectedVertical switch
-                            {
-                                <= 2 => 2,
-                                <= 4 => 4,
-                                <= 6 => 6,
-                                _ => 8
-                            };
+                            stillHoolding = true;
                         }
                     }
                 }
-                else if (selectedHorizontal == 1)
+
+                if (!stillHoolding)
                 {
-                    if (selectedVertical < 2)
-                    {
-                        if (selectedVertical == 1)
-                        {
-                            if (afflictionActive)
-                            {
-                                selectedHorizontal = 2;
-                            }
-                        }
-                        else
-                        {
-                            selectedHorizontal += positiveInput ? 1 : -1;
-                        }
-
-                        if (selectedVertical != -1)
-                        {
-                            if (selectedHorizontal == 2 && selectedVertical > 0)
-                            {
-                                selectedVertical -= 1;
-                            }
-                            else if (selectedVertical != 0)
-                            {
-                                selectedVertical += 1;
-                            }
-                        }
-                    }
-                    else if (positiveInput)
-                    {
-                        selectedHorizontal = 1.1f;
-
-                        selectedVertical = selectedVertical switch
-                        {
-                            2 => 2,
-                            3 => 4,
-                            4 => 6,
-                            _ => 8
-                        };
-                    }
-                    else
-                    {
-                        if (inspectedState.operationsList.Count == 1)
-                        {
-                            if (afflictionActive)
-                            {
-                                selectedHorizontal = 2;
-
-                                selectedVertical = 1;
-                            }
-                            else
-                            {
-                                selectedHorizontal = 1.1f;
-
-                                selectedVertical = selectedVertical switch
-                                {
-                                    2 => 2,
-                                    3 => 4,
-                                    4 => 6,
-                                    _ => 8
-                                };
-                            }
-                        }
-                        else
-                        {
-                            selectedHorizontal = 0.9f;
-
-                            selectedVertical = selectedVertical switch
-                            {
-                                2 => 2,
-                                3 => 3,
-                                4 => 5,
-                                5 => 7,
-                                _ => 2
-                            };
-                        }
-                    }
+                    ToggleVisibility();
                 }
-                else
+            }
+
+            if (!singleplayerHud && visible)
+            {
+                transparencyTimer++;
+
+                if (transparencyTimer >= 5)
                 {
-                    if (positiveInput)
+                    transparencyTimer = 0;
+
+                    float cameraPositionX = player.realizedCreature.room.game.cameras[0].pos.x;
+                    float cameraPositionY = player.realizedCreature.room.game.cameras[0].pos.y;
+
+                    bool forceTransparent = false;
+
+                    List<AbstractCreature> list = new(player.realizedCreature.abstractCreature.Room.creatures);
+                    foreach (AbstractCreature creature in list)
                     {
-                        if (afflictionActive)
+                        if (creature.realizedCreature == null || creature == player || creature == inspectedCreatureState.creature)
                         {
-                            selectedHorizontal = 2;
-
-                            selectedVertical = selectedVertical switch
-                            {
-                                <= 3 => 1,
-                                <= 5 => 2,
-                                <= 7 => 3,
-                                _ => 5
-                            };
+                            continue;
                         }
-                        else
-                        {
-                            selectedHorizontal = 0.9f;
 
-                            selectedVertical = selectedVertical switch
-                            {
-                                <= 3 => 2,
-                                <= 5 => 3,
-                                <= 7 => 5,
-                                _ => 7
-                            };
+                        float creaturePositionX = creature.pos.Tile.x * 20;
+                        float creaturePositionY = creature.pos.Tile.y * 20;
+
+                        float checkPositionX = 1366 + cameraPositionX - creaturePositionX;
+                        float checkPositionY = 768 + cameraPositionY - creaturePositionY;
+
+                        if (TransparencyCheck(checkPositionX, checkPositionY))
+                        {
+                            forceTransparent = true;
+                            break;
                         }
                     }
-                    else
-                    {
-                        selectedHorizontal = 1;
 
-                        selectedVertical = selectedVertical switch
-                        {
-                            <= 3 => 2,
-                            <= 5 => 3,
-                            <= 7 => 4,
-                            _ => 5
-                        };
-                    }
+                    transparent = forceTransparent;
                 }
             }
             else
             {
-                selectedHorizontal += positiveInput ? 1 : -1;
+                transparent = false;
+            }
 
-                if (selectedVertical != -1)
+            #region Clearing add-ons
+            for (int i = healthTabBodyParts.Count - 1; i >= 0; i--)
+            {
+                if (!visible || healthTabBodyParts[i].slatedForDeletion || inspectedState == null)
                 {
-                    if (selectedHorizontal == 2 && selectedVertical > 0)
+                    healthTabBodyParts[i].ClearSprites();
+                    healthTabBodyParts.RemoveAt(i);
+                }
+            }
+            for (int i = healthTabInfos.Count - 1; i >= 0; i--)
+            {
+                if (!visible || healthTabInfos[i].slatedForDeletion || inspectedState == null)
+                {
+                    healthTabInfos[i].ClearSprites();
+                    healthTabInfos.RemoveAt(i);
+                }
+            }
+            for (int i = operationList.Count - 1; i >= 0; i--)
+            {
+                if (!visible || operationList[i].slatedForDeletion || !isOperationListActive)
+                {
+                    operationList[i].ClearSprites();
+                    operationList.RemoveAt(i);
+                }
+            }
+            #endregion
+
+            #region Updates
+            healthTabWholeBody.Update();
+
+            foreach (HealthTabBodyPart healthTabBodyPart in healthTabBodyParts)
+            {
+                healthTabBodyPart.Update();
+            }
+
+            foreach (HealthTabInfo healthTabInfo in healthTabInfos)
+            {
+                healthTabInfo.Update();
+            }
+
+            foreach (OperationSelection operationSelection in operationList)
+            {
+                operationSelection.Update();
+            }
+            #endregion
+
+            if (player == null || inspectedState == null || !visible)
+            {
+                return;
+            }
+
+            foreach (RimBodyPart part in inspectedState.bodyParts)
+            {
+                if (part.afflictions.Count == 0)
+                {
+                    continue;
+                }
+
+                bool alreadyExists = false;
+                foreach (var bodyPartTab in healthTabBodyParts)
+                {
+                    if (bodyPartTab.bodyPart == part)
                     {
-                        selectedVertical -= 1;
+                        alreadyExists = true;
+
+                        if (IsSubPartDestroyed(inspectedState, bodyPartTab.bodyPart))
+                        {
+                            bodyPartTab.slatedForDeletion = true;
+                        }
+                        break;
                     }
-                    else if (selectedVertical != 0)
-                    {
-                        selectedVertical += 1;
-                    }
+                }
+
+                if (!alreadyExists && !IsSubPartDestroyed(inspectedState, part))
+                {
+                    HealthTabBodyPart partTab = new(this, part);
+
+                    healthTabBodyParts.Add(partTab);
+
+                    partTab.Update();
                 }
             }
 
-            selectedTimer = selectedTimerMax;
-
-            if (selectedHorizontal > 2 || !afflictionActive && selectedHorizontal > 1.5f)
+            if (input.x != 0)
             {
-                selectedHorizontal = 0;
-            }
-            else if (selectedHorizontal < 0)
-            {
-                if (afflictionActive)
+                if (horizontalOnce)
                 {
-                    selectedHorizontal = 2;
-                }
-                else
-                {
-                    if (selectedVertical == 0)
-                    {
-                        selectedHorizontal = 1;
-                    }
-                    else
-                    {
-                        selectedHorizontal = overviewTab;
-                    }
-                }
-            }
-
-            if (selectedVertical != -1)
-            {
-                int maxVertical = getMaxVertical();
-
-                if (maxVertical == -1)
-                {
-                    maxVertical = healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0;
-
-                    for (int i = 0; i < healthTabBodyParts.Count; i++)
-                    {
-                        maxVertical += healthTabBodyParts[i].combinedAfflictions.Count + healthTabBodyParts[i].afflictions.Count;
-                    }
+                    goto skipHorizontal;
                 }
 
-                if (selectedVertical >= maxVertical)
+                horizontalOnce = true;
+
+                bool positiveInput = input.x > 0;
+
+                if (isOperationListActive)
                 {
-                    selectedVertical = maxVertical - 1;
-                }
-                else if (selectedVertical < 0)
-                {
-                    selectedVertical = 0;
-                }
-            }
-        }
-        else
-        {
-            horizontalOnce = false;
-        }
-
-    skipHorizontal:
-
-        if (selectedHorizontal == 2 && healthTabBodyParts.Count + healthTabWholeBody.afflictionNumber == 0)
-            selectedHorizontal = overviewTab;
-
-        if (input.y != 0)
-        {
-            if (verticalOnce)
-            {
-                goto skipVertical;
-            }
-
-            bool positiveInput = input.y > 0;
-
-            selected = true;
-
-            selectedTimer = selectedTimerMax;
-
-            verticalOnce = true;
-
-            if (isOperationListActive)
-            {
-                operationListVertical += positiveInput ? -1 : 1;
-
-                if (operationListVertical >= operationListMaxVertical || operationListHorizontal == operationListMaxHorizontal && operationListVertical >= operationListMaxVerticalLast)
-                {
-                    operationListVertical = 0;
-
                     if (operationListMaxHorizontal == 0)
                     {
-                        goto skipVertical;
+                        goto skipHorizontal;
                     }
 
-                    operationListHorizontal += 1;
+                    operationListHorizontal += positiveInput ? 1 : -1;
 
                     if (operationListHorizontal > operationListMaxHorizontal)
                     {
                         operationListHorizontal = 0;
                     }
-                }
-                else if (operationListVertical < 0)
-                {
-                    operationListVertical = operationListMaxVertical - 1;
-
-                    if (operationListMaxHorizontal == 0)
-                    {
-                        goto skipVertical;
-                    }
-
-                    operationListHorizontal -= 1;
-
-                    if (operationListHorizontal < 0)
+                    if (operationListHorizontal < 0 || operationListHorizontal == operationListMaxHorizontal)
                     {
                         operationListHorizontal = operationListMaxHorizontal;
 
@@ -781,46 +458,381 @@ public class HealthTab : HudPart
                             operationListVertical = operationListMaxVerticalLast - 1;
                         }
                     }
+
+                    goto skipHorizontal;
                 }
 
-                goto skipVertical;
-            }
+                bool afflictionActive = healthTabBodyParts.Count + healthTabWholeBody.afflictionNumber != 0;
 
-            if (selectedHorizontal != 2 && selectedVertical == 0)
-            {
-                selectedHorizontal = overviewTab;
-            }
+                if (!afflictionActive && (selectedHorizontal == 0 && selectedVertical != 0 || selectedHorizontal == 1 && selectedVertical == 1))
+                {
+                    goto skipHorizontal;
+                }
 
-            if (selectedVertical == -1 && !positiveInput && selectedHorizontal != 2)
-            {
-                selectedVertical = 1;
+                if (selectedHorizontal == 0 && selectedVertical != 0)
+                {
+                    selectedHorizontal = 2;
+
+                    if (selectedVertical != -1)
+                    {
+                        selectedVertical -= 1;
+                    }
+                }
+                else if (selectedHorizontal == 2)
+                {
+                    selectedHorizontal = overviewTab;
+
+                    if (selectedVertical != -1)
+                    {
+                        selectedVertical += 1;
+                    }
+                }
+                else if (selectedHorizontal != 0 && selectedHorizontal != 2)
+                {
+                    if (selectedHorizontal == 0.9f)
+                    {
+                        if (positiveInput)
+                        {
+                            selectedHorizontal = 1;
+
+                            selectedVertical = selectedVertical switch
+                            {
+                                <= 2 => 2,
+                                <= 4 => 3,
+                                <= 6 => 4,
+                                _ => 5
+                            };
+                        }
+                        else
+                        {
+                            if (afflictionActive)
+                            {
+                                selectedHorizontal = 2;
+
+                                selectedVertical = selectedVertical switch
+                                {
+                                    <= 2 => 1,
+                                    <= 4 => 2,
+                                    <= 6 => 3,
+                                    _ => 4
+                                };
+                            }
+                            else
+                            {
+                                selectedHorizontal = 1.1f;
+
+                                selectedVertical = selectedVertical switch
+                                {
+                                    <= 2 => 2,
+                                    <= 4 => 4,
+                                    <= 6 => 6,
+                                    _ => 8
+                                };
+                            }
+                        }
+                    }
+                    else if (selectedHorizontal == 1)
+                    {
+                        if (selectedVertical < 2)
+                        {
+                            if (selectedVertical == 1)
+                            {
+                                if (afflictionActive)
+                                {
+                                    selectedHorizontal = 2;
+                                }
+                            }
+                            else
+                            {
+                                selectedHorizontal += positiveInput ? 1 : -1;
+                            }
+
+                            if (selectedVertical != -1)
+                            {
+                                if (selectedHorizontal == 2 && selectedVertical > 0)
+                                {
+                                    selectedVertical -= 1;
+                                }
+                                else if (selectedVertical != 0)
+                                {
+                                    selectedVertical += 1;
+                                }
+                            }
+                        }
+                        else if (positiveInput)
+                        {
+                            selectedHorizontal = 1.1f;
+
+                            selectedVertical = selectedVertical switch
+                            {
+                                2 => 2,
+                                3 => 4,
+                                4 => 6,
+                                _ => 8
+                            };
+                        }
+                        else
+                        {
+                            if (inspectedState.operationsList.Count == 1)
+                            {
+                                if (afflictionActive)
+                                {
+                                    selectedHorizontal = 2;
+
+                                    selectedVertical = 1;
+                                }
+                                else
+                                {
+                                    selectedHorizontal = 1.1f;
+
+                                    selectedVertical = selectedVertical switch
+                                    {
+                                        2 => 2,
+                                        3 => 4,
+                                        4 => 6,
+                                        _ => 8
+                                    };
+                                }
+                            }
+                            else
+                            {
+                                selectedHorizontal = 0.9f;
+
+                                selectedVertical = selectedVertical switch
+                                {
+                                    2 => 2,
+                                    3 => 3,
+                                    4 => 5,
+                                    5 => 7,
+                                    _ => 2
+                                };
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (positiveInput)
+                        {
+                            if (afflictionActive)
+                            {
+                                selectedHorizontal = 2;
+
+                                selectedVertical = selectedVertical switch
+                                {
+                                    <= 3 => 1,
+                                    <= 5 => 2,
+                                    <= 7 => 3,
+                                    _ => 5
+                                };
+                            }
+                            else
+                            {
+                                selectedHorizontal = 0.9f;
+
+                                selectedVertical = selectedVertical switch
+                                {
+                                    <= 3 => 2,
+                                    <= 5 => 3,
+                                    <= 7 => 5,
+                                    _ => 7
+                                };
+                            }
+                        }
+                        else
+                        {
+                            selectedHorizontal = 1;
+
+                            selectedVertical = selectedVertical switch
+                            {
+                                <= 3 => 2,
+                                <= 5 => 3,
+                                <= 7 => 4,
+                                _ => 5
+                            };
+                        }
+                    }
+                }
+                else
+                {
+                    selectedHorizontal += positiveInput ? 1 : -1;
+
+                    if (selectedVertical != -1)
+                    {
+                        if (selectedHorizontal == 2 && selectedVertical > 0)
+                        {
+                            selectedVertical -= 1;
+                        }
+                        else if (selectedVertical != 0)
+                        {
+                            selectedVertical += 1;
+                        }
+                    }
+                }
+
+                selectedTimer = selectedTimerMax;
+
+                if (selectedHorizontal > 2 || !afflictionActive && selectedHorizontal > 1.5f)
+                {
+                    selectedHorizontal = 0;
+                }
+                else if (selectedHorizontal < 0)
+                {
+                    if (afflictionActive)
+                    {
+                        selectedHorizontal = 2;
+                    }
+                    else
+                    {
+                        if (selectedVertical == 0)
+                        {
+                            selectedHorizontal = 1;
+                        }
+                        else
+                        {
+                            selectedHorizontal = overviewTab;
+                        }
+                    }
+                }
+
+                if (selectedVertical != -1)
+                {
+                    int maxVertical = getMaxVertical();
+
+                    if (maxVertical == -1)
+                    {
+                        maxVertical = healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0;
+
+                        for (int i = 0; i < healthTabBodyParts.Count; i++)
+                        {
+                            maxVertical += healthTabBodyParts[i].combinedAfflictions.Count + healthTabBodyParts[i].afflictions.Count;
+                        }
+                    }
+
+                    if (selectedVertical >= maxVertical)
+                    {
+                        selectedVertical = maxVertical - 1;
+                    }
+                    else if (selectedVertical < 0)
+                    {
+                        selectedVertical = 0;
+                    }
+                }
             }
             else
             {
-                selectedVertical += positiveInput ? -1 : 1;
+                horizontalOnce = false;
             }
 
-            int maxVertical = getMaxVertical();
+        skipHorizontal:
 
-            if (maxVertical == -1)
+            if (selectedHorizontal == 2 && healthTabBodyParts.Count + healthTabWholeBody.afflictionNumber == 0)
+                selectedHorizontal = overviewTab;
+
+            if (input.y != 0)
             {
-                maxVertical = healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0;
-                for (int i = 0; i < healthTabBodyParts.Count; i++)
+                if (verticalOnce)
                 {
-                    maxVertical += healthTabBodyParts[i].combinedAfflictions.Count + healthTabBodyParts[i].afflictions.Count;
+                    goto skipVertical;
                 }
-            }
 
-            if ((selectedHorizontal == 0.9f || selectedHorizontal == 1.1f) && selectedVertical < 2)
-            {
-                selectedHorizontal = 1;
-            }
+                bool positiveInput = input.y > 0;
 
-            if (selectedVertical >= maxVertical)
-            {
-                if (selectedHorizontal != 0 || selectedVertical != maxVertical)
+                selected = true;
+
+                selectedTimer = selectedTimerMax;
+
+                verticalOnce = true;
+
+                if (isOperationListActive)
                 {
-                    selectedVertical = selectedHorizontal != 2 && !positiveInput ? 1 : 0;
+                    operationListVertical += positiveInput ? -1 : 1;
+
+                    if (operationListVertical >= operationListMaxVertical || operationListHorizontal == operationListMaxHorizontal && operationListVertical >= operationListMaxVerticalLast)
+                    {
+                        operationListVertical = 0;
+
+                        if (operationListMaxHorizontal == 0)
+                        {
+                            goto skipVertical;
+                        }
+
+                        operationListHorizontal += 1;
+
+                        if (operationListHorizontal > operationListMaxHorizontal)
+                        {
+                            operationListHorizontal = 0;
+                        }
+                    }
+                    else if (operationListVertical < 0)
+                    {
+                        operationListVertical = operationListMaxVertical - 1;
+
+                        if (operationListMaxHorizontal == 0)
+                        {
+                            goto skipVertical;
+                        }
+
+                        operationListHorizontal -= 1;
+
+                        if (operationListHorizontal < 0)
+                        {
+                            operationListHorizontal = operationListMaxHorizontal;
+
+                            if (operationListVertical >= operationListMaxVerticalLast)
+                            {
+                                operationListVertical = operationListMaxVerticalLast - 1;
+                            }
+                        }
+                    }
+
+                    goto skipVertical;
+                }
+
+                if (selectedHorizontal != 2 && selectedVertical == 0)
+                {
+                    selectedHorizontal = overviewTab;
+                }
+
+                if (selectedVertical == -1 && !positiveInput && selectedHorizontal != 2)
+                {
+                    selectedVertical = 1;
+                }
+                else
+                {
+                    selectedVertical += positiveInput ? -1 : 1;
+                }
+
+                int maxVertical = getMaxVertical();
+
+                if (maxVertical == -1)
+                {
+                    maxVertical = healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0;
+                    for (int i = 0; i < healthTabBodyParts.Count; i++)
+                    {
+                        maxVertical += healthTabBodyParts[i].combinedAfflictions.Count + healthTabBodyParts[i].afflictions.Count;
+                    }
+                }
+
+                if ((selectedHorizontal == 0.9f || selectedHorizontal == 1.1f) && selectedVertical < 2)
+                {
+                    selectedHorizontal = 1;
+                }
+
+                if (selectedVertical >= maxVertical)
+                {
+                    if (selectedHorizontal != 0 || selectedVertical != maxVertical)
+                    {
+                        selectedVertical = selectedHorizontal != 2 && !positiveInput ? 1 : 0;
+
+                        if (selectedHorizontal == 0.9f || selectedHorizontal == 1.1f)
+                        {
+                            selectedHorizontal = 1;
+                        }
+                    }
+                }
+                else if (selectedVertical <= -1)
+                {
+                    selectedVertical = maxVertical - 1;
 
                     if (selectedHorizontal == 0.9f || selectedHorizontal == 1.1f)
                     {
@@ -828,752 +840,759 @@ public class HealthTab : HudPart
                     }
                 }
             }
-            else if (selectedVertical <= -1)
+            else
             {
-                selectedVertical = maxVertical - 1;
+                verticalOnce = false;
+            }
 
-                if (selectedHorizontal == 0.9f || selectedHorizontal == 1.1f)
+        skipVertical:
+
+            if (selectedHorizontal == 2)
+            {
+                int maxVertical = healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0;
+
+                foreach (HealthTabBodyPart bodyPartTab in healthTabBodyParts)
                 {
-                    selectedHorizontal = 1;
+                    maxVertical += bodyPartTab.combinedAfflictions.Count + bodyPartTab.afflictions.Count;
+                }
+
+                if (selectedVertical >= maxVertical)
+                {
+                    selectedVertical = maxVertical - 1;
                 }
             }
-        }
-        else
-        {
-            verticalOnce = false;
-        }
 
-    skipVertical:
-
-        if (selectedHorizontal == 2)
-        {
-            int maxVertical = healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0;
-
-            foreach (HealthTabBodyPart bodyPartTab in healthTabBodyParts)
+            if (input.thrw)
             {
-                maxVertical += bodyPartTab.combinedAfflictions.Count + bodyPartTab.afflictions.Count;
-            }
+                if (cancelOnce)
+                {
+                    goto skipCancel;
+                }
 
-            if (selectedVertical >= maxVertical)
-            {
-                selectedVertical = maxVertical - 1;
-            }
-        }
+                cancelOnce = true;
 
-        if (input.thrw)
-        {
-            if (cancelOnce)
-            {
-                goto skipCancel;
-            }
-
-            cancelOnce = true;
-
-            if (isOperationListActive)
-            {
-                isOperationListActive = false;
+                if (isOperationListActive)
+                {
+                    isOperationListActive = false;
+                }
+                else
+                {
+                    ToggleVisibility();
+                    return;
+                }
             }
             else
             {
-                ToggleVisibility();
-                return;
+                cancelOnce = false;
             }
-        }
-        else
-        {
-            cancelOnce = false;
-        }
 
-    skipCancel:
+        skipCancel:
 
-        if (input.jmp || input.pckp)
-        {
-            if (interactOnce)
-            { 
-                if (playerState.tendAffliction == null && ((selectedHorizontal == 0 && selectedVertical != 0) || selectedHorizontal == 2))
+            if (input.jmp || input.pckp)
+            {
+                if (interactOnce)
                 {
-                    goto skipToTend;
+                    if (playerState.tendAffliction == null && ((selectedHorizontal == 0 && selectedVertical != 0) || selectedHorizontal == 2))
+                    {
+                        goto skipToTend;
+                    }
+
+                    return;
                 }
 
-                return;
-            }
+                interactOnce = true;
 
-            interactOnce = true;
+                if (isOperationListActive)
+                {
+                    if (inspectedState.operationsList.Count > 3)
+                    {
+                        return;
+                    }
 
-            if (isOperationListActive)
-            {
-                if (inspectedState.operationsList.Count > 3)
+                    string operationName = "";
+                    string operationSubName = "";
+
+                    foreach (OperationSelection operation in operationList)
+                    {
+                        if (operation.horizontal == operationListHorizontal && operation.vertical == operationListVertical)
+                        {
+                            operationName = operation.name;
+                            operationSubName = operation.subName;
+                            break;
+                        }
+                    }
+
+                    int forLoops = operationName switch
+                    {
+                        "Harvest" => 6,
+                        "Install peg leg" => 2,
+                        "Install wooden hand" => 2,
+                        "Install wooden foot" => 2,
+                        _ => 1
+                    };
+
+                    for (int i = 0; i < forLoops; i++)
+                    {
+                        bool forceContinue = false;
+
+                        Type partType = null;
+                        string partSubName = "";
+
+                        switch (operationName)
+                        {
+                            case "Harvest":
+                                switch (i)
+                                {
+                                    case 0:
+                                        partType = typeof(Heart);
+                                        break;
+                                    case 1:
+                                        partType = typeof(Lung);
+                                        partSubName = "Left";
+                                        break;
+                                    case 2:
+                                        partType = typeof(Lung);
+                                        partSubName = "Right";
+                                        break;
+                                    case 3:
+                                        partType = typeof(Kidney);
+                                        partSubName = "Left";
+                                        break;
+                                    case 4:
+                                        partType = typeof(Kidney);
+                                        partSubName = "Right";
+                                        break;
+                                    case 5:
+                                        partType = typeof(Liver);
+                                        break;
+                                }
+                                break;
+                            case "Remove (tongue)":
+                                partType = typeof(Tongue);
+                                break;
+                            case "Install wooden hand":
+                                switch (i)
+                                {
+                                    case 0:
+                                        partType = typeof(Arm);
+                                        partSubName = "Left";
+                                        break;
+                                    case 1:
+                                        partType = typeof(Arm);
+                                        partSubName = "Right";
+                                        break;
+                                }
+                                break;
+                            case "Install wooden foot":
+                                switch (i)
+                                {
+                                    case 0:
+                                        partType = typeof(Leg);
+                                        partSubName = "Left";
+                                        break;
+                                    case 1:
+                                        partType = typeof(Leg);
+                                        partSubName = "Right";
+                                        break;
+                                }
+                                break;
+                            case "Install denture (jaw)":
+                                partType = typeof(Head);
+                                break;
+                        }
+
+                        foreach (RimOperation operation in inspectedState.operationsList)
+                        {
+                            if (operation.name == operationName && operation.subName == operationSubName)
+                            {
+                                forceContinue = true;
+                                break;
+                            }
+                        }
+
+                        if (forceContinue)
+                        {
+                            continue;
+                        }
+
+                        if (partType == null)
+                        {
+                            //goto skipBodyPart;
+                        }
+
+                        forceContinue = true;
+
+                        foreach (RimBodyPart part in inspectedState.bodyParts)
+                        {
+                            if (part.GetType() == partType && part.subName == partSubName && !IsDestroyed(part))
+                            {
+                                forceContinue = false;
+                                break;
+                            }
+                        }
+
+                        if (forceContinue)
+                        {
+                            continue;
+                        }
+
+                        //skipBodyPart:
+
+
+                    }
+
+                    //"Remove bionic spine",
+                    //"Remove bionic stomach",
+                    //"Remove bionic heart",
+                    //"Harvest",
+                    //(All "Remove bionic" below are ordered by left first and right last no matter which prosthetic is installed)
+                    //"Remove bionic eye",
+                    //"Remove bionic ear",
+                    //"Remove bionic jaw",
+                    //"Remove (tongue)", (same for default and bionic tongue)
+                    //"Remove bionic arm",
+                    //"Remove wooden hand",
+                    //"Remove wooden foot",
+                    //"Remove bionic leg",
+                    //"Amputate",
+                    //"Euthanize by Cut", "Anesthetize",
+                    //"Install archotech eye",
+                    //"Install archotech arm",
+                    //"Install archotech leg",
+                    //"Install bionic eye",
+                    //"Install bionic arm",
+                    //"Install bionic leg",
+                    //"Install bionic spine",
+                    //"Install bionic heart",
+                    //"Install bionic stomach",
+                    //"Install bionic ear",
+                    //"Install bionic tongue",
+                    //"Install bionic jaw",
+                    //"Install peg leg",
+                    //"Install wooden hand",
+                    //"Install wooden foot",
+                    //"Install denture (jaw)",
+                    //"Install heart",
+                    //"Install lung",
+                    //"Install kidney",
+                    //"Install liver",
+                    //"Install prosthetic heart",
+
+                    int[] medicalRequirments = [0, 1, 1];
+
+                    if (operationName == "Euthanize by Cut" || operationName == "Anesthetize")
+                    {
+                        inspectedState.operationsList.Add(new RimOperation(operationName, operationSubName, null, medicalRequirments, null));
+                    }
+                    else
+                    {
+                        string limbName = "";
+                        string limbSubName = "";
+                        Func<RimArtificialPartBase> replacement = null;
+                        RimBodyPart operatedPart = null;
+
+                        string nameOverride = "";
+
+                        string operationNameOverride = "";
+                        string operationSubNameOverride = "";
+
+                        Type requiredObject = null;
+
+                        switch (operationName)
+                        {
+                            case "Harvest":
+                                switch (operationSubName)
+                                {
+                                    case "(heart)":
+                                        foreach (RimBodyPart part in inspectedState.bodyParts)
+                                        {
+                                            if (part is Heart heart)
+                                            {
+                                                operatedPart = part;
+                                                limbName = heart.name;
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    case "(left lung)":
+                                        foreach (RimBodyPart part in inspectedState.bodyParts)
+                                        {
+                                            if (part is Lung lung && lung.subName == "Left")
+                                            {
+                                                operatedPart = part;
+                                                limbName = lung.name;
+                                                limbSubName = lung.subName;
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    case "(right lung)":
+                                        foreach (RimBodyPart part in inspectedState.bodyParts)
+                                        {
+                                            if (part is Lung lung && lung.subName == "Right")
+                                            {
+                                                operatedPart = part;
+                                                limbName = lung.name;
+                                                limbSubName = lung.subName;
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    case "(left kidney)":
+                                        foreach (RimBodyPart part in inspectedState.bodyParts)
+                                        {
+                                            if (part is Kidney kidney && kidney.subName == "Left")
+                                            {
+                                                operatedPart = part;
+                                                limbName = kidney.name;
+                                                limbSubName = kidney.subName;
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    case "(right kidney)":
+                                        foreach (RimBodyPart part in inspectedState.bodyParts)
+                                        {
+                                            if (part is Kidney kidney && kidney.subName == "Right")
+                                            {
+                                                operatedPart = part;
+                                                limbName = kidney.name;
+                                                limbSubName = kidney.subName;
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    case "(liver)":
+                                        foreach (RimBodyPart part in inspectedState.bodyParts)
+                                        {
+                                            if (part is Liver liver)
+                                            {
+                                                operatedPart = part;
+                                                limbName = liver.name;
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                }
+                                break;
+                            case "Remove (tongue)":
+                                foreach (RimBodyPart part in inspectedState.bodyParts)
+                                {
+                                    if (part is Tongue tongue)
+                                    {
+                                        operatedPart = part;
+                                        limbName = tongue.name;
+                                        break;
+                                    }
+                                }
+                                break;
+                            case "Amputate":
+
+                                break;
+                            case "Install archotech eye":
+                                medicalRequirments = [5, 2, 1];
+                                break;
+                            case "Install archotech arm":
+                                medicalRequirments = [5, 2, 1];
+                                break;
+                            case "Install archotech leg":
+                                medicalRequirments = [5, 2, 1];
+                                break;
+                            case "Install bionic arm":
+                                medicalRequirments = [5, 2, 1];
+                                break;
+                            case "Install peg leg":
+                                switch (operationSubName)
+                                {
+                                    case "(left leg)":
+                                        foreach (RimBodyPart part in inspectedState.bodyParts)
+                                        {
+                                            if (part is Leg leg && leg.subName == "Left")
+                                            {
+                                                operatedPart = part;
+                                                limbName = leg.name;
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    case "(right leg)":
+                                        foreach (RimBodyPart part in inspectedState.bodyParts)
+                                        {
+                                            if (part is Leg leg && leg.subName == "Right")
+                                            {
+                                                operatedPart = part;
+                                                limbName = leg.name;
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                }
+
+                                replacement = () => new RimPegLeg(inspectedCreatureState, operatedPart);
+
+                                medicalRequirments = [3, 2, 1];
+                                requiredObject = typeof(Spear);
+                                break;
+                            case "Install wooden hand":
+                                switch (operationSubName)
+                                {
+                                    case "(left hand)":
+                                        foreach (RimBodyPart part in inspectedState.bodyParts)
+                                        {
+                                            if (part is Hand hand && hand.subName == "Left")
+                                            {
+                                                operatedPart = part;
+                                                limbName = hand.name;
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    case "(right hand)":
+                                        foreach (RimBodyPart part in inspectedState.bodyParts)
+                                        {
+                                            if (part is Hand hand && hand.subName == "Right")
+                                            {
+                                                operatedPart = part;
+                                                limbName = hand.name;
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                }
+
+                                replacement = () => new RimWoodenHand(inspectedCreatureState, operatedPart);
+
+                                medicalRequirments = [3, 2, 1];
+                                break;
+                            case "Install wooden foot":
+                                switch (operationSubName)
+                                {
+                                    case "(left foot)":
+                                        foreach (RimBodyPart part in inspectedState.bodyParts)
+                                        {
+                                            if (part is Foot foot && foot.subName == "Left")
+                                            {
+                                                operatedPart = part;
+                                                limbName = foot.name;
+
+                                                if (foot is SlugcatPaw)
+                                                {
+                                                    nameOverride = "paw";
+                                                    operationNameOverride = "Install wooden paw";
+                                                    operationSubNameOverride = "(left paw)";
+                                                }
+
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    case "(right foot)":
+                                        foreach (RimBodyPart part in inspectedState.bodyParts)
+                                        {
+                                            if (part is Foot foot && foot.subName == "Right")
+                                            {
+                                                operatedPart = part;
+                                                limbName = foot.name;
+
+                                                if (foot is SlugcatPaw)
+                                                {
+                                                    nameOverride = "paw";
+                                                    operationNameOverride = "Install wooden paw";
+                                                    operationSubNameOverride = "(right paw)";
+                                                }
+
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                }
+
+                                replacement = () => new RimWoodenFoot(inspectedCreatureState, operatedPart, nameOverride);
+
+                                medicalRequirments = [3, 2, 1];
+                                break;
+                            case "Install denture (jaw)":
+                                foreach (RimBodyPart part in inspectedState.bodyParts)
+                                {
+                                    if (part is Jaw jaw)
+                                    {
+                                        operatedPart = part;
+                                        limbName = jaw.name;
+                                        break;
+                                    }
+                                }
+
+                                replacement = () => new RimDenture(inspectedCreatureState, operatedPart);
+
+                                medicalRequirments = [3, 2, 1];
+                                break;
+                        }
+
+                        if (operationNameOverride != "")
+                        {
+                            operationName = operationNameOverride;
+                        }
+                        if (operationSubNameOverride != "")
+                        {
+                            operationSubName = operationSubNameOverride;
+                        }
+
+                        inspectedState.operationsList.Add(new RimLimbReplacement(operationName, operationSubName, operatedPart, medicalRequirments, requiredObject, limbName, limbSubName, replacement));
+                    }
+
+                    isOperationListActive = false;
+                    return;
+                }
+
+                if (selectedHorizontal == 0 && selectedVertical == getMaxVertical())
+                {
+                    inspectedState.allowedMedicine++;
+
+                    if (inspectedState.allowedMedicine > 3)
+                    {
+                        inspectedState.allowedMedicine = 0;
+                    }
+                }
+                if ((selectedHorizontal != 0 || selectedVertical == 0) && selectedHorizontal != 2) //use this to select Overview tabs and select operation stuff, otherwise regular tending code will trigger.
+                {
+                    if (selectedVertical == 0)
+                    {
+                        overviewTab = selectedHorizontal == 0 ? 0 : 1;
+                    }
+                    else if (selectedVertical == 1)
+                    {
+                        isOperationListActive = true;
+
+                        SpawnOperationList();
+                    }
+                    else if (selectedHorizontal == 1)
+                    {
+                        switch (selectedVertical)
+                        {
+                            case 2:
+                                if (inspectedState.operationsList.Count < 1 || inspectedState.operationsList[0] == null || inspectedState.operationsList[0].isSuspended || playerState.tendOperation == inspectedState.operationsList[0])
+                                {
+                                    break;
+                                }
+
+                                startOperating(inspectedState.operationsList[0]);
+
+                                break;
+                            case 3:
+                                if (inspectedState.operationsList.Count < 2 || inspectedState.operationsList[1] == null || inspectedState.operationsList[1].isSuspended || playerState.tendOperation == inspectedState.operationsList[1])
+                                {
+                                    break;
+                                }
+
+                                startOperating(inspectedState.operationsList[1]);
+                                break;
+                            case 4:
+                                if (inspectedState.operationsList.Count < 3 || inspectedState.operationsList[2] == null || inspectedState.operationsList[2].isSuspended || playerState.tendOperation == inspectedState.operationsList[2])
+                                {
+                                    break;
+                                }
+
+                                startOperating(inspectedState.operationsList[2]);
+                                break;
+                            case 5:
+                                if (inspectedState.operationsList.Count < 4 || inspectedState.operationsList[3] == null || inspectedState.operationsList[3].isSuspended || playerState.tendOperation == inspectedState.operationsList[3])
+                                {
+                                    break;
+                                }
+
+                                startOperating(inspectedState.operationsList[3]);
+                                break;
+                        }
+                    }
+                    else if (selectedHorizontal == 1.1f)
+                    {
+                        switch (selectedVertical)
+                        {
+                            case 2:
+                                if (playerState.tendOperation != null && playerState.tendOperation == inspectedState.operationsList[0])
+                                {
+                                    playerState.tendOperation = null;
+                                }
+
+                                inspectedState.operationsList.RemoveAt(0);
+
+                                if (inspectedState.operationsList.Count == 0)
+                                {
+                                    selectedHorizontal = 1;
+                                    selectedVertical = 1;
+                                }
+                                break;
+                            case 3:
+                                inspectedState.operationsList[0].isSuspended = !inspectedState.operationsList[0].isSuspended;
+                                break;
+                            case 4:
+                                if (playerState.tendOperation != null && playerState.tendOperation == inspectedState.operationsList[1])
+                                {
+                                    playerState.tendOperation = null;
+                                }
+
+                                inspectedState.operationsList.RemoveAt(1);
+                                selectedVertical = 3;
+                                break;
+                            case 5:
+                                inspectedState.operationsList[1].isSuspended = !inspectedState.operationsList[1].isSuspended;
+                                break;
+                            case 6:
+                                if (playerState.tendOperation != null && playerState.tendOperation == inspectedState.operationsList[2])
+                                {
+                                    playerState.tendOperation = null;
+                                }
+
+                                inspectedState.operationsList.RemoveAt(2);
+                                selectedVertical = 5;
+                                break;
+                            case 7:
+                                inspectedState.operationsList[2].isSuspended = !inspectedState.operationsList[2].isSuspended;
+                                break;
+                            case 8:
+                                if (playerState.tendOperation != null && playerState.tendOperation == inspectedState.operationsList[3])
+                                {
+                                    playerState.tendOperation = null;
+                                }
+
+                                inspectedState.operationsList.RemoveAt(3);
+                                selectedVertical = 7;
+                                break;
+                            case 9:
+                                inspectedState.operationsList[3].isSuspended = !inspectedState.operationsList[3].isSuspended;
+                                break;
+                        }
+                    }
+                    else if (selectedHorizontal == 0.9f)
+                    {
+                        List<RimOperation> list;
+                        List<int> order;
+
+                        switch (selectedVertical)
+                        {
+                            case <= 3:
+                                list = inspectedState.operationsList;
+
+                                if (inspectedState.operationsList.Count == 2)
+                                {
+                                    order = new List<int> { 1, 0 };
+                                }
+                                else if (inspectedState.operationsList.Count == 3)
+                                {
+                                    order = new List<int> { 1, 0, 2 };
+                                }
+                                else
+                                {
+                                    order = new List<int> { 1, 0, 2, 3 };
+                                }
+
+                                inspectedState.operationsList = order.Select(i => list[i]).ToList();
+                                break;
+                            case <= 5:
+                                list = inspectedState.operationsList;
+
+                                if (inspectedState.operationsList.Count == 3)
+                                {
+                                    order = new() { 0, 2, 1 };
+                                }
+                                else
+                                {
+                                    order = new List<int> { 0, 2, 1, 3 };
+                                }
+
+                                inspectedState.operationsList = order.Select(i => list[i]).ToList();
+                                break;
+                            case <= 7:
+                                list = inspectedState.operationsList;
+
+                                order = new() { 0, 1, 3, 2 };
+
+                                inspectedState.operationsList = order.Select(i => list[i]).ToList();
+                                break;
+                        }
+                    }
+
+                    return;
+                }
+
+            skipToTend:
+
+                if (playerState.tendAffliction != null || (playerState.consciousState != 0 && ShadowOfOptions.downed_tend.Value == "No one") || (playerState.consciousState == 3 && !ShadowOfOptions.player_uncon_movement.Value))
                 {
                     return;
                 }
 
-                string operationName = "";
-                string operationSubName = "";
-
-                foreach (OperationSelection operation in operationList)
+                #region Tending
+                if (inspectedState.onFire)
                 {
-                    if (operation.horizontal == operationListHorizontal && operation.vertical == operationListVertical)
-                    {
-                        operationName = operation.name;
-                        operationSubName = operation.subName;
-                        break;
-                    }
+                    playerState.tendTarget = inspectedState == playerState && inspectedCreatureState != null && inspectedCreatureState.creature != null && inspectedCreatureState.creature.realizedCreature != null ? null : inspectedCreatureState.creature.realizedCreature;
+
+                    playerState.tendTime = 10;
+                    playerState.tendTimeMax = playerState.tendTime;
+                    playerState.tendAffliction = burningAffliction;
+
+                    return;
                 }
 
-                int forLoops = operationName switch
+                RimInjury bleeding = null;
+                RimDisease diseaseAffliction = null;
+                RimInjury untendedAffliction = null;
+
+                foreach (RimBodyPart part in inspectedState.bodyParts)
                 {
-                    "Harvest" => 6,
-                    "Install peg leg" => 2,
-                    "Install wooden hand" => 2,
-                    "Install wooden foot" => 2,
-                    _ => 1
-                };
-
-                for (int i = 0; i < forLoops; i++)
-                {
-                    bool forceContinue = false;
-
-                    Type partType = null;
-                    string partSubName = "";
-
-                    switch (operationName)
+                    foreach (RimAffliction baseAffliction in part.afflictions)
                     {
-                        case "Harvest":
-                            switch (i)
-                            {
-                                case 0:
-                                    partType = typeof(Heart);
-                                    break;
-                                case 1:
-                                    partType = typeof(Lung);
-                                    partSubName = "Left";
-                                    break;
-                                case 2:
-                                    partType = typeof(Lung);
-                                    partSubName = "Right";
-                                    break;
-                                case 3:
-                                    partType = typeof(Kidney);
-                                    partSubName = "Left";
-                                    break;
-                                case 4:
-                                    partType = typeof(Kidney);
-                                    partSubName = "Right";
-                                    break;
-                                case 5:
-                                    partType = typeof(Liver);
-                                    break;
-                            }
-                            break;
-                        case "Remove (tongue)":
-                            partType = typeof(Tongue);
-                            break;
-                        case "Install wooden hand":
-                            switch (i)
-                            {
-                                case 0:
-                                    partType = typeof(Arm);
-                                    partSubName = "Left";
-                                    break;
-                                case 1:
-                                    partType = typeof(Arm);
-                                    partSubName = "Right";
-                                    break;
-                            }
-                            break;
-                        case "Install wooden foot":
-                            switch (i)
-                            {
-                                case 0:
-                                    partType = typeof(Leg);
-                                    partSubName = "Left";
-                                    break;
-                                case 1:
-                                    partType = typeof(Leg);
-                                    partSubName = "Right";
-                                    break;
-                            }
-                            break;
-                        case "Install denture (jaw)":
-                            partType = typeof(Head);
-                            break;
-                    }
-
-                    foreach (RimOperation operation in inspectedState.operationsList)
-                    {
-                        if (operation.name == operationName && operation.subName == operationSubName)
+                        if (baseAffliction is not RimTendableAffliction affliction || affliction.isCharacterSpecific)
                         {
-                            forceContinue = true;
-                            break;
+                            continue;
                         }
-                    }
 
-                    if (forceContinue)
-                    {
-                        continue;
-                    }
-
-                    if (partType == null)
-                    {
-                        //goto skipBodyPart;
-                    }
-
-                    forceContinue = true;
-
-                    foreach (RimBodyPart part in inspectedState.bodyParts)
-                    {
-                        if (part.GetType() == partType && part.subName == partSubName && !IsDestroyed(part))
+                        if (!affliction.isTended)
                         {
-                            forceContinue = false;
-                            break;
-                        }
-                    }
-
-                    if (forceContinue)
-                    {
-                        continue;
-                    }
-
-                //skipBodyPart:
-
-
-                }
-
-                //"Remove bionic spine",
-                //"Remove bionic stomach",
-                //"Remove bionic heart",
-                //"Harvest",
-                //(All "Remove bionic" below are ordered by left first and right last no matter which prosthetic is installed)
-                //"Remove bionic eye",
-                //"Remove bionic ear",
-                //"Remove bionic jaw",
-                //"Remove (tongue)", (same for default and bionic tongue)
-                //"Remove bionic arm",
-                //"Remove wooden hand",
-                //"Remove wooden foot",
-                //"Remove bionic leg",
-                //"Amputate",
-                //"Euthanize by Cut", "Anesthetize",
-                //"Install archotech eye",
-                //"Install archotech arm",
-                //"Install archotech leg",
-                //"Install bionic eye",
-                //"Install bionic arm",
-                //"Install bionic leg",
-                //"Install bionic spine",
-                //"Install bionic heart",
-                //"Install bionic stomach",
-                //"Install bionic ear",
-                //"Install bionic tongue",
-                //"Install bionic jaw",
-                //"Install peg leg",
-                //"Install wooden hand",
-                //"Install wooden foot",
-                //"Install denture (jaw)",
-                //"Install heart",
-                //"Install lung",
-                //"Install kidney",
-                //"Install liver",
-                //"Install prosthetic heart",
-
-                List<int> medicalRequirments = new() {0, 1, 1};
-
-                if (operationName == "Euthanize by Cut" || operationName == "Anesthetize")
-                {
-                    inspectedState.operationsList.Add(new RimOperation(operationName, operationSubName, null, medicalRequirments, null));
-                }
-                else
-                {
-                    string limbName = "";
-                    string limbSubName = "";
-                    Func<RimArtificialPartBase> replacement = null;
-                    RimBodyPart operatedPart = null;
-
-                    string nameOverride = "";
-
-                    string operationNameOverride = "";
-                    string operationSubNameOverride = "";
-
-                    Type requiredObject = null;
-
-                    switch (operationName)
-                    {
-                        case "Harvest":
-                            switch (operationSubName)
+                            if (affliction is RimInjury injury)
                             {
-                                case "(heart)":
-                                    foreach (RimBodyPart part in inspectedState.bodyParts)
-                                    {
-                                        if (part is Heart heart)
-                                        {
-                                            operatedPart = part;
-                                            limbName = heart.name;
-                                            break;
-                                        }
-                                    }
-                                    break;
-                                case "(left lung)":
-                                    foreach (RimBodyPart part in inspectedState.bodyParts)
-                                    {
-                                        if (part is Lung lung && lung.subName == "Left")
-                                        {
-                                            operatedPart = part;
-                                            limbName = lung.name;
-                                            limbSubName = lung.subName;
-                                            break;
-                                        }
-                                    }
-                                    break;
-                                case "(right lung)":
-                                    foreach (RimBodyPart part in inspectedState.bodyParts)
-                                    {
-                                        if (part is Lung lung && lung.subName == "Right")
-                                        {
-                                            operatedPart = part;
-                                            limbName = lung.name;
-                                            limbSubName = lung.subName;
-                                            break;
-                                        }
-                                    }
-                                    break;
-                                case "(left kidney)":
-                                    foreach (RimBodyPart part in inspectedState.bodyParts)
-                                    {
-                                        if (part is Kidney kidney && kidney.subName == "Left")
-                                        {
-                                            operatedPart = part;
-                                            limbName = kidney.name;
-                                            limbSubName = kidney.subName;
-                                            break;
-                                        }
-                                    }
-                                    break;
-                                case "(right kidney)":
-                                    foreach (RimBodyPart part in inspectedState.bodyParts)
-                                    {
-                                        if (part is Kidney kidney && kidney.subName == "Right")
-                                        {
-                                            operatedPart = part;
-                                            limbName = kidney.name;
-                                            limbSubName = kidney.subName;
-                                            break;
-                                        }
-                                    }
-                                    break;
-                                case "(liver)":
-                                    foreach (RimBodyPart part in inspectedState.bodyParts)
-                                    {
-                                        if (part is Liver liver)
-                                        {
-                                            operatedPart = part;
-                                            limbName = liver.name;
-                                            break;
-                                        }
-                                    }
-                                    break;
-                            }
-                            break;
-                        case "Remove (tongue)":
-                            foreach (RimBodyPart part in inspectedState.bodyParts)
-                            {
-                                if (part is Tongue tongue)
+                                if (injury.isBleeding)
                                 {
-                                    operatedPart = part;
-                                    limbName = tongue.name;
-                                    break;
+                                    if (bleeding != null)
+                                    {
+                                        if (injury.healingDifficulty.bleeding * injury.damage > bleeding.healingDifficulty.bleeding * bleeding.damage)
+                                        {
+                                            bleeding = injury;
+                                        }
+                                    }
+                                    else bleeding ??= injury;
+                                }
+                                else
+                                {
+                                    if (untendedAffliction != null)
+                                    {
+                                        if (injury.damage > untendedAffliction.damage)
+                                        {
+                                            untendedAffliction = injury;
+                                        }
+                                    }
+                                    else untendedAffliction ??= injury;
+
                                 }
                             }
-                            break;
-                        case "Amputate":
-
-                            break;
-                        case "Install archotech eye":
-                            medicalRequirments = new() { 5, 2, 1 };
-                            break;
-                        case "Install archotech arm":
-                            medicalRequirments = new() { 5, 2, 1 };
-                            break;
-                        case "Install archotech leg":
-                            medicalRequirments = new() { 5, 2, 1 };
-                            break;
-                        case "Install bionic arm":
-                            medicalRequirments = new() { 5, 2, 1 };
-                            break;
-                        case "Install peg leg":
-                            switch (operationSubName)
+                            else if (affliction is RimDisease disease && disease.timeUntilTreatment <= 0)
                             {
-                                case "(left leg)":
-                                    foreach (RimBodyPart part in inspectedState.bodyParts)
-                                    {
-                                        if (part is Leg leg && leg.subName == "Left")
-                                        {
-                                            operatedPart = part;
-                                            limbName = leg.name;
-                                            break;
-                                        }
-                                    }
-                                    break;
-                                case "(right leg)":
-                                    foreach (RimBodyPart part in inspectedState.bodyParts)
-                                    {
-                                        if (part is Leg leg && leg.subName == "Right")
-                                        {
-                                            operatedPart = part;
-                                            limbName = leg.name;
-                                            break;
-                                        }
-                                    }
-                                    break;
-                            }
-
-                            replacement = () => new RimPegLeg(inspectedCreatureState, operatedPart);
-
-                            medicalRequirments = new() { 3, 2, 1 };
-                            requiredObject = typeof(Spear);
-                            break;
-                        case "Install wooden hand":
-                            switch (operationSubName)
-                            {
-                                case "(left hand)":
-                                    foreach (RimBodyPart part in inspectedState.bodyParts)
-                                    {
-                                        if (part is Hand hand && hand.subName == "Left")
-                                        {
-                                            operatedPart = part;
-                                            limbName = hand.name;
-                                            break;
-                                        }
-                                    }
-                                    break;
-                                case "(right hand)":
-                                    foreach (RimBodyPart part in inspectedState.bodyParts)
-                                    {
-                                        if (part is Hand hand && hand.subName == "Right")
-                                        {
-                                            operatedPart = part;
-                                            limbName = hand.name;
-                                            break;
-                                        }
-                                    }
-                                    break;
-                            }
-
-                            replacement = () => new RimWoodenHand(inspectedCreatureState, operatedPart);
-
-                            medicalRequirments = new() { 3, 2, 1 };
-                            break;
-                        case "Install wooden foot":
-                            switch (operationSubName)
-                            {
-                                case "(left foot)":
-                                    foreach (RimBodyPart part in inspectedState.bodyParts)
-                                    {
-                                        if (part is Foot foot && foot.subName == "Left")
-                                        {
-                                            operatedPart = part;
-                                            limbName = foot.name;
-
-                                            if (foot is SlugcatPaw)
-                                            {
-                                                nameOverride = "paw";
-                                                operationNameOverride = "Install wooden paw";
-                                                operationSubNameOverride = "(left paw)";
-                                            }
-
-                                            break;
-                                        }
-                                    }
-                                    break;
-                                case "(right foot)":
-                                    foreach (RimBodyPart part in inspectedState.bodyParts)
-                                    {
-                                        if (part is Foot foot && foot.subName == "Right")
-                                        {
-                                            operatedPart = part;
-                                            limbName = foot.name;
-
-                                            if (foot is SlugcatPaw)
-                                            {
-                                                nameOverride = "paw";
-                                                operationNameOverride = "Install wooden paw";
-                                                operationSubNameOverride = "(right paw)";
-                                            }
-
-                                            break;
-                                        }
-                                    }
-                                    break;
-                            }
-
-                            replacement = () => new RimWoodenFoot(inspectedCreatureState, operatedPart, nameOverride);
-
-                            medicalRequirments = new() { 3, 2, 1 };
-                            break;
-                        case "Install denture (jaw)":
-                            foreach (RimBodyPart part in inspectedState.bodyParts)
-                            {
-                                if (part is Jaw jaw)
+                                if (diseaseAffliction != null)
                                 {
-                                    operatedPart = part;
-                                    limbName = jaw.name;
-                                    break;
+                                    if (disease.severity > diseaseAffliction.severity)
+                                    {
+                                        diseaseAffliction = disease;
+                                    }
                                 }
-                            }
-
-                            replacement = () => new RimDenture(inspectedCreatureState, operatedPart);
-
-                            medicalRequirments = new() { 3, 2, 1 };
-                            break;
-                    }
-
-                    if (operationNameOverride != "")
-                    {
-                        operationName = operationNameOverride;
-                    }
-                    if (operationSubNameOverride != "")
-                    {
-                        operationSubName = operationSubNameOverride;
-                    }
-
-                    inspectedState.operationsList.Add(new RimLimbReplacement(operationName, operationSubName, operatedPart, medicalRequirments, requiredObject, limbName, limbSubName, replacement));
-                }
-
-                isOperationListActive = false;
-                return;
-            }
-
-            if (selectedHorizontal == 0 && selectedVertical == getMaxVertical())
-            {
-                inspectedState.allowedMedicine++;
-
-                if (inspectedState.allowedMedicine > 3)
-                {
-                    inspectedState.allowedMedicine = 0;
-                }
-            }
-            if ((selectedHorizontal != 0 || selectedVertical == 0) && selectedHorizontal != 2) //use this to select Overview tabs and select operation stuff, otherwise regular tending code will trigger.
-            {
-                if (selectedVertical == 0)
-                {
-                    overviewTab = selectedHorizontal == 0 ? 0 : 1;
-                }
-                else if (selectedVertical == 1)
-                {
-                    isOperationListActive = true;
-
-                    SpawnOperationList();
-                }
-                else if (selectedHorizontal == 1)
-                {
-                    switch (selectedVertical)
-                    {
-                        case 2:
-                            if (inspectedState.operationsList.Count < 1 || inspectedState.operationsList[0] == null || inspectedState.operationsList[0].isSuspended || playerState.tendOperation == inspectedState.operationsList[0])
-                            {
-                                break;
-                            }
-
-                            startOperating(inspectedState.operationsList[0]);
-
-                            break;
-                        case 3:
-                            if (inspectedState.operationsList.Count < 2 || inspectedState.operationsList[1] == null || inspectedState.operationsList[1].isSuspended || playerState.tendOperation == inspectedState.operationsList[1])
-                            {
-                                break;
-                            }
-
-                            startOperating(inspectedState.operationsList[1]);
-                            break;
-                        case 4:
-                            if (inspectedState.operationsList.Count < 3 || inspectedState.operationsList[2] == null || inspectedState.operationsList[2].isSuspended || playerState.tendOperation == inspectedState.operationsList[2])
-                            {
-                                break;
-                            }
-
-                            startOperating(inspectedState.operationsList[2]);
-                            break;
-                        case 5:
-                            if (inspectedState.operationsList.Count < 4 || inspectedState.operationsList[3] == null || inspectedState.operationsList[3].isSuspended || playerState.tendOperation == inspectedState.operationsList[3])
-                            {
-                                break;
-                            }
-
-                            startOperating(inspectedState.operationsList[3]);
-                            break;
-                    }
-                }
-                else if (selectedHorizontal == 1.1f)
-                {
-                    switch (selectedVertical)
-                    {
-                        case 2:
-                            if (playerState.tendOperation != null && playerState.tendOperation == inspectedState.operationsList[0])
-                            {
-                                playerState.tendOperation = null;
-                            }
-
-                            inspectedState.operationsList.RemoveAt(0);
-
-                            if (inspectedState.operationsList.Count == 0)
-                            {
-                                selectedHorizontal = 1;
-                                selectedVertical = 1;
-                            }
-                            break;
-                        case 3:
-                            inspectedState.operationsList[0].isSuspended = !inspectedState.operationsList[0].isSuspended;
-                            break;
-                        case 4:
-                            if (playerState.tendOperation != null && playerState.tendOperation == inspectedState.operationsList[1])
-                            {
-                                playerState.tendOperation = null;
-                            }
-
-                            inspectedState.operationsList.RemoveAt(1);
-                            selectedVertical = 3;
-                            break;
-                        case 5:
-                            inspectedState.operationsList[1].isSuspended = !inspectedState.operationsList[1].isSuspended;
-                            break;
-                        case 6:
-                            if (playerState.tendOperation != null && playerState.tendOperation == inspectedState.operationsList[2])
-                            {
-                                playerState.tendOperation = null;
-                            }
-
-                            inspectedState.operationsList.RemoveAt(2);
-                            selectedVertical = 5;
-                            break;
-                        case 7:
-                            inspectedState.operationsList[2].isSuspended = !inspectedState.operationsList[2].isSuspended;
-                            break;
-                        case 8:
-                            if (playerState.tendOperation != null && playerState.tendOperation == inspectedState.operationsList[3])
-                            {
-                                playerState.tendOperation = null;
-                            }
-
-                            inspectedState.operationsList.RemoveAt(3);
-                            selectedVertical = 7;
-                            break;
-                        case 9:
-                            inspectedState.operationsList[3].isSuspended = !inspectedState.operationsList[3].isSuspended;
-                            break;
-                    }
-                }
-                else if (selectedHorizontal == 0.9f)
-                {
-                    List<RimOperation> list;
-                    List<int> order;
-
-                    switch (selectedVertical)
-                    {
-                        case <= 3:
-                            list = inspectedState.operationsList;
-
-                            if (inspectedState.operationsList.Count == 2)
-                            {
-                                order = new List<int> { 1, 0 };
-                            }
-                            else if (inspectedState.operationsList.Count == 3)
-                            {
-                                order = new List<int> { 1, 0, 2 };
+                                else diseaseAffliction ??= disease;
                             }
                             else
                             {
-                                order = new List<int> { 1, 0, 2, 3 };
-                            }
-
-                            inspectedState.operationsList = order.Select(i => list[i]).ToList();
-                            break;
-                        case <= 5:
-                            list = inspectedState.operationsList;
-
-                            if (inspectedState.operationsList.Count == 3)
-                            {
-                                order = new() { 0, 2, 1 };
-                            }
-                            else
-                            {
-                                order = new List<int> { 0, 2, 1, 3 };
-                            }
-
-                            inspectedState.operationsList = order.Select(i => list[i]).ToList();
-                            break;
-                        case <= 7:
-                            list = inspectedState.operationsList;
-
-                            order = new() { 0, 1, 3, 2 };
-
-                            inspectedState.operationsList = order.Select(i => list[i]).ToList();
-                            break;
-                    }
-                }
-
-                return;
-            }
-
-        skipToTend:
-
-            if (playerState.tendAffliction != null || (playerState.consciousState != 0 && ShadowOfOptions.downed_tend.Value == "No one") || (playerState.consciousState == 3 && !ShadowOfOptions.player_uncon_movement.Value))
-            {
-                return;
-            }
-
-            #region Tending
-            if (inspectedState.onFire)
-            {
-                playerState.tendTarget = inspectedState == playerState && inspectedCreatureState != null && inspectedCreatureState.creature != null && inspectedCreatureState.creature.realizedCreature != null ? null : inspectedCreatureState.creature.realizedCreature;
-
-                playerState.tendTime = 10;
-                playerState.tendTimeMax = playerState.tendTime;
-                playerState.tendAffliction = burningAffliction;   
-
-                return;
-            }
-
-            RimInjury bleeding = null;
-            RimDisease diseaseAffliction = null;
-            RimInjury untendedAffliction = null;
-
-            foreach (RimBodyPart part in inspectedState.bodyParts)
-            {
-                foreach (RimAffliction baseAffliction in part.afflictions)
-                {
-                    if (baseAffliction is not RimTendableAffliction affliction || affliction.isCharacterSpecific)
-                    {
-                        continue;
-                    }
-
-                    if (!affliction.isTended)
-                    {
-                        if (affliction is RimInjury injury)
-                        {
-                            if (injury.isBleeding)
-                            {
-                                if (bleeding != null)
-                                {
-                                    if (injury.healingDifficulty.bleeding * injury.damage > bleeding.healingDifficulty.bleeding * bleeding.damage)
-                                    {
-                                        bleeding = injury;
-                                    }
-                                }
-                                else bleeding ??= injury;
-                            }
-                            else
-                            {
-                                if (untendedAffliction != null)
-                                {
-                                    if (injury.damage > untendedAffliction.damage)
-                                    {
-                                        untendedAffliction = injury;
-                                    }
-                                }
-                                else untendedAffliction ??= injury;
-
+                                Debug.Log(all + affliction + " does not belong to any tendable check");
+                                RimWorldHealth.Logger.LogError(all + affliction + " does not belong to any tendable check");
                             }
                         }
-                        else if (affliction is RimDisease disease && disease.timeUntilTreatment <= 0)
+                        else if (affliction is RimDisease disease && (disease.timeUntilTreatment <= 0 || !disease.isTended))
                         {
                             if (diseaseAffliction != null)
                             {
@@ -1584,14 +1603,18 @@ public class HealthTab : HudPart
                             }
                             else diseaseAffliction ??= disease;
                         }
-                        else
-                        {
-                            Debug.Log(all + affliction + " does not belong to any tendable check");
-                            RimWorldHealth.Logger.LogError(all + affliction + " does not belong to any tendable check");
-                        }
                     }
-                    else if (affliction is RimDisease disease && (disease.timeUntilTreatment <= 0 || !disease.isTended))
+                }
+
+                if (bleeding == null)
+                {
+                    foreach (RimAffliction affliction in inspectedState.wholeBodyAfflictions)
                     {
+                        if (affliction is not RimDisease disease || (disease.timeUntilTreatment > 0 && disease.isTended))
+                        {
+                            continue;
+                        }
+
                         if (diseaseAffliction != null)
                         {
                             if (disease.severity > diseaseAffliction.severity)
@@ -1602,46 +1625,27 @@ public class HealthTab : HudPart
                         else diseaseAffliction ??= disease;
                     }
                 }
-            }
 
-            if (bleeding == null)
-            {
-                foreach (RimAffliction affliction in inspectedState.wholeBodyAfflictions)
+                if (bleeding != null)
                 {
-                    if (affliction is not RimDisease disease || (disease.timeUntilTreatment > 0 && disease.isTended))
-                    {
-                        continue;
-                    }
-
-                    if (diseaseAffliction != null)
-                    {
-                        if (disease.severity > diseaseAffliction.severity)
-                        {
-                            diseaseAffliction = disease;
-                        }
-                    }
-                    else diseaseAffliction ??= disease;
+                    startTending(bleeding);
                 }
+                else if (diseaseAffliction != null)
+                {
+                    startTending(diseaseAffliction);
+                }
+                else if (untendedAffliction != null)
+                {
+                    startTending(untendedAffliction);
+                }
+                #endregion
             }
-
-            if (bleeding != null)
+            else
             {
-                startTending(bleeding);
+                interactOnce = false;
             }
-            else if (diseaseAffliction != null)
-            {
-                startTending(diseaseAffliction);
-            }
-            else if (untendedAffliction != null)
-            {
-                startTending(untendedAffliction);
-            }
-            #endregion
         }
-        else
-        {
-            interactOnce = false;
-        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
 
         void startTending(RimTendableAffliction affliction)
         {
@@ -1653,44 +1657,43 @@ public class HealthTab : HudPart
         }
         void startOperating(RimOperation operation)
         {
+            if (operation.name != "Anesthetize")
+            {
+                RimAnesthetic anesthetic = null;
+
+                foreach (RimAffliction affliction in inspectedState.wholeBodyAfflictions)
+                {
+                    if (affliction is RimAnesthetic tempAnesthetic)
+                    {
+                        anesthetic = tempAnesthetic;
+                        break;
+                    }
+                }
+
+                int ticks = Mathf.RoundToInt(UnityEngine.Random.Range(cycleLength * 0.75f, cycleLength * 2f)) * 40 * 60;
+
+                if (anesthetic != null)
+                {
+                    if (anesthetic.lastAmount < ticks)
+                    {
+                        anesthetic.lastAmount = ticks;
+                    }
+
+                    anesthetic.amount = anesthetic.lastAmount;
+                }
+                else
+                {
+                    inspectedState.wholeBodyAfflictions.Add(new RimAnesthetic(inspectedCreatureState, null, ticks));
+                }
+
+                inspectedState.updateCapacities = true;
+            }
+
             playerState.tendAffliction = null;
 
             playerState.tendTime = Mathf.Round(playerState.tendTimeBase / RimHealthState.MedicalTendSpeed(playerState));
             playerState.tendTimeMax = playerState.tendTime;
             playerState.tendOperation = operation;
-
-            if (operation.name == "Anesthetize")
-            {
-                return;
-            }
-
-            RimAnesthetic anesthetic = null;
-
-            foreach (RimAffliction affliction in inspectedState.wholeBodyAfflictions)
-            {
-                if (affliction is RimAnesthetic tempAnesthetic)
-                {
-                    anesthetic = tempAnesthetic;
-                    break;
-                }
-            }
-
-            int ticks = Mathf.RoundToInt(UnityEngine.Random.Range(cycleLength * 0.75f, cycleLength * 2f)) * 40 * 60;
-
-            if (anesthetic != null)
-            {
-                if (anesthetic.lastAmount < ticks)
-                {
-                    anesthetic.lastAmount = ticks;
-                }
-
-                anesthetic.amount = anesthetic.lastAmount;
-            }
-            else
-            {
-                inspectedState.wholeBodyAfflictions.Add(new RimAnesthetic(inspectedCreatureState, null, ticks));
-                inspectedState.updateCapacities = true;
-            }    
         }
 
         void SpawnOperationList()
@@ -1942,894 +1945,902 @@ public class HealthTab : HudPart
 
     public override void Draw(float timeStacker)
     {
-        base.Draw(timeStacker);
-
-        #region Visibility
-        foreach (FSprite sprite in sprites)
+        try
         {
-            sprite.isVisible = visible;
-            sprite.alpha = SetTransparency();
-        }
+            base.Draw(timeStacker);
 
-        for (int i = 0; i < capacityValueNames.Count; i++)
-        {
-            capacityValueNames[i].isVisible = visible && overviewTab == 0;
-            capacityValues[i].isVisible = visible && overviewTab == 0;
-        }
-
-        capacityName.isVisible = visible && overviewTab == 0;
-
-        allowedMedicine.isVisible = visible && overviewTab == 0;
-
-        bloodLossPerCycle.isVisible = visible && inspectedState != null && inspectedState.bloodLossPerCycle >= 1 && inspectedState.bloodLoss < 1 && inspectedCreatureState != null && !inspectedCreatureState.dead;
-
-        selectedSprite.isVisible = visible && selected;
-
-        treatedSprite.isVisible = visible && playerState != null && (playerState.tendAffliction != null && playerState.tendAffliction != burningAffliction || playerState.tendOperation != null && overviewTab == 1);
-
-        afflictionsAboveLabel.isVisible = visible && afflictionsAbove > 0;
-
-        afflictionsBelowLabel.isVisible = visible && afflictionsBelow > 0;
-
-        overviewLabel.isVisible = visible;
-
-        operationsLabel.isVisible = visible;
-
-        addBillLabel.isVisible = visible && overviewTab == 1;
-
-        addBillSprite.isVisible = visible && overviewTab == 1;
-
-        foreach (FSprite sprite in operationBackgrounds)
-        {
-            sprite.isVisible = visible && overviewTab == 1;
-        }
-
-        foreach (FLabel label in operationNames)
-        {
-            label.isVisible = visible && overviewTab == 1;
-        }
-
-        foreach (FSprite sprite in operationReorders)
-        {
-            sprite.isVisible = visible && overviewTab == 1;
-        }
-
-        foreach (FSprite sprite in operationSuspends)
-        {
-            sprite.isVisible = visible && overviewTab == 1;
-        }
-
-        foreach (FSprite sprite in operationDeletes)
-        {
-            sprite.isVisible = visible && overviewTab == 1;
-        }
-
-        foreach (FLabel sprite in operationSuspendLabels)
-        {
-            sprite.isVisible = visible && overviewTab == 1;
-        }
-        #endregion
-
-        afflictionsAbove = 0;
-        afflictionsBelow = 0;
-
-        #region Updates
-        healthTabWholeBody.Draw();
-
-        foreach (HealthTabBodyPart bodyPartTab in healthTabBodyParts)
-        {
-            bodyPartTab.Draw();
-        }
-
-        foreach (HealthTabInfo infoTab in healthTabInfos)
-        {
-            infoTab.Draw();
-        }
-
-        foreach (OperationSelection operationSelection in operationList)
-        {
-            operationSelection.Draw();
-        }
-        #endregion
-
-        if (!visible || playerState == null || inspectedState == null || inspectedCreatureState == null)
-        {
-            return;
-        }
-
-        #region AfflictionLabels
-        if (afflictionsAboveLabel.isVisible)
-        {
-            afflictionsAboveLabel.text = "Aflictions above: " + afflictionsAbove;
-            afflictionsAboveLabel.alpha = SetTransparency();
-        }
-
-        if (afflictionsBelowLabel.isVisible)
-        {
-            afflictionsBelowLabel.text = "Aflictions below: " + afflictionsBelow;
-            afflictionsBelowLabel.alpha = SetTransparency();
-        }
-        #endregion
-
-        if (bloodLossPerCycle.isVisible)
-        {
-            float bloodLoss = cycleLength * (1 - inspectedState.bloodLoss) / (inspectedState.bloodLossPerCycle / 100);
-
-            bloodLossPerCycle.text = "Bleeding: " + Mathf.Round(inspectedState.bloodLossPerCycle) + "%/c " + (bloodLoss > cycleLength ? "(no immediate danger)" : "(death in " + GetTimeString(bloodLoss) + ")");
-            bloodLossPerCycle.alpha = SetTransparency();
-        }
-
-        #region tabLabels
-        overviewLabel.color = Color.white;
-        overviewLabel.alpha = SetTransparency();
-
-        operationsLabel.color = Color.white;
-        operationsLabel.alpha = SetTransparency();
-        #endregion
-
-        if (selectedVertical == 0 && selectedHorizontal != 2)
-        {
-            selectedSprite.isVisible = false;
-            selectedTimer = selectedTimerMax;
-
-            if (selectedHorizontal == 0)
+            #region Visibility
+            foreach (FSprite sprite in sprites)
             {
-                overviewLabel.color = Color.yellow;
-            }
-            else
-            {
-                operationsLabel.color = Color.yellow;
-            }
-        }
-
-        if (overviewTab == 0)
-        {
-            allowedMedicine.color = inspectedState.allowedMedicine switch
-            {
-                0 => Color.white,
-                1 => Color.green,
-                2 => Color.blue,
-                _ => Color.cyan
-            };
-
-            capacityName.text = GetCreatureName(inspectedCreatureState.creature.realizedCreature);
-            capacityName.alpha = SetTransparency();
-
-            if (!inspectedCreatureState.dead)
-            {
-                capacityValueNamesNames = new(12) { "Pain", "Consiousness", "Moving", "Manipulation", "Talking", "Eating", "Sight", "Hearing", "Breathing", "Blood filtrarion", "Blood pumping", "Digestion" };
-            }
-            else
-            {
-                capacityValueNamesNames = new(1) { "Pain" };
-            }
-
-            if (selectedHorizontal == 0 && selectedVertical > capacityValueNamesNames.Count + 1)
-            {
-                selectedVertical = capacityValueNamesNames.Count;
+                sprite.isVisible = visible;
+                sprite.alpha = SetTransparency();
             }
 
             for (int i = 0; i < capacityValueNames.Count; i++)
             {
-                if (i >= capacityValueNamesNames.Count)
-                {
-                    capacityValueNames[i].isVisible = false;
-                    capacityValues[i].isVisible = false;
-                    continue;
-                }
-
-                capacityValueNames[i].y = DrawPos().y + 95 - (17 * i);
-                capacityValueNames[i].alpha = SetTransparency();
-                capacityValueNames[i].text = capacityValueNamesNames[i];
-
-                capacityValues[i].y = DrawPos().y + 95 - (17 * i);
-                capacityValues[i].alpha = SetTransparency();
-
-                float value = capacityValueNamesNames[i] switch
-                {
-                    "Pain" => !inspectedCreatureState.dead ? inspectedState.pain : 0,
-                    "Consiousness" => inspectedState.consciousness,
-                    "Moving" => inspectedState.moving,
-                    "Manipulation" => inspectedState.manipulation,
-                    "Talking" => inspectedState.talking,
-                    "Eating" => inspectedState.eating,
-                    "Sight" => inspectedState.sight,
-                    "Hearing" => inspectedState.hearing,
-                    "Breathing" => inspectedState.breathing,
-                    "Blood filtrarion" => inspectedState.bloodFiltration,
-                    "Blood pumping" => inspectedState.bloodPumping,
-                    "Digestion" => inspectedState.digestion,
-                    _ => 0,
-                };
-
-                if (capacityValueNamesNames[i] == "Pain")
-                {
-                    switch (value)
-                    {
-                        case < 0.01f:
-                            capacityValues[i].text = "None";
-                            capacityValues[i].color = Color.green;
-                            break;
-                        case < 0.15f:
-                            capacityValues[i].text = "Minor";
-                            capacityValues[i].color = Color.Lerp(Color.white, Color.black, 0.1f);
-                            break;
-                        case < 0.4f:
-                            capacityValues[i].text = "Serious";
-                            capacityValues[i].color = Color.Lerp(Color.white, Color.black, 0.4f);
-                            break;
-                        case < 0.8f:
-                            capacityValues[i].text = "Intense";
-                            capacityValues[i].color = Color.Lerp(Color.white, Color.black, 0.6f);
-                            break;
-                        default:
-                            capacityValues[i].text = "Mind-shattering";
-                            capacityValues[i].color = Color.red;
-                            break;
-                    }
-                }
-                else
-                {
-                    capacityValues[i].text = Mathf.Round(value * 100) + "%";
-
-                    capacityValues[i].color = value switch
-                    {
-                        > 1 => Color.blue,
-                        1 => Color.green,
-                        >= 0.8f => Color.Lerp(Color.white, Color.black, 0.1f),
-                        >= 0.4f => Color.Lerp(Color.white, Color.black, 0.4f),
-                        >= 0.15f => Color.Lerp(Color.white, Color.black, 0.6f),
-                        >= 0.01f => Color.Lerp(Color.white, Color.black, 0.8f),
-                        _ => Color.red,
-                    };
-                }
+                capacityValueNames[i].isVisible = visible && overviewTab == 0;
+                capacityValues[i].isVisible = visible && overviewTab == 0;
             }
-        }
-        else
-        {
-            if (selectedHorizontal != 0 && selectedHorizontal != 2)
+
+            capacityName.isVisible = visible && overviewTab == 0;
+
+            allowedMedicine.isVisible = visible && overviewTab == 0;
+
+            bloodLossPerCycle.isVisible = visible && inspectedState != null && inspectedState.bloodLossPerCycle >= 1 && inspectedState.bloodLoss < 1 && inspectedCreatureState != null && !inspectedCreatureState.dead;
+
+            selectedSprite.isVisible = visible && selected;
+
+            treatedSprite.isVisible = visible && playerState != null && (playerState.tendAffliction != null && playerState.tendAffliction != burningAffliction || playerState.tendOperation != null && overviewTab == 1);
+
+            afflictionsAboveLabel.isVisible = visible && afflictionsAbove > 0;
+
+            afflictionsBelowLabel.isVisible = visible && afflictionsBelow > 0;
+
+            overviewLabel.isVisible = visible;
+
+            operationsLabel.isVisible = visible;
+
+            addBillLabel.isVisible = visible && overviewTab == 1;
+
+            addBillSprite.isVisible = visible && overviewTab == 1;
+
+            foreach (FSprite sprite in operationBackgrounds)
+            {
+                sprite.isVisible = visible && overviewTab == 1;
+            }
+
+            foreach (FLabel label in operationNames)
+            {
+                label.isVisible = visible && overviewTab == 1;
+            }
+
+            foreach (FSprite sprite in operationReorders)
+            {
+                sprite.isVisible = visible && overviewTab == 1;
+            }
+
+            foreach (FSprite sprite in operationSuspends)
+            {
+                sprite.isVisible = visible && overviewTab == 1;
+            }
+
+            foreach (FSprite sprite in operationDeletes)
+            {
+                sprite.isVisible = visible && overviewTab == 1;
+            }
+
+            foreach (FLabel sprite in operationSuspendLabels)
+            {
+                sprite.isVisible = visible && overviewTab == 1;
+            }
+            #endregion
+
+            afflictionsAbove = 0;
+            afflictionsBelow = 0;
+
+            #region Updates
+            healthTabWholeBody.Draw();
+
+            foreach (HealthTabBodyPart bodyPartTab in healthTabBodyParts)
+            {
+                bodyPartTab.Draw();
+            }
+
+            foreach (HealthTabInfo infoTab in healthTabInfos)
+            {
+                infoTab.Draw();
+            }
+
+            foreach (OperationSelection operationSelection in operationList)
+            {
+                operationSelection.Draw();
+            }
+            #endregion
+
+            if (!visible || playerState == null || inspectedState == null || inspectedCreatureState == null)
+            {
+                return;
+            }
+
+            #region AfflictionLabels
+            if (afflictionsAboveLabel.isVisible)
+            {
+                afflictionsAboveLabel.text = "Aflictions above: " + afflictionsAbove;
+                afflictionsAboveLabel.alpha = SetTransparency();
+            }
+
+            if (afflictionsBelowLabel.isVisible)
+            {
+                afflictionsBelowLabel.text = "Aflictions below: " + afflictionsBelow;
+                afflictionsBelowLabel.alpha = SetTransparency();
+            }
+            #endregion
+
+            if (bloodLossPerCycle.isVisible)
+            {
+                float bloodLoss = cycleLength * (1 - inspectedState.bloodLoss) / (inspectedState.bloodLossPerCycle / 100);
+
+                bloodLossPerCycle.text = "Bleeding: " + Mathf.Round(inspectedState.bloodLossPerCycle) + "%/c " + (bloodLoss > cycleLength ? "(no immediate danger)" : "(death in " + GetTimeString(bloodLoss) + ")");
+                bloodLossPerCycle.alpha = SetTransparency();
+            }
+
+            #region tabLabels
+            overviewLabel.color = Color.white;
+            overviewLabel.alpha = SetTransparency();
+
+            operationsLabel.color = Color.white;
+            operationsLabel.alpha = SetTransparency();
+            #endregion
+
+            if (selectedVertical == 0 && selectedHorizontal != 2)
             {
                 selectedSprite.isVisible = false;
-
-                if (!isOperationListActive && (selectedHorizontal != 1 || selectedVertical < 2))
-                    selectedTimer = selectedTimerMax;
-            }
-
-            #region addBill
-            addBillSprite.color = selectedHorizontal == 1 && selectedVertical == 1 ? Color.magenta : Color.green;
-            addBillLabel.alpha = SetTransparency();
-            addBillSprite.alpha = SetTransparency();
-            #endregion
-
-            int numberOfOperations = inspectedState.operationsList.Count - 1;
-
-            #region operations
-            for (int i = 0; i < operationBackgrounds.Length; i++)
-            {
-                if (i > numberOfOperations || (selectedHorizontal != 1 || selectedVertical != (2 + i)) && i % 2 != 0)
-                {
-                    operationBackgrounds[i].isVisible = false;
-                    continue;
-                }
-
-                operationBackgrounds[i].color = selectedHorizontal == 1 && selectedVertical == (2 + i) ? Color.white : Color.grey;
-                operationBackgrounds[i].alpha = SetTransparency();
-            }
-
-            for (int i = 0; i < operationNames.Count; i++)
-            {
-                if (i > numberOfOperations)
-                {
-                    operationNames[i].isVisible = false;
-                    continue;
-                }
-
-                string text = inspectedState.operationsList[i].name;
-
-                if (inspectedState.operationsList[i].subName != "")
-                {
-                    text += " " + inspectedState.operationsList[i].subName;
-                }
-
-                operationNames[i].text = text;
-                Menu.MenuLabel.WordWrapLabel(operationNames[i], 100);
-                operationNames[i].alpha = SetTransparency();
-            }
-
-            for (int i = 0; i < operationReorders.Length; i++)
-            {
-                if (numberOfOperations <= 0 || numberOfOperations == 1 && i > 1 || numberOfOperations == 2 && i > 3)
-                {
-                    operationReorders[i].isVisible = false;
-                    continue;
-                }
-
-                operationReorders[i].color = selectedHorizontal == 0.9f && selectedVertical == (2 + i) ? Color.magenta : Color.red;
-                operationReorders[i].alpha = SetTransparency();
-            }
-
-            for (int i = 0; i < operationDeletes.Length; i++)
-            {
-                if (i > numberOfOperations)
-                {
-                    operationDeletes[i].isVisible = false;
-                    continue;
-                }
-
-                int currentVertical = i switch
-                {
-                    0 => 2,
-                    1 => 4,
-                    2 => 6,
-                    3 => 8,
-                    _ => -1,
-                };
-
-                operationDeletes[i].color = selectedHorizontal == 1.1f && selectedVertical == currentVertical ? Color.white : Color.black;
-                operationDeletes[i].alpha = SetTransparency();
-            }
-
-            for (int i = 0; i < operationSuspends.Length; i++)
-            {
-                if (i > numberOfOperations)
-                {
-                    operationSuspends[i].isVisible = false;
-                    continue;
-                }
-
-                int currentVertical = i switch
-                {
-                    0 => 3,
-                    1 => 5,
-                    2 => 7,
-                    3 => 9,
-                    _ => -1,
-                };
-
-                operationSuspends[i].color = selectedHorizontal == 1.1f && selectedVertical == currentVertical ? Color.white : Color.red;
-                operationSuspends[i].alpha = SetTransparency();
-            }
-
-            for (int i = 0; i < operationSuspendLabels.Count; i++)
-            {
-                if (i > numberOfOperations || !inspectedState.operationsList[i].isSuspended)
-                {
-                    operationSuspendLabels[i].isVisible = false;
-                    continue;
-                }
-
-                operationSuspendLabels[i].alpha = SetTransparency();
-            }
-            #endregion
-        }
-
-        if (treatedSprite.isVisible && (playerState.tendAffliction != null || playerState.tendOperation != null))
-        {
-            float tendProgress = 1 - playerState.tendTime / playerState.tendTimeMax;
-
-            treatedSprite.alpha = transparent ? 0.3f : 0.6f;
-
-            if (playerState.tendOperation != null)
-            {
-                RimOperation operation = playerState.tendOperation;
-
-                FSprite sprite = null;
-
-                if (operation == inspectedState.operationsList[0])
-                {
-                    sprite = operationBackgrounds[0];
-                }
-                else if (operation == inspectedState.operationsList[1])
-                {
-                    sprite = operationBackgrounds[1];
-                }
-                else if (operation == inspectedState.operationsList[2])
-                {
-                    sprite = operationBackgrounds[2];
-                }
-                else if (operation == inspectedState.operationsList[3])
-                {
-                    sprite = operationBackgrounds[3];
-                }
-
-                treatedSprite.x = sprite.x - 66;
-                treatedSprite.y = sprite.y;
-
-                treatedSprite.scaleX = Mathf.Lerp(0, 132, tendProgress);
-                treatedSprite.scaleY = 40;
-
-                goto skipTend;
-            }
-
-            treatedSprite.x = DrawPos().x - 50;
-
-            treatedSprite.scaleX = Mathf.Lerp(0, 220, tendProgress);
-            treatedSprite.scaleY = 20;
-
-            int selectedBodyPart = 0;
-            int selectedAffliction = 0;
-
-            if (inspectedState.wholeBodyAfflictions.Count > 0 && inspectedState.wholeBodyAfflictions.Contains(playerState.tendAffliction))
-            {
-                for (int j = 0; j < inspectedState.wholeBodyAfflictions.Count - (healthTabWholeBody.bloodLossVisible ? 1 : 0); j++)
-                {
-                    if (inspectedState.wholeBodyAfflictions[j] == inspectedState.tendAffliction)
-                    {
-                        selectedAffliction = j;
-                        break;
-                    }
-                }
-
-                treatedSprite.isVisible = healthTabWholeBody.afflictionVisuals[selectedAffliction].name.isVisible;
-
-                if (treatedSprite.isVisible)
-                {
-                    int extraHeight = 0;
-                    int prevHeight = 0;
-
-                    if (healthTabWholeBody.afflictionsHeight.Count >= selectedAffliction)
-                    {
-                        extraHeight = healthTabWholeBody.afflictionsHeight[selectedAffliction][0] - 1;
-                        prevHeight = healthTabWholeBody.afflictionsHeight[selectedAffliction][1];
-                    }
-
-                    treatedSprite.y = healthTabWholeBody.DrawPos().y - ((healthTabWholeBody.bloodLossVisible ? 18f : 0) + -1 + (18f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
-                    treatedSprite.MoveInFrontOfOtherNode(healthTabWholeBody.background);
-                    treatedSprite.scaleY = 17f + (15 * extraHeight);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < healthTabBodyParts.Count; i++)
-                {
-                    if (healthTabBodyParts[i].bodyPart == playerState.tendAffliction.part)
-                    {
-                        selectedBodyPart = i;
-
-                        if (healthTabBodyParts[i].allAfflictions.Contains(playerState.tendAffliction))
-                        {
-                            selectedAffliction = healthTabBodyParts[i].allAfflictions.IndexOf(playerState.tendAffliction);
-                            break;
-                        }
-
-                        for (int j = 0; j < healthTabBodyParts[i].combinedAfflictions.Count; j++)
-                        {
-                            if (healthTabBodyParts[i].combinedAfflictions.TryGetValue(healthTabBodyParts[i].CombinedAfflictionName(healthTabBodyParts[i].bodyPart, j), out List<RimAffliction> list) && list.Contains(playerState.tendAffliction))
-                            {
-                                for (int k = 0; k < list.Count; k++)
-                                {
-                                    if (healthTabBodyParts[i].allAfflictions.Contains(list[k]))
-                                    {
-                                        selectedAffliction = healthTabBodyParts[i].allAfflictions.IndexOf(list[k]);
-                                        break;
-                                    }
-                                }
-                                break;
-                            }
-                        }
-                        break;
-                    }
-                }
-
-                treatedSprite.isVisible = healthTabBodyParts[selectedBodyPart].afflictionVisuals[selectedAffliction].name.isVisible;
-
-                if (treatedSprite.isVisible)
-                {
-                    int extraHeight = healthTabBodyParts[selectedBodyPart].allAfflictionsHeight[selectedAffliction][0] - 1;
-                    int prevHeight = healthTabBodyParts[selectedBodyPart].allAfflictionsHeight[selectedAffliction][1];
-
-                    treatedSprite.y = healthTabBodyParts[selectedBodyPart].DrawPos().y - (-1 + (18f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
-
-                    treatedSprite.MoveInFrontOfOtherNode(healthTabBodyParts[selectedBodyPart].background);
-
-                    treatedSprite.scaleY = 17f + (15 * extraHeight);
-                }
-            }
-        }
-
-    skipTend:
-
-        if (!selected)
-        {
-            return;
-        }
-
-        if (selectedTimer > 0)
-        {
-            selectedTimer -= timeStacker;
-        }
-
-        selectedSprite.x = DrawPos().x;
-        selectedSprite.y = DrawPos().y;
-        selectedSprite.alpha = transparent ? 0.2f : 0.4f;
-        selectedSprite.color = Color.white;
-
-        selectedSprite.scaleY = 15;
-
-        if (selectedHorizontal == 0)
-        {
-            if (selectedVertical == (!inspectedCreatureState.dead ? 13 : 2))
-            {
-                selectedSprite.x = allowedMedicine.x;
-                selectedSprite.y = allowedMedicine.y;
-                selectedSprite.scale = 16;
-
                 selectedTimer = selectedTimerMax;
-            }
-            else
-            {
-                selectedSprite.x -= 250;
 
-                selectedSprite.y += 111 - 7 - (17 * selectedVertical - 1);
-
-                selectedSprite.scaleX = 145;
-
-                if (selectedTimer <= 0)
+                if (selectedHorizontal == 0)
                 {
-                    CapacitySelector();
-                }
-            }
-        }
-        else if (selectedHorizontal == 2)
-        {
-            selectedSprite.x += 60;
-
-            selectedSprite.y += 120;
-            selectedSprite.y -= 11.6f;
-
-            selectedSprite.scaleX = 220;
-            selectedSprite.scaleY = 20;
-
-            if (healthTabWholeBody.active && selectedVertical < healthTabWholeBody.afflictionNumber)
-            {
-                if (healthTabWholeBody.bloodLossVisible && selectedVertical == 0)
-                {
-                    selectedSprite.isVisible = healthTabWholeBody.bloodLossName.isVisible;
-
-                    selectedSprite.y = healthTabWholeBody.DrawPos().y - 6.5f;
-                    selectedSprite.scaleY = 17f;
+                    overviewLabel.color = Color.yellow;
                 }
                 else
                 {
-                    if (healthTabWholeBody.afflictionVisuals.Count <= selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0))
+                    operationsLabel.color = Color.yellow;
+                }
+            }
+
+            if (overviewTab == 0)
+            {
+                allowedMedicine.color = inspectedState.allowedMedicine switch
+                {
+                    0 => Color.white,
+                    1 => Color.green,
+                    2 => Color.blue,
+                    _ => Color.cyan
+                };
+
+                capacityName.text = GetCreatureName(inspectedCreatureState.creature.realizedCreature);
+                capacityName.alpha = SetTransparency();
+
+                if (!inspectedCreatureState.dead)
+                {
+                    capacityValueNamesNames = new(12) { "Pain", "Consiousness", "Moving", "Manipulation", "Talking", "Eating", "Sight", "Hearing", "Breathing", "Blood filtrarion", "Blood pumping", "Digestion" };
+                }
+                else
+                {
+                    capacityValueNamesNames = new(1) { "Pain" };
+                }
+
+                if (selectedHorizontal == 0 && selectedVertical > capacityValueNamesNames.Count + 1)
+                {
+                    selectedVertical = capacityValueNamesNames.Count;
+                }
+
+                for (int i = 0; i < capacityValueNames.Count; i++)
+                {
+                    if (i >= capacityValueNamesNames.Count)
                     {
-                        return;
+                        capacityValueNames[i].isVisible = false;
+                        capacityValues[i].isVisible = false;
+                        continue;
                     }
 
-                    selectedSprite.isVisible = healthTabWholeBody.afflictionVisuals[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)].name.isVisible;
+                    capacityValueNames[i].y = DrawPos().y + 95 - (17 * i);
+                    capacityValueNames[i].alpha = SetTransparency();
+                    capacityValueNames[i].text = capacityValueNamesNames[i];
 
-                    int extraHeight = healthTabWholeBody.afflictionsHeight[selectedVertical][0] - 1;
-                    int prevHeight = healthTabWholeBody.afflictionsHeight[selectedVertical][1];
+                    capacityValues[i].y = DrawPos().y + 95 - (17 * i);
+                    capacityValues[i].alpha = SetTransparency();
 
-                    selectedSprite.y = healthTabWholeBody.DrawPos().y - ((healthTabWholeBody.bloodLossVisible ? -2 : -1) + (18f * selectedVertical) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
+                    float value = capacityValueNamesNames[i] switch
+                    {
+                        "Pain" => !inspectedCreatureState.dead ? inspectedState.pain : 0,
+                        "Consiousness" => inspectedState.consciousness,
+                        "Moving" => inspectedState.moving,
+                        "Manipulation" => inspectedState.manipulation,
+                        "Talking" => inspectedState.talking,
+                        "Eating" => inspectedState.eating,
+                        "Sight" => inspectedState.sight,
+                        "Hearing" => inspectedState.hearing,
+                        "Breathing" => inspectedState.breathing,
+                        "Blood filtrarion" => inspectedState.bloodFiltration,
+                        "Blood pumping" => inspectedState.bloodPumping,
+                        "Digestion" => inspectedState.digestion,
+                        _ => 0,
+                    };
 
-                    selectedSprite.scaleY = (healthTabWholeBody.bloodLossVisible ? 1 : 0) + 17f + (15 * extraHeight);
-                }
+                    if (capacityValueNamesNames[i] == "Pain")
+                    {
+                        switch (value)
+                        {
+                            case < 0.01f:
+                                capacityValues[i].text = "None";
+                                capacityValues[i].color = Color.green;
+                                break;
+                            case < 0.15f:
+                                capacityValues[i].text = "Minor";
+                                capacityValues[i].color = Color.Lerp(Color.white, Color.black, 0.1f);
+                                break;
+                            case < 0.4f:
+                                capacityValues[i].text = "Serious";
+                                capacityValues[i].color = Color.Lerp(Color.white, Color.black, 0.4f);
+                                break;
+                            case < 0.8f:
+                                capacityValues[i].text = "Intense";
+                                capacityValues[i].color = Color.Lerp(Color.white, Color.black, 0.6f);
+                                break;
+                            default:
+                                capacityValues[i].text = "Mind-shattering";
+                                capacityValues[i].color = Color.red;
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        capacityValues[i].text = Mathf.Round(value * 100) + "%";
 
-                selectedSprite.MoveInFrontOfOtherNode(healthTabWholeBody.background);
-
-                if (selectedVertical == 0)
-                {
-                    pivotOffset = 0;
-
-                    topLimit = 510;
-                }
-                else if ((selectedSprite.y + (selectedSprite.scaleY / 2)) > ActualTopLimit())
-                {
-                    pivotOffset = healthTabWholeBody.GetPivotOffset(selectedVertical, true);
-                }
-                else if ((selectedSprite.y - (selectedSprite.scaleY / 2)) < ActualBottomLimit())
-                {
-                    pivotOffset = healthTabWholeBody.GetPivotOffset(selectedVertical, false);
-
-                    topLimit = 495;
-                }
-
-                if (selectedTimer <= 0)
-                {
-                    WholeBodyAfflictionSelector();
+                        capacityValues[i].color = value switch
+                        {
+                            > 1 => Color.blue,
+                            1 => Color.green,
+                            >= 0.8f => Color.Lerp(Color.white, Color.black, 0.1f),
+                            >= 0.4f => Color.Lerp(Color.white, Color.black, 0.4f),
+                            >= 0.15f => Color.Lerp(Color.white, Color.black, 0.6f),
+                            >= 0.01f => Color.Lerp(Color.white, Color.black, 0.8f),
+                            _ => Color.red,
+                        };
+                    }
                 }
             }
             else
             {
-                int maxVertical = 0;
-                int lastMaxVertical = 0;
+                if (selectedHorizontal != 0 && selectedHorizontal != 2)
+                {
+                    selectedSprite.isVisible = false;
+
+                    if (!isOperationListActive && (selectedHorizontal != 1 || selectedVertical < 2))
+                        selectedTimer = selectedTimerMax;
+                }
+
+                #region addBill
+                addBillSprite.color = selectedHorizontal == 1 && selectedVertical == 1 ? Color.magenta : Color.green;
+                addBillLabel.alpha = SetTransparency();
+                addBillSprite.alpha = SetTransparency();
+                #endregion
+
+                int numberOfOperations = inspectedState.operationsList.Count - 1;
+
+                #region operations
+                for (int i = 0; i < operationBackgrounds.Length; i++)
+                {
+                    if (i > numberOfOperations || (selectedHorizontal != 1 || selectedVertical != (2 + i)) && i % 2 != 0)
+                    {
+                        operationBackgrounds[i].isVisible = false;
+                        continue;
+                    }
+
+                    operationBackgrounds[i].color = selectedHorizontal == 1 && selectedVertical == (2 + i) ? Color.white : Color.grey;
+                    operationBackgrounds[i].alpha = SetTransparency();
+                }
+
+                for (int i = 0; i < operationNames.Count; i++)
+                {
+                    if (i > numberOfOperations)
+                    {
+                        operationNames[i].isVisible = false;
+                        continue;
+                    }
+
+                    string text = inspectedState.operationsList[i].name;
+
+                    if (inspectedState.operationsList[i].subName != "")
+                    {
+                        text += " " + inspectedState.operationsList[i].subName;
+                    }
+
+                    operationNames[i].text = text;
+                    Menu.MenuLabel.WordWrapLabel(operationNames[i], 100);
+                    operationNames[i].alpha = SetTransparency();
+                }
+
+                for (int i = 0; i < operationReorders.Length; i++)
+                {
+                    if (numberOfOperations <= 0 || numberOfOperations == 1 && i > 1 || numberOfOperations == 2 && i > 3)
+                    {
+                        operationReorders[i].isVisible = false;
+                        continue;
+                    }
+
+                    operationReorders[i].color = selectedHorizontal == 0.9f && selectedVertical == (2 + i) ? Color.magenta : Color.red;
+                    operationReorders[i].alpha = SetTransparency();
+                }
+
+                for (int i = 0; i < operationDeletes.Length; i++)
+                {
+                    if (i > numberOfOperations)
+                    {
+                        operationDeletes[i].isVisible = false;
+                        continue;
+                    }
+
+                    int currentVertical = i switch
+                    {
+                        0 => 2,
+                        1 => 4,
+                        2 => 6,
+                        3 => 8,
+                        _ => -1,
+                    };
+
+                    operationDeletes[i].color = selectedHorizontal == 1.1f && selectedVertical == currentVertical ? Color.white : Color.black;
+                    operationDeletes[i].alpha = SetTransparency();
+                }
+
+                for (int i = 0; i < operationSuspends.Length; i++)
+                {
+                    if (i > numberOfOperations)
+                    {
+                        operationSuspends[i].isVisible = false;
+                        continue;
+                    }
+
+                    int currentVertical = i switch
+                    {
+                        0 => 3,
+                        1 => 5,
+                        2 => 7,
+                        3 => 9,
+                        _ => -1,
+                    };
+
+                    operationSuspends[i].color = selectedHorizontal == 1.1f && selectedVertical == currentVertical ? Color.white : Color.red;
+                    operationSuspends[i].alpha = SetTransparency();
+                }
+
+                for (int i = 0; i < operationSuspendLabels.Count; i++)
+                {
+                    if (i > numberOfOperations || !inspectedState.operationsList[i].isSuspended)
+                    {
+                        operationSuspendLabels[i].isVisible = false;
+                        continue;
+                    }
+
+                    operationSuspendLabels[i].alpha = SetTransparency();
+                }
+                #endregion
+            }
+
+            if (treatedSprite.isVisible && (playerState.tendAffliction != null || playerState.tendOperation != null))
+            {
+                float tendProgress = 1 - playerState.tendTime / playerState.tendTimeMax;
+
+                treatedSprite.alpha = transparent ? 0.3f : 0.6f;
+
+                if (playerState.tendOperation != null)
+                {
+                    RimOperation operation = playerState.tendOperation;
+
+                    FSprite sprite = null;
+
+                    if (operation == inspectedState.operationsList[0])
+                    {
+                        sprite = operationBackgrounds[0];
+                    }
+                    else if (operation == inspectedState.operationsList[1])
+                    {
+                        sprite = operationBackgrounds[1];
+                    }
+                    else if (operation == inspectedState.operationsList[2])
+                    {
+                        sprite = operationBackgrounds[2];
+                    }
+                    else if (operation == inspectedState.operationsList[3])
+                    {
+                        sprite = operationBackgrounds[3];
+                    }
+
+                    treatedSprite.x = sprite.x - 66;
+                    treatedSprite.y = sprite.y;
+
+                    treatedSprite.scaleX = Mathf.Lerp(0, 132, tendProgress);
+                    treatedSprite.scaleY = 40;
+
+                    goto skipTend;
+                }
+
+                treatedSprite.x = DrawPos().x - 50;
+
+                treatedSprite.scaleX = Mathf.Lerp(0, 220, tendProgress);
+                treatedSprite.scaleY = 20;
 
                 int selectedBodyPart = 0;
                 int selectedAffliction = 0;
 
-                for (int i = 0; i < healthTabBodyParts.Count; i++)
+                if (inspectedState.wholeBodyAfflictions.Count > 0 && inspectedState.wholeBodyAfflictions.Contains(playerState.tendAffliction))
                 {
-                    maxVertical += healthTabBodyParts[i].allAfflictions.Count;
-
-                    if (lastMaxVertical <= selectedVertical - (healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0) && maxVertical > selectedVertical - (healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0))
+                    for (int j = 0; j < inspectedState.wholeBodyAfflictions.Count - (healthTabWholeBody.bloodLossVisible ? 1 : 0); j++)
                     {
-                        selectedBodyPart = i;
-                        selectedAffliction = selectedVertical - lastMaxVertical - healthTabWholeBody.afflictionNumber;
-                        break;
+                        if (inspectedState.wholeBodyAfflictions[j] == inspectedState.tendAffliction)
+                        {
+                            selectedAffliction = j;
+                            break;
+                        }
+                    }
+
+                    if (healthTabWholeBody.bloodLossVisible)
+                        selectedAffliction++;
+
+                    treatedSprite.isVisible = healthTabWholeBody.afflictionVisuals[selectedAffliction].name.isVisible;
+
+                    if (treatedSprite.isVisible)
+                    {
+                        int extraHeight = 0;
+                        int prevHeight = 0;
+
+                        if (healthTabWholeBody.afflictionsHeight.Count >= selectedAffliction)
+                        {
+                            extraHeight = healthTabWholeBody.afflictionsHeight[selectedAffliction][0] - 1;
+                            prevHeight = healthTabWholeBody.afflictionsHeight[selectedAffliction][1];
+                        }
+
+                        treatedSprite.y = healthTabWholeBody.DrawPos().y - ((healthTabWholeBody.bloodLossVisible ? 18f : 0) + -1 + (18f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
+                        treatedSprite.MoveInFrontOfOtherNode(healthTabWholeBody.background);
+                        treatedSprite.scaleY = 17f + (15 * extraHeight);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < healthTabBodyParts.Count; i++)
+                    {
+                        if (healthTabBodyParts[i].bodyPart == playerState.tendAffliction.part)
+                        {
+                            selectedBodyPart = i;
+
+                            if (healthTabBodyParts[i].allAfflictions.Contains(playerState.tendAffliction))
+                            {
+                                selectedAffliction = healthTabBodyParts[i].allAfflictions.IndexOf(playerState.tendAffliction);
+                                break;
+                            }
+
+                            for (int j = 0; j < healthTabBodyParts[i].combinedAfflictions.Count; j++)
+                            {
+                                if (healthTabBodyParts[i].combinedAfflictions.TryGetValue(healthTabBodyParts[i].CombinedAfflictionName(healthTabBodyParts[i].bodyPart, j), out List<RimAffliction> list) && list.Contains(playerState.tendAffliction))
+                                {
+                                    for (int k = 0; k < list.Count; k++)
+                                    {
+                                        if (healthTabBodyParts[i].allAfflictions.Contains(list[k]))
+                                        {
+                                            selectedAffliction = healthTabBodyParts[i].allAfflictions.IndexOf(list[k]);
+                                            break;
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
+
+                    treatedSprite.isVisible = healthTabBodyParts[selectedBodyPart].afflictionVisuals[selectedAffliction].name.isVisible;
+
+                    if (treatedSprite.isVisible)
+                    {
+                        int extraHeight = healthTabBodyParts[selectedBodyPart].allAfflictionsHeight[selectedAffliction][0] - 1;
+                        int prevHeight = healthTabBodyParts[selectedBodyPart].allAfflictionsHeight[selectedAffliction][1];
+
+                        treatedSprite.y = healthTabBodyParts[selectedBodyPart].DrawPos().y - (-1 + (18f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
+
+                        treatedSprite.MoveInFrontOfOtherNode(healthTabBodyParts[selectedBodyPart].background);
+
+                        treatedSprite.scaleY = 17f + (15 * extraHeight);
+                    }
+                }
+            }
+
+        skipTend:
+
+            if (!selected)
+            {
+                return;
+            }
+
+            if (selectedTimer > 0)
+            {
+                selectedTimer -= timeStacker;
+            }
+
+            selectedSprite.x = DrawPos().x;
+            selectedSprite.y = DrawPos().y;
+            selectedSprite.alpha = transparent ? 0.2f : 0.4f;
+            selectedSprite.color = Color.white;
+
+            selectedSprite.scaleY = 15;
+
+            if (selectedHorizontal == 0)
+            {
+                if (selectedVertical == (!inspectedCreatureState.dead ? 13 : 2))
+                {
+                    selectedSprite.x = allowedMedicine.x;
+                    selectedSprite.y = allowedMedicine.y;
+                    selectedSprite.scale = 16;
+
+                    selectedTimer = selectedTimerMax;
+                }
+                else
+                {
+                    selectedSprite.x -= 250;
+
+                    selectedSprite.y += 111 - 7 - (17 * selectedVertical - 1);
+
+                    selectedSprite.scaleX = 145;
+
+                    if (selectedTimer <= 0)
+                    {
+                        CapacitySelector();
+                    }
+                }
+            }
+            else if (selectedHorizontal == 2)
+            {
+                selectedSprite.x += 60;
+
+                selectedSprite.y += 120;
+                selectedSprite.y -= 11.6f;
+
+                selectedSprite.scaleX = 220;
+                selectedSprite.scaleY = 20;
+
+                if (healthTabWholeBody.active && selectedVertical < healthTabWholeBody.afflictionNumber)
+                {
+                    if (healthTabWholeBody.bloodLossVisible && selectedVertical == 0)
+                    {
+                        selectedSprite.isVisible = healthTabWholeBody.bloodLossName.isVisible;
+
+                        selectedSprite.y = healthTabWholeBody.DrawPos().y - 6.5f;
+                        selectedSprite.scaleY = 17f;
                     }
                     else
                     {
-                        lastMaxVertical = maxVertical;
-                    }
-                }
-
-                if (healthTabBodyParts[selectedBodyPart].afflictionVisuals.Count <= selectedAffliction || healthTabBodyParts[selectedBodyPart].allAfflictionsHeight.Count <= selectedAffliction)
-                {
-                    return;
-                }
-
-                selectedSprite.isVisible = healthTabBodyParts[selectedBodyPart].afflictionVisuals[selectedAffliction].name.isVisible;
-
-                int extraHeight = healthTabBodyParts[selectedBodyPart].allAfflictionsHeight[selectedAffliction][0] - 1;
-                int prevHeight = healthTabBodyParts[selectedBodyPart].allAfflictionsHeight[selectedAffliction][1];
-
-                selectedSprite.y = healthTabBodyParts[selectedBodyPart].DrawPos().y - (-1 + (18f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
-
-                selectedSprite.MoveInFrontOfOtherNode(healthTabBodyParts[selectedBodyPart].background);
-
-                selectedSprite.scaleY = 17f + (15 * extraHeight);
-
-                if (!healthTabWholeBody.active && selectedBodyPart == 0 && selectedAffliction == 0)
-                {
-                    pivotOffset = 0;
-
-                    topLimit = 510;
-                }
-                else if ((selectedSprite.y + (selectedSprite.scaleY / 2)) > ActualTopLimit())
-                {
-                    pivotOffset = healthTabBodyParts[selectedBodyPart].GetPivotOffset(selectedAffliction, true);
-                }
-                else if ((selectedSprite.y - (selectedSprite.scaleY / 2)) < ActualBottomLimit())
-                {
-                    pivotOffset = healthTabBodyParts[selectedBodyPart].GetPivotOffset(selectedAffliction, false);
-
-                    topLimit = 495;
-                }
-
-                if (selectedTimer <= 0)
-                {
-                    AfflictionSelector(selectedBodyPart, selectedAffliction);
-                }
-            }
-        }
-        else if (selectedTimer <= 0)
-        {
-            if (isOperationListActive)
-            {
-                foreach (OperationSelection operation in operationList)
-                {
-                    if (operation.horizontal == operationListHorizontal && operation.vertical == operationListVertical)
-                    {
-                        selectedSprite.x = operation.backgrounds[0].x + (operation.backgrounds[0].scaleX / 2) - 3;
-
-                        selectedSprite.y = operation.backgrounds[0].y + 12;
-
-                        selectedSprite.scaleX = operation.backgrounds[0].scaleX;
-                        break;
-                    }
-                }
-
-                if (healthTabInfos.Count == 0)
-                {
-                    healthTabInfos.Add(new(this));
-                }
-                else if (healthTabInfos.Count > 1)
-                {
-                    for (int i = 1; i < healthTabInfos.Count; i++)
-                    {
-                        healthTabInfos[i].slatedForDeletion = true;
-                    }
-                }
-
-                string operationName = "";
-
-                foreach (OperationSelection operation in operationList)
-                {
-                    if (operation.horizontal == operationListHorizontal && operation.vertical == operationListVertical)
-                    {
-                        operationName = operation.name;
-                        break;
-                    }
-                }
-
-                int medicalRequired = 0;
-                int medicineAmount = 1;
-                int medicineQuality = 1;
-
-                Type requiredObject = null;
-
-                RimBodyPart operationPart = null;
-
-                switch (operationName)
-                {
-                    case "Install archotech eye":
-                        medicalRequired = 5;
-                        medicineAmount = 2;
-                        break;
-                    case "Install archotech arm":
-                        medicalRequired = 5;
-                        medicineAmount = 2;
-                        break;
-                    case "Install archotech leg":
-                        medicalRequired = 5;
-                        medicineAmount = 2;
-                        break;
-                    case "Install bionic arm":
-                        medicalRequired = 5;
-                        medicineAmount = 2;
-                        break;
-                    case "Install peg leg":
-                        medicalRequired = 3;
-                        medicineAmount = 2;
-
-                        requiredObject = typeof(Spear);
-                        break;
-                    case "Install wooden hand":
-                        medicalRequired = 3;
-                        medicineAmount = 2;
-                        break;
-                    case "Install wooden foot":
-                        medicalRequired = 3;
-                        medicineAmount = 2;
-                        break;
-                    case "Install denture (jaw)":
-                        medicalRequired = 3;
-                        medicineAmount = 2;
-                        break;
-                }
-
-                if (medicalRequired != 0)
-                {
-                    healthTabInfos[0].name.text = "Requires: ";
-                    healthTabInfos[0].nameStatus.text = "Medical " + medicalRequired;
-
-                    healthTabInfos[0].colouredName.text = "Ingredients: ";
-
-                    healthTabInfos[0].description.text = "  " + medicineAmount + "x ";
-                    healthTabInfos[0].description.text += medicineQuality switch
-                    {
-                        1 => "Any Medicine",
-                        2 => "Regular or better medicine",
-                        _ => "Glitterworld Medicine"
-                    };
-
-                    if (requiredObject != null)
-                    {
-                        healthTabInfos[0].description.text += "\n  1x " + requiredObject.ToString();
-                    }
-
-                    foreach (RimBodyPart part in inspectedState.bodyParts)
-                    {
-                        if (part == operationPart && part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RimArtificialPartBase artificialPart)
+                        if (healthTabWholeBody.afflictionVisuals.Count <= selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0) || healthTabWholeBody.afflictionsHeight.Count <= selectedVertical)
                         {
-                            healthTabInfos[0].colouredName2.text = "Replaces: " + artificialPart.name;
-                            break;
+                            return;
                         }
+
+                        selectedSprite.isVisible = healthTabWholeBody.afflictionVisuals[selectedVertical - (healthTabWholeBody.bloodLossVisible ? 1 : 0)].name.isVisible;
+
+                        int extraHeight = healthTabWholeBody.afflictionsHeight[selectedVertical][0] - 1;
+                        int prevHeight = healthTabWholeBody.afflictionsHeight[selectedVertical][1];
+
+                        selectedSprite.y = healthTabWholeBody.DrawPos().y - (-1 + (18f * selectedVertical) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
+
+                        selectedSprite.scaleY = 17f + (15 * extraHeight);
+                    }
+
+                    selectedSprite.MoveInFrontOfOtherNode(healthTabWholeBody.background);
+
+                    if (selectedVertical == 0)
+                    {
+                        pivotOffset = 0;
+
+                        topLimit = 510;
+                    }
+                    else if ((selectedSprite.y + (selectedSprite.scaleY / 2)) > ActualTopLimit())
+                    {
+                        pivotOffset = healthTabWholeBody.GetPivotOffset(selectedVertical, true);
+                    }
+                    else if ((selectedSprite.y - (selectedSprite.scaleY / 2)) < ActualBottomLimit())
+                    {
+                        pivotOffset = healthTabWholeBody.GetPivotOffset(selectedVertical, false);
+
+                        topLimit = 495;
+                    }
+
+                    if (selectedTimer <= 0)
+                    {
+                        WholeBodyAfflictionSelector();
                     }
                 }
                 else
                 {
-                    healthTabInfos[0].name.text = "Ingredients: ";
-                    healthTabInfos[0].nameStatus.text = "";
+                    int maxVertical = 0;
+                    int lastMaxVertical = 0;
 
-                    healthTabInfos[0].colouredName.text = "";
+                    int selectedBodyPart = 0;
+                    int selectedAffliction = 0;
 
-                    healthTabInfos[0].description.text = "  " + medicineAmount + "x ";
-                    healthTabInfos[0].description.text += medicineQuality switch
+                    for (int i = 0; i < healthTabBodyParts.Count; i++)
                     {
-                        1 => "Any Medicine",
-                        2 => "Regular or better medicine",
-                        _ => "Glitterworld Medicine"
-                    };
+                        maxVertical += healthTabBodyParts[i].allAfflictions.Count;
 
-                    if (requiredObject != null)
-                    {
-                        healthTabInfos[0].description.text += "\n  1x " + requiredObject.ToString();
-                    }
-
-                    healthTabInfos[0].colouredName2.text = "";
-
-                    foreach (RimBodyPart part in inspectedState.bodyParts)
-                    {
-                        if (part == operationPart && part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RimArtificialPartBase artificialPart)
+                        if (lastMaxVertical <= selectedVertical - (healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0) && maxVertical > selectedVertical - (healthTabWholeBody.active ? healthTabWholeBody.afflictionNumber : 0))
                         {
-                            healthTabInfos[0].colouredName2.text = "Replaces: " + artificialPart.name;
+                            selectedBodyPart = i;
+                            selectedAffliction = selectedVertical - lastMaxVertical - healthTabWholeBody.afflictionNumber;
                             break;
                         }
+                        else
+                        {
+                            lastMaxVertical = maxVertical;
+                        }
+                    }
+
+                    if (healthTabBodyParts[selectedBodyPart].afflictionVisuals.Count <= selectedAffliction || healthTabBodyParts[selectedBodyPart].allAfflictionsHeight.Count <= selectedAffliction)
+                    {
+                        return;
+                    }
+
+                    selectedSprite.isVisible = healthTabBodyParts[selectedBodyPart].afflictionVisuals[selectedAffliction].name.isVisible;
+
+                    int extraHeight = healthTabBodyParts[selectedBodyPart].allAfflictionsHeight[selectedAffliction][0] - 1;
+                    int prevHeight = healthTabBodyParts[selectedBodyPart].allAfflictionsHeight[selectedAffliction][1];
+
+                    selectedSprite.y = healthTabBodyParts[selectedBodyPart].DrawPos().y - (-1 + (18f * selectedAffliction) + (15 * prevHeight) + (7.5f * (extraHeight + 1)));
+
+                    selectedSprite.MoveInFrontOfOtherNode(healthTabBodyParts[selectedBodyPart].background);
+
+                    selectedSprite.scaleY = 17f + (15 * extraHeight);
+
+                    if (!healthTabWholeBody.active && selectedBodyPart == 0 && selectedAffliction == 0)
+                    {
+                        pivotOffset = 0;
+
+                        topLimit = 510;
+                    }
+                    else if ((selectedSprite.y + (selectedSprite.scaleY / 2)) > ActualTopLimit())
+                    {
+                        pivotOffset = healthTabBodyParts[selectedBodyPart].GetPivotOffset(selectedAffliction, true);
+                    }
+                    else if ((selectedSprite.y - (selectedSprite.scaleY / 2)) < ActualBottomLimit())
+                    {
+                        pivotOffset = healthTabBodyParts[selectedBodyPart].GetPivotOffset(selectedAffliction, false);
+
+                        topLimit = 495;
+                    }
+
+                    if (selectedTimer <= 0)
+                    {
+                        AfflictionSelector(selectedBodyPart, selectedAffliction);
                     }
                 }
             }
-            else if (selectedHorizontal == 1)
+            else if (selectedTimer <= 0)
             {
-                selectedSprite.x -= 258;
-
-                selectedSprite.y = selectedVertical switch
+                if (isOperationListActive)
                 {
-                    2 => operationBackgrounds[0].y + 27,
-                    3 => operationBackgrounds[1].y + 27,
-                    4 => operationBackgrounds[2].y + 27,                    5 => operationBackgrounds[3].y + 27,
-                    _ => operationBackgrounds[0].y + 27
-                };
-
-                selectedSprite.scaleX = operationBackgrounds[0].scaleX;
-
-                if (healthTabInfos.Count == 0)
-                {
-                    healthTabInfos.Add(new(this));
-                }
-                else if (healthTabInfos.Count > 1)
-                {
-                    for (int i = 1; i < healthTabInfos.Count; i++)
+                    foreach (OperationSelection operation in operationList)
                     {
-                        healthTabInfos[i].slatedForDeletion = true;
-                    }
-                }
-
-                RimOperation operation = inspectedState.operationsList[selectedVertical - 2];
-
-                if (operation.medicalRequired != 0)
-                {
-                    healthTabInfos[0].name.text = "Requires: ";
-                    healthTabInfos[0].nameStatus.text = "Medical " + operation.medicalRequired;
-
-                    healthTabInfos[0].colouredName.text = "Ingredients: ";
-
-                    healthTabInfos[0].description.text = "  " + operation.medicineAmount + "x ";
-                    healthTabInfos[0].description.text += operation.medicineQuality switch
-                    {
-                        1 => "Any Medicine",
-                        2 => "Regular or better medicine",
-                        _ => "Glitterworld Medicine"
-                    };
-
-                    if (operation.requiredObject != null)
-                    {
-                        healthTabInfos[0].description.text += "\n  1x " + operation.requiredObject.ToString();
-                    }
-
-                    foreach (RimBodyPart part in inspectedState.bodyParts)
-                    {
-                        if (part == operation.part && part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RimArtificialPartBase artificialPart)
+                        if (operation.horizontal == operationListHorizontal && operation.vertical == operationListVertical)
                         {
-                            healthTabInfos[0].colouredName2.text = "Replaces: " + artificialPart.name;
+                            selectedSprite.x = operation.backgrounds[0].x + (operation.backgrounds[0].scaleX / 2) - 3;
+
+                            selectedSprite.y = operation.backgrounds[0].y + 12;
+
+                            selectedSprite.scaleX = operation.backgrounds[0].scaleX;
                             break;
                         }
                     }
-                }
-                else
-                {
-                    healthTabInfos[0].name.text = "Ingredients: ";
-                    healthTabInfos[0].nameStatus.text = "";
 
-                    healthTabInfos[0].colouredName.text = "";
-
-                    healthTabInfos[0].description.text = "  " + operation.medicineAmount + "x ";
-                    healthTabInfos[0].description.text += operation.medicineQuality switch
+                    if (healthTabInfos.Count == 0)
                     {
-                        1 => "Any Medicine",
-                        2 => "Regular or better medicine",
-                        _ => "Glitterworld Medicine"
-                    };
-
-                    if (operation.requiredObject != null)
+                        healthTabInfos.Add(new(this));
+                    }
+                    else if (healthTabInfos.Count > 1)
                     {
-                        healthTabInfos[0].description.text += "\n  1x " + operation.requiredObject.ToString();
+                        for (int i = 1; i < healthTabInfos.Count; i++)
+                        {
+                            healthTabInfos[i].slatedForDeletion = true;
+                        }
                     }
 
-                    healthTabInfos[0].colouredName2.text = "";
+                    string operationName = "";
 
-                    foreach (RimBodyPart part in inspectedState.bodyParts)
+                    foreach (OperationSelection operation in operationList)
                     {
-                        if (part == operation.part && part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RimArtificialPartBase artificialPart)
+                        if (operation.horizontal == operationListHorizontal && operation.vertical == operationListVertical)
                         {
-                            healthTabInfos[0].colouredName2.text = "Replaces: " + artificialPart.name;
+                            operationName = operation.name;
                             break;
+                        }
+                    }
+
+                    int medicalRequired = 0;
+                    int medicineAmount = 1;
+                    int medicineQuality = 1;
+
+                    Type requiredObject = null;
+
+                    RimBodyPart operationPart = null;
+
+                    switch (operationName)
+                    {
+                        case "Install archotech eye":
+                            medicalRequired = 5;
+                            medicineAmount = 2;
+                            break;
+                        case "Install archotech arm":
+                            medicalRequired = 5;
+                            medicineAmount = 2;
+                            break;
+                        case "Install archotech leg":
+                            medicalRequired = 5;
+                            medicineAmount = 2;
+                            break;
+                        case "Install bionic arm":
+                            medicalRequired = 5;
+                            medicineAmount = 2;
+                            break;
+                        case "Install peg leg":
+                            medicalRequired = 3;
+                            medicineAmount = 2;
+
+                            requiredObject = typeof(Spear);
+                            break;
+                        case "Install wooden hand":
+                            medicalRequired = 3;
+                            medicineAmount = 2;
+                            break;
+                        case "Install wooden foot":
+                            medicalRequired = 3;
+                            medicineAmount = 2;
+                            break;
+                        case "Install denture (jaw)":
+                            medicalRequired = 3;
+                            medicineAmount = 2;
+                            break;
+                    }
+
+                    if (medicalRequired != 0)
+                    {
+                        healthTabInfos[0].name.text = "Requires: ";
+                        healthTabInfos[0].nameStatus.text = "Medical " + medicalRequired;
+
+                        healthTabInfos[0].colouredName.text = "Ingredients: ";
+
+                        healthTabInfos[0].description.text = "  " + medicineAmount + "x ";
+                        healthTabInfos[0].description.text += medicineQuality switch
+                        {
+                            1 => "Any Medicine",
+                            2 => "Regular or better medicine",
+                            _ => "Glitterworld Medicine"
+                        };
+
+                        if (requiredObject != null)
+                        {
+                            healthTabInfos[0].description.text += "\n  1x " + requiredObject.ToString();
+                        }
+
+                        foreach (RimBodyPart part in inspectedState.bodyParts)
+                        {
+                            if (part == operationPart && part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RimArtificialPartBase artificialPart)
+                            {
+                                healthTabInfos[0].colouredName2.text = "Replaces: " + artificialPart.name;
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        healthTabInfos[0].name.text = "Ingredients: ";
+                        healthTabInfos[0].nameStatus.text = "";
+
+                        healthTabInfos[0].colouredName.text = "";
+
+                        healthTabInfos[0].description.text = "  " + medicineAmount + "x ";
+                        healthTabInfos[0].description.text += medicineQuality switch
+                        {
+                            1 => "Any Medicine",
+                            2 => "Regular or better medicine",
+                            _ => "Glitterworld Medicine"
+                        };
+
+                        if (requiredObject != null)
+                        {
+                            healthTabInfos[0].description.text += "\n  1x " + requiredObject.ToString();
+                        }
+
+                        healthTabInfos[0].colouredName2.text = "";
+
+                        foreach (RimBodyPart part in inspectedState.bodyParts)
+                        {
+                            if (part == operationPart && part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RimArtificialPartBase artificialPart)
+                            {
+                                healthTabInfos[0].colouredName2.text = "Replaces: " + artificialPart.name;
+                                break;
+                            }
+                        }
+                    }
+                }
+                else if (selectedHorizontal == 1)
+                {
+                    selectedSprite.x -= 258;
+
+                    selectedSprite.y = selectedVertical switch
+                    {
+                        2 => operationBackgrounds[0].y + 27,
+                        3 => operationBackgrounds[1].y + 27,
+                        4 => operationBackgrounds[2].y + 27,
+                        5 => operationBackgrounds[3].y + 27,
+                        _ => operationBackgrounds[0].y + 27
+                    };
+
+                    selectedSprite.scaleX = operationBackgrounds[0].scaleX;
+
+                    if (healthTabInfos.Count == 0)
+                    {
+                        healthTabInfos.Add(new(this));
+                    }
+                    else if (healthTabInfos.Count > 1)
+                    {
+                        for (int i = 1; i < healthTabInfos.Count; i++)
+                        {
+                            healthTabInfos[i].slatedForDeletion = true;
+                        }
+                    }
+
+                    RimOperation operation = inspectedState.operationsList[selectedVertical - 2];
+
+                    if (operation.medicalRequired != 0)
+                    {
+                        healthTabInfos[0].name.text = "Requires: ";
+                        healthTabInfos[0].nameStatus.text = "Medical " + operation.medicalRequired;
+
+                        healthTabInfos[0].colouredName.text = "Ingredients: ";
+
+                        healthTabInfos[0].description.text = "  " + operation.medicineAmount + "x ";
+                        healthTabInfos[0].description.text += operation.medicineQuality switch
+                        {
+                            1 => "Any Medicine",
+                            2 => "Regular or better medicine",
+                            _ => "Glitterworld Medicine"
+                        };
+
+                        if (operation.requiredObject != null)
+                        {
+                            healthTabInfos[0].description.text += "\n  1x " + operation.requiredObject.ToString();
+                        }
+
+                        foreach (RimBodyPart part in inspectedState.bodyParts)
+                        {
+                            if (part == operation.part && part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RimArtificialPartBase artificialPart)
+                            {
+                                healthTabInfos[0].colouredName2.text = "Replaces: " + artificialPart.name;
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        healthTabInfos[0].name.text = "Ingredients: ";
+                        healthTabInfos[0].nameStatus.text = "";
+
+                        healthTabInfos[0].colouredName.text = "";
+
+                        healthTabInfos[0].description.text = "  " + operation.medicineAmount + "x ";
+                        healthTabInfos[0].description.text += operation.medicineQuality switch
+                        {
+                            1 => "Any Medicine",
+                            2 => "Regular or better medicine",
+                            _ => "Glitterworld Medicine"
+                        };
+
+                        if (operation.requiredObject != null)
+                        {
+                            healthTabInfos[0].description.text += "\n  1x " + operation.requiredObject.ToString();
+                        }
+
+                        healthTabInfos[0].colouredName2.text = "";
+
+                        foreach (RimBodyPart part in inspectedState.bodyParts)
+                        {
+                            if (part == operation.part && part.isBionic && part.afflictions.Count > 0 && part.afflictions[0] is RimArtificialPartBase artificialPart)
+                            {
+                                healthTabInfos[0].colouredName2.text = "Replaces: " + artificialPart.name;
+                                break;
+                            }
                         }
                     }
                 }
             }
         }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
 
         void CapacitySelector()
         {
@@ -3291,7 +3302,7 @@ public class HealthTab : HudPart
                                     continue;
                                 }
 
-                                if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.25f))
+                                if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.5f))
                                 {
                                     if (stringValue == "Talking" && stringValue == "Digestion" && stringValue == "Sight")
                                     {
@@ -3300,9 +3311,9 @@ public class HealthTab : HudPart
 
                                     isCapacityAffected = true;
                                     description += "Anesthetic (wearing off, ";
-                                    description += GetTimeString(ailment.amount / (40 * 60)) + ")";
+                                    description += GetTimeString(ailment.amount / (40 * 60), true) + ")";
                                 }
-                                else if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.5f))
+                                else if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.25f))
                                 {
                                     if (stringValue == "Moving")
                                     {
@@ -3311,7 +3322,7 @@ public class HealthTab : HudPart
 
                                     isCapacityAffected = true;
                                     description += "Anesthetic (woozy, ";
-                                    description += GetTimeString(ailment.amount / (40 * 60)) + ")";
+                                    description += GetTimeString(ailment.amount / (40 * 60), true) + ")";
                                 }
                                 else
                                 {
@@ -3322,7 +3333,7 @@ public class HealthTab : HudPart
 
                                     isCapacityAffected = true;
                                     description += "Anesthetic (sedated, ";
-                                    description += GetTimeString(ailment.amount / (40 * 60)) + ")";
+                                    description += GetTimeString(ailment.amount / (40 * 60), true) + ")";
                                 }
                                 continue;
                             }
@@ -3431,32 +3442,14 @@ public class HealthTab : HudPart
                                 "  - Manipulation: -20%\n" +
                                 "  - Breathing: -20%\n\n"
                         };
-
-                        if (!disease.isTended)
-                        {
-                            healthTabInfos[0].description.text += "Needs tending now\n";
-                        }
-                        else
-                        {
-                            healthTabInfos[0].description.text += "Tend quality: " + (Mathf.Round(disease.tendQuality * 1000) / 10) + "%\n";
-
-                            if (disease.timeUntilTreatment < 0)
-                            {
-                                healthTabInfos[0].description.text += "Needs tending now\n"; ;
-                            }
-                            else
-                            {
-                                healthTabInfos[0].description.text += "Can be tended in " + GetTimeString(disease.timeUntilTreatment) + "\n";
-                            }
-
-                            healthTabInfos[0].description.text += "Tending expires in " + GetTimeString(disease.timeUntilTreatment + 3) + "\n";
-                        }
-                        
-                        healthTabInfos[0].description.text += "Immunity: " + Mathf.Clamp(Mathf.Round(disease.immunity * 1000) / 10, 0, 100) + "%";
                     }
+
+                    InfoDisease(disease, 0);
                 }
                 else if (inspectedState.wholeBodyAfflictions[selectedAffliction] is RimAilment ailment)
                 {
+                    healthTabInfos[0].name.text = GetAilmentName(ailment);
+
                     switch (ailment)
                     {
                         case RimAirInLungs:
@@ -3518,21 +3511,21 @@ public class HealthTab : HudPart
                                     "  - Consciousness: -25%"
                             };
 
-                            healthTabInfos[0].nameStatus.text = ": " + Mathf.Round(ailment.amount * 100) + "%";
+                            healthTabInfos[0].nameStatus.text = Mathf.Round(ailment.amount * 100) + "%";
                             break;
                         case RimAnesthetic:
                             healthTabInfos[0].description.text = "Sleep drugs in the bloodstream.\n" +
                                 "Anestheic renders creatures\n" +
                                 "unconscious.\n\n";
 
-                            if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.25f))
+                            if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.5f))
                             {
                                 healthTabInfos[0].description.text += "  - Pain: x95%\n" +
                                     "  - Consciousness: Max 90%\n" +
                                     "  - Manipulation: -10%\n" +
                                     "  - Moving: -5%";
                             }
-                            else if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.5f))
+                            else if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.25f))
                             {
                                 healthTabInfos[0].description.text += "  - Pain: x80%\n" +
                                     "  - Consciousness: Max 70%\n" +
@@ -3540,8 +3533,8 @@ public class HealthTab : HudPart
                                     "  - Manipulation: -20%\n" +
                                     "  - Talking: -20%\n" +
                                     "  - Digestion: -20%\n" +
-                                    "  - Sight: -15%\n" +
-                                    "  - Affects: Memory"; //does not affect memory
+                                    "  - Sight: -15%\n";
+                                    //"  - Affects: Memory";
                             }
                             else
                             {
@@ -3578,8 +3571,8 @@ public class HealthTab : HudPart
                 name = healthTabBodyParts[selectedBodyPart].bodyPart.subName + " " + name;
             }
 
-            healthTabInfos[0].name.text = name;
-            healthTabInfos[0].nameStatus.text = " : " + Mathf.Round(healthTabBodyParts[selectedBodyPart].bodyPart.health) + " / " + healthTabBodyParts[selectedBodyPart].bodyPart.maxHealth;
+            healthTabInfos[0].name.text = name + ": ";
+            healthTabInfos[0].nameStatus.text = Mathf.Round(healthTabBodyParts[selectedBodyPart].bodyPart.health) + " / " + healthTabBodyParts[selectedBodyPart].bodyPart.maxHealth;
 
             float efficiency = Mathf.Round(healthTabBodyParts[selectedBodyPart].bodyPart.efficiency * 100);
 
@@ -3909,27 +3902,7 @@ public class HealthTab : HudPart
                             "  - Breathing: -5%";
                     }
 
-                    if (!disease.isTended)
-                    {
-                        healthTabInfos[1].description.text += "\nNeeds tending now\n";
-                    }
-                    else
-                    {
-                        healthTabInfos[1].description.text += "\nTend quality: " + (Mathf.Round(disease.tendQuality * 1000) / 10) + "%\n";
-
-                        if (disease.timeUntilTreatment < 0)
-                        {
-                            healthTabInfos[1].description.text += "Needs tending now\n"; ;
-                        }
-                        else
-                        {
-                            healthTabInfos[1].description.text += "Can be tended in " + GetTimeString(disease.timeUntilTreatment) + "\n";
-                        }
-
-
-                        healthTabInfos[1].description.text += "Tending expires in " + GetTimeString(disease.timeUntilTreatment + 3) + "\n";
-                    }
-                    healthTabInfos[1].description.text += "Immunity: " + Mathf.Clamp(Mathf.Round(disease.immunity * 1000) / 10, 0, 100) + "%";
+                    InfoDisease(disease, 1);
                 }
             }  
             else if (affliction is RimArtificialPartBase artificialPart)
@@ -3945,6 +3918,31 @@ public class HealthTab : HudPart
                 info.colouredName.text = "";
                 info.colouredName2.text = "";
             }
+        }
+
+        void InfoDisease(RimDisease disease, int index)
+        {
+            if (!disease.isTended)
+            {
+                healthTabInfos[index].description.text += "Needs tending now\n";
+            }
+            else
+            {
+                healthTabInfos[index].description.text += "Tend quality: " + (Mathf.Round(disease.tendQuality * 1000) / 10) + "%\n";
+
+                if (disease.timeUntilTreatment < 0)
+                {
+                    healthTabInfos[index].description.text += "Needs tending now\n"; ;
+                }
+                else
+                {
+                    healthTabInfos[index].description.text += "Can be tended in " + GetTimeString(disease.timeUntilTreatment) + "\n";
+                }
+
+                healthTabInfos[index].description.text += "Tending expires in " + GetTimeString(disease.timeUntilTreatment + 3) + "\n";
+            }
+
+            healthTabInfos[index].description.text += "Immunity: " + Mathf.Clamp(Mathf.Round(disease.immunity * 1000) / 10, 0, 100) + "%";
         }
     }
 
@@ -4244,18 +4242,104 @@ public class HealthTab : HudPart
         }
     }
 
-    public static string GetTimeString(float timeInMin)
+    public static string GetTimeString(float timeInMin, bool isAnesthetic = false)
     {
         string text;
-        if (timeInMin < 1)
+        if (timeInMin >= cycleLength)
         {
-            text = Mathf.Max(Mathf.Round(timeInMin * 10000) / 100, 0) + (Mathf.Round(timeInMin * 10000) / 100 == 1 ? " second" : " seconds");
+            if (isAnesthetic)
+            {
+                text = Mathf.Max(Mathf.Floor(timeInMin / cycleLength)) + "c";
+            }
+            else
+            {
+                text = Mathf.Max(Mathf.Floor(timeInMin / cycleLength) * (cycleLength / 10), 1) + Mathf.Floor(timeInMin / cycleLength) == 1 ? " cycle" : " cycles";
+            }
+        }
+        else if (timeInMin < 1)
+        {
+            if (isAnesthetic)
+            {
+                text = Mathf.Max(Mathf.Round(timeInMin * 60), 0) + "s";
+            }
+            else
+            {
+                text = Mathf.Max(Mathf.Round(timeInMin * 60) / 6, 0) + Mathf.Round(timeInMin * 60) / 6 == 1 ? " second" : " seconds";
+            }
         }
         else
         {
-            text = (Mathf.Round(timeInMin * 10) / 10) + (Mathf.Round(timeInMin * 10) / 10 == 1 ? " minute" : " minutes");
+            if (isAnesthetic)
+            {
+                text = Mathf.Max(Mathf.Round(timeInMin), 0) + "m";
+            }
+            else
+            {
+                text = Mathf.Max(Mathf.Round(timeInMin / 10), 0) + Mathf.Round(timeInMin / 10) == 1 ? " minute" : " minutes";
+            }
         }
 
+        return text;
+    }
+
+    public static string GetAilmentName(RimAilment ailment)
+    {
+        string text = "null";
+        switch (ailment)
+        {
+            case RimAirInLungs:
+                text = "Lung capacity ";
+
+                text += ailment.amount switch
+                {
+                    < airInLungsLow => "(empty)",
+                    < airInLungsMedium => "(low)",
+                    < airInLungsHigh => "(medium)",
+                    _ => "(high)"
+                };
+                break;
+            case RimHypothermia:
+                text = "Hypothermia ";
+
+                text += ailment.amount switch
+                {
+                    < hypothermiaMinor => "(shivering)",
+                    < hypothermiaSerious => "(minor)",
+                    < hypothermiaExtreme => "(serious)",
+                    _ => "(extreme)"
+                };
+                break;
+            case RimToxicBuildup:
+                text = "Toxic buildup ";
+
+                text += ailment.amount switch
+                {
+                    < toxicBuildupMinor => "(initial)",
+                    < toxicBuildupModerate => "(minor)",
+                    < toxicBuildupSerious => "(moderate)",
+                    < toxicBuildupExtreme => "(serious)",
+                    _ => "(extreme)"
+                };
+                break;
+            case RimAnesthetic:
+                text = "Anesthetic ";
+
+                if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.5f))
+                {
+                    text += "(wearing off, ";
+                }
+                else if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.25f))
+                {
+                    text += "(woozy, ";
+                }
+                else
+                {
+                    text += "(sedated, ";
+                }
+
+                text += GetTimeString(ailment.amount / (40 * 60), true) + ")";
+                break;
+        }
         return text;
     }
 
@@ -4443,226 +4527,238 @@ public class HealthTabBodyPart
 
     public void Update()
     {
-        if (bodyPart == null || bodyPart.afflictions.Count == 0)
+        try
         {
-            slatedForDeletion = true;
-            return;
-        }
-
-        afflictionNumber = bodyPart.afflictions.Count;
-
-        combinedAfflictions = new();
-        afflictions = new();
-
-        for (int i = 0; i < bodyPart.afflictions.Count; i++)
-        {
-            if (bodyPart.afflictions[i] is RimInjury injury && injury is not RimDestroyed && injury.healingDifficulty.combines && (injury is not RimScar scar || !scar.isRevealed))
+            if (slatedForDeletion || bodyPart == null || bodyPart.afflictions.Count == 0)
             {
-                if (combinedAfflictions.TryGetValue(CombinedAfflictionName(bodyPart, i), out List<RimAffliction> dic))
+                slatedForDeletion = true;
+                return;
+            }
+
+            afflictionNumber = bodyPart.afflictions.Count;
+
+            combinedAfflictions = new();
+            afflictions = new();
+
+            for (int i = 0; i < bodyPart.afflictions.Count; i++)
+            {
+                if (bodyPart.afflictions[i] is RimInjury injury && injury is not RimDestroyed && injury.healingDifficulty.combines && (injury is not RimScar scar || !scar.isRevealed))
                 {
-                    dic.Add(injury);
-                    afflictionNumber--;
+                    if (combinedAfflictions.TryGetValue(CombinedAfflictionName(bodyPart, i), out List<RimAffliction> dic))
+                    {
+                        dic.Add(injury);
+                        afflictionNumber--;
+                    }
+                    else
+                    {
+                        combinedAfflictions.Add(CombinedAfflictionName(bodyPart, i), new(1) { injury });
+                    }
                 }
                 else
                 {
-                    combinedAfflictions.Add(CombinedAfflictionName(bodyPart, i), new(1) { injury });
+                    afflictions.Add(bodyPart.afflictions[i]);
                 }
             }
-            else
+
+            if (afflictionNumber < afflictionVisuals.Count)
             {
-                afflictions.Add(bodyPart.afflictions[i]);
+                List<HealthTabAffliction> list = new(afflictionVisuals);
+
+                for (int i = list.Count - 1; i >= afflictionNumber; i--)
+                {
+                    afflictionVisuals[i].ClearSprites();
+
+                    afflictionVisuals.Remove(list[i]);
+                }
+            }
+            else if (afflictionNumber > afflictionVisuals.Count)
+            {
+                List<HealthTabAffliction> list = new(afflictionVisuals);
+
+                for (int i = 0; i < afflictionNumber - list.Count; i++)
+                {
+                    afflictionVisuals.Add(new(owner, DrawPos().x));
+                }
             }
         }
-
-        if (afflictionNumber < afflictionVisuals.Count)
-        {
-            List<HealthTabAffliction> list = new(afflictionVisuals);
-
-            for (int i = list.Count - 1; i >= afflictionNumber; i--)
-            {
-                afflictionVisuals[i].ClearSprites();
-
-                afflictionVisuals.Remove(list[i]);
-            }
-        }
-        else if (afflictionNumber > afflictionVisuals.Count)
-        {
-            List<HealthTabAffliction> list = new(afflictionVisuals);
-
-            for (int i = 0; i < afflictionNumber - list.Count; i++)
-            {
-                afflictionVisuals.Add(new(owner, DrawPos().x));
-            }
-        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
     }
 
     public void Draw()
     {
-        background.isVisible = owner.visible && owner.healthTabWholeBody.active ? owner.healthTabBodyParts.IndexOf(this) % 2 != 0 : owner.healthTabBodyParts.IndexOf(this) % 2 == 0;
-        bodyPartName.isVisible = owner.visible;
-
-        if (owner == null || !owner.visible)
+        if (slatedForDeletion)
         {
             return;
         }
 
-        if (background.isVisible)
+        try
         {
-            background.y = DrawPos().y + 3;
-            background.scaleY = 0;
-        }
+            background.isVisible = owner.visible && owner.healthTabWholeBody.active ? owner.healthTabBodyParts.IndexOf(this) % 2 != 0 : owner.healthTabBodyParts.IndexOf(this) % 2 == 0;
+            bodyPartName.isVisible = owner.visible;
 
-        bodyPartName.y = DrawPos().y;
-
-        List<string> usedCombinedAfflictions = new();
-        List<RimAffliction> usedAfflictions = new();
-
-        allAfflictions = new();
-        allAfflictionsHeight = new();
-
-        extraHeight = 0;
-
-        isVisible = false;
-
-        topVisible = false;
-        bottomReached = false;
-
-        for (int i = 0; i < afflictionVisuals.Count; i++)
-        {
-            afflictionVisuals[i].name.y = DrawPos().y - 18f * i;
-
-            afflictionVisuals[i].icon.y = DrawPos().y - 7 - 18f * i;
-
-            for (int j = 0; j < bodyPart.afflictions.Count; j++)
+            if (owner == null || !owner.visible)
             {
-                if (!usedCombinedAfflictions.Contains(CombinedAfflictionName(bodyPart, j)) && combinedAfflictions.TryGetValue(CombinedAfflictionName(bodyPart, j), out List<RimAffliction> dic))
+                return;
+            }
+
+            if (background.isVisible)
+            {
+                background.y = DrawPos().y + 3;
+                background.scaleY = 0;
+            }
+
+            bodyPartName.y = DrawPos().y;
+
+            List<string> usedCombinedAfflictions = new();
+            List<RimAffliction> usedAfflictions = new();
+
+            allAfflictions = new();
+            allAfflictionsHeight = new();
+
+            extraHeight = 0;
+
+            isVisible = false;
+
+            topVisible = false;
+            bottomReached = false;
+
+            for (int i = 0; i < afflictionVisuals.Count; i++)
+            {
+                afflictionVisuals[i].name.y = DrawPos().y - 18f * i;
+
+                afflictionVisuals[i].icon.y = DrawPos().y - 7 - 18f * i;
+
+                for (int j = 0; j < bodyPart.afflictions.Count; j++)
                 {
-                    afflictionVisuals[i].name.color = bodyPart.afflictions[j].labelColour;
-
-                    usedCombinedAfflictions.Add(CombinedAfflictionName(bodyPart, j));
-
-                    if (bodyPart.afflictions[j] is RimInjury injury)
+                    if (!usedCombinedAfflictions.Contains(CombinedAfflictionName(bodyPart, j)) && combinedAfflictions.TryGetValue(CombinedAfflictionName(bodyPart, j), out List<RimAffliction> dic))
                     {
-                        string text;
+                        afflictionVisuals[i].name.color = bodyPart.afflictions[j].labelColour;
 
-                        text = injury.healingDifficulty.name + (injury.attackName != "" ? " (" + injury.attackName + ")" : "") + (dic.Count > 1 ? " x" + dic.Count : "");
+                        usedCombinedAfflictions.Add(CombinedAfflictionName(bodyPart, j));
 
-                        afflictionVisuals[i].name.text = text;
-                        Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
-
-                        allAfflictionsHeight.Add(new(2) { Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight });
-
-                        IsVisible(i);
-
-                        afflictionVisuals[i].icon.color = injury.isTended ? Color.white : Color.red;
-
-                        afflictionVisuals[i].icon.isVisible = isVisible && (injury.isTended || !owner.inspectedCreatureState.dead && injury.isBleeding);
-                    }
-
-                    allAfflictions.Add(bodyPart.afflictions[j]);
-
-                    break;
-                }
-                else if (!usedAfflictions.Contains(bodyPart.afflictions[j]) && afflictions.Contains(bodyPart.afflictions[j]))
-                {
-                    afflictionVisuals[i].name.color = bodyPart.afflictions[j].labelColour;
-
-                    usedAfflictions.Add(bodyPart.afflictions[j]);
-
-                    if (bodyPart.afflictions[j] is RimInjury injury)
-                    {
-                        string text;
-
-                        if (injury is RimDestroyed destroyed)
+                        if (bodyPart.afflictions[j] is RimInjury injury)
                         {
-                            if (bodyPart is RimOrgan && destroyed.damageType is RimSurgicalCut)
+                            string text;
+
+                            text = injury.healingDifficulty.name + (injury.attackName != "" ? " (" + injury.attackName + ")" : "") + (dic.Count > 1 ? " x" + dic.Count : "");
+
+                            afflictionVisuals[i].name.text = text;
+                            Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
+
+                            allAfflictionsHeight.Add([Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight]);
+
+                            IsVisible(i);
+
+                            afflictionVisuals[i].icon.color = injury.isTended ? Color.white : Color.red;
+
+                            afflictionVisuals[i].icon.isVisible = isVisible && (injury.isTended || !owner.inspectedCreatureState.dead && injury.isBleeding);
+                        }
+
+                        allAfflictions.Add(bodyPart.afflictions[j]);
+
+                        break;
+                    }
+                    else if (!usedAfflictions.Contains(bodyPart.afflictions[j]) && afflictions.Contains(bodyPart.afflictions[j]))
+                    {
+                        afflictionVisuals[i].name.color = bodyPart.afflictions[j].labelColour;
+
+                        usedAfflictions.Add(bodyPart.afflictions[j]);
+
+                        if (bodyPart.afflictions[j] is RimInjury injury)
+                        {
+                            string text;
+
+                            if (injury is RimDestroyed destroyed)
                             {
-                                text = "Removed";
+                                if (bodyPart is RimOrgan && destroyed.damageType is RimSurgicalCut)
+                                {
+                                    text = "Removed";
+                                }
+                                else
+                                {
+                                    text = (bodyPart.isInternal ? bodyPart.isSolid ? "Shattered" : destroyed.healingDifficulty.destroyedOut : destroyed.healingDifficulty.destroyed) + (destroyed.isFresh ? " (fresh)" : "");
+                                }
+                            }
+                            else if (injury is RimScar scar && scar.isRevealed)
+                            {
+                                text = owner.ScarName(scar);
                             }
                             else
                             {
-                                text = (bodyPart.isInternal ? bodyPart.isSolid ? "Shattered" : destroyed.healingDifficulty.destroyedOut : destroyed.healingDifficulty.destroyed) + (destroyed.isFresh ? " (fresh)" : "");
+                                text = injury.healingDifficulty.name + (injury.attackName != "" ? " (" + injury.attackName + ") " : "");
                             }
+
+                            afflictionVisuals[i].name.text = text;
+
+                            Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
+                            allAfflictionsHeight.Add([Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight]);
+
+                            IsVisible(i);
+
+                            afflictionVisuals[i].icon.color = injury.isTended ? Color.white : Color.red;
+
+                            afflictionVisuals[i].icon.isVisible = isVisible && (injury.isTended && injury is not RimDestroyed || !owner.inspectedCreatureState.dead && injury.isBleeding);
                         }
-                        else if (injury is RimScar scar && scar.isRevealed)
+                        else if (bodyPart.afflictions[j] is RimDisease disease)
                         {
-                            text = owner.ScarName(scar);
-                        }
-                        else
-                        {
-                            text = injury.healingDifficulty.name + (injury.attackName != "" ? " (" + injury.attackName + ") " : "");
-                        }
+                            string text = disease.name;
 
-                        afflictionVisuals[i].name.text = text;
-
-                        Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
-                        allAfflictionsHeight.Add(new(2) { Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight });
-
-                        IsVisible(i);
-
-                        afflictionVisuals[i].icon.color = injury.isTended ? Color.white : Color.red;
-
-                        afflictionVisuals[i].icon.isVisible = isVisible && (injury.isTended && injury is not RimDestroyed || !owner.inspectedCreatureState.dead && injury.isBleeding);
-                    }
-                    else if (bodyPart.afflictions[j] is RimDisease disease)
-                    {
-                        string text = disease.name;
-
-                        if (disease is RimInfection && disease.severity > 0)
-                        {
-                            text += disease.severity switch
+                            if (disease is RimInfection && disease.severity > 0)
                             {
-                                < infectionMajor => " (minor)",
-                                < infectionExtreme => " (major)",
-                                _ => " (extreme)"
-                            };
+                                text += disease.severity switch
+                                {
+                                    < infectionMajor => " (minor)",
+                                    < infectionExtreme => " (major)",
+                                    _ => " (extreme)"
+                                };
+                            }
+
+                            afflictionVisuals[i].name.text = text;
+
+                            Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
+
+                            allAfflictionsHeight.Add([Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight]);
+
+                            IsVisible(i);
+
+                            afflictionVisuals[i].icon.color = disease.isTended ? Color.white : Color.grey;
+                        }
+                        else if (bodyPart.afflictions[j] is RimArtificialPartBase artificialPart)
+                        {
+                            afflictionVisuals[i].name.text = artificialPart.name;
+
+                            Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
+                            allAfflictionsHeight.Add([Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight]);
+
+                            IsVisible(i);
+
+                            afflictionVisuals[i].icon.isVisible = false;
                         }
 
-                        afflictionVisuals[i].name.text = text;
+                        allAfflictions.Add(bodyPart.afflictions[j]);
 
-                        Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
-
-                        allAfflictionsHeight.Add(new(2) { Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight });
-
-                        IsVisible(i);
-
-                        afflictionVisuals[i].icon.color = disease.isTended ? Color.white : Color.grey;
+                        break;
                     }
-                    else if (bodyPart.afflictions[j] is RimArtificialPartBase artificialPart)
-                    {
-                        afflictionVisuals[i].name.text = artificialPart.name;
-
-                        Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
-                        allAfflictionsHeight.Add(new(2) { Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight });
-
-                        IsVisible(i);
-
-                        afflictionVisuals[i].icon.isVisible = false;
-                    }
-
-                    allAfflictions.Add(bodyPart.afflictions[j]);
-
-                    break;
                 }
             }
+
+            if (!isVisible)
+            {
+                bodyPartName.isVisible = false;
+
+                background.isVisible = false;
+            }
+            else
+            {
+                bodyPartName.isVisible = true;
+
+                bodyPartName.color = Color.white; //Make this change colour depenidng on the remaining health of the part
+                bodyPartName.alpha = owner.SetTransparency();
+
+                background.alpha = owner.SetTransparency();
+            }
         }
-
-        if (!isVisible)
-        {
-            bodyPartName.isVisible = false;
-
-            background.isVisible = false;
-        }
-        else
-        {
-            bodyPartName.isVisible = true;
-
-            bodyPartName.color = Color.white; //Make this change colour depenidng on the remaining health of the part
-            bodyPartName.alpha = owner.SetTransparency();
-
-            background.alpha = owner.SetTransparency();
-        }
-
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
         void IsVisible(int i)
         {
             afflictionVisuals[i].name.y -= 15 * extraHeight;
@@ -4741,6 +4837,7 @@ public class HealthTabBodyPart
             afflictionVisual.ClearSprites();
         }
 
+        /*
         afflictionVisuals.Clear();
 
         combinedAfflictions.Clear();
@@ -4748,6 +4845,7 @@ public class HealthTabBodyPart
 
         allAfflictions.Clear();
         allAfflictionsHeight.Clear();
+        */
 
         bodyPart = null;
     }
@@ -4805,14 +4903,14 @@ public class HealthTabBodyPart
                     usedCombinedAfflictions.Add(CombinedAfflictionName(bodyPart, j));
 
                     HeightChanges(i, Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight));
-                    
+
                     break;
                 }
                 else if (!usedAfflictions.Contains(bodyPart.afflictions[j]) && afflictions.Contains(bodyPart.afflictions[j]))
                 {
                     usedAfflictions.Add(bodyPart.afflictions[j]);
 
-                    HeightChanges(i, Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight));             
+                    HeightChanges(i, Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight));
 
                     break;
                 }
@@ -4865,7 +4963,7 @@ public class HealthTabBodyPart
     public List<RimAffliction> afflictions;
 
     public List<RimAffliction> allAfflictions;
-    public List<List<int>> allAfflictionsHeight;
+    public List<int[]> allAfflictionsHeight;
 
     public bool slatedForDeletion = false;
 
@@ -4929,214 +5027,170 @@ public class HealthTabWholeBody
 
     public void Update()
     {
-        bloodLossVisible = owner.inspectedState != null && owner.inspectedState.bloodLoss >= 0.15f;
-
-        afflictionNumber = (bloodLossVisible ? 1 : 0) + (owner.inspectedState != null ? owner.inspectedState.wholeBodyAfflictions.Count : 0);
-
-        active = afflictionNumber > 0;
-
-        if (afflictionNumber - (bloodLossVisible ? 1 : 0) <= afflictionVisuals.Count)
+        try
         {
-            List<HealthTabAffliction> list = new(afflictionVisuals);
+            bloodLossVisible = owner.inspectedState != null && owner.inspectedState.bloodLoss >= 0.15f;
 
-            for (int i = list.Count - 1; i >= afflictionNumber - (bloodLossVisible ? 1 : 0); i--)
+            afflictionNumber = (bloodLossVisible ? 1 : 0) + (owner.inspectedState != null ? owner.inspectedState.wholeBodyAfflictions.Count : 0);
+
+            active = afflictionNumber > 0;
+
+            if (afflictionNumber - (bloodLossVisible ? 1 : 0) <= afflictionVisuals.Count)
             {
-                afflictionVisuals[i].ClearSprites();
+                List<HealthTabAffliction> list = new(afflictionVisuals);
 
-                afflictionVisuals.Remove(list[i]);
+                for (int i = list.Count - 1; i >= afflictionNumber - (bloodLossVisible ? 1 : 0); i--)
+                {
+                    afflictionVisuals[i].ClearSprites();
+
+                    afflictionVisuals.Remove(list[i]);
+                }
+            }
+            else if (afflictionNumber - (bloodLossVisible ? 1 : 0) > afflictionVisuals.Count)
+            {
+                List<HealthTabAffliction> list = new(afflictionVisuals);
+
+                for (int i = 0; i < afflictionNumber - list.Count; i++)
+                {
+                    afflictionVisuals.Add(new(owner, DrawPos().x));
+                }
             }
         }
-        else if (afflictionNumber - (bloodLossVisible ? 1 : 0) > afflictionVisuals.Count)
-        {
-            List<HealthTabAffliction> list = new(afflictionVisuals);
-
-            for (int i = 0; i < afflictionNumber - list.Count; i++)
-            {
-                afflictionVisuals.Add(new(owner, DrawPos().x));
-            }
-        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
     }
     public void Draw()
     {
-        background.isVisible = owner.visible && active;
-        name.isVisible = owner.visible && active;
-        bloodLossName.isVisible = owner.visible && active && bloodLossVisible;
-
-        if (owner == null || owner.inspectedState == null || !owner.visible || !active)
+        try
         {
-            for (int i = 0; i < afflictionVisuals.Count; i++)
+            background.isVisible = owner.visible && active;
+            name.isVisible = owner.visible && active;
+            bloodLossName.isVisible = owner.visible && active && bloodLossVisible;
+
+            if (owner == null || owner.inspectedState == null || !owner.visible || !active)
             {
-                afflictionVisuals[i].ClearSprites();
+                for (int i = 0; i < afflictionVisuals.Count; i++)
+                {
+                    afflictionVisuals[i].ClearSprites();
+                }
+
+                return;
             }
 
-            afflictionVisuals.Clear();
+            if (background.isVisible)
+            {
+                background.y = DrawPos().y + 3;
+                background.scaleY = 0;
+            }
+
             afflictionsHeight.Clear();
 
-            return;
-        }
+            extraHeight = 0;
 
-        if (background.isVisible)
-        {
-            background.y = DrawPos().y + 3;
-            background.scaleY = 0;
-        }
+            isVisible = false;
 
-        isVisible = false;
+            topVisible = false;
+            bottomReached = false;
 
-        topVisible = false;
-        bottomReached = false;
-
-        if (bloodLossVisible)
-        {
-            bloodLossName.y = DrawPos().y;
-
-            string name = owner.inspectedState.bloodLoss switch
+            if (bloodLossVisible)
             {
-                < bloodLossModerate => "minor",
-                < bloodLossSevere => "moderate",
-                < bloodLossExtreme => "severe",
-                _ => "extreme"
-            };
+                bloodLossName.y = DrawPos().y;
 
-            bloodLossName.text = $"Blood loss ({name})";
+                string name = owner.inspectedState.bloodLoss switch
+                {
+                    < bloodLossModerate => "minor",
+                    < bloodLossSevere => "moderate",
+                    < bloodLossExtreme => "severe",
+                    _ => "extreme"
+                };
 
-            if (bloodLossName.y > owner.ActualTopLimit())
+                bloodLossName.text = $"Blood loss ({name})";
+
+                if (bloodLossName.y > owner.ActualTopLimit())
+                {
+                    bloodLossName.isVisible = false;
+
+                    owner.afflictionsAbove++;
+
+                    background.y -= 18f;
+                }
+                else
+                {
+                    isVisible = true;
+
+                    topVisible = true;
+
+                    background.y -= 9;
+                    background.scaleY += 17f;
+                }
+
+                afflictionsHeight.Add([1, extraHeight]);
+            }
+
+            for (int i = 0; i < afflictionVisuals.Count && i < owner.inspectedState.wholeBodyAfflictions.Count; i++)
             {
-                bloodLossName.isVisible = false;
+                afflictionVisuals[i].name.y = DrawPos().y - ((bloodLossVisible ? 18f : 0) + (18f * i));
+                afflictionVisuals[i].name.color = owner.inspectedState.wholeBodyAfflictions[i].labelColour;
 
-                owner.afflictionsAbove++;
+                afflictionVisuals[i].icon.y = DrawPos().y - 7 - ((bloodLossVisible ? 18f : 0) + (18f * i));
 
-                background.y -= 18f;
+                if (owner.inspectedState.wholeBodyAfflictions[i] is RimDisease disease)
+                {
+                    string text = disease.name;
+
+                    if (disease is RimFlu && disease.severity > 0)
+                    {
+                        text += disease.severity switch
+                        {
+                            < fluMajor => " (minor)",
+                            < fluExtreme => " (major)",
+                            _ => " (extreme)"
+                        };
+                    }
+
+                    afflictionVisuals[i].name.text = text;
+
+                    Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
+
+                    afflictionsHeight.Add([Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight]);
+
+                    IsVisible(i);
+
+                    afflictionVisuals[i].icon.color = disease.isTended ? Color.white : Color.grey;
+                }
+                else if (owner.inspectedState.wholeBodyAfflictions[i] is RimAilment ailment)
+                {
+                    string text = HealthTab.GetAilmentName(ailment);
+
+                    afflictionVisuals[i].name.text = text;
+
+                    Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
+
+                    afflictionsHeight.Add([Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight]);
+
+                    IsVisible(i);
+
+                    afflictionVisuals[i].icon.isVisible = false;
+                }
+            }
+
+            if (!isVisible)
+            {
+                name.isVisible = false;
+
+                background.isVisible = false;
             }
             else
             {
-                isVisible = true;
+                name.isVisible = true;
+                name.alpha = owner.SetTransparency();
 
-                topVisible = true;
+                bloodLossName.alpha = owner.SetTransparency();
 
-                background.y -= 9;
-                background.scaleY += 17f;
+                background.alpha = owner.SetTransparency();
             }
         }
-
-        for (int i = 0; i < afflictionVisuals.Count && i < owner.inspectedState.wholeBodyAfflictions.Count; i++)
-        {
-            afflictionVisuals[i].name.y = DrawPos().y - ((bloodLossVisible ? 18f : 0) + (18f * i));
-            afflictionVisuals[i].name.color = owner.inspectedState.wholeBodyAfflictions[i].labelColour;
-
-            afflictionVisuals[i].icon.y = DrawPos().y - 7 - ((bloodLossVisible ? 18f : 0) + (18f * i));
-
-            if (owner.inspectedState.wholeBodyAfflictions[i] is RimDisease disease)
-            {
-                string text = disease.name;
-
-                if (disease is RimFlu && disease.severity > 0)
-                {
-                    text += disease.severity switch
-                    {
-                        < fluMajor => " (minor)",
-                        < fluExtreme => " (major)",
-                        _ => " (extreme)"
-                    };
-                }
-
-                afflictionVisuals[i].name.text = text;
-
-                Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
-
-                afflictionsHeight.Add(new(2) { Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight });
-
-                IsVisible(i);
-
-                afflictionVisuals[i].icon.color = disease.isTended ? Color.white : Color.grey;
-            }
-            else if (owner.inspectedState.wholeBodyAfflictions[i] is RimAilment ailment)
-            {
-                string text = "null";
-                switch (ailment)
-                {
-                    case RimAirInLungs:
-                        text = "Lung capacity";
-
-                        text += ailment.amount switch
-                        {
-                            < airInLungsLow => " (empty)",
-                            < airInLungsMedium => " (low)",
-                            < airInLungsHigh => " (medium)",
-                            _ => " (high)"
-                        };
-                        break;
-                    case RimHypothermia:
-                        text = "Hypothermia";
-
-                        text += ailment.amount switch
-                        {
-                            < hypothermiaMinor => " (shivering)",
-                            < hypothermiaSerious => " (minor)",
-                            < hypothermiaExtreme => " (serious)",
-                            _ => " (extreme)"
-                        };
-                        break;
-                    case RimToxicBuildup:
-                        text = "Toxic buildup";
-
-                        text += ailment.amount switch
-                        {
-                            < toxicBuildupMinor => " (initial)",
-                            < toxicBuildupModerate => " (minor)",
-                            < toxicBuildupSerious => " (moderate)",
-                            < toxicBuildupExtreme => " (serious)",
-                            _ => " (extreme)"
-                        };
-                        break;
-                    case RimAnesthetic:
-                        text = "Anesthetic";
-
-                        if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.25f))
-                        {
-                            text += " (wearing off, ";
-                        }
-                        else if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.5f))
-                        {
-                            text += " (woozy, ";
-                        }
-                        else
-                        {
-                            text += " (sedated, ";
-                        }
-
-                        text += HealthTab.GetTimeString(ailment.amount / (40 * 60)) + ")";
-                        break;
-                }
-
-                afflictionVisuals[i].name.text = text;
-
-                Menu.MenuLabel.WordWrapLabel(afflictionVisuals[i].name, wordWrap);
-
-                afflictionsHeight.Add(new(2) { Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight), extraHeight });
-
-                IsVisible(i);
-
-                afflictionVisuals[i].icon.isVisible = false;
-            }
-        }
-
-        if (!isVisible)
-        {
-            name.isVisible = false;
-
-            background.isVisible = false;
-        }
-        else
-        {
-            name.isVisible = true;
-            name.alpha = owner.SetTransparency();
-
-            bloodLossName.alpha = owner.SetTransparency();
-
-            background.alpha = owner.SetTransparency();
-        }
-
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
+        
         void IsVisible(int i)
         {
             afflictionVisuals[i].name.y -= 15 * extraHeight;
@@ -5217,30 +5271,23 @@ public class HealthTabWholeBody
             afflictionVisual.ClearSprites();
         }
 
-        afflictionVisuals.Clear();
-        afflictionsHeight.Clear();
+        //afflictionVisuals.Clear();
+        //afflictionsHeight.Clear();
     }
 
     public float GetPivotOffset(int afflictionNumber, bool top)
     {
-        float offset = DrawPos(false).y;
+        float offset = 0;
 
         int totalHeight = 0;
         int extraHeight = 0;
 
-        if (bloodLossVisible)
-        {
-            offset -= 17;
-
-            afflictionNumber -= 1;
-        }
-
         for (int i = 0; i < afflictionNumber + 1; i++)
         {
             if (i == afflictionNumber)
-                offset -= 18f * i;
+                offset = DrawPos(false).y - 18f * i;
 
-            HeightChanges(i, Mathf.RoundToInt(afflictionVisuals[i].name.textRect.height / afflictionVisuals[i].name.FontLineHeight));
+            HeightChanges(i, afflictionsHeight[i][0]);
         }
 
         offset = top ? owner.ActualTopLimit() - offset - 5 : owner.ActualBottomLimit() - offset;
@@ -5275,7 +5322,7 @@ public class HealthTabWholeBody
 
     public List<HealthTabAffliction> afflictionVisuals = new();
 
-    public List<List<int>> afflictionsHeight = new();
+    public List<int[]> afflictionsHeight = new();
 
     public int afflictionNumber = 0;
     public int extraHeight = 0;
@@ -5434,97 +5481,118 @@ public class HealthTabInfo
     }
     public void Draw()
     {
-        bool visible = owner.visible && owner.selectedTimer <= 0;
-
-        for (int i = 0; i < backgrounds.Length; i++)
-        {
-            backgrounds[i].isVisible = visible;
-        }
-
-        name.isVisible = visible;
-        nameStatus.isVisible = visible;
-
-        description.isVisible = visible && description.text != "";
-
-        colouredName.isVisible = visible && colouredName.text != "";
-        colouredName2.isVisible = visible && colouredName2.text != "";
-
-        if (!visible)
+        if (slatedForDeletion)
         {
             return;
         }
 
-        if (owner.isOperationListActive)
+        try
         {
-            foreach (OperationSelection operationSelection in owner.operationList)
+            bool visible = owner.visible && owner.selectedTimer <= 0;
+
+            for (int i = 0; i < backgrounds.Length; i++)
             {
-                foreach (FSprite sprite in operationSelection.backgrounds)
+                backgrounds[i].isVisible = visible;
+            }
+
+            name.isVisible = visible;
+            nameStatus.isVisible = visible;
+
+            description.isVisible = visible && description.text != "";
+
+            colouredName.isVisible = visible && colouredName.text != "";
+            colouredName2.isVisible = visible && colouredName2.text != "";
+
+            if (!visible)
+            {
+                return;
+            }
+
+            if (owner.isOperationListActive)
+            {
+                foreach (OperationSelection operationSelection in owner.operationList)
                 {
-                    sprite.MoveBehindOtherNode(backgrounds[0]);
+                    foreach (FSprite sprite in operationSelection.backgrounds)
+                    {
+                        sprite.MoveBehindOtherNode(backgrounds[0]);
+                    }
+
+                    operationSelection.nameLabel.MoveBehindOtherNode(backgrounds[0]);
+                    operationSelection.icon.MoveBehindOtherNode(backgrounds[0]);
                 }
-                    
-                operationSelection.nameLabel.MoveBehindOtherNode(backgrounds[0]);
-                operationSelection.icon.MoveBehindOtherNode(backgrounds[0]);
-            }
-        }
-
-        if (owner.healthTabInfos.IndexOf(this) != 0 || owner.healthTabInfos.IndexOf(this) == 0 && (owner.selectedHorizontal == 1 || owner.isOperationListActive || owner.selectedHorizontal == 2 && owner.healthTabWholeBody.active && owner.selectedVertical < owner.healthTabWholeBody.afflictionNumber))
-        {
-            name.color = Color.yellow;
-        }
-        else
-        {
-            name.color = Color.white;
-        }
-
-        name.x = DrawPos().x;
-        name.y = DrawPos().y;
-        name.alpha = owner.SetTransparency();
-
-        nameStatus.x = DrawPos().x + name.textRect.width;
-        nameStatus.y = DrawPos().y;
-
-        nameStatus.alpha = owner.SetTransparency();
-
-        Vector2 backgroundPos = new()
-        {
-            x = name.textRect.width + nameStatus.textRect.width,
-            y = name.textRect.height
-        };
-
-        Vector2 backgroundSize = new()
-        {
-            x = name.textRect.width + nameStatus.textRect.width,
-            y = name.textRect.height
-        };
-
-        if (colouredName.text != "")
-        {
-            colouredName.x = name.x;
-            colouredName.y = name.y - name.textRect.height;
-
-            if (backgroundPos.x < colouredName.textRect.width)
-            {
-                backgroundPos.x = colouredName.textRect.width;
             }
 
-            backgroundPos.y -= colouredName.textRect.height;
-
-            if (backgroundSize.x < colouredName.textRect.width)
+            if (owner.healthTabInfos.IndexOf(this) != 0 || owner.healthTabInfos.IndexOf(this) == 0 && (owner.selectedHorizontal == 1 || owner.isOperationListActive || owner.selectedHorizontal == 2 && owner.healthTabWholeBody.active && owner.selectedVertical < owner.healthTabWholeBody.afflictionNumber))
             {
-                backgroundSize.x = colouredName.textRect.width;
+                name.color = Color.yellow;
+            }
+            else
+            {
+                name.color = Color.white;
             }
 
-            backgroundSize.y += colouredName.textRect.height;
-        }
+            name.x = DrawPos().x;
+            name.y = DrawPos().y;
+            name.alpha = owner.SetTransparency();
 
-        if (description.text != "")
-        {
-            FLabel labelAbove = colouredName.text != "" ? colouredName : name;
+            nameStatus.x = DrawPos().x + name.textRect.width;
+            nameStatus.y = DrawPos().y;
 
-            if (owner.healthTabInfos.IndexOf(this) == 0)
+            nameStatus.alpha = owner.SetTransparency();
+
+            Vector2 backgroundPos = new()
             {
-                if (owner.selectedHorizontal == 2 && owner.healthTabWholeBody.active && owner.selectedVertical < owner.healthTabWholeBody.afflictionNumber)
+                x = name.textRect.width + nameStatus.textRect.width,
+                y = name.textRect.height
+            };
+
+            Vector2 backgroundSize = new()
+            {
+                x = name.textRect.width + nameStatus.textRect.width,
+                y = name.textRect.height
+            };
+
+            if (colouredName.text != "")
+            {
+                colouredName.x = name.x;
+                colouredName.y = name.y - name.textRect.height;
+
+                if (backgroundPos.x < colouredName.textRect.width)
+                {
+                    backgroundPos.x = colouredName.textRect.width;
+                }
+
+                backgroundPos.y -= colouredName.textRect.height;
+
+                if (backgroundSize.x < colouredName.textRect.width)
+                {
+                    backgroundSize.x = colouredName.textRect.width;
+                }
+
+                backgroundSize.y += colouredName.textRect.height;
+            }
+
+            if (description.text != "")
+            {
+                FLabel labelAbove = colouredName.text != "" ? colouredName : name;
+
+                if (owner.healthTabInfos.IndexOf(this) == 0)
+                {
+                    if (owner.selectedHorizontal == 2 && owner.healthTabWholeBody.active && owner.selectedVertical < owner.healthTabWholeBody.afflictionNumber)
+                    {
+                        description.x = labelAbove.x;
+                        description.y = labelAbove.y - (labelAbove.textRect.height * 2);
+
+                        backgroundPos.y -= labelAbove.textRect.height;
+                        backgroundSize.y += labelAbove.textRect.height;
+                    }
+                    else
+                    {
+                        description.x = labelAbove.x;
+                        description.y = labelAbove.y - labelAbove.textRect.height;
+                    }
+                }
+                else
                 {
                     description.x = labelAbove.x;
                     description.y = labelAbove.y - (labelAbove.textRect.height * 2);
@@ -5532,96 +5600,84 @@ public class HealthTabInfo
                     backgroundPos.y -= labelAbove.textRect.height;
                     backgroundSize.y += labelAbove.textRect.height;
                 }
-                else
+
+                if (backgroundPos.x < description.textRect.width)
                 {
-                    description.x = labelAbove.x;
-                    description.y = labelAbove.y - labelAbove.textRect.height;
+                    backgroundPos.x = description.textRect.width;
+                }
+
+                backgroundPos.y -= description.textRect.height;
+
+                if (backgroundSize.x < description.textRect.width)
+                {
+                    backgroundSize.x = description.textRect.width;
+                }
+
+                backgroundSize.y += description.textRect.height;
+            }
+
+            if (colouredName2.text != "")
+            {
+                FLabel labelAbove = description.text != "" ? description : colouredName.text != "" ? colouredName : name;
+
+                colouredName2.x = labelAbove.x;
+                colouredName2.y = labelAbove.y - labelAbove.textRect.height;
+
+                if (backgroundPos.x < colouredName2.textRect.width)
+                {
+                    backgroundPos.x = colouredName2.textRect.width;
+                }
+
+                backgroundPos.y -= colouredName2.textRect.height;
+
+                if (backgroundSize.x < colouredName2.textRect.width)
+                {
+                    backgroundSize.x = colouredName2.textRect.width;
+                }
+
+                backgroundSize.y += colouredName2.textRect.height;
+            }
+
+            backgrounds[0].x = DrawPos().x - 5;
+            backgrounds[0].y = DrawPos().y + (backgroundPos.y / 2) - 15;
+
+            backgrounds[0].scaleX = backgroundSize.x + 10;
+            backgrounds[0].scaleY = backgroundSize.y + 10;
+
+            backgrounds[1].x = DrawPos().x - 4;
+            backgrounds[1].y = DrawPos().y + (backgroundPos.y / 2) - 15;
+
+            backgrounds[1].scaleX = backgroundSize.x + 8;
+            backgrounds[1].scaleY = backgroundSize.y + 8;
+
+            backgrounds[0].alpha = owner.SetTransparency();
+            backgrounds[1].alpha = owner.SetTransparency();
+
+            borderCorrection = Mathf.CeilToInt(backgrounds[0].y - (backgrounds[0].scaleY / 2) < 0 ? Mathf.Abs(backgrounds[0].y - (backgrounds[0].scaleY / 2)) : 0);
+
+            if (borderCorrection > 0)
+            {
+                name.y += borderCorrection;
+                nameStatus.y += borderCorrection;
+                description.y += borderCorrection;
+                colouredName.y += borderCorrection;
+                colouredName2.y += borderCorrection;
+                backgrounds[0].y += borderCorrection;
+                backgrounds[1].y += borderCorrection;
+
+                for (int i = 0; i < owner.healthTabInfos.IndexOf(this); i++)
+                {
+                    owner.healthTabInfos[i].name.y += borderCorrection;
+                    owner.healthTabInfos[i].nameStatus.y += borderCorrection;
+                    owner.healthTabInfos[i].description.y += borderCorrection;
+                    owner.healthTabInfos[i].colouredName.y += borderCorrection;
+                    owner.healthTabInfos[i].colouredName2.y += borderCorrection;
+                    owner.healthTabInfos[i].backgrounds[0].y += borderCorrection;
+                    owner.healthTabInfos[i].backgrounds[1].y += borderCorrection;
                 }
             }
-            else
-            {
-                description.x = labelAbove.x;
-                description.y = labelAbove.y - (labelAbove.textRect.height * 2);
-
-                backgroundPos.y -= labelAbove.textRect.height;
-                backgroundSize.y += labelAbove.textRect.height;
-            }
-
-            if (backgroundPos.x < description.textRect.width)
-            {
-                backgroundPos.x = description.textRect.width;
-            }
-
-            backgroundPos.y -= description.textRect.height;
-
-            if (backgroundSize.x < description.textRect.width)
-            {
-                backgroundSize.x = description.textRect.width;
-            }
-
-            backgroundSize.y += description.textRect.height;
         }
-
-        if (colouredName2.text != "")
-        {
-            FLabel labelAbove = description.text != "" ? description : colouredName.text != "" ? colouredName : name;
-
-            colouredName2.x = labelAbove.x;
-            colouredName2.y = labelAbove.y - labelAbove.textRect.height;
-
-            if (backgroundPos.x < colouredName2.textRect.width)
-            {
-                backgroundPos.x = colouredName2.textRect.width;
-            }
-
-            backgroundPos.y -= colouredName2.textRect.height;
-
-            if (backgroundSize.x < colouredName2.textRect.width)
-            {
-                backgroundSize.x = colouredName2.textRect.width;
-            }
-
-            backgroundSize.y += colouredName2.textRect.height;
-        }
-
-        backgrounds[0].x = DrawPos().x - 5;
-        backgrounds[0].y = DrawPos().y + (backgroundPos.y / 2) - 15;
-
-        backgrounds[0].scaleX = backgroundSize.x + 10;
-        backgrounds[0].scaleY = backgroundSize.y + 10;
-
-        backgrounds[1].x = DrawPos().x - 4;
-        backgrounds[1].y = DrawPos().y + (backgroundPos.y / 2) - 15;
-
-        backgrounds[1].scaleX = backgroundSize.x + 8;
-        backgrounds[1].scaleY = backgroundSize.y + 8;
-
-        backgrounds[0].alpha = owner.SetTransparency();
-        backgrounds[1].alpha = owner.SetTransparency();
-
-        borderCorrection = Mathf.CeilToInt(backgrounds[0].y - (backgrounds[0].scaleY / 2) < 0 ? Mathf.Abs(backgrounds[0].y - (backgrounds[0].scaleY / 2)) : 0);
-
-        if (borderCorrection > 0)
-        {
-            name.y += borderCorrection;
-            nameStatus.y += borderCorrection;
-            description.y += borderCorrection;
-            colouredName.y += borderCorrection;
-            colouredName2.y += borderCorrection;
-            backgrounds[0].y += borderCorrection;
-            backgrounds[1].y += borderCorrection;
-
-            for (int i = 0; i < owner.healthTabInfos.IndexOf(this); i++)
-            {
-                owner.healthTabInfos[i].name.y += borderCorrection;
-                owner.healthTabInfos[i].nameStatus.y += borderCorrection;
-                owner.healthTabInfos[i].description.y += borderCorrection;
-                owner.healthTabInfos[i].colouredName.y += borderCorrection;
-                owner.healthTabInfos[i].colouredName2.y += borderCorrection;
-                owner.healthTabInfos[i].backgrounds[0].y += borderCorrection;
-                owner.healthTabInfos[i].backgrounds[1].y += borderCorrection;
-            }
-        }
+        catch (Exception e) { RimWorldHealth.Logger.LogError(e); }
     }
 
     public void ClearSprites()
@@ -5738,6 +5794,11 @@ public class OperationSelection
     }
     public void Draw()
     {
+        if (slatedForDeletion)
+        {
+            return;
+        }
+
         bool isSelected = owner.operationListHorizontal == horizontal && owner.operationListVertical == vertical;
 
         backgrounds[0].x = DrawPos().x;

@@ -1573,7 +1573,7 @@ public class RimHealthState
             {
                 state.capacityAffectingAffliction.Add(ailment);
 
-                if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.25f))
+                if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.5f))
                 {
                     painFactor *= 0.95f;
 
@@ -1582,7 +1582,7 @@ public class RimHealthState
                     state.manipulation -= 0.1f;
                     state.moving -= 0.05f;
                 }
-                else if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.5f))
+                else if (ailment.amount < ailment.lastAmount - (CycleLength() * 0.25f))
                 {
                     painFactor *= 0.8f;
 
